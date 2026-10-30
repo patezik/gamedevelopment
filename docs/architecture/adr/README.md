@@ -16,7 +16,7 @@ ADR фиксирует значимое архитектурное решени�
 | № | Решение | Статус |
 |---|---------|--------|
 | [0001](0001-monorepo-structure.md) | Монорепозиторий: npm workspaces + Godot-проект | Accepted |
-| [0002](0002-headless-game-core.md) | Авторитетное headless Game Core на TypeScript, Godot — клиент представления | Accepted (требует подтверждения владельца, см. OQ-01) |
+| [0002](0002-headless-game-core.md) | Авторитетное headless Game Core на TypeScript, Godot — клиент представления | Accepted (подтверждено владельцем, OQ-01 закрыт) |
 | [0003](0003-backend-stack.md) | Backend: Node.js 24 LTS + Fastify 5 + ws, модульный монолит, локальный хостинг | Accepted |
 | [0004](0004-determinism.md) | Детерминизм: seed-подпотоки PRNG, целочисленное время, запрет недетерминированных API | Accepted |
 | [0005](0005-truth-and-knowledge.md) | Truth Model как журнал событий; знания персонажей — отдельные хранилища убеждений | Accepted |
