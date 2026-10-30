@@ -1,0 +1,33 @@
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+
+# Expo / React Native
+.expo/
+apps/mobile/ios/
+apps/mobile/android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Godot
+.godot/
+apps/desktop/export/
+*.import.tmp
+
+# Reports and local data
+reports/
+.hs-data/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
