@@ -31,6 +31,7 @@
 | eslint | 10.x | MIT | все | Линтинг, правила детерминизма |
 | typescript-eslint | 8.72.x | MIT | все | TS-правила |
 | prettier | 3.9.x | MIT | все | Форматирование |
+| @types/node | 24.x | MIT | все TS-пакеты кроме mobile | Типы Node.js (TS 6 не подключает `@types/*` автоматически; см. `types` в `tsconfig.base.json`) |
 
 Ядро (`@hs/core`) не имеет runtime-зависимостей, кроме `zod`. Хеширование SHA-256 — через
 `node:crypto` за интерфейсом `Hasher` (ядро исполняется только в Node.js).
