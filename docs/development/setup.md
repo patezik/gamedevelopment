@@ -35,7 +35,8 @@ npm run docs:check          # проверка ссылок документац
 | `npm run tasks:index` | обновить `tasks/INDEX.md` | сейчас |
 | `npm run tasks:check` | валидация задач | сейчас |
 | `npm run docs:check` | проверка относительных ссылок в Markdown | сейчас |
-| `npm run lint` / `typecheck` / `test` | проверки TS-кода | после FND-001 |
+| `npm run lint` / `typecheck` / `test` | проверки TS-кода (на пустом наборе пакетов завершаются с кодом 0) | сейчас |
+| `npm run format` / `format:check` | форматирование Prettier (Markdown не форматируется) | сейчас |
 | `npm run dev:server` | Session Server на `0.0.0.0:7420` | после FND-005, FND-010 |
 | `npm run dev:mobile` | `npx expo start` в `apps/mobile` | после FND-006, FND-010 |
 | `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | после FND-008 |

@@ -1,0 +1,7 @@
+# Markdown is prose in Russian with manual wrapping; tasks/INDEX.md is generated.
+*.md
+package-lock.json
+dist/
+coverage/
+reports/
+apps/desktop/
