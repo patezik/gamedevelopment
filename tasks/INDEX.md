@@ -2,17 +2,20 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 139 · in_progress: 0 · review: 1 · done: 0 · blocked: 0
+Всего задач: **140** · todo: 139 · in_progress: 0 · review: 0 · done: 1 · blocked: 0
 
 ## Готовы к взятию сейчас
 
+- [FND-003](FND-003.md) — CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей (P0, S)
+- [FND-004](FND-004.md) — Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema (P0, M)
 - [FND-007](FND-007.md) — Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) (P0, S)
+- [FND-009](FND-009.md) — Каркасы пакетов @hs/core, @hs/generator, @hs/validator (P0, S)
 
 ## Критический путь
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[FND-001](FND-001.md) → [FND-009](FND-009.md) → [CORE-002](CORE-002.md) → [CNT-001](CNT-001.md) → [CHAR-001](CHAR-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[FND-009](FND-009.md) → [CORE-002](CORE-002.md) → [CNT-001](CNT-001.md) → [CHAR-001](CHAR-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -22,7 +25,6 @@
 | [CNT-001](CNT-001.md) Схемы контента сценариев (zod) и загрузчик @hs/core/content | 6 |
 | [ENG-001](ENG-001.md) GameEngine: агрегат состояния, dispatch, действия move и wait | 6 |
 | [ENG-004](ENG-004.md) Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | 6 |
-| [FND-001](FND-001.md) Корневой TypeScript-тулчейн: TS 6, ESLint 10, Prettier, Vitest 5 | 6 |
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
 | [WORLD-002](WORLD-002.md) Предметы, контейнеры и история их перемещений | 6 |
 | [ENG-003](ENG-003.md) Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | 5 |
@@ -30,12 +32,13 @@
 | [GDT-002](GDT-002.md) Autoload GameStore и SceneRouter | 5 |
 | [GDT-004](GDT-004.md) Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | 5 |
 | [INV-002](INV-002.md) Утверждения (Claims) и правила дедукции | 5 |
+| [KNOW-002](KNOW-002.md) LiePolicy и показания: answer(question) → правда, ошибка или ложь | 5 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [FND-001](FND-001.md) | Корневой TypeScript-тулчейн: TS 6, ESLint 10, Prettier, Vitest 5 | P0 | M | review | claude-foundation-1 | — |
+| [FND-001](FND-001.md) | Корневой TypeScript-тулчейн: TS 6, ESLint 10, Prettier, Vitest 5 | P0 | M | done | claude-foundation-1 | — |
 | [FND-002](FND-002.md) | ESLint-правила детерминизма и границ импорта | P0 | S | todo | — | [FND-001](FND-001.md), [FND-009](FND-009.md) |
 | [FND-003](FND-003.md) | CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей | P0 | S | todo | — | [FND-001](FND-001.md) |
 | [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | todo | — | [FND-001](FND-001.md) |
