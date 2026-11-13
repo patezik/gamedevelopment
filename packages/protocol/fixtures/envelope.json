@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "type": "action.request",
+  "id": "c-0192",
+  "seq": 57,
+  "ack": 56,
+  "payload": { "action": { "type": "examineHotspot", "target": "desk_01" } }
+}

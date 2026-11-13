@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 136 · in_progress: 3 · review: 0 · done: 1 · blocked: 0
+Всего задач: **140** · todo: 136 · in_progress: 2 · review: 1 · done: 1 · blocked: 0
 
 ## Готовы к взятию сейчас
 
@@ -38,7 +38,7 @@
 | [FND-001](FND-001.md) | Корневой TypeScript-тулчейн: TS 6, ESLint 10, Prettier, Vitest 5 | P0 | M | done | claude-foundation-1 | — |
 | [FND-002](FND-002.md) | ESLint-правила детерминизма и границ импорта | P0 | S | todo | — | [FND-001](FND-001.md), [FND-009](FND-009.md) |
 | [FND-003](FND-003.md) | CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей | P0 | S | in_progress | claude-foundation-1 | [FND-001](FND-001.md) |
-| [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | in_progress | claude-protocol-1 | [FND-001](FND-001.md) |
+| [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | review | claude-protocol-1 | [FND-001](FND-001.md) |
 | [FND-005](FND-005.md) | Каркас apps/server: Fastify 5, конфигурация, /health, логирование | P0 | M | todo | — | [FND-001](FND-001.md), [FND-004](FND-004.md) |
 | [FND-006](FND-006.md) | Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | P0 | M | todo | — | [FND-001](FND-001.md), [FND-004](FND-004.md) |
 | [FND-007](FND-007.md) | Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) | P0 | S | todo | — | — |

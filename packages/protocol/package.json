@@ -1,0 +1,17 @@
+{
+  "name": "@hs/protocol",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wire protocol contract: message envelope, error codes, version, JSON Schema export.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "protocol:gen": "node scripts/gen.ts",
+    "protocol:check": "node scripts/gen.ts --check"
+  },
+  "dependencies": {
+    "zod": "~4.6.7"
+  }
+}

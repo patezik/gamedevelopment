@@ -3,6 +3,9 @@
 Схемы — `@hs/protocol` (zod), решения — [ADR 0009](../architecture/adr/0009-protocol-schemas.md),
 безопасность — [ADR 0008](../architecture/adr/0008-pairing-and-security.md).
 
+Сгенерированные JSON Schema лежат в `packages/protocol/schemas/` (`npm run protocol:gen`; актуальность
+проверяет `npm run protocol:check`), пример конверта — `packages/protocol/fixtures/envelope.json`.
+
 ## 1. Транспорт
 
 - `ws://<host>:7420/ws` — одно соединение на клиента. JSON, UTF-8, максимум 256 КБ на сообщение.
