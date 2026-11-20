@@ -1,0 +1,14 @@
+[
+  {
+    "id": "visitor_relative",
+    "type": "relative",
+    "fromArchetypes": ["visitor"],
+    "toArchetypes": ["visitor"],
+    "secrets": [
+      {
+        "kind": "missing_record",
+        "template": "missing_record"
+      }
+    ]
+  }
+]
