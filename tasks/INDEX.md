@@ -2,18 +2,22 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 137 · in_progress: 1 · review: 1 · done: 1 · blocked: 0
+Всего задач: **140** · todo: 136 · in_progress: 1 · review: 0 · done: 3 · blocked: 0
 
 ## Готовы к взятию сейчас
 
-- [FND-004](FND-004.md) — Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema (P0, M)
+- [FND-002](FND-002.md) — ESLint-правила детерминизма и границ импорта (P0, S)
 - [FND-007](FND-007.md) — Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) (P0, S)
+- [CORE-001](CORE-001.md) — Детерминированный PRNG sfc32 с подпотоками fork(label) (P0, M)
+- [CORE-002](CORE-002.md) — Канонический JSON, хеширование состояния и генерация ID (P0, S)
+- [TIME-001](TIME-001.md) — GameMinutes и Calendar: дни, часы, периоды суток (P0, S)
+- [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
 
 ## Критический путь
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[FND-009](FND-009.md) → [CORE-002](CORE-002.md) → [CNT-001](CNT-001.md) → [CHAR-001](CHAR-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[CORE-002](CORE-002.md) → [CNT-001](CNT-001.md) → [CHAR-001](CHAR-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -38,13 +42,13 @@
 |---|---|---|---|---|---|---|
 | [FND-001](FND-001.md) | Корневой TypeScript-тулчейн: TS 6, ESLint 10, Prettier, Vitest 5 | P0 | M | done | claude-foundation-1 | — |
 | [FND-002](FND-002.md) | ESLint-правила детерминизма и границ импорта | P0 | S | todo | — | [FND-001](FND-001.md), [FND-009](FND-009.md) |
-| [FND-003](FND-003.md) | CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей | P0 | S | review | claude-foundation-1 | [FND-001](FND-001.md) |
-| [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | todo | — | [FND-001](FND-001.md) |
+| [FND-003](FND-003.md) | CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
+| [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | in_progress | claude-protocol-1 | [FND-001](FND-001.md) |
 | [FND-005](FND-005.md) | Каркас apps/server: Fastify 5, конфигурация, /health, логирование | P0 | M | todo | — | [FND-001](FND-001.md), [FND-004](FND-004.md) |
 | [FND-006](FND-006.md) | Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | P0 | M | todo | — | [FND-001](FND-001.md), [FND-004](FND-004.md) |
 | [FND-007](FND-007.md) | Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) | P0 | S | todo | — | — |
 | [FND-008](FND-008.md) | GUT 9.7.x, headless-запуск тестов Godot и CI-job | P0 | M | todo | — | [FND-007](FND-007.md), [FND-003](FND-003.md) |
-| [FND-009](FND-009.md) | Каркасы пакетов @hs/core, @hs/generator, @hs/validator | P0 | S | in_progress | claude-foundation-1 | [FND-001](FND-001.md) |
+| [FND-009](FND-009.md) | Каркасы пакетов @hs/core, @hs/generator, @hs/validator | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
 | [FND-010](FND-010.md) | Оркестрация разработки и проверка setup.md на чистой машине | P1 | S | todo | — | [FND-005](FND-005.md), [FND-006](FND-006.md), [FND-008](FND-008.md) |
 
 ## Фаза 2 · M2 — Core runtime (24)
