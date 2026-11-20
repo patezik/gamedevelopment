@@ -44,7 +44,7 @@ jobs:
       - id: filter
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          NODE_PATHS: '^(packages/|apps/server/|tools/|content/|\.github/workflows/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.mjs$|vitest\.config\.ts$|\.nvmrc$)'
+          NODE_PATHS: '^(packages/|apps/(server|mobile)/|tools/|content/|\.github/workflows/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.mjs$|vitest\.config\.ts$|\.nvmrc$)'
         run: |
           if [ -z "$BASE_SHA" ]; then
             echo "node=true" >> "$GITHUB_OUTPUT"

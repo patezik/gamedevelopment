@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 135 · in_progress: 1 · review: 0 · done: 4 · blocked: 0
+Всего задач: **140** · todo: 135 · in_progress: 0 · review: 1 · done: 4 · blocked: 0
 
 ## Готовы к взятию сейчас
 
@@ -43,7 +43,7 @@
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [FND-001](FND-001.md) | Корневой TypeScript-тулчейн: TS 6, ESLint 10, Prettier, Vitest 5 | P0 | M | done | claude-foundation-1 | — |
-| [FND-002](FND-002.md) | ESLint-правила детерминизма и границ импорта | P0 | S | in_progress | codex-foundation | [FND-001](FND-001.md), [FND-009](FND-009.md) |
+| [FND-002](FND-002.md) | ESLint-правила детерминизма и границ импорта | P0 | S | review | codex-foundation | [FND-001](FND-001.md), [FND-009](FND-009.md) |
 | [FND-003](FND-003.md) | CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
 | [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | done | claude-protocol-1 | [FND-001](FND-001.md) |
 | [FND-005](FND-005.md) | Каркас apps/server: Fastify 5, конфигурация, /health, логирование | P0 | M | todo | — | [FND-001](FND-001.md), [FND-004](FND-004.md) |

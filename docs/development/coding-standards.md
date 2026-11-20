@@ -27,7 +27,8 @@
 - обход коллекций, влияющих на результат, — в отсортированном по id порядке;
 - сравнения float-порогов — после `roundTo(x, 6)`.
 
-Правила проверяются ESLint (FND-002).
+ESLint проверяет вызовы `Date()` и `new Date()`, а также обращения к `Math.random`,
+`Date.now` и `performance.now`. Конструктор `new Date(value)` с заданным временем допустим.
 
 ### Границы модулей
 
@@ -35,6 +36,9 @@
 - `packages/core/src/investigation/**` не импортирует `truth`, кроме `accusation.ts`.
 - `@hs/validator` не импортирует `@hs/generator` (кроме CLI sweep).
 - Направление зависимостей модулей ядра — [modules.md](../architecture/modules.md).
+
+ESLint проверяет статические импорты мобильного приложения и модулей расследования, включая
+импорты типов и реэкспорты. Изменения в `apps/mobile` запускают эту проверку в Node CI.
 
 ## 3. GDScript (`apps/desktop`)
 
