@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "notification"
+        },
+        "notificationId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "notificationId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "incomingCall"
+        },
+        "callId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "callId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "scanResult"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "clueRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": "string",
+          "enum": [
+            "INVALID_MESSAGE",
+            "UNAUTHORIZED",
+            "PROTOCOL_MISMATCH",
+            "SESSION_NOT_FOUND",
+            "SESSION_CLOSED",
+            "SCENARIO_NOT_FOUND",
+            "PAIRING_CODE_INVALID",
+            "PAIRING_CODE_EXPIRED",
+            "PAIRING_RATE_LIMITED",
+            "DEVICE_REVOKED",
+            "ACTION_INVALID",
+            "ACTION_NOT_AVAILABLE",
+            "ACTION_BLOCKED",
+            "GAME_OVER",
+            "QR_INVALID",
+            "QR_WRONG_SESSION",
+            "QR_EXPIRED",
+            "QR_ALREADY_USED",
+            "QR_PRECONDITION_FAILED",
+            "SAVE_NOT_FOUND",
+            "SAVE_DESYNC",
+            "GENERATION_UNSOLVABLE",
+            "RATE_LIMITED",
+            "INTERNAL"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "ok"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "gameOver"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
