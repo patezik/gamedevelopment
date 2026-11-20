@@ -1,7 +1,7 @@
 ---
 id: TIME-004
 title: "ActionCostTable и resolveActionCost с модификаторами"
-status: todo
+status: in_progress
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: time
 depends_on: [TIME-001, CNT-001]
 modules: ["packages/core/src/time/action-cost.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-time-2
+claimed_at: "2026-11-20T07:53:47Z"
 ---
 
 # TIME-004 — ActionCostTable и resolveActionCost с модификаторами
