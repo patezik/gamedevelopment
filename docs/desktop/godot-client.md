@@ -31,6 +31,7 @@ apps/desktop/
 │   │   ├── envelope.gd           — сборка/разбор конверта
 │   │   └── reconnect_policy.gd   — экспоненциальная задержка
 │   ├── scenes/
+│   │   ├── bootstrap.tscn        — стартовая сцена каркаса, показывает версию клиента
 │   │   ├── main_menu/  new_game/  pairing/  exploration/  dialogue/
 │   │   ├── case_board/  accusation/  ending/  hud/  overlays/ (evidence_capture, horror_fx, phone_status)
 │   └── ui/                       — общие компоненты (кнопка действия со стоимостью, карточка улики)
