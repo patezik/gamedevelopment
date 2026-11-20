@@ -1,7 +1,7 @@
 ---
 id: PROTO-003
 title: "Генерация GDScript-констант протокола и контрактные тесты Godot"
-status: in_progress
+status: review
 priority: P0
 complexity: S
 phase: 5
@@ -52,7 +52,7 @@ Godot использует протокол без ручного копиров
 
 - [x] Файл помечен «СГЕНЕРИРОВАНО — не редактировать».
 - [x] CI падает, если .gd устарел.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
