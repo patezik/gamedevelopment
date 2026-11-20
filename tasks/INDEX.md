@@ -2,11 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 133 · in_progress: 1 · review: 1 · done: 4 · blocked: 1
+Всего задач: **140** · todo: 133 · in_progress: 0 · review: 0 · done: 6 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [FND-005](FND-005.md) — Каркас apps/server: Fastify 5, конфигурация, /health, логирование (P0, M)
+- [FND-008](FND-008.md) — GUT 9.7.x, headless-запуск тестов Godot и CI-job (P0, M)
 - [CORE-001](CORE-001.md) — Детерминированный PRNG sfc32 с подпотоками fork(label) (P0, M)
 - [CORE-002](CORE-002.md) — Канонический JSON, хеширование состояния и генерация ID (P0, S)
 - [PROTO-001](PROTO-001.md) — Каталог сообщений протокола (hello, welcome, action, event, qr, error) (P0, M)
@@ -41,12 +42,12 @@
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [FND-001](FND-001.md) | Корневой TypeScript-тулчейн: TS 6, ESLint 10, Prettier, Vitest 5 | P0 | M | done | claude-foundation-1 | — |
-| [FND-002](FND-002.md) | ESLint-правила детерминизма и границ импорта | P0 | S | review | codex-foundation | [FND-001](FND-001.md), [FND-009](FND-009.md) |
+| [FND-002](FND-002.md) | ESLint-правила детерминизма и границ импорта | P0 | S | done | codex-foundation | [FND-001](FND-001.md), [FND-009](FND-009.md) |
 | [FND-003](FND-003.md) | CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
 | [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | done | claude-protocol-1 | [FND-001](FND-001.md) |
 | [FND-005](FND-005.md) | Каркас apps/server: Fastify 5, конфигурация, /health, логирование | P0 | M | todo | — | [FND-001](FND-001.md), [FND-004](FND-004.md) |
 | [FND-006](FND-006.md) | Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | P0 | M | blocked | codex-mobile | [FND-001](FND-001.md), [FND-004](FND-004.md) |
-| [FND-007](FND-007.md) | Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) | P0 | S | in_progress | codex-desktop | — |
+| [FND-007](FND-007.md) | Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) | P0 | S | done | codex-desktop | — |
 | [FND-008](FND-008.md) | GUT 9.7.x, headless-запуск тестов Godot и CI-job | P0 | M | todo | — | [FND-007](FND-007.md), [FND-003](FND-003.md) |
 | [FND-009](FND-009.md) | Каркасы пакетов @hs/core, @hs/generator, @hs/validator | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
 | [FND-010](FND-010.md) | Оркестрация разработки и проверка setup.md на чистой машине | P1 | S | todo | — | [FND-005](FND-005.md), [FND-006](FND-006.md), [FND-008](FND-008.md) |
