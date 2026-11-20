@@ -1,7 +1,7 @@
 ---
 id: TIME-002
 title: "Scheduler: детерминированная очередь событий"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -52,8 +52,8 @@ Scheduler с тестами порядка и сериализации.
 - [x] События с одинаковым at сортируются по phase, затем priority, затем seq.
 - [x] cancel удаляет событие; повторный cancel → false.
 - [x] serialize/restore даёт идентичный порядок дальнейших popDue.
-- [ ] 100 000 schedule+pop < 200 мс.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] 100 000 schedule+pop < 200 мс.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
