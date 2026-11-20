@@ -1,7 +1,7 @@
 ---
 id: TRUTH-001
 title: "Словарь фактов (Fact) и FactId"
-status: in_progress
+status: review
 priority: P0
 complexity: S
 phase: 2
@@ -50,9 +50,9 @@ claimed_at: "2026-11-20T06:57:57Z"
 
 ## Критерии приёмки
 
-- [ ] Одинаковые факты — одинаковый FactId.
-- [ ] Pattern-матчинг покрыт тестами.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Одинаковые факты — одинаковый FactId.
+- [x] Pattern-матчинг покрыт тестами.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
