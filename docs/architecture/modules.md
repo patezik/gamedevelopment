@@ -198,8 +198,17 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     access: AccessGrant[];                  // ключи, допуски, права на локации/предметы
     routine: RoutineBlock[];                // базовое расписание
   }
-  interface Relationship { a: CharacterId; b: CharacterId; type: RelationType; valence: number; trust: number; intensity: number; history: FactId[] }
-  class RelationshipGraph { get(a, b): Relationship | undefined; neighbors(a): Relationship[]; adjust(a, b, delta, cause: EventId): void }
+  interface Relationship { readonly a: CharacterId; readonly b: CharacterId; readonly type: RelationType; readonly valence: number; readonly trust: number; readonly intensity: number; readonly history: readonly EventId[] }
+  type Scores = Pick<Relationship, 'trust' | 'valence' | 'intensity'>
+  type NewRelationship = Omit<Relationship, 'history'> & { history?: readonly EventId[] }
+  class RelationshipGraph {
+    constructor(relationships?: Iterable<NewRelationship>);
+    add(relationship: NewRelationship): void;
+    get(a: CharacterId, b: CharacterId, type?: RelationType): Relationship | undefined;
+    neighbors(a: CharacterId): Relationship[];
+    byType(type: RelationType): Relationship[];
+    adjust(a: CharacterId, b: CharacterId, delta: Partial<Scores>, cause: EventId, type?: RelationType): void;
+  }
   function whereShouldBe(c: Character, t: GameMinutes, overrides: ScheduleOverride[]): RoutineBlock;
   ```
 - **Схема и JSON:** `@hs/core/characters` экспортирует `characterSchema`,
@@ -212,6 +221,12 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   Границы задаются в минутах суток, гибкость — числом `0..1`. Для ночных блоков `to` может быть
   меньше `from`. Покрытие суток и переопределения проверяет CHAR-003.
 - **Зависимости:** `common`, `world`, `time`.
+- **Отношения:** `parent` и `child` — обратные стороны одного отношения. Симметричные
+  `sibling`, `spouse`, `romance`, `friendship`, `rivalry` и `past_conflict` доступны
+  с обеих сторон и разделяют оценки и историю. `debt`, `employment` и `blackmail` направлены.
+  `neighbors` и `byType` возвращают направленные представления. Если между парой несколько
+  отношений, `get` и `adjust` без типа выбирают первое добавленное. Доверие ограничено
+  диапазоном −1…1, валентность и интенсивность — 0…1. `adjust` записывает идентификатор события.
 - **Ошибки:** `CHAR_SCHEDULE_GAP` (дыра в расписании), `CHAR_INVALID_ACCESS`.
 - **Тесты:** расписание покрывает весь сценарий без пересечений; симметрия отношений, где
   требуется (`siblings`, `spouses`); сериализация.
