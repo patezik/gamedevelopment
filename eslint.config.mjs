@@ -73,20 +73,9 @@ export default tseslint.config(
         {
           patterns: [
             {
-              regex: '(?:^|/)truth(?:/|\\.[cm]?[jt]s$|$)',
-              allowImportNames: [
-                'factId',
-                'factSchema',
-                'matchProposition',
-                'FactId',
-                'Proposition',
-                'PropositionPattern',
-              ],
-              message: 'KnowledgeStore may only use proposition helpers and types (ADR 0005).',
-            },
-            {
-              regex: '(?:^|/)truth-model(?:\\.[cm]?[jt]s)?$',
-              message: 'KnowledgeStore must not read TruthModel (ADR 0005).',
+              regex:
+                '^(?:@hs/core/truth(?:$|/(?!facts$))|(?:\\.\\.?/)+truth(?:$|/|\\.[cm]?[jt]s$))',
+              message: 'Use @hs/core/truth/facts for propositions (ADR 0005).',
             },
           ],
         },

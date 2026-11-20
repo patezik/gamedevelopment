@@ -7,7 +7,7 @@ import {
   type FactId,
   type Proposition,
   type PropositionPattern,
-} from '../truth/index.ts';
+} from '@hs/core/truth/facts';
 
 const gameMinuteSchema = z.int();
 const beliefSchema = z.strictObject({

@@ -12,6 +12,7 @@
     "./rng": "./src/rng/index.ts",
     "./time": "./src/time/index.ts",
     "./truth": "./src/truth/index.ts",
+    "./truth/facts": "./src/truth/facts.ts",
     "./world": "./src/world/index.ts"
   },
   "dependencies": {

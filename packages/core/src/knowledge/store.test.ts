@@ -1,6 +1,13 @@
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from 'vitest';
 import { KnowledgeStore, type Belief } from '@hs/core/knowledge';
-import { factId, factSchema, type Proposition, type PropositionPattern } from '@hs/core/truth';
+import {
+  factId,
+  factSchema,
+  type Proposition,
+  type PropositionPattern,
+} from '@hs/core/truth/facts';
 
 const action = {
   kind: 'did',
@@ -266,4 +273,16 @@ test('keeps rounding and aged fuzz within safe integer bounds', () => {
 
   expect(result?.proposition).toEqual({ ...action, at: min });
   expect(result?.fuzzMinutes).toBe(max);
+});
+
+test('loads the public knowledge module in Node without loading TruthModel', () => {
+  execFileSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      "import { KnowledgeStore } from '@hs/core/knowledge'; new KnowledgeStore();",
+    ],
+    { cwd: fileURLToPath(new URL('../../', import.meta.url)), stdio: 'pipe' },
+  );
 });
