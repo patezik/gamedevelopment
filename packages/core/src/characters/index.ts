@@ -11,3 +11,4 @@ export {
   type RoutineBlock,
   type SocialStatus,
 } from './character.ts';
+export { ScheduleError, validateRoutine, whereShouldBe, type ScheduleOverride } from './schedule.ts';

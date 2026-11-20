@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 119 · in_progress: 4 · review: 0 · done: 16 · blocked: 1
+Всего задач: **140** · todo: 119 · in_progress: 3 · review: 1 · done: 16 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -58,7 +58,7 @@
 |---|---|---|---|---|---|---|
 | [CHAR-001](CHAR-001.md) | Модель персонажа: личность, биография, цели, страхи, доступы | P0 | M | done | codex-core | [CNT-001](CNT-001.md) |
 | [CHAR-002](CHAR-002.md) | Граф отношений: типы, доверие, валентность, история | P0 | S | todo | — | [CHAR-001](CHAR-001.md) |
-| [CHAR-003](CHAR-003.md) | Расписания и рутины: whereShouldBe, переопределения | P0 | M | in_progress | codex-core-1 | [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
+| [CHAR-003](CHAR-003.md) | Расписания и рутины: whereShouldBe, переопределения | P0 | M | review | codex-core-1 | [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
 | [CNT-001](CNT-001.md) | Схемы контента сценариев (zod) и загрузчик @hs/core/content | P0 | L | done | codex-core | [CORE-002](CORE-002.md) |
 | [CORE-001](CORE-001.md) | Детерминированный PRNG sfc32 с подпотоками fork(label) | P0 | M | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | done | codex-core | [FND-009](FND-009.md) |

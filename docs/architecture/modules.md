@@ -164,7 +164,9 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   }
   interface Relationship { a: CharacterId; b: CharacterId; type: RelationType; valence: number; trust: number; intensity: number; history: FactId[] }
   class RelationshipGraph { get(a, b): Relationship | undefined; neighbors(a): Relationship[]; adjust(a, b, delta, cause: EventId): void }
-  function whereShouldBe(c: Character, t: GameMinutes, overrides: ScheduleOverride[]): RoutineBlock;
+  interface ScheduleOverride { characterId: CharacterId; interval: Interval; block: RoutineBlock }
+  function validateRoutine(c: Pick<Character, "id" | "routine">): void;
+  function whereShouldBe(c: Pick<Character, "id" | "routine">, t: GameMinutes, overrides: readonly ScheduleOverride[], calendar: Calendar): RoutineBlock;
   ```
 - **Схема и JSON:** `@hs/core/characters` экспортирует `characterSchema`,
   `serializeCharacter` и `deserializeCharacter`. Схема требует все восемь черт в диапазоне
@@ -174,9 +176,13 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `AccessGrant` содержит `locationId`, `itemId` или оба. Секреты хранятся как ссылки.
 - **Рутина:** `RoutineBlock` содержит `{ from, to, location, activity, flexibility }`.
   Границы задаются в минутах суток, гибкость — числом `0..1`. Для ночных блоков `to` может быть
-  меньше `from`. Покрытие суток и переопределения проверяет CHAR-003.
+  меньше `from`. `validateRoutine` требует полного покрытия суток без пересечений.
+  `whereShouldBe` переводит минуты сценария в местное время через `Calendar`. Переопределения
+  действуют для указанного персонажа в полуоткрытом интервале игровых минут. При пересечении
+  действует последнее подходящее переопределение из списка.
 - **Зависимости:** `common`, `world`, `time`.
-- **Ошибки:** `CHAR_SCHEDULE_GAP` (дыра в расписании), `CHAR_INVALID_ACCESS`.
+- **Ошибки:** `CHAR_SCHEDULE_GAP` (дыра в расписании), `CHAR_SCHEDULE_OVERLAP` (пересечение),
+  `CHAR_INVALID_SCHEDULE` (недопустимые границы блока), `CHAR_INVALID_ACCESS`.
 - **Тесты:** расписание покрывает весь сценарий без пересечений; симметрия отношений, где
   требуется (`siblings`, `spouses`); сериализация.
 
