@@ -109,13 +109,18 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     serialize(): SchedulerState;
     static restore(state: unknown): Scheduler;
   }
-  interface PhaseHandler { phase: TickPhase; handle(e: ScheduledEvent, ctx: TickContext): void }
+  type EventRequest = Omit<ScheduledEvent, 'id' | 'phase'>
+  interface TickContext { readonly now: GameMinutes; schedule(event: EventRequest): string; cancel(id: string): boolean }
+  interface PhaseHandler { readonly phase: TickPhase; handle(e: ScheduledEvent, ctx: TickContext): void | { interrupt: string } }
   class TimeSystem {
+    constructor(calendar: Calendar, scenarioEnd: GameMinutes, start?: GameMinutes);
     now(): GameMinutes;
     advance(minutes: number, opts?: { interruptible: boolean }): AdvanceResult;
     registerHandler(kind: string, h: PhaseHandler): void;
+    schedule(event: EventRequest): string;
+    cancel(id: string): boolean;
   }
-  interface AdvanceResult { from: GameMinutes; to: GameMinutes; processed: number; interruptedAt?: GameMinutes; interruptReason?: string }
+  interface AdvanceResult { from: GameMinutes; to: GameMinutes; processed: number; events: ClockEvent[]; interruptedAt?: GameMinutes; interruptReason?: string; limit?: 'TIME_BEYOND_SCENARIO_END' }
   function resolveActionCost(action: ActionKind, ctx?: CostContext, table?: ActionCostTable): ActionCost;  // table по умолчанию — DEFAULT_ACTION_COSTS
   function createActionCostTable(overrides?: unknown): ActionCostTable;  // дефолты + переопределения пресета
   interface ActionCost { min: number; max: number; expected: number }   // целые минуты
