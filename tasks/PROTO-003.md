@@ -1,7 +1,7 @@
 ---
 id: PROTO-003
 title: "Генерация GDScript-констант протокола и контрактные тесты Godot"
-status: todo
+status: in_progress
 priority: P0
 complexity: S
 phase: 5
@@ -9,8 +9,8 @@ milestone: M5
 area: protocol
 depends_on: [PROTO-002, FND-008]
 modules: ["packages/protocol/scripts", "apps/desktop/src/net/protocol_constants.gd", "apps/desktop/tests/contract"]
-assignee: null
-claimed_at: null
+assignee: egor-claude-proto-003
+claimed_at: "2026-11-20T16:55:56Z"
 ---
 
 # PROTO-003 — Генерация GDScript-констант протокола и контрактные тесты Godot
