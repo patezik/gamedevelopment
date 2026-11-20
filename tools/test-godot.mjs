@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmdirSync, unlinkSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stripVTControlCharacters } from 'node:util';
 
 const executable = process.env.GODOT_BIN;
 if (!executable) {
@@ -12,20 +13,34 @@ if (!executable) {
 
 const project = fileURLToPath(new URL('../apps/desktop/', import.meta.url));
 const headless = ['--headless', '--path', project, '--audio-driver', 'Dummy'];
-
-function runGodot(args) {
-  const result = spawnSync(executable, [...headless, ...args], { stdio: 'inherit' });
-  if (result.error) console.error(result.error.message);
-  return result.status ?? 1;
-}
-
-const importStatus = runGodot(['--import']);
-if (importStatus !== 0) process.exit(importStatus);
-
 const directory = mkdtempSync(join(tmpdir(), 'hs-gut-'));
 const report = join(directory, 'results.xml').replaceAll('\\', '/');
-try {
-  process.exitCode = runGodot([
+const importLog = join(directory, 'import.log');
+const testLog = join(directory, 'tests.log');
+
+function runGodot(log, args) {
+  const result = spawnSync(executable, [...headless, '--log-file', log, ...args], {
+    stdio: 'inherit',
+  });
+  if (result.error) console.error(result.error.message);
+  if (result.status !== 0) return result.status ?? 1;
+
+  if (!existsSync(log)) {
+    console.error('Godot did not write its log.');
+    return 1;
+  }
+  const output = stripVTControlCharacters(readFileSync(log, 'utf8'));
+  if (/^(?:SCRIPT ERROR: (?:Parse|Compile) Error:|ERROR: Failed to load script\b)/m.test(output)) {
+    console.error('Godot could not compile or load a script.');
+    return 1;
+  }
+  return 0;
+}
+
+function runTests() {
+  const importStatus = runGodot(importLog, ['--import']);
+  if (importStatus !== 0) return importStatus;
+  const testStatus = runGodot(testLog, [
     '--script',
     'res://addons/gut/gut_cmdln.gd',
     '-gexit',
@@ -33,14 +48,19 @@ try {
     `-gjunit_xml_file=${report}`,
   ]);
   // GUT can exit with 0 before starting the suite when its imported classes are missing.
-  if (
-    process.exitCode === 0 &&
-    (!existsSync(report) || !/<testcase\b/.test(readFileSync(report, 'utf8')))
-  ) {
+  if (testStatus !== 0) return testStatus;
+  if (!existsSync(report) || !/<testcase\b/.test(readFileSync(report, 'utf8'))) {
     console.error('GUT did not report any test results.');
-    process.exitCode = 1;
+    return 1;
   }
+  return 0;
+}
+
+try {
+  process.exitCode = runTests();
 } finally {
-  if (existsSync(report)) unlinkSync(report);
+  for (const file of [importLog, testLog, report]) {
+    if (existsSync(file)) unlinkSync(file);
+  }
   rmdirSync(directory);
 }
