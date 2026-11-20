@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PERSONALITY_TRAITS } from '../common/index.ts';
 
 export const scenarioIdSchema = z.string().regex(/^_?[a-z0-9]+(?:[_-][a-z0-9]+)*$/);
 const id = z.string().regex(/^[a-z][a-z0-9_-]*$/);
@@ -108,16 +109,7 @@ export const itemsSchema = z.array(
 const range = z.tuple([share, share]).refine(([min, max]) => min <= max, {
   error: 'Upper bound must be at least lower bound',
 });
-const traits = z.enum([
-  'openness',
-  'conscientiousness',
-  'extraversion',
-  'agreeableness',
-  'neuroticism',
-  'honesty',
-  'courage',
-  'impulsivity',
-]);
+const traits = z.enum(PERSONALITY_TRAITS);
 export const archetypesSchema = z
   .array(
     z.strictObject({
