@@ -1,0 +1,88 @@
+{
+  "clock": {
+    "t": 190,
+    "day": 1,
+    "time": "11:10",
+    "period": "morning",
+    "remainingMinutes": 4130
+  },
+  "location": {
+    "id": "loc_corridor",
+    "name": "Главный коридор",
+    "description": "Длинный коридор. Часть ламп не горит, и в дальнем конце стоит полумрак.",
+    "lighting": "dim",
+    "hotspots": [
+      {
+        "id": "hs_back_door",
+        "name": "Чёрный ход",
+        "examined": true
+      }
+    ],
+    "exits": [
+      {
+        "locationId": "loc_lobby",
+        "name": "Вестибюль",
+        "minutes": 3
+      },
+      {
+        "locationId": "loc_infirmary",
+        "name": "Процедурная",
+        "minutes": 2
+      }
+    ]
+  },
+  "presentCharacters": [],
+  "availableActions": [
+    {
+      "action": {
+        "type": "examineLocation"
+      },
+      "label": "Осмотреть коридор",
+      "costPreview": {
+        "min": 15,
+        "max": 15
+      }
+    }
+  ],
+  "vitals": {
+    "health": 10,
+    "sanity": 9,
+    "fatigue": 20
+  },
+  "static": 5,
+  "inventory": [
+    {
+      "id": "it_flashlight",
+      "name": "Фонарь",
+      "description": "Тяжёлый металлический фонарь."
+    }
+  ],
+  "caseBoard": {
+    "clues": [
+      {
+        "id": "clue_footprints",
+        "title": "Следы сапог",
+        "description": "Грязные следы ведут от чёрного хода к процедурной.",
+        "kind": "physical",
+        "discoveredAt": 190,
+        "locationId": "loc_corridor",
+        "captured": false
+      }
+    ],
+    "statements": [],
+    "contradictions": [],
+    "personsOfInterest": [],
+    "suspicions": [],
+    "timeline": []
+  },
+  "pendingCapture": {
+    "tokenId": "tok_footprints_01",
+    "clueTitle": "Следы сапог",
+    "expiresInMinutes": 30
+  },
+  "phone": {
+    "paired": true,
+    "online": true,
+    "battery": 95
+  }
+}

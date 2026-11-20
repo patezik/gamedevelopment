@@ -1,7 +1,7 @@
 ---
 id: TRUTH-002
 title: "TruthLog, TruthModel и IncidentRecord"
-status: in_progress
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -48,10 +48,10 @@ TruthModel.
 
 ## Критерии приёмки
 
-- [ ] whereWas корректен на границах интервалов и в пути.
-- [ ] causalChain возвращает события в хронологическом порядке.
-- [ ] Журнал нельзя изменить после append (тест на заморозку).
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] whereWas корректен на границах интервалов и в пути.
+- [x] causalChain возвращает события в хронологическом порядке.
+- [x] Журнал нельзя изменить после append (тест на заморозку).
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
