@@ -1,7 +1,7 @@
 ---
 id: PROTO-002
 title: "Схемы PlayerView и PhoneView с фикстурами"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: protocol
 depends_on: [PROTO-001]
 modules: ["packages/protocol/src/views"]
-assignee: null
-claimed_at: null
+assignee: claude-proto-1
+claimed_at: "2026-11-20T08:24:18Z"
 ---
 
 # PROTO-002 — Схемы PlayerView и PhoneView с фикстурами

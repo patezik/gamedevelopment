@@ -1,7 +1,7 @@
 ---
 id: TRUTH-002
 title: "TruthLog, TruthModel и IncidentRecord"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2

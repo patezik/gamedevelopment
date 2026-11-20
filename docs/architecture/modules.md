@@ -96,9 +96,19 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   class Calendar { constructor(startIso: string); toDisplay(t: GameMinutes): { day: number; hh: number; mm: number; period: DayPeriod; dateIso: string }; format(t: GameMinutes): string }
-  enum TickPhase { Calendar = 0, Schedules = 1, Simulation = 2, WorldEvents = 3, Availability = 4, Timers = 5, Outcome = 6 }
-  interface ScheduledEvent<K extends string = string> { id: string; at: GameMinutes; phase: TickPhase; priority: number; kind: K; payload: unknown }
-  class Scheduler { schedule(e: Omit<ScheduledEvent, "id">): string; cancel(id: string): boolean; peek(): ScheduledEvent | undefined; popDue(t: GameMinutes): ScheduledEvent[]; serialize(): SchedulerState }
+  const TickPhase = { Calendar: 0, Schedules: 1, Simulation: 2, WorldEvents: 3, Availability: 4, Timers: 5, Outcome: 6 } as const  // + одноимённый union-тип; не enum: enum не поддерживается type stripping в Node
+  interface ScheduledEvent<K extends string = string> { readonly id: string; readonly at: GameMinutes; readonly phase: TickPhase; readonly priority: number; readonly kind: K; readonly payload: unknown }
+  class Scheduler {
+    constructor(now?: GameMinutes);                 // по умолчанию 0; для предыстории — historyStartMinutes
+    readonly now: GameMinutes; readonly size: number;
+    schedule(e: Omit<ScheduledEvent, "id">): string;
+    cancel(id: string): boolean;
+    peek(): ScheduledEvent | undefined;
+    popNext(until: GameMinutes): ScheduledEvent | undefined;   // одно ближайшее событие с at ≤ until
+    popDue(t: GameMinutes): ScheduledEvent[];                  // все события с at ≤ t, затем now = t
+    serialize(): SchedulerState;
+    static restore(state: unknown): Scheduler;
+  }
   interface PhaseHandler { phase: TickPhase; handle(e: ScheduledEvent, ctx: TickContext): void }
   class TimeSystem {
     now(): GameMinutes;
@@ -106,14 +116,21 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     registerHandler(kind: string, h: PhaseHandler): void;
   }
   interface AdvanceResult { from: GameMinutes; to: GameMinutes; processed: number; interruptedAt?: GameMinutes; interruptReason?: string }
-  function resolveActionCost(action: ActionKind, ctx: CostContext, table: ActionCostTable): ActionCost;
+  function resolveActionCost(action: ActionKind, ctx?: CostContext, table?: ActionCostTable): ActionCost;  // table по умолчанию — DEFAULT_ACTION_COSTS
+  function createActionCostTable(overrides?: unknown): ActionCostTable;  // дефолты + переопределения пресета
+  interface ActionCost { min: number; max: number; expected: number }   // целые минуты
+  interface CostModifier { id: string; order: number; apply(minutes: number, action: ActionKind, ctx: CostContext): number }
+  interface TravelTimeProvider { travelTime(from: string, to: string): number | null }  // LocationGraph подходит структурно
+  interface CostContext { travel?: { provider: TravelTimeProvider; from: string; to: string }; minutes?: number; conversationMinutes?: number; modifiers?: CostModifier[] }
   ```
 - **Вход/выход:** стоимость действия в минутах → обработанные события и новое время.
 - **Зависимости:** `rng` (только для вариативных стоимостей), `common`.
 - **События (DomainEvent):** `ClockAdvanced`, `PeriodChanged`, `DayChanged`, `DeadlineReached`,
   `ScheduledEventMissed`.
 - **Ошибки:** `TIME_NEGATIVE_ADVANCE`, `TIME_BEYOND_SCENARIO_END` (усекается до конца с исходом),
-  `SCHEDULER_PAST_EVENT` (планирование в прошлое).
+  `ACTION_INVALID` (неизвестное или неприменимое действие), `COST_TABLE_INVALID` (неверная таблица
+  стоимостей пресета), `SCHEDULER_PAST_EVENT` (планирование в прошлое), `SCHEDULER_INVALID_STATE` (повреждённый снимок
+  при `Scheduler.restore`).
 - **Тесты:** порядок одновременных событий; переходы часов/дней/периодов; прерывания;
   сериализация/восстановление; сценарии разной длительности (property-тест).
 
