@@ -1,7 +1,7 @@
 ---
 id: TRUTH-001
 title: "Словарь фактов (Fact) и FactId"
-status: review
+status: done
 priority: P0
 complexity: S
 phase: 2
