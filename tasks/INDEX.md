@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 113 · in_progress: 2 · review: 1 · done: 23 · blocked: 1
+Всего задач: **140** · todo: 113 · in_progress: 1 · review: 1 · done: 24 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -228,4 +228,4 @@
 | [REL-001](REL-001.md) | Экспорт Godot (Windows, Linux, macOS) и артефакты CI | P1 | M | todo | — | [INT-005](INT-005.md) |
 | [REL-002](REL-002.md) | Сборка companion-приложения для магазинов (EAS Build/Submit) | P1 | M | todo | — | [INT-007](INT-007.md) |
 | [REL-003](REL-003.md) | Политика приватности и тексты разрешений | P1 | S | todo | — | [MOB-004](MOB-004.md) |
-| [REL-004](REL-004.md) | Версионирование, CHANGELOG и релизный процесс | P2 | S | in_progress | codex-small-1 | [FND-003](FND-003.md) |
+| [REL-004](REL-004.md) | Версионирование, CHANGELOG и релизный процесс | P2 | S | done | codex-small-1 | [FND-003](FND-003.md) |
