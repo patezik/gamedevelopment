@@ -6,3 +6,12 @@ export {
   type DayPeriod,
   type GameMinutes,
 } from './calendar.ts';
+export {
+  Scheduler,
+  SchedulerError,
+  TickPhase,
+  type ScheduledEvent,
+  type SchedulerErrorCode,
+  type SchedulerState,
+  type SerializedEvent,
+} from './scheduler.ts';

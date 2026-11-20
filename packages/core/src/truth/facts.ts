@@ -15,7 +15,12 @@ export const entityRefSchema = z.strictObject({
 export const verbSchema = z.string().regex(/^[a-z][a-z0-9_]*$/);
 export const factIdSchema = z.string().regex(/^f_[a-f0-9]{16}$/);
 export const factSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('at'), who: idSchema, where: idSchema, interval: intervalSchema }),
+  z.strictObject({
+    kind: z.literal('at'),
+    who: idSchema,
+    where: idSchema,
+    interval: intervalSchema,
+  }),
   z.strictObject({
     kind: z.literal('did'),
     who: idSchema,
@@ -24,7 +29,12 @@ export const factSchema = z.discriminatedUnion('kind', [
     at: minuteSchema,
     where: idSchema,
   }),
-  z.strictObject({ kind: z.literal('possessed'), who: idSchema, item: idSchema, interval: intervalSchema }),
+  z.strictObject({
+    kind: z.literal('possessed'),
+    who: idSchema,
+    item: idSchema,
+    interval: intervalSchema,
+  }),
   z.strictObject({
     kind: z.literal('relation'),
     a: idSchema,
@@ -72,7 +82,9 @@ export function factId(fact: Fact): FactId {
 }
 
 function isVariable(value: unknown): value is Variable {
-  return typeof value === 'object' && value !== null && 'var' in value && typeof value.var === 'string';
+  return (
+    typeof value === 'object' && value !== null && 'var' in value && typeof value.var === 'string'
+  );
 }
 
 export function matchProposition(
@@ -89,7 +101,10 @@ export function matchProposition(
     if (actual === undefined) return null;
 
     if (isVariable(expected)) {
-      if (bindings.has(expected.var) && canonicalJson(bindings.get(expected.var)) !== canonicalJson(actual)) {
+      if (
+        bindings.has(expected.var) &&
+        canonicalJson(bindings.get(expected.var)) !== canonicalJson(actual)
+      ) {
         return null;
       }
       bindings.set(expected.var, actual);
