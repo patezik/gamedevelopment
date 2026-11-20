@@ -1,7 +1,7 @@
 ---
 id: CORE-002
 title: "Канонический JSON, хеширование состояния и генерация ID"
-status: review
+status: done
 priority: P0
 complexity: S
 phase: 2

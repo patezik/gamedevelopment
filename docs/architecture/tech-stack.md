@@ -19,7 +19,7 @@
 
 | Пакет | Версия | Лицензия | Используется в | Зачем |
 |-------|--------|----------|----------------|-------|
-| fastify | 5.12.x | MIT | server | HTTP, валидация, `inject` для тестов |
+| fastify | 5.12.x (5.12.8 в lockfile) | MIT | server | HTTP, валидация, `inject` для тестов |
 | @fastify/websocket | 11.3.x | MIT | server | WebSocket-эндпоинт поверх ws |
 | ws | 8.22.x | MIT | server, tools | WebSocket (сервер и тестовые клиенты) |
 | zod | 4.6.x | MIT | protocol, core, server, mobile | Схемы, вывод типов, JSON Schema |
@@ -28,7 +28,7 @@
 | vitest | 5.0.x | MIT | все TS-пакеты кроме mobile | Unit/integration тесты |
 | @vitest/coverage-v8 | 5.0.x | MIT | все TS-пакеты кроме mobile | Покрытие и пороги в CI |
 | fast-check | 4.10.x (4.10.3 в lockfile) | MIT | core, generator, validator | Property-based тесты инвариантов |
-| tsx | 4.23.x | MIT | server, tools | Запуск TS в разработке |
+| tsx | 4.23.x (4.23.15 в lockfile) | MIT | server, tools | Запуск TS в разработке |
 | eslint | 10.x | MIT | все | Линтинг, правила детерминизма |
 | typescript-eslint | 8.72.x | MIT | все | TS-правила |
 | prettier | 3.9.x | MIT | все | Форматирование |
