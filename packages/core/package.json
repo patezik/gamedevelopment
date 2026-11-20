@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./common": "./src/common/index.ts",
     "./rng": "./src/rng/index.ts"
   },
   "dependencies": {

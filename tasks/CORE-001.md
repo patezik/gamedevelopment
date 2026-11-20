@@ -1,7 +1,7 @@
 ---
 id: CORE-001
 title: "Детерминированный PRNG sfc32 с подпотоками fork(label)"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2

@@ -1,7 +1,7 @@
 ---
 id: TIME-001
 title: "GameMinutes и Calendar: дни, часы, периоды суток"
-status: todo
+status: in_progress
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: time
 depends_on: [FND-009]
 modules: ["packages/core/src/time/calendar.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-time-1
+claimed_at: "2026-11-20T05:23:40Z"
 ---
 
 # TIME-001 — GameMinutes и Calendar: дни, часы, периоды суток
