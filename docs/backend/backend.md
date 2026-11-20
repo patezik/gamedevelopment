@@ -38,6 +38,7 @@ apps/server/src/
 |------------|--------------|---------------------|
 | `HS_PORT` | `7420` | Целое от 1 до 65535 |
 | `HS_HOST` | `0.0.0.0` | Непустой адрес привязки или имя хоста |
+| `HS_PUBLIC_HOST` | не задан | IPv4-адрес или имя хоста без порта (символы `A–Z a–z 0–9 . -`); отменяет определение LAN-адреса для QR |
 | `HS_DATA_DIR` | `.hollow-signal` в домашнем каталоге | Непустой путь к каталогу данных |
 | `HS_LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent` |
 | `HS_DEBUG_TRUTH` | `0` | `0` выключает флаг, `1` включает |
@@ -51,7 +52,7 @@ apps/server/src/
 |--------------|----------------|--------------|--------|
 | `GET /health` | — | `{ status, version, protocolVersion }` | — |
 | `GET /scenarios` | — | `[{ id, title, durationMinutes }]` | — |
-| `GET /network` | — | `{ candidates: [{ address, interface, recommended }] }` — LAN-адреса для QR привязки | — |
+| `GET /network` | — | `{ candidates: [{ address, interface, recommended, virtual }] }` — LAN-адреса для QR привязки, лучшие первыми; `virtual` — похож на Docker/WSL/VM/VPN (остаётся в списке, но ниже); `recommended` — не более одного; `HS_PUBLIC_HOST` идёт первым. Подробности — [setup.md §6](../development/setup.md) | — |
 | `POST /sessions` | — | `{ scenarioId, seed? }` → `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }` | `SCENARIO_NOT_FOUND`, `GENERATION_UNSOLVABLE` |
 | `POST /sessions/:id/pairing-code` | desktop | → новый `pairing` | `SESSION_NOT_FOUND` |
 | `GET /sessions/:id/pairing-qr` | desktop | → `{ size, modules }` | |
