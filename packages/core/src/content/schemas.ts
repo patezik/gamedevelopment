@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isCalendarStartIso } from '../time/index.ts';
 
 export const scenarioIdSchema = z.string().regex(/^_?[a-z0-9]+(?:[_-][a-z0-9]+)*$/);
 const id = z.string().regex(/^[a-z][a-z0-9_-]*$/);
@@ -15,8 +16,8 @@ export const presetSchema = z.strictObject({
   version: z.int().positive(),
   title: z.record(z.string().min(1), text).refine((title) => Object.keys(title).length > 0),
   time: z.strictObject({
-    startDateTime: z.iso.datetime({ local: true }).refine((value) => !value.endsWith('Z'), {
-      error: 'Expected a local date and time without a time zone',
+    startDateTime: z.string().refine(isCalendarStartIso, {
+      error: 'Expected a valid local date and time in YYYY-MM-DDTHH:mm[:00] format',
     }),
     durationMinutes: positiveMinutes,
     historyStartMinutes: z.int().max(0),

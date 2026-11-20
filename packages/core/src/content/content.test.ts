@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from 'vitest';
+import { Calendar } from '@hs/core/time';
 import {
   archetypesSchema,
   crimesSchema,
@@ -69,13 +70,33 @@ test.each([
   expect(schema.safeParse(bad).success).toBe(false);
 });
 
-test('rejects a zone suffix and an invalid calendar date', () => {
-  for (const startDateTime of ['2026-01-14T08:00:00Z', '2026-02-30T08:00:00']) {
-    expect(
-      presetSchema.safeParse({ ...valid.preset, time: { ...valid.preset.time, startDateTime } })
-        .success,
-    ).toBe(false);
-  }
+test.each(['2026-01-14T08:00', '2026-01-14T08:00:00', '2024-02-29T08:00'])(
+  'passes the validated preset start %s directly to Calendar',
+  (startDateTime) => {
+    const preset = presetSchema.parse({
+      ...valid.preset,
+      time: { ...valid.preset.time, startDateTime },
+    });
+    expect(new Calendar(preset.time.startDateTime).toDisplay(0)).toMatchObject({
+      day: 1,
+      hh: 8,
+      mm: 0,
+    });
+  },
+);
+
+test.each([
+  '2026-01-14T08:00:00Z',
+  '2026-01-14T08:00:00+03:00',
+  '2026-02-30T08:00:00',
+  '2026-01-14T08:00:30',
+  '2026-01-14T08:00:00.000',
+])('rejects %s at both entry points', (startDateTime) => {
+  expect(
+    presetSchema.safeParse({ ...valid.preset, time: { ...valid.preset.time, startDateTime } })
+      .success,
+  ).toBe(false);
+  expect(() => new Calendar(startDateTime)).toThrow(RangeError);
 });
 
 test('finds broken location, item and archetype references and missing trace rules', () => {
