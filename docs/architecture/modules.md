@@ -46,6 +46,11 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Назначение:** PRNG `sfc32`, хеширование seed, подпотоки ([ADR 0004](adr/0004-determinism.md)).
 - **Интерфейс:**
   ```ts
+  interface RngState {
+    readonly seed: string;
+    readonly path: readonly string[];
+    readonly words: readonly [number, number, number, number];
+  }
   interface Rng {
     nextU32(): number; float(): number;                 // [0, 1)
     int(minIncl: number, maxIncl: number): number;
@@ -59,8 +64,15 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   function createRng(seed: string): Rng;
   function restoreRng(state: RngState): Rng;
   ```
-- **Вход/выход:** строковый seed → поток чисел. **Зависимости:** нет.
-- **Ошибки:** `RangeError` при пустом списке / неположительных весах.
+- **Вход/выход:** строковый seed → поток чисел. Начальное состояние вычисляется через `cyrb128`
+  от JSON-массива `[seed, ...path]`, где `path` — метки вызовов `fork`. Первые 12 шагов
+  [sfc32](https://github.com/bryc/code/blob/master/jshash/PRNGs.md#sfc32) прогревают состояние.
+  `fork` зависит только от seed и пути, а `restoreRng` продолжает сохранённый поток с текущего
+  состояния. **Зависимости:** нет.
+- **Границы:** `int` включает обе границы и принимает безопасные целые. `shuffle` возвращает
+  копию, в том числе для пустого массива.
+- **Ошибки:** `RangeError` при неверных границах, вероятности вне `[0, 1]`, пустом списке для
+  `pick` или `weighted`, неположительном или бесконечном весе, либо неверном состоянии.
 - **Тесты:** golden-значения первых 10 чисел для фиксированных seed; независимость `fork`;
   восстановление из `state`; равномерность (χ², 10⁵ выборок).
 
