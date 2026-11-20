@@ -109,21 +109,32 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     serialize(): SchedulerState;
     static restore(state: unknown): Scheduler;
   }
-  interface PhaseHandler { phase: TickPhase; handle(e: ScheduledEvent, ctx: TickContext): void }
+  type EventRequest = Omit<ScheduledEvent, 'id' | 'phase'>
+  interface TickContext { readonly now: GameMinutes; schedule(event: EventRequest): string; cancel(id: string): boolean }
+  interface PhaseHandler { readonly phase: TickPhase; handle(e: ScheduledEvent, ctx: TickContext): void | { interrupt: string } }
   class TimeSystem {
+    constructor(calendar: Calendar, scenarioEnd: GameMinutes, start?: GameMinutes);
     now(): GameMinutes;
     advance(minutes: number, opts?: { interruptible: boolean }): AdvanceResult;
     registerHandler(kind: string, h: PhaseHandler): void;
+    schedule(event: EventRequest): string;
+    cancel(id: string): boolean;
   }
-  interface AdvanceResult { from: GameMinutes; to: GameMinutes; processed: number; interruptedAt?: GameMinutes; interruptReason?: string }
-  function resolveActionCost(action: ActionKind, ctx: CostContext, table: ActionCostTable): ActionCost;
+  interface AdvanceResult { from: GameMinutes; to: GameMinutes; processed: number; events: ClockEvent[]; interruptedAt?: GameMinutes; interruptReason?: string; limit?: 'TIME_BEYOND_SCENARIO_END' }
+  function resolveActionCost(action: ActionKind, ctx?: CostContext, table?: ActionCostTable): ActionCost;  // table по умолчанию — DEFAULT_ACTION_COSTS
+  function createActionCostTable(overrides?: unknown): ActionCostTable;  // дефолты + переопределения пресета
+  interface ActionCost { min: number; max: number; expected: number }   // целые минуты
+  interface CostModifier { id: string; order: number; apply(minutes: number, action: ActionKind, ctx: CostContext): number }
+  interface TravelTimeProvider { travelTime(from: string, to: string): number | null }  // LocationGraph подходит структурно
+  interface CostContext { travel?: { provider: TravelTimeProvider; from: string; to: string }; minutes?: number; conversationMinutes?: number; modifiers?: CostModifier[] }
   ```
 - **Вход/выход:** стоимость действия в минутах → обработанные события и новое время.
 - **Зависимости:** `rng` (только для вариативных стоимостей), `common`.
 - **События (DomainEvent):** `ClockAdvanced`, `PeriodChanged`, `DayChanged`, `DeadlineReached`,
   `ScheduledEventMissed`.
 - **Ошибки:** `TIME_NEGATIVE_ADVANCE`, `TIME_BEYOND_SCENARIO_END` (усекается до конца с исходом),
-  `SCHEDULER_PAST_EVENT` (планирование в прошлое), `SCHEDULER_INVALID_STATE` (повреждённый снимок
+  `ACTION_INVALID` (неизвестное или неприменимое действие), `COST_TABLE_INVALID` (неверная таблица
+  стоимостей пресета), `SCHEDULER_PAST_EVENT` (планирование в прошлое), `SCHEDULER_INVALID_STATE` (повреждённый снимок
   при `Scheduler.restore`).
 - **Тесты:** порядок одновременных событий; переходы часов/дней/периодов; прерывания;
   сериализация/восстановление; сценарии разной длительности (property-тест).
@@ -142,8 +153,16 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     isAccessible(loc, who: Actor, t: GameMinutes): AccessCheck;
     lightingAt(loc, period: DayPeriod): Light;
   }
-  interface Item { id: ItemId; kind: string; tags: string[]; ownerId?: CharacterId; container?: ItemId }
-  class ItemRegistry { locate(id: ItemId, t: GameMinutes): ItemPlacement; move(id, to, t, cause: EventId): void }
+  interface Item { id: ItemId; kind: string; tags: readonly string[] }
+  type ItemPlacement = { kind: "location"; id: LocationId }
+    | { kind: "character"; id: CharacterId } | { kind: "container"; id: ItemId };
+  interface ItemMove { t: GameMinutes; to: ItemPlacement; cause: EventId }
+  class ItemRegistry {
+    get(id: ItemId): Item;
+    locate(id: ItemId, t: GameMinutes): ItemPlacement;
+    move(id: ItemId, to: ItemPlacement, t: GameMinutes, cause: EventId): void;
+    history(id: ItemId): readonly ItemMove[];
+  }
   ```
 - **Маршруты:** граф строится из загруженного пресета. Связи направленные. Маршрут включает обе
   конечные точки, а его стоимость — сумму минут переходов. При равенстве выбирается меньший
@@ -155,6 +174,12 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `from > to` пересекает полночь. При отказе возвращается причина из первого правила.
 - **Нет маршрута:** `travelTime` возвращает `null`, `path` выдаёт `WORLD_NO_PATH`.
   Неизвестный идентификатор локации даёт `WORLD_UNKNOWN_LOCATION`.
+- **Предметы:** реестр начинает работу с заданной игровой минуты (по умолчанию `0`). Для каждого
+  предмета из контента требуется ровно одно начальное размещение. Выбор персонажа по `ownerArchetype`
+  передаёт вызывающий код как соответствие архетипа и идентификатора персонажа. `locate` возвращает
+  непосредственное положение, в том числе ссылку на контейнер, положение которого можно запросить
+  на ту же минуту. `history` хранит только перемещения с указанием причины. Перемещения добавляются
+  в хронологическом порядке, внутри одной минуты побеждает последнее принятое перемещение.
 - **Зависимости:** `common`, `time` (периоды суток).
 - **События:** `LocationAvailabilityChanged`, `ItemMoved`.
 - **Ошибки:** `WORLD_UNKNOWN_LOCATION`, `WORLD_NO_PATH`, `WORLD_ACCESS_DENIED`.

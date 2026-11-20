@@ -1,7 +1,7 @@
 ---
 id: CHAR-002
 title: "Граф отношений: типы, доверие, валентность, история"
-status: review
+status: done
 priority: P0
 complexity: S
 phase: 2
