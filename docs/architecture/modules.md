@@ -125,10 +125,25 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   ```ts
   interface Location { id: LocationId; name: string; tags: string[]; lighting: Record<DayPeriod, Light>; access: AccessRule[]; hotspots: HotspotDef[] }
   interface Connection { from: LocationId; to: LocationId; minutes: number; locked?: LockDef }
-  class LocationGraph { travelTime(a, b): number | null; path(a, b): LocationId[]; isAccessible(loc, who: Actor, t): AccessCheck }
+  class LocationGraph {
+    travelTime(a, b, who?: Actor): number | null;
+    path(a, b, who?: Actor): LocationId[];
+    isAccessible(loc, who: Actor, t: GameMinutes): AccessCheck;
+    lightingAt(loc, period: DayPeriod): Light;
+  }
   interface Item { id: ItemId; kind: string; tags: string[]; ownerId?: CharacterId; container?: ItemId }
   class ItemRegistry { locate(id: ItemId, t: GameMinutes): ItemPlacement; move(id, to, t, cause: EventId): void }
   ```
+- **Маршруты:** граф строится из загруженного пресета. Связи направленные. Маршрут включает обе
+  конечные точки, а его стоимость — сумму минут переходов. При равенстве выбирается меньший
+  идентификатор предшественника. Замок пропускает только носителя нужного ключа. Замок без
+  указанного ключа закрыт, а при отсутствии актёра маршрут строится для пустого набора ключей.
+- **Доступ к локации:** проверяется отдельно через `isAccessible` в заданную игровую минуту.
+  Внутри правила должны выполняться все условия, из списка правил достаточно одного.
+  Пустой список открывает доступ всем. Интервал включает начало и исключает конец, а при
+  `from > to` пересекает полночь. При отказе возвращается причина из первого правила.
+- **Нет маршрута:** `travelTime` возвращает `null`, `path` выдаёт `WORLD_NO_PATH`.
+  Неизвестный идентификатор локации даёт `WORLD_UNKNOWN_LOCATION`.
 - **Зависимости:** `common`, `time` (периоды суток).
 - **События:** `LocationAvailabilityChanged`, `ItemMoved`.
 - **Ошибки:** `WORLD_UNKNOWN_LOCATION`, `WORLD_NO_PATH`, `WORLD_ACCESS_DENIED`.

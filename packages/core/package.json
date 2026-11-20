@@ -9,7 +9,8 @@
     "./common": "./src/common/index.ts",
     "./content": "./src/content/index.ts",
     "./rng": "./src/rng/index.ts",
-    "./time": "./src/time/index.ts"
+    "./time": "./src/time/index.ts",
+    "./world": "./src/world/index.ts"
   },
   "dependencies": {
     "zod": "~4.6.7"

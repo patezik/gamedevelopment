@@ -2,13 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 123 · in_progress: 4 · review: 0 · done: 12 · blocked: 1
+Всего задач: **140** · todo: 123 · in_progress: 3 · review: 0 · done: 13 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [CHAR-002](CHAR-002.md) — Граф отношений: типы, доверие, валентность, история (P0, S)
+- [CHAR-003](CHAR-003.md) — Расписания и рутины: whereShouldBe, переопределения (P0, M)
 - [TIME-002](TIME-002.md) — Scheduler: детерминированная очередь событий (P0, M)
 - [TIME-004](TIME-004.md) — ActionCostTable и resolveActionCost с модификаторами (P0, S)
+- [TRUTH-001](TRUTH-001.md) — Словарь фактов (Fact) и FactId (P0, S)
+- [WORLD-002](WORLD-002.md) — Предметы, контейнеры и история их перемещений (P0, S)
 - [CNT-002](CNT-002.md) — MVP-сценарий: локации, предметы, архетипы, отношения (данные) (P0, L)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
 
@@ -16,7 +19,7 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[WORLD-001](WORLD-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -76,7 +79,7 @@
 | [TRUTH-001](TRUTH-001.md) | Словарь фактов (Fact) и FactId | P0 | S | todo | — | [CORE-002](CORE-002.md), [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
 | [TRUTH-002](TRUTH-002.md) | TruthLog, TruthModel и IncidentRecord | P0 | M | todo | — | [TRUTH-001](TRUTH-001.md) |
 | [TRUTH-003](TRUTH-003.md) | Проверка инвариантов Truth Model | P0 | S | todo | — | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
-| [WORLD-001](WORLD-001.md) | Граф локаций: перемещения, освещение, доступ по часам и замкам | P0 | M | in_progress | codex-core | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
+| [WORLD-001](WORLD-001.md) | Граф локаций: перемещения, освещение, доступ по часам и замкам | P0 | M | done | codex-core | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [WORLD-002](WORLD-002.md) | Предметы, контейнеры и история их перемещений | P0 | S | todo | — | [WORLD-001](WORLD-001.md) |
 
 ## Фаза 3 · M3 — Generator produces worlds (12)
