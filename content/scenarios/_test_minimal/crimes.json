@@ -1,0 +1,23 @@
+[
+  {
+    "id": "missing_record",
+    "incidentType": "theft",
+    "requires": {
+      "means": {
+        "itemTag": "record",
+        "itemId": "it_log"
+      },
+      "minWindowMinutes": 5,
+      "locationTags": ["archive"],
+      "traits": {}
+    },
+    "plan": [
+      {
+        "step": "take_record",
+        "verb": "take",
+        "target": "$means",
+        "duration": 5
+      }
+    ]
+  }
+]

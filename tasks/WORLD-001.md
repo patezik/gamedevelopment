@@ -1,7 +1,7 @@
 ---
 id: WORLD-001
 title: "Граф локаций: перемещения, освещение, доступ по часам и замкам"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: world
 depends_on: [TIME-001, CNT-001]
 modules: ["packages/core/src/world/locations.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-core
+claimed_at: "2026-11-20T06:32:14Z"
 ---
 
 # WORLD-001 — Граф локаций: перемещения, освещение, доступ по часам и замкам
@@ -49,10 +49,10 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Путь детерминирован при равных стоимостях.
-- [ ] Запертая связь непроходима без ключа.
-- [ ] Тесты на _test_minimal.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Путь детерминирован при равных стоимостях.
+- [x] Запертая связь непроходима без ключа.
+- [x] Тесты на _test_minimal.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

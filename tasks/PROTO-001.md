@@ -1,7 +1,7 @@
 ---
 id: PROTO-001
 title: "Каталог сообщений протокола (hello, welcome, action, event, qr, error)"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: protocol
 depends_on: [FND-004]
 modules: ["packages/protocol/src/messages"]
-assignee: null
-claimed_at: null
+assignee: codex-core
+claimed_at: "2026-11-20T06:00:58Z"
 ---
 
 # PROTO-001 — Каталог сообщений протокола (hello, welcome, action, event, qr, error)
@@ -48,10 +48,10 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Каждое сообщение имеет фикстуру, проходящую схему.
-- [ ] Ролевая таблица экспортируется как данные.
-- [ ] JSON Schema регенерирована.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Каждое сообщение имеет фикстуру, проходящую схему.
+- [x] Ролевая таблица экспортируется как данные.
+- [x] JSON Schema регенерирована.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

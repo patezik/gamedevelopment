@@ -43,7 +43,7 @@ npm run docs:check          # проверка ссылок документац
 | `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | сейчас |
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
 | `npm run protocol:gen` / `protocol:check` | регенерация схем и GDScript-констант | после FND-004, PROTO-003 |
-| `npm run content:check` | валидация данных сценариев | после CNT-001 |
+| `npm run content:check` | валидация данных сценариев и ссылок между файлами | сейчас |
 
 ## 4. Godot
 

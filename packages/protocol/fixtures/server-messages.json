@@ -1,0 +1,87 @@
+[
+  {
+    "v": 1,
+    "type": "welcome",
+    "id": "s-1",
+    "payload": {
+      "sessionId": "session-1",
+      "role": "phone",
+      "protocolVersion": 1,
+      "serverVersion": "0.1.0",
+      "stateVersion": 1,
+      "lastSeq": 2
+    }
+  },
+  {
+    "v": 1,
+    "type": "pong",
+    "id": "s-2",
+    "payload": {}
+  },
+  {
+    "v": 1,
+    "type": "view.update",
+    "id": "s-3",
+    "payload": {
+      "stateVersion": 2,
+      "view": {}
+    }
+  },
+  {
+    "v": 1,
+    "type": "event",
+    "id": "s-4",
+    "payload": {
+      "event": {
+        "type": "incomingCall",
+        "callId": "call-1"
+      }
+    }
+  },
+  {
+    "v": 1,
+    "type": "action.result",
+    "id": "s-5",
+    "payload": {
+      "requestId": "c-3",
+      "ok": true,
+      "minutesSpent": 5
+    }
+  },
+  {
+    "v": 1,
+    "type": "qr.result",
+    "id": "s-6",
+    "payload": {
+      "ok": false,
+      "error": "QR_EXPIRED"
+    }
+  },
+  {
+    "v": 1,
+    "type": "resync",
+    "id": "s-7",
+    "payload": {
+      "reason": "buffer_miss"
+    }
+  },
+  {
+    "v": 1,
+    "type": "error",
+    "id": "s-8",
+    "payload": {
+      "code": "INVALID_MESSAGE",
+      "message": "Invalid message",
+      "requestId": "c-3"
+    }
+  },
+  {
+    "v": 1,
+    "type": "peer.status",
+    "id": "s-9",
+    "payload": {
+      "desktop": "online",
+      "phone": "unpaired"
+    }
+  }
+]
