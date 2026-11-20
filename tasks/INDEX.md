@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 120 · in_progress: 3 · review: 0 · done: 16 · blocked: 1
+Всего задач: **140** · todo: 119 · in_progress: 4 · review: 0 · done: 16 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -11,7 +11,6 @@
 - [PROTO-002](PROTO-002.md) — Схемы PlayerView и PhoneView с фикстурами (P0, M)
 - [TIME-002](TIME-002.md) — Scheduler: детерминированная очередь событий (P0, M)
 - [TIME-004](TIME-004.md) — ActionCostTable и resolveActionCost с модификаторами (P0, S)
-- [TRUTH-002](TRUTH-002.md) — TruthLog, TruthModel и IncidentRecord (P0, M)
 - [CNT-002](CNT-002.md) — MVP-сценарий: локации, предметы, архетипы, отношения (данные) (P0, L)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
 
@@ -77,7 +76,7 @@
 | [TIME-003](TIME-003.md) | TimeSystem.advance: фазы обработки, прерывания, события часов | P0 | M | todo | — | [TIME-002](TIME-002.md) |
 | [TIME-004](TIME-004.md) | ActionCostTable и resolveActionCost с модификаторами | P0 | S | todo | — | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [TRUTH-001](TRUTH-001.md) | Словарь фактов (Fact) и FactId | P0 | S | done | codex-core-1 | [CORE-002](CORE-002.md), [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
-| [TRUTH-002](TRUTH-002.md) | TruthLog, TruthModel и IncidentRecord | P0 | M | todo | — | [TRUTH-001](TRUTH-001.md) |
+| [TRUTH-002](TRUTH-002.md) | TruthLog, TruthModel и IncidentRecord | P0 | M | in_progress | codex-core-1 | [TRUTH-001](TRUTH-001.md) |
 | [TRUTH-003](TRUTH-003.md) | Проверка инвариантов Truth Model | P0 | S | todo | — | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
 | [WORLD-001](WORLD-001.md) | Граф локаций: перемещения, освещение, доступ по часам и замкам | P0 | M | done | codex-core | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [WORLD-002](WORLD-002.md) | Предметы, контейнеры и история их перемещений | P0 | S | in_progress | codex-core-1 | [WORLD-001](WORLD-001.md) |

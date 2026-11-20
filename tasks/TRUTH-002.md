@@ -1,7 +1,7 @@
 ---
 id: TRUTH-002
 title: "TruthLog, TruthModel и IncidentRecord"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: truth
 depends_on: [TRUTH-001]
 modules: ["packages/core/src/truth/truth-model.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-core-1
+claimed_at: "2026-11-20T07:13:03Z"
 ---
 
 # TRUTH-002 — TruthLog, TruthModel и IncidentRecord
