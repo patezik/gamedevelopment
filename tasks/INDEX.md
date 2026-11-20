@@ -2,10 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 128 · in_progress: 4 · review: 0 · done: 7 · blocked: 1
+Всего задач: **140** · todo: 128 · in_progress: 3 · review: 0 · done: 8 · blocked: 1
 
 ## Готовы к взятию сейчас
 
+- [CNT-001](CNT-001.md) — Схемы контента сценариев (zod) и загрузчик @hs/core/content (P0, L)
 - [PROTO-001](PROTO-001.md) — Каталог сообщений протокола (hello, welcome, action, event, qr, error) (P0, M)
 - [SRV-008](SRV-008.md) — Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам (P0, S)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
@@ -14,7 +15,7 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[CORE-002](CORE-002.md) → [CNT-001](CNT-001.md) → [CHAR-001](CHAR-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[CNT-001](CNT-001.md) → [CHAR-001](CHAR-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -57,7 +58,7 @@
 | [CHAR-003](CHAR-003.md) | Расписания и рутины: whereShouldBe, переопределения | P0 | M | todo | — | [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
 | [CNT-001](CNT-001.md) | Схемы контента сценариев (zod) и загрузчик @hs/core/content | P0 | L | todo | — | [CORE-002](CORE-002.md) |
 | [CORE-001](CORE-001.md) | Детерминированный PRNG sfc32 с подпотоками fork(label) | P0 | M | in_progress | codex-core | [FND-009](FND-009.md) |
-| [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | in_progress | codex-core | [FND-009](FND-009.md) |
+| [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-003](CORE-003.md) | Тип Investigation и fixture-builder мини-сценария «tiny-manor» | P0 | M | todo | — | [TRUTH-002](TRUTH-002.md), [CHAR-003](CHAR-003.md), [WORLD-002](WORLD-002.md) |
 | [ENG-001](ENG-001.md) | GameEngine: агрегат состояния, dispatch, действия move и wait | P0 | M | todo | — | [TIME-003](TIME-003.md), [TIME-004](TIME-004.md), [WORLD-001](WORLD-001.md), [TRUTH-002](TRUTH-002.md), [CORE-003](CORE-003.md) |
 | [ENG-002](ENG-002.md) | Проекция PlayerView и тест отсутствия утечек истины | P0 | M | todo | — | [ENG-001](ENG-001.md), [PROTO-002](PROTO-002.md) |
