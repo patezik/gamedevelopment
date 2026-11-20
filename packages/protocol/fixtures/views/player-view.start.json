@@ -1,0 +1,154 @@
+{
+  "clock": {
+    "t": 0,
+    "day": 1,
+    "time": "08:00",
+    "period": "morning",
+    "remainingMinutes": 4320
+  },
+  "location": {
+    "id": "loc_lobby",
+    "name": "Вестибюль санатория",
+    "description": "Холодный свет из высоких окон, запах хлорки. За стойкой регистрации никого нет.",
+    "lighting": "bright",
+    "hotspots": [
+      {
+        "id": "hs_reception",
+        "name": "Стойка регистрации",
+        "examined": false
+      },
+      {
+        "id": "hs_notice_board",
+        "name": "Доска объявлений",
+        "examined": false
+      }
+    ],
+    "exits": [
+      {
+        "locationId": "loc_corridor",
+        "name": "Главный коридор",
+        "minutes": 3
+      },
+      {
+        "locationId": "loc_garden",
+        "name": "Зимний сад",
+        "minutes": 6
+      },
+      {
+        "locationId": "loc_basement",
+        "name": "Лестница в подвал",
+        "minutes": 4,
+        "blockedReason": "Дверь заперта"
+      }
+    ]
+  },
+  "presentCharacters": [
+    {
+      "id": "ch_nurse",
+      "name": "Дежурная медсестра",
+      "portraitRef": "portrait_nurse_01",
+      "demeanor": "напряжена"
+    },
+    {
+      "id": "ch_guest_1",
+      "name": "Мужчина в сером пальто",
+      "portraitRef": "portrait_guest_03",
+      "demeanor": "спокоен"
+    }
+  ],
+  "availableActions": [
+    {
+      "action": {
+        "type": "examineLocation"
+      },
+      "label": "Осмотреть вестибюль",
+      "costPreview": {
+        "min": 15,
+        "max": 15
+      }
+    },
+    {
+      "action": {
+        "type": "examineHotspot",
+        "hotspotId": "hs_reception"
+      },
+      "label": "Изучить стойку",
+      "costPreview": {
+        "min": 5,
+        "max": 5
+      }
+    },
+    {
+      "action": {
+        "type": "move",
+        "locationId": "loc_corridor"
+      },
+      "label": "Пойти в коридор",
+      "costPreview": {
+        "min": 3,
+        "max": 3
+      }
+    },
+    {
+      "action": {
+        "type": "move",
+        "locationId": "loc_basement"
+      },
+      "label": "Спуститься в подвал",
+      "costPreview": {
+        "min": 4,
+        "max": 4
+      },
+      "blockedReason": "Дверь заперта"
+    },
+    {
+      "action": {
+        "type": "talk",
+        "characterId": "ch_nurse",
+        "topicId": "topic_about_self"
+      },
+      "label": "Поговорить с медсестрой",
+      "costPreview": {
+        "min": 10,
+        "max": 10
+      }
+    },
+    {
+      "action": {
+        "type": "rest",
+        "minutes": 60
+      },
+      "label": "Отдохнуть 1 час",
+      "costPreview": {
+        "min": 60,
+        "max": 60
+      }
+    }
+  ],
+  "vitals": {
+    "health": 10,
+    "sanity": 10,
+    "fatigue": 0
+  },
+  "static": 0,
+  "inventory": [
+    {
+      "id": "it_flashlight",
+      "name": "Фонарь",
+      "description": "Тяжёлый металлический фонарь. Заряда хватит на несколько часов."
+    }
+  ],
+  "caseBoard": {
+    "clues": [],
+    "statements": [],
+    "contradictions": [],
+    "personsOfInterest": [],
+    "suspicions": [],
+    "timeline": []
+  },
+  "phone": {
+    "paired": true,
+    "online": true,
+    "battery": 100
+  }
+}

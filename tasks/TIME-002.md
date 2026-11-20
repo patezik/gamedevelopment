@@ -1,7 +1,7 @@
 ---
 id: TIME-002
 title: "Scheduler: детерминированная очередь событий"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: time
 depends_on: [TIME-001, CORE-002]
 modules: ["packages/core/src/time/scheduler.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-time-1
+claimed_at: "2026-11-20T07:21:46Z"
 ---
 
 # TIME-002 — Scheduler: детерминированная очередь событий
@@ -49,11 +49,11 @@ Scheduler с тестами порядка и сериализации.
 
 ## Критерии приёмки
 
-- [ ] События с одинаковым at сортируются по phase, затем priority, затем seq.
-- [ ] cancel удаляет событие; повторный cancel → false.
-- [ ] serialize/restore даёт идентичный порядок дальнейших popDue.
-- [ ] 100 000 schedule+pop < 200 мс.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] События с одинаковым at сортируются по phase, затем priority, затем seq.
+- [x] cancel удаляет событие; повторный cancel → false.
+- [x] serialize/restore даёт идентичный порядок дальнейших popDue.
+- [x] 100 000 schedule+pop < 200 мс.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

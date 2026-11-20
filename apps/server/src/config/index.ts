@@ -2,6 +2,9 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 
+const hostnamePattern =
+  /^(?=.{1,253}\.?$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.?$/i;
+
 const envSchema = z.object({
   HS_PORT: z
     .string()
@@ -10,6 +13,16 @@ const envSchema = z.object({
     .pipe(z.int().min(1).max(65535, 'Expected an integer port from 1 to 65535'))
     .default(7420),
   HS_HOST: z.string().trim().min(1).default('0.0.0.0'),
+  // Overrides LAN address detection. No ':' so it cannot break the hs1:pair:<host>:<port>:<code> QR.
+  HS_PUBLIC_HOST: z
+    .string()
+    .trim()
+    .refine(
+      (host) =>
+        hostnamePattern.test(host) && URL.parse(`http://${host}`)?.hostname === host.toLowerCase(),
+      'Expected an IPv4 address or host name without a port',
+    )
+    .optional(),
   HS_DATA_DIR: z
     .string()
     .trim()
@@ -37,6 +50,7 @@ export function readConfig(env: NodeJS.ProcessEnv) {
   return {
     port: data.HS_PORT,
     host: data.HS_HOST,
+    publicHost: data.HS_PUBLIC_HOST,
     dataDir: data.HS_DATA_DIR,
     logLevel: data.HS_LOG_LEVEL,
     debugTruth: data.HS_DEBUG_TRUTH,

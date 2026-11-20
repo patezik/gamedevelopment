@@ -1,7 +1,7 @@
 ---
 id: TIME-003
 title: "TimeSystem.advance: фазы обработки, прерывания, события часов"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: time
 depends_on: [TIME-002]
 modules: ["packages/core/src/time/time-system.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-time-1
+claimed_at: "2026-11-20T08:00:40Z"
 ---
 
 # TIME-003 — TimeSystem.advance: фазы обработки, прерывания, события часов
@@ -51,11 +51,11 @@ TimeSystem с обработкой фаз и прерываний.
 
 ## Критерии приёмки
 
-- [ ] Событие ровно в target обрабатывается, в target+1 — нет.
-- [ ] Обработчик может планировать события внутри того же advance, они обрабатываются, если ≤ target.
-- [ ] Прерывание возвращает interruptedAt и не обрабатывает последующие события.
-- [ ] PeriodChanged/DayChanged эмитируются при пересечении границ, в т. ч. нескольких за один advance.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Событие ровно в target обрабатывается, в target+1 — нет.
+- [x] Обработчик может планировать события внутри того же advance, они обрабатываются, если ≤ target.
+- [x] Прерывание возвращает interruptedAt и не обрабатывает последующие события.
+- [x] PeriodChanged/DayChanged эмитируются при пересечении границ, в т. ч. нескольких за один advance.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

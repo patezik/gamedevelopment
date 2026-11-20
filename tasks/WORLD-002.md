@@ -1,7 +1,7 @@
 ---
 id: WORLD-002
 title: "Предметы, контейнеры и история их перемещений"
-status: review
+status: done
 priority: P0
 complexity: S
 phase: 2
