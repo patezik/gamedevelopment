@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, expectTypeOf, test } from 'vitest';
+import { hashId } from '../common/index.ts';
 import { loadScenarioFromDir } from '../content/index.ts';
 import { TruthLog, type EntityRef, type TruthEventInput } from '../truth/index.ts';
 import { ItemRegistry } from '../world/index.ts';
@@ -10,6 +11,7 @@ import {
   tracesForEvent,
   type Trace,
   type TraceRule,
+  type TraceRuleSet,
   type TraceSpec,
 } from './index.ts';
 
@@ -46,7 +48,7 @@ function event(overrides: Partial<TruthEventInput> = {}): TruthEventInput {
   };
 }
 
-function single(rules: TraceRule[], input: TruthEventInput) {
+function single(rules: unknown, input: TruthEventInput) {
   const log = new TruthLog();
   const appended = log.append(input);
   return tracesForEvent(appended, compileTraceRules(rules), items);
@@ -223,13 +225,183 @@ describe('compileTraceRules', () => {
         path: 'traceRules.0.produces.1.at',
       }),
     );
+    expect(() => compileTraceRules(rules)).toThrow(/Expected a location ID or one of: \$location/);
   });
 
-  test('returns a detached frozen copy', () => {
-    const source: TraceRule[] = [{ verb: 'take', produces: [{ ...physicalHere }] }];
+  test('accepts only verbs a truth event can carry', () => {
+    const rule = (verb: string) => [{ verb, produces: [physicalHere] }];
+    expect(() => compileTraceRules(rule('take-item'))).toThrow(
+      expect.objectContaining({ code: 'EVIDENCE_RULE_INVALID', path: 'traceRules.0.verb' }),
+    );
+    expect(() => compileTraceRules(rule('Take'))).toThrow(EvidenceError);
+    expect(() => new TruthLog().append(event({ verb: 'take-item' }))).toThrow();
+
+    expect(single(rule('take_item'), event({ verb: 'take_item' }))).toEqual([
+      {
+        id: hashId('tr', { sourceEventId: 'ev_1', rule: 0, spec: 0 }, 16),
+        kind: 'physical',
+        sourceEventId: 'ev_1',
+        location: hall,
+        availableFrom: 10,
+      },
+    ]);
+  });
+
+  test('returns a detached deeply frozen copy', () => {
+    const source = [{ verb: 'take', produces: [{ ...physicalHere }] }];
     const compiled = compileTraceRules(source);
     source[0]!.verb = 'hide';
     expect(compiled.rules[0]?.verb).toBe('take');
+    expect(Object.isFrozen(compiled)).toBe(true);
+    expect(Object.isFrozen(compiled.rules)).toBe(true);
     expect(Object.isFrozen(compiled.rules[0]?.produces[0])).toBe(true);
+    expect(() => {
+      // @ts-expect-error compiled rules are readonly
+      compiled.rules[0]!.verb = 'hide';
+    }).toThrow(TypeError);
+    expect(() => {
+      // @ts-expect-error nested trace specs are readonly
+      compiled.rules[0]!.produces[0]!.at = archive;
+    }).toThrow(TypeError);
+    expectTypeOf(compiled.rules).toEqualTypeOf<readonly TraceRule[]>();
+    expect(() => (compiled.rules as TraceRule[]).push(compiled.rules[0]!)).toThrow(TypeError);
+  });
+});
+
+describe('TraceRuleSet', () => {
+  const forged = { rules: [{ verb: 'take', produces: [physicalHere] }] };
+
+  test('a plain object with the same shape is not a compiled rule set', () => {
+    expectTypeOf(forged).not.toExtend<TraceRuleSet>();
+    expectTypeOf(compileTraceRules([])).toExtend<TraceRuleSet>();
+    const log = new TruthLog();
+    const appended = log.append(event());
+
+    // @ts-expect-error only compileTraceRules creates a TraceRuleSet
+    expect(() => tracesForEvent(appended, forged, items)).toThrow(
+      expect.objectContaining({ code: 'EVIDENCE_RULE_INVALID', path: 'traceRules' }),
+    );
+    // @ts-expect-error only compileTraceRules creates a TraceRuleSet
+    expect(() => deriveTraces(log, forged, items)).toThrow(EvidenceError);
+    // @ts-expect-error a rule list is not a TraceRuleSet either
+    expect(() => deriveTraces(log, forged.rules, items)).toThrow(EvidenceError);
+  });
+});
+
+describe('regressions', () => {
+  test('orders more than ten events of one minute by their numeric event id', () => {
+    const rules = compileTraceRules([{ verb: 'take', produces: [physicalHere] }]);
+    const log = new TruthLog();
+    for (let index = 0; index < 12; index++) log.append(event({ t: 7 }));
+    const expected = Array.from({ length: 12 }, (_, index) => `ev_${index + 1}`);
+    const sources = (traces: readonly Trace[]) => traces.map(({ sourceEventId }) => sourceEventId);
+
+    expect(sources(deriveTraces(log, rules, items))).toEqual(expected);
+    const reversed = [...log.events()].reverse();
+    expect(sources(deriveTraces({ events: () => reversed }, rules, items))).toEqual(expected);
+    expect(expected.indexOf('ev_9')).toBe(8);
+    expect(expected.indexOf('ev_10')).toBe(9);
+  });
+
+  test('keeps long decay periods exact', () => {
+    const traces = single(
+      [
+        {
+          verb: 'take',
+          produces: [
+            { ...physicalHere, decaysAfter: 31 },
+            { ...physicalHere, decaysAfter: 1440 },
+            { ...physicalHere, decaysAfter: 10_080 },
+          ],
+        },
+      ],
+      event({ t: -2000, duration: 15 }),
+    );
+    expect(traces.map(({ availableFrom, decaysAt }) => [availableFrom, decaysAt])).toEqual([
+      [-1985, -1954],
+      [-1985, -545],
+      [-1985, 8095],
+    ]);
+  });
+
+  test('emits one trace per produces entry of every matching rule with exact ids', () => {
+    const rules: TraceRule[] = [
+      {
+        verb: 'take',
+        when: { itemId: 'it_vial' },
+        produces: [
+          { kind: 'physical', at: '$location', template: 'a', supports: [] },
+          { kind: 'document', at: hall, template: 'b', supports: [] },
+        ],
+      },
+      { verb: 'walk', produces: [physicalHere] },
+      {
+        verb: 'take',
+        when: { targetTag: 'poison' },
+        produces: [
+          { kind: 'digital', at: archive, template: 'c', supports: [], decaysAfter: 45 },
+          { kind: 'testimonial', at: '$location', template: 'd', supports: [] },
+        ],
+      },
+    ];
+    const id = (rule: number, spec: number) =>
+      hashId('tr', { sourceEventId: 'ev_1', rule, spec }, 16);
+
+    expect(single(rules, event({ t: 3, duration: 2, targets: [item('it_vial')] }))).toEqual([
+      { id: id(0, 0), kind: 'physical', sourceEventId: 'ev_1', location: hall, availableFrom: 5 },
+      { id: id(0, 1), kind: 'document', sourceEventId: 'ev_1', location: hall, availableFrom: 5 },
+      {
+        id: id(2, 0),
+        kind: 'digital',
+        sourceEventId: 'ev_1',
+        location: archive,
+        availableFrom: 5,
+        decaysAt: 50,
+      },
+      {
+        id: id(2, 1),
+        kind: 'testimonial',
+        sourceEventId: 'ev_1',
+        location: hall,
+        availableFrom: 5,
+      },
+    ]);
+  });
+});
+
+describe('safe game minutes', () => {
+  const max = Number.MAX_SAFE_INTEGER;
+  const min = Number.MIN_SAFE_INTEGER;
+  const plain = [{ verb: 'take', produces: [physicalHere] }];
+  const decaying = [{ verb: 'take', produces: [{ ...physicalHere, decaysAfter: 10 }] }];
+
+  test('accepts results on the safe integer boundary', () => {
+    expect(single(plain, event({ t: max - 5, duration: 5 }))[0]).toMatchObject({
+      availableFrom: max,
+    });
+    expect(single(decaying, event({ t: max - 15, duration: 5 }))[0]).toMatchObject({
+      availableFrom: max - 10,
+      decaysAt: max,
+    });
+    expect(single(decaying, event({ t: min }))[0]).toMatchObject({
+      availableFrom: min,
+      decaysAt: min + 10,
+    });
+  });
+
+  test('rejects an availableFrom beyond the safe range', () => {
+    expect(() => single(plain, event({ t: max - 5, duration: 6 }))).toThrow(
+      new RangeError('Trace availableFrom of ev_1 is outside the safe integer range'),
+    );
+  });
+
+  test('rejects a decaysAt beyond the safe range without returning partial traces', () => {
+    const rules = compileTraceRules([...plain, ...decaying]);
+    const log = new TruthLog();
+    log.append(event({ t: 0 }));
+    log.append(event({ t: max - 9 }));
+    expect(() => deriveTraces(log, rules, items)).toThrow(
+      new RangeError('Trace decaysAt of ev_2 is outside the safe integer range'),
+    );
   });
 });
