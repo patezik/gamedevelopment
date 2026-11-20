@@ -56,7 +56,7 @@ claimed_at: "2026-11-20T15:43:17Z"
 - [ ] tiny-manor проходит checkTruthInvariants (после TRUTH-003 — тест включается).
 - [x] Сериализация туда-обратно сохраняет stateHash.
 - [x] Builder документирован JSDoc-примером.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
