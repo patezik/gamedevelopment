@@ -24,6 +24,12 @@ interface ItemRecord {
   moves: ItemMove[];
 }
 
+export interface ItemRegistrySnapshot {
+  readonly initialMinute: GameMinutes;
+  readonly initial: readonly { readonly item: Item; readonly placement: ItemPlacement }[];
+  readonly moves: readonly (ItemMove & { readonly itemId: string })[];
+}
+
 type ItemErrorCode =
   | 'WORLD_UNKNOWN_ITEM'
   | 'WORLD_INVALID_PLACEMENT'
@@ -31,7 +37,10 @@ type ItemErrorCode =
   | 'WORLD_INVALID_ITEM_TIME';
 
 export class ItemError extends Error {
-  constructor(readonly code: ItemErrorCode, message: string) {
+  constructor(
+    readonly code: ItemErrorCode,
+    message: string,
+  ) {
     super(message);
     this.name = 'ItemError';
   }
@@ -45,6 +54,7 @@ function requireMinute(t: GameMinutes): void {
 
 export class ItemRegistry {
   private readonly records = new Map<string, ItemRecord>();
+  private readonly moves: (ItemMove & { readonly itemId: string })[] = [];
   private readonly locationIds: ReadonlySet<string>;
   private latestMinute: GameMinutes;
 
@@ -71,12 +81,47 @@ export class ItemRegistry {
 
       const [initial] = destinations;
       if (!initial || destinations.length !== 1 || this.records.has(id)) {
-        throw new ItemError('WORLD_INVALID_PLACEMENT', `Expected one initial placement for unique item ${id}`);
+        throw new ItemError(
+          'WORLD_INVALID_PLACEMENT',
+          `Expected one initial placement for unique item ${id}`,
+        );
       }
       this.records.set(id, { item: { id, kind, tags: [...tags] }, initial, moves: [] });
     }
 
     for (const [id, { initial }] of this.records) this.validatePlacement(id, initial);
+  }
+
+  snapshot(): ItemRegistrySnapshot {
+    return structuredClone({
+      initialMinute: this.initialMinute,
+      initial: Array.from(this.records.values(), ({ item, initial }) => ({
+        item,
+        placement: initial,
+      })),
+      moves: this.moves,
+    });
+  }
+
+  static restore(
+    snapshot: ItemRegistrySnapshot,
+    locations: Pick<ScenarioContent, 'locations'>['locations'],
+  ): ItemRegistry {
+    const registry = new ItemRegistry({ locations, items: [] }, new Map(), snapshot.initialMinute);
+    for (const { item, placement } of snapshot.initial) {
+      if (registry.records.has(item.id)) {
+        throw new ItemError('WORLD_INVALID_PLACEMENT', `Duplicate item ${item.id}`);
+      }
+      registry.records.set(item.id, {
+        item: structuredClone(item),
+        initial: { ...placement },
+        moves: [],
+      });
+    }
+    for (const [id, { initial }] of registry.records) registry.validatePlacement(id, initial);
+    // Different items may move in the same minute. Replay the original order to preserve containment.
+    for (const { itemId, to, t, cause } of snapshot.moves) registry.move(itemId, to, t, cause);
+    return registry;
   }
 
   get(id: string): Item {
@@ -87,7 +132,10 @@ export class ItemRegistry {
   locate(id: string, t: GameMinutes): ItemPlacement {
     requireMinute(t);
     if (t < this.initialMinute) {
-      throw new ItemError('WORLD_INVALID_ITEM_TIME', `Items are not placed before minute ${this.initialMinute}`);
+      throw new ItemError(
+        'WORLD_INVALID_ITEM_TIME',
+        `Items are not placed before minute ${this.initialMinute}`,
+      );
     }
 
     const { initial, moves } = this.getRecord(id);
@@ -103,10 +151,15 @@ export class ItemRegistry {
     requireMinute(t);
     // Historical insertion would also require rechecking every later container placement.
     if (t < this.latestMinute) {
-      throw new ItemError('WORLD_INVALID_ITEM_TIME', `Cannot move an item before minute ${this.latestMinute}`);
+      throw new ItemError(
+        'WORLD_INVALID_ITEM_TIME',
+        `Cannot move an item before minute ${this.latestMinute}`,
+      );
     }
     this.validatePlacement(id, to);
-    record.moves.push({ t, to: { ...to }, cause });
+    const move = { t, to: { ...to }, cause };
+    record.moves.push(move);
+    this.moves.push({ itemId: id, ...move });
     this.latestMinute = t;
   }
 
