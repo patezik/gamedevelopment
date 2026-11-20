@@ -2,11 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 113 · in_progress: 1 · review: 1 · done: 24 · blocked: 1
+Всего задач: **140** · todo: 113 · in_progress: 0 · review: 1 · done: 25 · blocked: 1
 
 ## Готовы к взятию сейчас
 
+- [CORE-003](CORE-003.md) — Тип Investigation и fixture-builder мини-сценария «tiny-manor» (P0, M)
 - [KNOW-001](KNOW-001.md) — KnowledgeStore: убеждения, источники, память с размытием (P0, M)
+- [SIM-001](SIM-001.md) — SimulationRunner: исполнение рутин NPC через Scheduler (P0, M)
 - [TRUTH-003](TRUTH-003.md) — Проверка инвариантов Truth Model (P0, S)
 - [CNT-002](CNT-002.md) — MVP-сценарий: локации, предметы, архетипы, отношения (данные) (P0, L)
 - [EVD-001](EVD-001.md) — Движок правил следов: TraceRule → Trace, закон сохранения улик (P0, M)
@@ -16,7 +18,7 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[CHAR-003](CHAR-003.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -56,7 +58,7 @@
 |---|---|---|---|---|---|---|
 | [CHAR-001](CHAR-001.md) | Модель персонажа: личность, биография, цели, страхи, доступы | P0 | M | done | codex-core | [CNT-001](CNT-001.md) |
 | [CHAR-002](CHAR-002.md) | Граф отношений: типы, доверие, валентность, история | P0 | S | done | codex-small-1 | [CHAR-001](CHAR-001.md) |
-| [CHAR-003](CHAR-003.md) | Расписания и рутины: whereShouldBe, переопределения | P0 | M | in_progress | codex-core-1 | [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
+| [CHAR-003](CHAR-003.md) | Расписания и рутины: whereShouldBe, переопределения | P0 | M | done | codex-core-1 | [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
 | [CNT-001](CNT-001.md) | Схемы контента сценариев (zod) и загрузчик @hs/core/content | P0 | L | done | codex-core | [CORE-002](CORE-002.md) |
 | [CORE-001](CORE-001.md) | Детерминированный PRNG sfc32 с подпотоками fork(label) | P0 | M | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | done | codex-core | [FND-009](FND-009.md) |

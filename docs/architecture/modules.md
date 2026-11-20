@@ -209,7 +209,9 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     byType(type: RelationType): Relationship[];
     adjust(a: CharacterId, b: CharacterId, delta: Partial<Scores>, cause: EventId, type?: RelationType): void;
   }
-  function whereShouldBe(c: Character, t: GameMinutes, overrides: ScheduleOverride[]): RoutineBlock;
+  interface ScheduleOverride { characterId: CharacterId; interval: Interval; block: RoutineBlock }
+  function validateRoutine(c: Pick<Character, "id" | "routine">): void;
+  function whereShouldBe(c: Pick<Character, "id" | "routine">, t: GameMinutes, overrides: readonly ScheduleOverride[], calendar: Calendar): RoutineBlock;
   ```
 - **Схема и JSON:** `@hs/core/characters` экспортирует `characterSchema`,
   `serializeCharacter` и `deserializeCharacter`. Схема требует все восемь черт в диапазоне
@@ -219,7 +221,10 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `AccessGrant` содержит `locationId`, `itemId` или оба. Секреты хранятся как ссылки.
 - **Рутина:** `RoutineBlock` содержит `{ from, to, location, activity, flexibility }`.
   Границы задаются в минутах суток, гибкость — числом `0..1`. Для ночных блоков `to` может быть
-  меньше `from`. Покрытие суток и переопределения проверяет CHAR-003.
+  меньше `from`. `validateRoutine` требует полного покрытия суток без пересечений.
+  `whereShouldBe` переводит минуты сценария в местное время через `Calendar`. Переопределения
+  действуют для указанного персонажа в полуоткрытом интервале игровых минут. При пересечении
+  действует последнее подходящее переопределение из списка.
 - **Зависимости:** `common`, `world`, `time`.
 - **Отношения:** `parent` и `child` — обратные стороны одного отношения. Симметричные
   `sibling`, `spouse`, `romance`, `friendship`, `rivalry` и `past_conflict` доступны
@@ -227,7 +232,8 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `neighbors` и `byType` возвращают направленные представления. Если между парой несколько
   отношений, `get` и `adjust` без типа выбирают первое добавленное. Доверие ограничено
   диапазоном −1…1, валентность и интенсивность — 0…1. `adjust` записывает идентификатор события.
-- **Ошибки:** `CHAR_SCHEDULE_GAP` (дыра в расписании), `CHAR_INVALID_ACCESS`.
+- **Ошибки:** `CHAR_SCHEDULE_GAP` (дыра в расписании), `CHAR_SCHEDULE_OVERLAP` (пересечение),
+  `CHAR_INVALID_SCHEDULE` (недопустимые границы блока), `CHAR_INVALID_ACCESS`.
 - **Тесты:** расписание покрывает весь сценарий без пересечений; симметрия отношений, где
   требуется (`siblings`, `spouses`); сериализация.
 
