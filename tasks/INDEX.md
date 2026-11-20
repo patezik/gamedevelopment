@@ -2,11 +2,10 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 128 · in_progress: 2 · review: 0 · done: 9 · blocked: 1
+Всего задач: **140** · todo: 127 · in_progress: 3 · review: 0 · done: 9 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [CNT-001](CNT-001.md) — Схемы контента сценариев (zod) и загрузчик @hs/core/content (P0, L)
 - [PROTO-001](PROTO-001.md) — Каталог сообщений протокола (hello, welcome, action, event, qr, error) (P0, M)
 - [SRV-008](SRV-008.md) — Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам (P0, S)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
@@ -56,7 +55,7 @@
 | [CHAR-001](CHAR-001.md) | Модель персонажа: личность, биография, цели, страхи, доступы | P0 | M | todo | — | [CNT-001](CNT-001.md) |
 | [CHAR-002](CHAR-002.md) | Граф отношений: типы, доверие, валентность, история | P0 | S | todo | — | [CHAR-001](CHAR-001.md) |
 | [CHAR-003](CHAR-003.md) | Расписания и рутины: whereShouldBe, переопределения | P0 | M | todo | — | [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
-| [CNT-001](CNT-001.md) | Схемы контента сценариев (zod) и загрузчик @hs/core/content | P0 | L | todo | — | [CORE-002](CORE-002.md) |
+| [CNT-001](CNT-001.md) | Схемы контента сценариев (zod) и загрузчик @hs/core/content | P0 | L | in_progress | codex-core | [CORE-002](CORE-002.md) |
 | [CORE-001](CORE-001.md) | Детерминированный PRNG sfc32 с подпотоками fork(label) | P0 | M | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-003](CORE-003.md) | Тип Investigation и fixture-builder мини-сценария «tiny-manor» | P0 | M | todo | — | [TRUTH-002](TRUTH-002.md), [CHAR-003](CHAR-003.md), [WORLD-002](WORLD-002.md) |
