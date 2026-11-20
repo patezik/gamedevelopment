@@ -8,6 +8,7 @@
     "./characters": "./src/characters/index.ts",
     "./common": "./src/common/index.ts",
     "./content": "./src/content/index.ts",
+    "./knowledge": "./src/knowledge/index.ts",
     "./rng": "./src/rng/index.ts",
     "./time": "./src/time/index.ts",
     "./truth": "./src/truth/index.ts",
