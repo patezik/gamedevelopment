@@ -39,18 +39,28 @@ npm run docs:check          # проверка ссылок документац
 | `npm run format` / `format:check` | форматирование Prettier (Markdown не форматируется) | сейчас |
 | `npm run dev:server` | Session Server на `0.0.0.0:7420` | после FND-005, FND-010 |
 | `npm run dev:mobile` | `npx expo start` в `apps/mobile` | после FND-006, FND-010 |
-| `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | после FND-008 |
+| `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | сейчас |
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
 | `npm run protocol:gen` / `protocol:check` | регенерация схем и GDScript-констант | после FND-004, PROTO-003 |
 | `npm run content:check` | валидация данных сценариев | после CNT-001 |
 
 ## 4. Godot
 
-1. Скачайте Godot 4.7.2-stable с godotengine.org или установите пакетным менеджером
-   (Windows: `winget install GodotEngine.GodotEngine`).
+1. Скачайте стандартную сборку [Godot 4.7.2-stable](https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable).
 2. Задайте переменную `GODOT_BIN` — путь к исполняемому файлу (на Windows — `*_console.exe` для
    вывода в терминал).
 3. Откройте `apps/desktop/project.godot` в редакторе.
+
+Запустите тесты из корня репозитория. Команда сама импортирует проект и запускает GUT.
+
+```powershell
+$env:GODOT_BIN = 'C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe'
+npm.cmd run test:godot
+```
+
+```bash
+GODOT_BIN=/path/to/godot npm run test:godot
+```
 
 ## 5. Мобильное приложение
 

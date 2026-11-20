@@ -18,6 +18,7 @@
     "lint": "eslint .",
     "typecheck": "tsc",
     "test": "vitest run",
+    "test:godot": "node tools/test-godot.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "tasks:check": "node tools/tasks/tasks.mjs validate",
