@@ -309,7 +309,11 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   function deriveClues(traces: Trace[], rules: ClueRules): Clue[];
   function discoverable(clue: Clue, ctx: DiscoveryContext): boolean;
   interface EvidenceTokenPort { issue(clueId: ClueId, expiresAt: GameMinutes): TokenRef }   // реализует сервер
+  function compileTraceRules(input: unknown): TraceRuleSet;          // EVIDENCE_RULE_INVALID
+  function tracesForEvent(event: TruthEvent, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">): Trace[];
+  function deriveTraces(truth: { events(): readonly TruthEvent[] }, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">): Trace[];
   ```
+  Семантика сопоставления и времени — [scenario-presets.md §5](../procedural-generation/scenario-presets.md).
 - **Зависимости:** `truth`, `world`, `knowledge` (свидетельские следы).
 - **События:** `ClueAvailable`, `ClueDestroyed`, `CaptureRequested`.
 - **Ошибки:** `EVIDENCE_RULE_INVALID` (на загрузке контента).
