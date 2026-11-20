@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./common": "./src/common/index.ts",
+    "./content": "./src/content/index.ts",
     "./rng": "./src/rng/index.ts"
   },
   "dependencies": {

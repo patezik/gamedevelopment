@@ -1,0 +1,9 @@
+[
+  {
+    "id": "it_log",
+    "name": "Журнал",
+    "kind": "document",
+    "tags": ["record"],
+    "locationId": "loc_archive"
+  }
+]
