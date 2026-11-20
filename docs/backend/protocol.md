@@ -5,6 +5,7 @@
 
 Сгенерированные JSON Schema лежат в `packages/protocol/schemas/` (`npm run protocol:gen`; актуальность
 проверяет `npm run protocol:check`), пример конверта — `packages/protocol/fixtures/envelope.json`.
+Примеры всех сообщений собраны в `client-messages.json` и `server-messages.json` в том же каталоге.
 
 ## 1. Транспорт
 
@@ -35,6 +36,12 @@
 
 ## 3. Каталог сообщений
 
+`parseClientMessage` и `parseServerMessage` принимают уже разобранный JSON и возвращают
+`{ ok: true, message }` или `{ ok: false, error: "INVALID_MESSAGE" }`. При разборе проверяются
+тип, направление и поля сообщения. Для проверки версии на сервере сначала разбирается общий
+`Envelope`, затем сравнивается `v` и только после этого проверяется payload по каталогу.
+Счётчики и `minutesSpent` — неотрицательные целые. Идентификаторы и ссылки — непустые строки.
+
 ### Клиент → сервер
 
 | type | payload | Кто |
@@ -59,6 +66,10 @@
 | `error` | `{ code: ErrorCode, message, requestId? }` |
 | `peer.status` | `{ desktop: "online" \| "offline", phone: "online" \| "offline" \| "unpaired" }` |
 
+Варианты `ClientEvent` по полю `type`: `notification` с `notificationId`, `incomingCall`
+с `callId`, `scanResult` с полями `qr.result`, `gameOver` без дополнительных полей.
+Схема `view.update` пока проверяет, что `view` — JSON-объект. Поля снимков описывает PROTO-002.
+
 ## 4. Действия по ролям
 
 | Действие | desktop | phone |
@@ -69,6 +80,32 @@
 | `captureEvidence` | — | через `qr.scan` |
 
 Сервер проверяет роль: действие не своей роли → `ACTION_INVALID`.
+Таблица `ACTIONS_BY_ROLE` перечисляет действия для прямого `action.request`. Сервер
+сам создаёт `captureEvidence { tokenId }` после проверки `qr.scan`.
+
+Действия различаются по полю `type`. Остальные поля перечислены ниже.
+
+| Действие | Поля |
+|----------|------|
+| `move` | `locationId` |
+| `examineLocation` | — |
+| `examineHotspot` | `hotspotId` |
+| `talk` | `characterId, topicId` |
+| `interrogate` | `characterId, subject`, где `subject` — `{ type: "evidence", clueId }` или `{ type: "contradiction", contradictionId }` |
+| `read` | `documentId` |
+| `useItem` | `itemId, targetId?` |
+| `pickLock` | `targetId` |
+| `rest`, `wait` | `minutes` — положительное целое |
+| `accuse` | `caseFile: { accusedIds, motive?, means?, opportunity?, evidence }, confirm`; `confirm` — логическое значение |
+| `markSuspicion` | `characterId, level, note?`; `level` — неотрицательное целое |
+| `call` | `contactId` |
+| `answerCall` | `callId` |
+| `callChoice` | `choiceId` |
+| `message` | `contactId, templateId` |
+| `browse` | `pageId` |
+| `openFile` | `fileId` |
+| `unlockFile` | `fileId, password` |
+| `addNote` | `text` |
 
 ## 5. Коды ошибок (`ErrorCode`)
 

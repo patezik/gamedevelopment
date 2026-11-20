@@ -1,7 +1,7 @@
 ---
 id: TIME-002
 title: "Scheduler: детерминированная очередь событий"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: time
 depends_on: [TIME-001, CORE-002]
 modules: ["packages/core/src/time/scheduler.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-time-1
+claimed_at: "2026-11-20T07:21:46Z"
 ---
 
 # TIME-002 — Scheduler: детерминированная очередь событий

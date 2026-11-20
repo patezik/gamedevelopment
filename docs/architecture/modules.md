@@ -125,10 +125,25 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   ```ts
   interface Location { id: LocationId; name: string; tags: string[]; lighting: Record<DayPeriod, Light>; access: AccessRule[]; hotspots: HotspotDef[] }
   interface Connection { from: LocationId; to: LocationId; minutes: number; locked?: LockDef }
-  class LocationGraph { travelTime(a, b): number | null; path(a, b): LocationId[]; isAccessible(loc, who: Actor, t): AccessCheck }
+  class LocationGraph {
+    travelTime(a, b, who?: Actor): number | null;
+    path(a, b, who?: Actor): LocationId[];
+    isAccessible(loc, who: Actor, t: GameMinutes): AccessCheck;
+    lightingAt(loc, period: DayPeriod): Light;
+  }
   interface Item { id: ItemId; kind: string; tags: string[]; ownerId?: CharacterId; container?: ItemId }
   class ItemRegistry { locate(id: ItemId, t: GameMinutes): ItemPlacement; move(id, to, t, cause: EventId): void }
   ```
+- **Маршруты:** граф строится из загруженного пресета. Связи направленные. Маршрут включает обе
+  конечные точки, а его стоимость — сумму минут переходов. При равенстве выбирается меньший
+  идентификатор предшественника. Замок пропускает только носителя нужного ключа. Замок без
+  указанного ключа закрыт, а при отсутствии актёра маршрут строится для пустого набора ключей.
+- **Доступ к локации:** проверяется отдельно через `isAccessible` в заданную игровую минуту.
+  Внутри правила должны выполняться все условия, из списка правил достаточно одного.
+  Пустой список открывает доступ всем. Интервал включает начало и исключает конец, а при
+  `from > to` пересекает полночь. При отказе возвращается причина из первого правила.
+- **Нет маршрута:** `travelTime` возвращает `null`, `path` выдаёт `WORLD_NO_PATH`.
+  Неизвестный идентификатор локации даёт `WORLD_UNKNOWN_LOCATION`.
 - **Зависимости:** `common`, `time` (периоды суток).
 - **События:** `LocationAvailabilityChanged`, `ItemMoved`.
 - **Ошибки:** `WORLD_UNKNOWN_LOCATION`, `WORLD_NO_PATH`, `WORLD_ACCESS_DENIED`.
@@ -151,6 +166,15 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   class RelationshipGraph { get(a, b): Relationship | undefined; neighbors(a): Relationship[]; adjust(a, b, delta, cause: EventId): void }
   function whereShouldBe(c: Character, t: GameMinutes, overrides: ScheduleOverride[]): RoutineBlock;
   ```
+- **Схема и JSON:** `@hs/core/characters` экспортирует `characterSchema`,
+  `serializeCharacter` и `deserializeCharacter`. Схема требует все восемь черт в диапазоне
+  `0..1` и отклоняет неизвестные поля, в том числе во вложенных объектах.
+- **Данные профиля:** `SocialStatus` — строковый идентификатор, `BiographyFact` — фрагмент
+  `{ text, tags }`, `GoalSeed` — `{ kind, weight }` с весом `0..1`, `Habit` — `{ activity }`.
+  `AccessGrant` содержит `locationId`, `itemId` или оба. Секреты хранятся как ссылки.
+- **Рутина:** `RoutineBlock` содержит `{ from, to, location, activity, flexibility }`.
+  Границы задаются в минутах суток, гибкость — числом `0..1`. Для ночных блоков `to` может быть
+  меньше `from`. Покрытие суток и переопределения проверяет CHAR-003.
 - **Зависимости:** `common`, `world`, `time`.
 - **Ошибки:** `CHAR_SCHEDULE_GAP` (дыра в расписании), `CHAR_INVALID_ACCESS`.
 - **Тесты:** расписание покрывает весь сценарий без пересечений; симметрия отношений, где

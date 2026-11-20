@@ -81,14 +81,12 @@ export function listNetworkCandidates(
   publicHost?: string,
 ): NetworkCandidate[] {
   const scored: { candidate: NetworkCandidate; score: number }[] = [];
-  const seen = new Set<string>();
 
   for (const [name, entries] of Object.entries(interfaces)) {
     for (const entry of entries ?? []) {
-      if (entry.family !== 'IPv4' || entry.internal || seen.has(entry.address)) continue;
+      if (entry.family !== 'IPv4' || entry.internal) continue;
       const octets = parseIpv4(entry.address);
       if (!octets || isNeverReachable(octets)) continue;
-      seen.add(entry.address);
 
       const virtual = isVirtual(name, entry.mac, octets);
       scored.push({
@@ -104,7 +102,13 @@ export function listNetworkCandidates(
       x.candidate.interface.localeCompare(y.candidate.interface, 'en') ||
       x.candidate.address.localeCompare(y.candidate.address, 'en'),
   );
-  const candidates = scored.map(({ candidate }) => candidate);
+  const candidatesByAddress = new Map<string, NetworkCandidate>();
+  for (const { candidate } of scored) {
+    if (!candidatesByAddress.has(candidate.address)) {
+      candidatesByAddress.set(candidate.address, candidate);
+    }
+  }
+  const candidates = [...candidatesByAddress.values()];
 
   const best = candidates.find((candidate) => !candidate.virtual);
   if (best) best.recommended = true;

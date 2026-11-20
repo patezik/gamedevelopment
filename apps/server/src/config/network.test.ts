@@ -162,6 +162,13 @@ describe('only unusable addresses are dropped', () => {
     expect(listNetworkCandidates(interfaces)).toHaveLength(1);
   });
 
+  it('keeps the physical interface for a shared address regardless of enumeration order', () => {
+    const wifi = { wlan0: [v4('192.168.1.42', WIFI_MAC)] };
+    const vpn = { tun0: [v4('192.168.1.42', '00:00:00:00:00:00')] };
+    expect(summary({ ...vpn, ...wifi })).toEqual(['wlan0 192.168.1.42 *']);
+    expect(summary({ ...wifi, ...vpn })).toEqual(['wlan0 192.168.1.42 *']);
+  });
+
   it('keeps virtual-only machines selectable but recommends nothing', () => {
     const interfaces = { docker0: [v4('172.17.0.1', '02:42:6c:aa:bb:cc')] };
     expect(summary(interfaces)).toEqual(['docker0 172.17.0.1 v']);

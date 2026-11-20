@@ -58,9 +58,17 @@ test.each(['game-pc.local', '192.168.1.42', 'localhost'])('accepts HS_PUBLIC_HOS
 });
 
 // ':' would break the hs1:pair:<host>:<port>:<code> QR payload.
-test.each(['192.168.1.42:7420', '[::1]', 'http://pc', 'two words', '', ' '])(
-  'rejects HS_PUBLIC_HOST %j',
-  (host) => {
-    expect(() => readConfig({ HS_PUBLIC_HOST: host })).toThrow(/HS_PUBLIC_HOST:/);
-  },
-);
+test.each([
+  '192.168.1.42:7420',
+  '[::1]',
+  'http://pc',
+  'two words',
+  '',
+  ' ',
+  '.',
+  '-invalid.local',
+  '999.1.1.1',
+  '127.1',
+])('rejects HS_PUBLIC_HOST %j', (host) => {
+  expect(() => readConfig({ HS_PUBLIC_HOST: host })).toThrow(/HS_PUBLIC_HOST:/);
+});

@@ -1,0 +1,4 @@
+{
+  "dirs": ["res://tests/unit", "res://tests/contract"],
+  "include_subdirs": true
+}

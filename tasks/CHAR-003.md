@@ -1,7 +1,7 @@
 ---
 id: CHAR-003
 title: "Расписания и рутины: whereShouldBe, переопределения"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: characters
 depends_on: [CHAR-001, WORLD-001]
 modules: ["packages/core/src/characters/schedule.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-core-1
+claimed_at: "2026-11-20T07:08:33Z"
 ---
 
 # CHAR-003 — Расписания и рутины: whereShouldBe, переопределения

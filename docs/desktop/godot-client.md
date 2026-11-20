@@ -75,6 +75,9 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 
 ## 6. Тесты
 
-- GUT headless в CI: `godot --headless --path apps/desktop -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`.
+- `npm run test:godot` импортирует проект и запускает GUT из `tests/unit` и `tests/contract`.
+  Процесс завершится с ошибкой при падении теста, ошибке компиляции или загрузки скрипта,
+  а также если GUT не запустил ни одного теста.
+- GitHub Actions запускает ту же команду при изменениях desktop, протокола или конфигурации запуска тестов.
 - Контрактные тесты: каждый файл фикстур разбирается без ошибок, обязательные поля на месте.
 - Smoke: все сцены из `src/scenes` загружаются и инстанцируются без ошибок.

@@ -1,7 +1,7 @@
 ---
 id: WORLD-002
 title: "Предметы, контейнеры и история их перемещений"
-status: todo
+status: in_progress
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: world
 depends_on: [WORLD-001]
 modules: ["packages/core/src/world/items.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-core-1
+claimed_at: "2026-11-20T07:00:23Z"
 ---
 
 # WORLD-002 — Предметы, контейнеры и история их перемещений

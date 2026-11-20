@@ -1,10 +1,21 @@
 import { z } from 'zod';
-import { Envelope, ErrorCode } from '../src/index.ts';
+import {
+  ClientEvent,
+  ClientMessage,
+  Envelope,
+  ErrorCode,
+  PlayerAction,
+  ServerMessage,
+} from '../src/index.ts';
 
 /** File name -> schema. Add new exported schemas here. */
 const SCHEMAS = {
   'envelope.json': Envelope,
   'error-code.json': ErrorCode,
+  'client-event.json': ClientEvent,
+  'client-message.json': ClientMessage,
+  'player-action.json': PlayerAction,
+  'server-message.json': ServerMessage,
 } as const;
 
 /** Deterministic JSON Schema text per file name. */
