@@ -4,13 +4,16 @@ extends GutTest
 
 const Support := preload("res://tests/contract/contract_support.gd")
 
-## Fixture path relative to fixtures/ -> schema file. A fixture holding a JSON array is a list of
-## examples, each checked against the schema.
+## Fixture path relative to fixtures/ -> schema file.
 const SCHEMA_BY_FIXTURE: Dictionary = {
 	"envelope.json": "envelope.json",
 	"client-messages.json": "client-message.json",
 	"server-messages.json": "server-message.json",
 }
+## Fixtures that are a non-empty JSON array of examples, each checked against the schema. Every
+## other fixture (envelope, PlayerView, PhoneView) is a single JSON value checked as is, so an
+## array in its place fails the schema's root type.
+const COLLECTION_FIXTURES: Array[String] = ["client-messages.json", "server-messages.json"]
 ## Fixture file name prefix inside fixtures/views/ -> schema file.
 const SCHEMA_BY_VIEW_PREFIX: Dictionary = {
 	"player-view.": "player-view.json",
@@ -32,11 +35,33 @@ func _schema_file_for(relative: String) -> String:
 	return ""
 
 
-func _examples(data: Variant) -> Array:
-	if typeof(data) == TYPE_ARRAY:
-		var list: Array = data
-		return list
-	return [data]
+## Shape problems of the parsed fixture `relative` (path inside fixtures/); empty if it fits.
+func _fixture_problems(relative: String, data: Variant) -> PackedStringArray:
+	var schema_file: String = _schema_file_for(relative)
+	if schema_file.is_empty():
+		return PackedStringArray(["%s: no schema mapped" % relative])
+	var node: Dictionary = Support.schema(schema_file)
+	if not (relative in COLLECTION_FIXTURES):
+		return Support.shape_problems(data, node, relative)
+	if typeof(data) != TYPE_ARRAY:
+		return PackedStringArray(
+			["%s: expected an array of examples, got %s" % [relative, type_string(typeof(data))]]
+		)
+	var examples: Array = data
+	if examples.is_empty():
+		return PackedStringArray(["%s: no examples" % relative])
+	var problems: PackedStringArray = PackedStringArray()
+	for index: int in examples.size():
+		var item_path: String = "%s[%d]" % [relative, index]
+		problems.append_array(Support.shape_problems(examples[index], node, item_path))
+	return problems
+
+
+func _example_count(relative: String, data: Variant) -> int:
+	if relative in COLLECTION_FIXTURES and typeof(data) == TYPE_ARRAY:
+		var examples: Array = data
+		return examples.size()
+	return 1
 
 
 func _fixture(relative: String) -> Variant:
@@ -74,21 +99,41 @@ func test_every_fixture_has_required_fields() -> void:
 	var checked: int = 0
 	for path: String in Support.json_files(Support.fixtures_dir()):
 		var relative: String = _relative(path)
-		var schema_file: String = _schema_file_for(relative)
-		if schema_file.is_empty():
-			continue
-		var node: Dictionary = Support.schema(schema_file)
-		var examples: Array = _examples(Support.read_json(path).data)
-		assert_gt(examples.size(), 0, "%s has examples" % relative)
-		for index: int in examples.size():
-			var problems: PackedStringArray = Support.shape_problems(examples[index], node, "$")
-			assert_true(
-				problems.is_empty(),
-				"%s[%d] fits %s:\n%s" % [relative, index, schema_file, "\n".join(problems)]
-			)
-			checked += 1
+		var data: Variant = Support.read_json(path).data
+		var problems: PackedStringArray = _fixture_problems(relative, data)
+		assert_true(problems.is_empty(), "%s fits its schema:\n%s" % [relative, "\n".join(problems)])
+		checked += _example_count(relative, data)
 	# 1 envelope + 5 client + 9 server messages + 8 views at the time of PROTO-003.
 	assert_gte(checked, 23, "number of checked fixture examples")
+
+
+func test_collection_fixtures_exist_and_are_mapped() -> void:
+	for relative: String in COLLECTION_FIXTURES:
+		assert_true(SCHEMA_BY_FIXTURE.has(relative), "%s is mapped to a schema" % relative)
+		assert_eq(typeof(_fixture(relative)), TYPE_ARRAY, "%s is an array" % relative)
+
+
+func test_single_view_wrapped_in_array_is_rejected() -> void:
+	for relative: String in ["views/player-view.start.json", "views/phone-view.start.json"]:
+		var view: Variant = _fixture(relative)
+		assert_eq(_fixture_problems(relative, view), PackedStringArray(), "%s as is" % relative)
+		var problems: PackedStringArray = _fixture_problems(relative, [view])
+		assert_false(problems.is_empty(), "%s wrapped in an array is rejected" % relative)
+		assert_string_contains("\n".join(problems), "expected object, got Array")
+
+
+func test_envelope_wrapped_in_array_is_rejected() -> void:
+	var envelope: Variant = _fixture("envelope.json")
+	assert_false(_fixture_problems("envelope.json", [envelope]).is_empty())
+
+
+func test_collection_fixture_must_be_a_non_empty_array() -> void:
+	var messages: Array = _fixture("client-messages.json")
+	var single: Variant = messages[0]
+	var not_array: PackedStringArray = _fixture_problems("client-messages.json", single)
+	assert_string_contains("\n".join(not_array), "expected an array of examples")
+	var empty: PackedStringArray = _fixture_problems("client-messages.json", [])
+	assert_string_contains("\n".join(empty), "no examples")
 
 
 func test_shape_check_reports_missing_required_field() -> void:
