@@ -4,7 +4,9 @@ import {
   ClientMessage,
   Envelope,
   ErrorCode,
+  PhoneView,
   PlayerAction,
+  PlayerView,
   ServerMessage,
 } from '../src/index.ts';
 
@@ -15,6 +17,8 @@ const SCHEMAS = {
   'client-event.json': ClientEvent,
   'client-message.json': ClientMessage,
   'player-action.json': PlayerAction,
+  'player-view.json': PlayerView,
+  'phone-view.json': PhoneView,
   'server-message.json': ServerMessage,
 } as const;
 

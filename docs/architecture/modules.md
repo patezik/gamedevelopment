@@ -96,24 +96,46 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   class Calendar { constructor(startIso: string); toDisplay(t: GameMinutes): { day: number; hh: number; mm: number; period: DayPeriod; dateIso: string }; format(t: GameMinutes): string }
-  enum TickPhase { Calendar = 0, Schedules = 1, Simulation = 2, WorldEvents = 3, Availability = 4, Timers = 5, Outcome = 6 }
-  interface ScheduledEvent<K extends string = string> { id: string; at: GameMinutes; phase: TickPhase; priority: number; kind: K; payload: unknown }
-  class Scheduler { schedule(e: Omit<ScheduledEvent, "id">): string; cancel(id: string): boolean; peek(): ScheduledEvent | undefined; popDue(t: GameMinutes): ScheduledEvent[]; serialize(): SchedulerState }
-  interface PhaseHandler { phase: TickPhase; handle(e: ScheduledEvent, ctx: TickContext): void }
+  const TickPhase = { Calendar: 0, Schedules: 1, Simulation: 2, WorldEvents: 3, Availability: 4, Timers: 5, Outcome: 6 } as const  // + одноимённый union-тип; не enum: enum не поддерживается type stripping в Node
+  interface ScheduledEvent<K extends string = string> { readonly id: string; readonly at: GameMinutes; readonly phase: TickPhase; readonly priority: number; readonly kind: K; readonly payload: unknown }
+  class Scheduler {
+    constructor(now?: GameMinutes);                 // по умолчанию 0; для предыстории — historyStartMinutes
+    readonly now: GameMinutes; readonly size: number;
+    schedule(e: Omit<ScheduledEvent, "id">): string;
+    cancel(id: string): boolean;
+    peek(): ScheduledEvent | undefined;
+    popNext(until: GameMinutes): ScheduledEvent | undefined;   // одно ближайшее событие с at ≤ until
+    popDue(t: GameMinutes): ScheduledEvent[];                  // все события с at ≤ t, затем now = t
+    serialize(): SchedulerState;
+    static restore(state: unknown): Scheduler;
+  }
+  type EventRequest = Omit<ScheduledEvent, 'id' | 'phase'>
+  interface TickContext { readonly now: GameMinutes; schedule(event: EventRequest): string; cancel(id: string): boolean }
+  interface PhaseHandler { readonly phase: TickPhase; handle(e: ScheduledEvent, ctx: TickContext): void | { interrupt: string } }
   class TimeSystem {
+    constructor(calendar: Calendar, scenarioEnd: GameMinutes, start?: GameMinutes);
     now(): GameMinutes;
     advance(minutes: number, opts?: { interruptible: boolean }): AdvanceResult;
     registerHandler(kind: string, h: PhaseHandler): void;
+    schedule(event: EventRequest): string;
+    cancel(id: string): boolean;
   }
-  interface AdvanceResult { from: GameMinutes; to: GameMinutes; processed: number; interruptedAt?: GameMinutes; interruptReason?: string }
-  function resolveActionCost(action: ActionKind, ctx: CostContext, table: ActionCostTable): ActionCost;
+  interface AdvanceResult { from: GameMinutes; to: GameMinutes; processed: number; events: ClockEvent[]; interruptedAt?: GameMinutes; interruptReason?: string; limit?: 'TIME_BEYOND_SCENARIO_END' }
+  function resolveActionCost(action: ActionKind, ctx?: CostContext, table?: ActionCostTable): ActionCost;  // table по умолчанию — DEFAULT_ACTION_COSTS
+  function createActionCostTable(overrides?: unknown): ActionCostTable;  // дефолты + переопределения пресета
+  interface ActionCost { min: number; max: number; expected: number }   // целые минуты
+  interface CostModifier { id: string; order: number; apply(minutes: number, action: ActionKind, ctx: CostContext): number }
+  interface TravelTimeProvider { travelTime(from: string, to: string): number | null }  // LocationGraph подходит структурно
+  interface CostContext { travel?: { provider: TravelTimeProvider; from: string; to: string }; minutes?: number; conversationMinutes?: number; modifiers?: CostModifier[] }
   ```
 - **Вход/выход:** стоимость действия в минутах → обработанные события и новое время.
 - **Зависимости:** `rng` (только для вариативных стоимостей), `common`.
 - **События (DomainEvent):** `ClockAdvanced`, `PeriodChanged`, `DayChanged`, `DeadlineReached`,
   `ScheduledEventMissed`.
 - **Ошибки:** `TIME_NEGATIVE_ADVANCE`, `TIME_BEYOND_SCENARIO_END` (усекается до конца с исходом),
-  `SCHEDULER_PAST_EVENT` (планирование в прошлое).
+  `ACTION_INVALID` (неизвестное или неприменимое действие), `COST_TABLE_INVALID` (неверная таблица
+  стоимостей пресета), `SCHEDULER_PAST_EVENT` (планирование в прошлое), `SCHEDULER_INVALID_STATE` (повреждённый снимок
+  при `Scheduler.restore`).
 - **Тесты:** порядок одновременных событий; переходы часов/дней/периодов; прерывания;
   сериализация/восстановление; сценарии разной длительности (property-тест).
 
@@ -131,8 +153,16 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     isAccessible(loc, who: Actor, t: GameMinutes): AccessCheck;
     lightingAt(loc, period: DayPeriod): Light;
   }
-  interface Item { id: ItemId; kind: string; tags: string[]; ownerId?: CharacterId; container?: ItemId }
-  class ItemRegistry { locate(id: ItemId, t: GameMinutes): ItemPlacement; move(id, to, t, cause: EventId): void }
+  interface Item { id: ItemId; kind: string; tags: readonly string[] }
+  type ItemPlacement = { kind: "location"; id: LocationId }
+    | { kind: "character"; id: CharacterId } | { kind: "container"; id: ItemId };
+  interface ItemMove { t: GameMinutes; to: ItemPlacement; cause: EventId }
+  class ItemRegistry {
+    get(id: ItemId): Item;
+    locate(id: ItemId, t: GameMinutes): ItemPlacement;
+    move(id: ItemId, to: ItemPlacement, t: GameMinutes, cause: EventId): void;
+    history(id: ItemId): readonly ItemMove[];
+  }
   ```
 - **Маршруты:** граф строится из загруженного пресета. Связи направленные. Маршрут включает обе
   конечные точки, а его стоимость — сумму минут переходов. При равенстве выбирается меньший
@@ -144,6 +174,12 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `from > to` пересекает полночь. При отказе возвращается причина из первого правила.
 - **Нет маршрута:** `travelTime` возвращает `null`, `path` выдаёт `WORLD_NO_PATH`.
   Неизвестный идентификатор локации даёт `WORLD_UNKNOWN_LOCATION`.
+- **Предметы:** реестр начинает работу с заданной игровой минуты (по умолчанию `0`). Для каждого
+  предмета из контента требуется ровно одно начальное размещение. Выбор персонажа по `ownerArchetype`
+  передаёт вызывающий код как соответствие архетипа и идентификатора персонажа. `locate` возвращает
+  непосредственное положение, в том числе ссылку на контейнер, положение которого можно запросить
+  на ту же минуту. `history` хранит только перемещения с указанием причины. Перемещения добавляются
+  в хронологическом порядке, внутри одной минуты побеждает последнее принятое перемещение.
 - **Зависимости:** `common`, `time` (периоды суток).
 - **События:** `LocationAvailabilityChanged`, `ItemMoved`.
 - **Ошибки:** `WORLD_UNKNOWN_LOCATION`, `WORLD_NO_PATH`, `WORLD_ACCESS_DENIED`.
@@ -162,8 +198,17 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     access: AccessGrant[];                  // ключи, допуски, права на локации/предметы
     routine: RoutineBlock[];                // базовое расписание
   }
-  interface Relationship { a: CharacterId; b: CharacterId; type: RelationType; valence: number; trust: number; intensity: number; history: FactId[] }
-  class RelationshipGraph { get(a, b): Relationship | undefined; neighbors(a): Relationship[]; adjust(a, b, delta, cause: EventId): void }
+  interface Relationship { readonly a: CharacterId; readonly b: CharacterId; readonly type: RelationType; readonly valence: number; readonly trust: number; readonly intensity: number; readonly history: readonly EventId[] }
+  type Scores = Pick<Relationship, 'trust' | 'valence' | 'intensity'>
+  type NewRelationship = Omit<Relationship, 'history'> & { history?: readonly EventId[] }
+  class RelationshipGraph {
+    constructor(relationships?: Iterable<NewRelationship>);
+    add(relationship: NewRelationship): void;
+    get(a: CharacterId, b: CharacterId, type?: RelationType): Relationship | undefined;
+    neighbors(a: CharacterId): Relationship[];
+    byType(type: RelationType): Relationship[];
+    adjust(a: CharacterId, b: CharacterId, delta: Partial<Scores>, cause: EventId, type?: RelationType): void;
+  }
   interface ScheduleOverride { characterId: CharacterId; interval: Interval; block: RoutineBlock }
   function validateRoutine(c: Pick<Character, "id" | "routine">): void;
   function whereShouldBe(c: Pick<Character, "id" | "routine">, t: GameMinutes, overrides: readonly ScheduleOverride[], calendar: Calendar): RoutineBlock;
@@ -181,6 +226,12 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   действуют для указанного персонажа в полуоткрытом интервале игровых минут. При пересечении
   действует последнее подходящее переопределение из списка.
 - **Зависимости:** `common`, `world`, `time`.
+- **Отношения:** `parent` и `child` — обратные стороны одного отношения. Симметричные
+  `sibling`, `spouse`, `romance`, `friendship`, `rivalry` и `past_conflict` доступны
+  с обеих сторон и разделяют оценки и историю. `debt`, `employment` и `blackmail` направлены.
+  `neighbors` и `byType` возвращают направленные представления. Если между парой несколько
+  отношений, `get` и `adjust` без типа выбирают первое добавленное. Доверие ограничено
+  диапазоном −1…1, валентность и интенсивность — 0…1. `adjust` записывает идентификатор события.
 - **Ошибки:** `CHAR_SCHEDULE_GAP` (дыра в расписании), `CHAR_SCHEDULE_OVERLAP` (пересечение),
   `CHAR_INVALID_SCHEDULE` (недопустимые границы блока), `CHAR_INVALID_ACCESS`.
 - **Тесты:** расписание покрывает весь сценарий без пересечений; симметрия отношений, где

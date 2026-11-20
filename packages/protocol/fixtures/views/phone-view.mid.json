@@ -1,0 +1,253 @@
+{
+  "status": {
+    "time": "08:20",
+    "battery": 71,
+    "signal": 82
+  },
+  "apps": [
+    {
+      "id": "camera",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "contacts",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "calls",
+      "badge": 1,
+      "enabled": true
+    },
+    {
+      "id": "messages",
+      "badge": 2,
+      "enabled": true
+    },
+    {
+      "id": "gallery",
+      "badge": 3,
+      "enabled": true
+    },
+    {
+      "id": "files",
+      "badge": 1,
+      "enabled": true
+    },
+    {
+      "id": "notes",
+      "badge": 1,
+      "enabled": true
+    },
+    {
+      "id": "maps",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "browser",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "settings",
+      "badge": 0,
+      "enabled": true
+    }
+  ],
+  "contacts": [
+    {
+      "id": "ct_director",
+      "name": "Директор санатория",
+      "number": "+7 495 010-01-01"
+    },
+    {
+      "id": "ct_station",
+      "name": "Участковый",
+      "number": "+7 495 010-02-02"
+    },
+    {
+      "id": "ct_doctor",
+      "name": "Доктор Белов",
+      "number": "+7 495 010-03-03",
+      "portraitRef": "portrait_doctor_01"
+    }
+  ],
+  "threads": [
+    {
+      "id": "th_director",
+      "contactId": "ct_director",
+      "messages": [
+        {
+          "id": "m1",
+          "from": "them",
+          "text": "Вы уже на месте? Пожалуйста, ничего не трогайте до приезда полиции.",
+          "at": 40,
+          "read": true
+        },
+        {
+          "id": "m2",
+          "from": "me",
+          "text": "Я на месте, осматриваюсь.",
+          "at": 55,
+          "read": true
+        },
+        {
+          "id": "m3",
+          "from": "them",
+          "text": "Ключ от процедурной у меня. Зайдите, расскажу подробнее.",
+          "at": 1380,
+          "read": false
+        },
+        {
+          "id": "m4",
+          "from": "them",
+          "text": "И принесите ту записку, если нашли.",
+          "at": 1395,
+          "read": false
+        }
+      ],
+      "availableReplies": [
+        {
+          "id": "reply_coming",
+          "text": "Скоро буду."
+        },
+        {
+          "id": "reply_found_note",
+          "text": "Записку нашёл, покажу при встрече."
+        }
+      ],
+      "unread": 2
+    }
+  ],
+  "callLog": [
+    {
+      "id": "cl1",
+      "contactId": "ct_station",
+      "direction": "outgoing",
+      "at": 70,
+      "durationMinutes": 3
+    },
+    {
+      "id": "cl2",
+      "contactId": "ct_doctor",
+      "direction": "missed",
+      "at": 1200,
+      "durationMinutes": 0
+    }
+  ],
+  "activeCall": {
+    "callId": "call_doctor_1",
+    "contactId": "ct_doctor",
+    "state": "active",
+    "lines": [
+      {
+        "speaker": "other",
+        "text": "Слушаю. У меня мало времени, говорите быстро."
+      },
+      {
+        "speaker": "player",
+        "text": "Мне нужно уточнить, кто брал ключ от процедурной."
+      },
+      {
+        "speaker": "other",
+        "text": "Ключ?.. Я уже говорил: он у меня в ящике."
+      }
+    ],
+    "choices": [
+      {
+        "id": "choice_press_logbook",
+        "text": "В журнале выдача в 21:40."
+      },
+      {
+        "id": "choice_back_off",
+        "text": "Хорошо, потом уточню."
+      }
+    ]
+  },
+  "gallery": [
+    {
+      "id": "img_note",
+      "title": "Порванная записка",
+      "imageRef": "clue_note.jpg",
+      "takenAt": 96,
+      "caption": "Зимний сад"
+    },
+    {
+      "id": "img_footprints",
+      "title": "Следы сапог",
+      "imageRef": "clue_footprints.jpg",
+      "takenAt": 192
+    },
+    {
+      "id": "img_logbook",
+      "title": "Журнал выдачи ключей",
+      "imageRef": "clue_logbook.jpg",
+      "takenAt": 642,
+      "caption": "Процедурная"
+    }
+  ],
+  "files": [
+    {
+      "id": "file_schedule",
+      "name": "График дежурств.pdf",
+      "locked": false,
+      "content": "Ночное дежурство на этой неделе: медсестра Н., смена с 20:00 до 08:00."
+    },
+    {
+      "id": "file_accounts",
+      "name": "Бухгалтерия_2025.xlsx",
+      "locked": true,
+      "passwordHint": "Год основания санатория"
+    }
+  ],
+  "notes": [
+    {
+      "id": "n1",
+      "source": "auto",
+      "text": "Найдена порванная записка в Зимнем саду.",
+      "at": 95
+    },
+    {
+      "id": "n2",
+      "source": "player",
+      "text": "Проверить, кто брал ключ.",
+      "at": 650
+    }
+  ],
+  "mapPins": [
+    {
+      "id": "pin_doctor",
+      "locationId": "loc_infirmary",
+      "label": "Доктор Белов",
+      "seenAt": 1380
+    },
+    {
+      "id": "pin_garden",
+      "locationId": "loc_garden",
+      "label": "Где найдена записка"
+    }
+  ],
+  "browserPages": [
+    {
+      "id": "page_news",
+      "title": "Местные новости",
+      "url": "internal://news/sanatorium",
+      "text": "В санатории «Берёзки» продолжаются проверки."
+    }
+  ],
+  "notifications": [
+    {
+      "id": "nt1",
+      "appId": "messages",
+      "title": "Директор санатория",
+      "text": "И принесите ту записку, если нашли.",
+      "at": 1395,
+      "read": false
+    }
+  ],
+  "effects": {
+    "glitchLevel": 12
+  }
+}

@@ -1,9 +1,19 @@
 import { PROTOCOL_VERSION } from '@hs/protocol';
 import Fastify from 'fastify';
+import os from 'node:os';
 import serverPackage from '../package.json' with { type: 'json' };
 import type { ServerConfig } from './config/index.ts';
+import { listNetworkCandidates, type NetworkInterfaces } from './config/network.ts';
 
-export function buildApp(config: ServerConfig) {
+export interface AppDependencies {
+  /** Defaults to `os.networkInterfaces`; replaced in tests. */
+  networkInterfaces?: () => NetworkInterfaces;
+}
+
+export function buildApp(
+  config: ServerConfig,
+  { networkInterfaces = os.networkInterfaces }: AppDependencies = {},
+) {
   const app = Fastify({
     logger: { level: config.logLevel },
     logController: new Fastify.LogController({ disableRequestLogging: true }),
@@ -27,6 +37,10 @@ export function buildApp(config: ServerConfig) {
     status: 'ok',
     version: serverPackage.version,
     protocolVersion: PROTOCOL_VERSION,
+  }));
+
+  app.get('/api/v1/network', () => ({
+    candidates: listNetworkCandidates(networkInterfaces(), config.publicHost),
   }));
 
   return app;

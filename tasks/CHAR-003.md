@@ -1,7 +1,7 @@
 ---
 id: CHAR-003
 title: "Расписания и рутины: whereShouldBe, переопределения"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2
