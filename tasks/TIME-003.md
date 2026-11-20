@@ -1,7 +1,7 @@
 ---
 id: TIME-003
 title: "TimeSystem.advance: фазы обработки, прерывания, события часов"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: time
 depends_on: [TIME-002]
 modules: ["packages/core/src/time/time-system.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-time-1
+claimed_at: "2026-11-20T08:00:40Z"
 ---
 
 # TIME-003 — TimeSystem.advance: фазы обработки, прерывания, события часов
