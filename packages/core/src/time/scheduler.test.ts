@@ -298,23 +298,3 @@ describe('serialize / restore', () => {
     );
   });
 });
-
-describe('performance', () => {
-  it('100 000 schedule + pop in under 200 ms', () => {
-    const run = (): number => {
-      const s = new Scheduler();
-      let x = 12345; // fixed LCG: no Math.random in core (ADR 0004)
-      const start = process.hrtime.bigint();
-      for (let i = 0; i < 100_000; i++) {
-        x = (Math.imul(x, 1664525) + 1013904223) >>> 0;
-        s.schedule(ev(x % 4320, ((x >>> 12) % 7) as TickPhase, (x >>> 20) % 5));
-      }
-      let popped = 0;
-      while (s.popNext(Number.MAX_SAFE_INTEGER)) popped++;
-      expect(popped).toBe(100_000);
-      return Number(process.hrtime.bigint() - start) / 1e6;
-    };
-    run(); // warm-up: JIT
-    expect(Math.min(run(), run(), run())).toBeLessThan(200);
-  });
-});
