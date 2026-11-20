@@ -1,7 +1,7 @@
 ---
 id: CORE-003
 title: "Тип Investigation и fixture-builder мини-сценария «tiny-manor»"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: core
 depends_on: [TRUTH-002, CHAR-003, WORLD-002]
 modules: ["packages/core/src/game/investigation.ts", "packages/core/test/fixtures"]
-assignee: null
-claimed_at: null
+assignee: egor-codex-core-003
+claimed_at: "2026-11-20T15:43:17Z"
 ---
 
 # CORE-003 — Тип Investigation и fixture-builder мини-сценария «tiny-manor»
