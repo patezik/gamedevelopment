@@ -1,0 +1,284 @@
+{
+  "clock": {
+    "t": 1460,
+    "day": 2,
+    "time": "08:20",
+    "period": "morning",
+    "remainingMinutes": 2860
+  },
+  "location": {
+    "id": "loc_infirmary",
+    "name": "Процедурная",
+    "description": "Белый кафель, стеклянный шкаф с лекарствами. На столе остался раскрытый журнал.",
+    "lighting": "dim",
+    "hotspots": [
+      {
+        "id": "hs_cabinet",
+        "name": "Шкаф с лекарствами",
+        "examined": true
+      },
+      {
+        "id": "hs_logbook",
+        "name": "Журнал на столе",
+        "examined": true
+      },
+      {
+        "id": "hs_sink",
+        "name": "Раковина",
+        "examined": false
+      }
+    ],
+    "exits": [
+      {
+        "locationId": "loc_corridor",
+        "name": "Главный коридор",
+        "minutes": 2
+      }
+    ]
+  },
+  "presentCharacters": [
+    {
+      "id": "ch_doctor",
+      "name": "Доктор Белов",
+      "portraitRef": "portrait_doctor_01",
+      "demeanor": "раздражён"
+    }
+  ],
+  "availableActions": [
+    {
+      "action": {
+        "type": "interrogate",
+        "characterId": "ch_doctor",
+        "subject": {
+          "type": "evidence",
+          "clueId": "clue_logbook"
+        }
+      },
+      "label": "Предъявить журнал выдачи ключей",
+      "costPreview": {
+        "min": 25,
+        "max": 25
+      }
+    },
+    {
+      "action": {
+        "type": "examineHotspot",
+        "hotspotId": "hs_sink"
+      },
+      "label": "Изучить раковину",
+      "costPreview": {
+        "min": 6,
+        "max": 6
+      }
+    },
+    {
+      "action": {
+        "type": "pickLock",
+        "targetId": "hs_cabinet_lock"
+      },
+      "label": "Вскрыть замок шкафчика",
+      "costPreview": {
+        "min": 25,
+        "max": 38
+      }
+    },
+    {
+      "action": {
+        "type": "rest",
+        "minutes": 120
+      },
+      "label": "Отдохнуть 2 часа",
+      "costPreview": {
+        "min": 150,
+        "max": 150
+      }
+    },
+    {
+      "action": {
+        "type": "wait",
+        "minutes": 30
+      },
+      "label": "Подождать 30 минут",
+      "costPreview": {
+        "min": 38,
+        "max": 38
+      }
+    }
+  ],
+  "vitals": {
+    "health": 8,
+    "sanity": 6,
+    "fatigue": 78
+  },
+  "static": 35,
+  "inventory": [
+    {
+      "id": "it_flashlight",
+      "name": "Фонарь",
+      "description": "Тяжёлый металлический фонарь."
+    },
+    {
+      "id": "it_lockpick",
+      "name": "Отмычка",
+      "description": "Набор тонких стальных крючков."
+    }
+  ],
+  "caseBoard": {
+    "clues": [
+      {
+        "id": "clue_note",
+        "title": "Порванная записка",
+        "description": "Обрывок листа: «…в десять, у оранжереи. Не говори никому».",
+        "kind": "document",
+        "discoveredAt": 95,
+        "locationId": "loc_garden",
+        "captured": true
+      },
+      {
+        "id": "clue_footprints",
+        "title": "Следы сапог",
+        "description": "Грязные следы ведут от чёрного хода к процедурной.",
+        "kind": "physical",
+        "discoveredAt": 190,
+        "locationId": "loc_corridor",
+        "captured": true
+      },
+      {
+        "id": "clue_logbook",
+        "title": "Журнал выдачи ключей",
+        "description": "Ключ от процедурной взят в 21:40 вечером.",
+        "kind": "document",
+        "discoveredAt": 640,
+        "locationId": "loc_infirmary",
+        "captured": true
+      },
+      {
+        "id": "clue_nurse_alibi",
+        "title": "Показание дежурной",
+        "description": "Дежурная утверждает, что всю ночь не покидала пост.",
+        "kind": "testimonial",
+        "discoveredAt": 760,
+        "locationId": "loc_lobby",
+        "captured": true
+      },
+      {
+        "id": "clue_voicemail",
+        "title": "Запись на автоответчике",
+        "description": "Тихий мужской голос просит перезвонить «до полуночи».",
+        "kind": "digital",
+        "discoveredAt": 1180,
+        "locationId": "loc_office",
+        "captured": false
+      }
+    ],
+    "statements": [
+      {
+        "id": "st_nurse_night",
+        "characterId": "ch_nurse",
+        "topicId": "topic_whereabouts",
+        "text": "Я всю ночь просидела на посту и никуда не отлучалась.",
+        "heardAt": 760
+      },
+      {
+        "id": "st_doctor_keys",
+        "characterId": "ch_doctor",
+        "topicId": "topic_keys",
+        "text": "Ключ от процедурной всегда лежит у меня в ящике.",
+        "heardAt": 1390
+      }
+    ],
+    "contradictions": [
+      {
+        "id": "con_keys",
+        "statementId": "st_doctor_keys",
+        "againstId": "clue_logbook",
+        "summary": "Доктор говорит, что ключ не покидал ящик, но журнал показывает выдачу в 21:40."
+      }
+    ],
+    "personsOfInterest": [
+      {
+        "characterId": "ch_doctor",
+        "name": "Доктор Белов",
+        "linkedClueIds": ["clue_logbook"]
+      },
+      {
+        "characterId": "ch_nurse",
+        "name": "Дежурная медсестра",
+        "linkedClueIds": ["clue_nurse_alibi", "clue_footprints"]
+      }
+    ],
+    "suspicions": [
+      {
+        "characterId": "ch_doctor",
+        "level": "possible",
+        "note": "Соврал про ключ"
+      }
+    ],
+    "timeline": [
+      {
+        "id": "tl_key",
+        "from": 1300,
+        "text": "Ключ от процедурной выдан",
+        "sourceIds": ["clue_logbook"]
+      },
+      {
+        "id": "tl_nurse",
+        "from": 0,
+        "to": 760,
+        "text": "Дежурная утверждает, что была на посту",
+        "sourceIds": ["st_nurse_night"]
+      }
+    ]
+  },
+  "interaction": {
+    "characterId": "ch_doctor",
+    "characterName": "Доктор Белов",
+    "topics": [
+      {
+        "id": "topic_whereabouts",
+        "label": "Где вы были ночью?",
+        "costPreview": {
+          "min": 13,
+          "max": 13
+        }
+      },
+      {
+        "id": "topic_keys",
+        "label": "Расскажите про ключи",
+        "costPreview": {
+          "min": 13,
+          "max": 13
+        }
+      }
+    ],
+    "presentable": [
+      {
+        "type": "evidence",
+        "id": "clue_logbook",
+        "label": "Журнал выдачи ключей"
+      },
+      {
+        "type": "contradiction",
+        "id": "con_keys",
+        "label": "Ключ в ящике и запись в журнале"
+      }
+    ],
+    "history": [
+      {
+        "speaker": "player",
+        "text": "Расскажите про ключи.",
+        "at": 1390
+      },
+      {
+        "speaker": "other",
+        "text": "Ключ от процедурной всегда лежит у меня в ящике.",
+        "at": 1390
+      }
+    ]
+  },
+  "phone": {
+    "paired": true,
+    "online": true,
+    "battery": 71
+  }
+}

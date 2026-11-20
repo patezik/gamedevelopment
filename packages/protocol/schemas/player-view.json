@@ -1,0 +1,1219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "clock": {
+      "type": "object",
+      "properties": {
+        "t": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "day": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "time": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "period": {
+          "type": "string",
+          "enum": [
+            "morning",
+            "day",
+            "evening",
+            "night"
+          ]
+        },
+        "remainingMinutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "t",
+        "day",
+        "time",
+        "period",
+        "remainingMinutes"
+      ],
+      "additionalProperties": false
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "lighting": {
+          "type": "string",
+          "enum": [
+            "bright",
+            "dim",
+            "dark"
+          ]
+        },
+        "hotspots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "examined": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "examined"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "exits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "locationId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "blockedReason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "locationId",
+              "name",
+              "minutes"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "lighting",
+        "hotspots",
+        "exits"
+      ],
+      "additionalProperties": false
+    },
+    "presentCharacters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "portraitRef": {
+            "type": "string"
+          },
+          "demeanor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "portraitRef",
+          "demeanor"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "availableActions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "move"
+                  },
+                  "locationId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "locationId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "examineLocation"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "examineHotspot"
+                  },
+                  "hotspotId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "hotspotId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "talk"
+                  },
+                  "characterId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "topicId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "characterId",
+                  "topicId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "interrogate"
+                  },
+                  "characterId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subject": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "evidence"
+                          },
+                          "clueId": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "clueId"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "contradiction"
+                          },
+                          "contradictionId": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "contradictionId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "characterId",
+                  "subject"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "read"
+                  },
+                  "documentId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "documentId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "useItem"
+                  },
+                  "itemId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "itemId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "pickLock"
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "targetId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "rest"
+                  },
+                  "minutes": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "type",
+                  "minutes"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "wait"
+                  },
+                  "minutes": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "type",
+                  "minutes"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "accuse"
+                  },
+                  "caseFile": {
+                    "type": "object",
+                    "properties": {
+                      "accusedIds": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "motive": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "means": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "opportunity": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "evidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "required": [
+                      "accusedIds",
+                      "evidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "confirm": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "type",
+                  "caseFile",
+                  "confirm"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "markSuspicion"
+                  },
+                  "characterId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "level": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "characterId",
+                  "level"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "call"
+                  },
+                  "contactId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "contactId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "answerCall"
+                  },
+                  "callId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "callId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "callChoice"
+                  },
+                  "choiceId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "choiceId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "message"
+                  },
+                  "contactId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "templateId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "contactId",
+                  "templateId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "browse"
+                  },
+                  "pageId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "pageId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "openFile"
+                  },
+                  "fileId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "fileId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "unlockFile"
+                  },
+                  "fileId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "fileId",
+                  "password"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "addNote"
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "text"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "captureEvidence"
+                  },
+                  "tokenId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "tokenId"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "costPreview": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          },
+          "blockedReason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "label",
+          "costPreview"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "vitals": {
+      "type": "object",
+      "properties": {
+        "health": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "sanity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "fatigue": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "health",
+        "sanity",
+        "fatigue"
+      ],
+      "additionalProperties": false
+    },
+    "static": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "inventory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "caseBoard": {
+      "type": "object",
+      "properties": {
+        "clues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "physical",
+                  "document",
+                  "digital",
+                  "testimonial"
+                ]
+              },
+              "discoveredAt": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "locationId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "captured": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description",
+              "kind",
+              "discoveredAt",
+              "locationId",
+              "captured"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "statements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "characterId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "topicId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "text": {
+                "type": "string"
+              },
+              "heardAt": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "characterId",
+              "topicId",
+              "text",
+              "heardAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "contradictions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "statementId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "againstId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "summary": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "statementId",
+              "againstId",
+              "summary"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "personsOfInterest": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "characterId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "linkedClueIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "characterId",
+              "name",
+              "linkedClueIds"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "suspicions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "characterId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "possible",
+                  "prime"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "characterId",
+              "level"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "from": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "to": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "text": {
+                "type": "string"
+              },
+              "sourceIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "id",
+              "from",
+              "text",
+              "sourceIds"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "clues",
+        "statements",
+        "contradictions",
+        "personsOfInterest",
+        "suspicions",
+        "timeline"
+      ],
+      "additionalProperties": false
+    },
+    "pendingCapture": {
+      "type": "object",
+      "properties": {
+        "tokenId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clueTitle": {
+          "type": "string"
+        },
+        "expiresInMinutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "tokenId",
+        "clueTitle",
+        "expiresInMinutes"
+      ],
+      "additionalProperties": false
+    },
+    "interaction": {
+      "type": "object",
+      "properties": {
+        "characterId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "characterName": {
+          "type": "string"
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "costPreview": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "costPreview"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "presentable": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "evidence",
+                  "contradiction"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "label"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "speaker": {
+                "type": "string",
+                "enum": [
+                  "player",
+                  "other"
+                ]
+              },
+              "text": {
+                "type": "string"
+              },
+              "at": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "speaker",
+              "text",
+              "at"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "characterId",
+        "characterName",
+        "topics",
+        "presentable",
+        "history"
+      ],
+      "additionalProperties": false
+    },
+    "phone": {
+      "type": "object",
+      "properties": {
+        "paired": {
+          "type": "boolean"
+        },
+        "online": {
+          "type": "boolean"
+        },
+        "battery": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "paired",
+        "online",
+        "battery"
+      ],
+      "additionalProperties": false
+    },
+    "ending": {
+      "type": "object",
+      "properties": {
+        "endingId": {
+          "type": "string",
+          "enum": [
+            "solved",
+            "partial",
+            "wrong_accusation",
+            "time_up",
+            "death",
+            "madness"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "proven": {
+          "type": "object",
+          "properties": {
+            "motive": {
+              "type": "boolean"
+            },
+            "means": {
+              "type": "boolean"
+            },
+            "opportunity": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "motive",
+            "means",
+            "opportunity"
+          ],
+          "additionalProperties": false
+        },
+        "recap": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "type": "string"
+            },
+            "responsible": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "summary",
+            "responsible"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "endingId",
+        "title",
+        "text"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "clock",
+    "location",
+    "presentCharacters",
+    "availableActions",
+    "vitals",
+    "static",
+    "inventory",
+    "caseBoard",
+    "phone"
+  ],
+  "additionalProperties": false
+}

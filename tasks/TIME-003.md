@@ -1,7 +1,7 @@
 ---
 id: TIME-003
 title: "TimeSystem.advance: фазы обработки, прерывания, события часов"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2

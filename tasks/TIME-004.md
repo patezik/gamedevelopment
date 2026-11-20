@@ -1,7 +1,7 @@
 ---
 id: TIME-004
 title: "ActionCostTable и resolveActionCost с модификаторами"
-status: in_progress
+status: review
 priority: P0
 complexity: S
 phase: 2
@@ -49,10 +49,10 @@ claimed_at: "2026-11-20T07:53:47Z"
 
 ## Критерии приёмки
 
-- [ ] Все действия из docs/game-design/game-design.md §2 имеют дефолт.
-- [ ] Модификаторы применяются в фиксированном порядке и округляются до целых.
-- [ ] Неизвестное действие → ошибка ACTION_INVALID.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Все действия из docs/game-design/game-design.md §2 имеют дефолт.
+- [x] Модификаторы применяются в фиксированном порядке и округляются до целых.
+- [x] Неизвестное действие → ошибка ACTION_INVALID.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
