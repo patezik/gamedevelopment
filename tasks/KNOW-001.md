@@ -1,7 +1,7 @@
 ---
 id: KNOW-001
 title: "KnowledgeStore: убеждения, источники, память с размытием"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: knowledge
 depends_on: [TRUTH-001]
 modules: ["packages/core/src/knowledge/store.ts"]
-assignee: null
-claimed_at: null
+assignee: egor-codex-1
+claimed_at: "2026-11-20T14:47:12Z"
 ---
 
 # KNOW-001 — KnowledgeStore: убеждения, источники, память с размытием
