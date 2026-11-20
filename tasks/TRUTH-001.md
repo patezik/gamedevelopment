@@ -1,7 +1,7 @@
 ---
 id: TRUTH-001
 title: "Словарь фактов (Fact) и FactId"
-status: todo
+status: in_progress
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: truth
 depends_on: [CORE-002, CHAR-001, WORLD-001]
 modules: ["packages/core/src/truth/facts.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-core-1
+claimed_at: "2026-11-20T06:57:57Z"
 ---
 
 # TRUTH-001 — Словарь фактов (Fact) и FactId
