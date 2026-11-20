@@ -37,7 +37,8 @@ npm run docs:check          # проверка ссылок документац
 | `npm run docs:check` | проверка относительных ссылок в Markdown | сейчас |
 | `npm run lint` / `typecheck` / `test` | проверки TS-кода (на пустом наборе пакетов завершаются с кодом 0) | сейчас |
 | `npm run format` / `format:check` | форматирование Prettier (Markdown не форматируется) | сейчас |
-| `npm run dev:server` | Session Server на `0.0.0.0:7420` | после FND-005, FND-010 |
+| `npm run dev -w @hs/server` | Session Server на `0.0.0.0:7420` с перезапуском при изменениях | сейчас |
+| `npm run start -w @hs/server` | Session Server без режима наблюдения | сейчас |
 | `npm run dev:mobile` | `npx expo start` в `apps/mobile` | после FND-006, FND-010 |
 | `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | сейчас |
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
@@ -74,6 +75,10 @@ npm run dev:mobile           # покажет QR Expo Go — это QR разр�
 
 ## 6. Сеть и брандмауэр
 
+Для проверки запущенного сервера откройте `http://localhost:7420/api/v1/health`. Ответ содержит
+`status`, версию сервера и версию протокола. Переменные окружения перечислены в
+[документации сервера](../backend/backend.md).
+
 - Windows: при первом запуске сервера разрешите доступ Node.js в **частных** сетях.
 - macOS: разрешите входящие подключения для `node` в настройках брандмауэра.
 - Если у компьютера несколько адресов (VPN, WSL, Docker), выберите адрес домашней сети на экране
@@ -86,4 +91,4 @@ npm run dev:mobile           # покажет QR Expo Go — это QR разр�
 | Телефон не подключается к серверу | разные сети, гостевой Wi-Fi, брандмауэр | одна сеть, разрешить Node в брандмауэре, проверить адрес |
 | Expo Go: «project is incompatible» | версия Expo Go не совпадает с SDK | обновить Expo Go; см. ADR 0007 о версиях |
 | Expo Go просит войти | требование Expo Go 2026 | `npx expo login` и вход в приложении |
-| Порт 7420 занят | другой процесс | `HS_PORT=7421 npm run dev:server` |
+| Порт 7420 занят | другой процесс | задайте `HS_PORT=7421` и запустите `npm run dev -w @hs/server` |
