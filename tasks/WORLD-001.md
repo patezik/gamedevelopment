@@ -1,7 +1,7 @@
 ---
 id: WORLD-001
 title: "Граф локаций: перемещения, освещение, доступ по часам и замкам"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2

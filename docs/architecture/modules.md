@@ -166,6 +166,15 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   class RelationshipGraph { get(a, b): Relationship | undefined; neighbors(a): Relationship[]; adjust(a, b, delta, cause: EventId): void }
   function whereShouldBe(c: Character, t: GameMinutes, overrides: ScheduleOverride[]): RoutineBlock;
   ```
+- **Схема и JSON:** `@hs/core/characters` экспортирует `characterSchema`,
+  `serializeCharacter` и `deserializeCharacter`. Схема требует все восемь черт в диапазоне
+  `0..1` и отклоняет неизвестные поля, в том числе во вложенных объектах.
+- **Данные профиля:** `SocialStatus` — строковый идентификатор, `BiographyFact` — фрагмент
+  `{ text, tags }`, `GoalSeed` — `{ kind, weight }` с весом `0..1`, `Habit` — `{ activity }`.
+  `AccessGrant` содержит `locationId`, `itemId` или оба. Секреты хранятся как ссылки.
+- **Рутина:** `RoutineBlock` содержит `{ from, to, location, activity, flexibility }`.
+  Границы задаются в минутах суток, гибкость — числом `0..1`. Для ночных блоков `to` может быть
+  меньше `from`. Покрытие суток и переопределения проверяет CHAR-003.
 - **Зависимости:** `common`, `world`, `time`.
 - **Ошибки:** `CHAR_SCHEDULE_GAP` (дыра в расписании), `CHAR_INVALID_ACCESS`.
 - **Тесты:** расписание покрывает весь сценарий без пересечений; симметрия отношений, где
