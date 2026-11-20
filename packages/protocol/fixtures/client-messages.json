@@ -1,0 +1,50 @@
+[
+  {
+    "v": 1,
+    "type": "hello",
+    "id": "c-1",
+    "payload": {
+      "role": "phone",
+      "token": "fixture-token",
+      "appVersion": "0.1.0",
+      "resume": {
+        "lastSeq": 2,
+        "stateVersion": 1
+      }
+    }
+  },
+  {
+    "v": 1,
+    "type": "ping",
+    "id": "c-2",
+    "payload": {}
+  },
+  {
+    "v": 1,
+    "type": "action.request",
+    "id": "c-3",
+    "payload": {
+      "action": {
+        "type": "move",
+        "locationId": "hall"
+      }
+    }
+  },
+  {
+    "v": 1,
+    "type": "qr.scan",
+    "id": "c-4",
+    "payload": {
+      "raw": "hs1:ev:fixture"
+    }
+  },
+  {
+    "v": 1,
+    "type": "phone.ui",
+    "id": "c-5",
+    "payload": {
+      "kind": "appOpened",
+      "ref": "notes"
+    }
+  }
+]
