@@ -1,7 +1,7 @@
 ---
 id: PROTO-002
 title: "Схемы PlayerView и PhoneView с фикстурами"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2
