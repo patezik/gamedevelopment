@@ -2,12 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 131 · in_progress: 2 · review: 0 · done: 6 · blocked: 1
+Всего задач: **140** · todo: 130 · in_progress: 3 · review: 0 · done: 6 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [CORE-001](CORE-001.md) — Детерминированный PRNG sfc32 с подпотоками fork(label) (P0, M)
-- [CORE-002](CORE-002.md) — Канонический JSON, хеширование состояния и генерация ID (P0, S)
 - [PROTO-001](PROTO-001.md) — Каталог сообщений протокола (hello, welcome, action, event, qr, error) (P0, M)
 - [TIME-001](TIME-001.md) — GameMinutes и Calendar: дни, часы, периоды суток (P0, S)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
@@ -59,7 +58,7 @@
 | [CHAR-003](CHAR-003.md) | Расписания и рутины: whereShouldBe, переопределения | P0 | M | todo | — | [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
 | [CNT-001](CNT-001.md) | Схемы контента сценариев (zod) и загрузчик @hs/core/content | P0 | L | todo | — | [CORE-002](CORE-002.md) |
 | [CORE-001](CORE-001.md) | Детерминированный PRNG sfc32 с подпотоками fork(label) | P0 | M | todo | — | [FND-009](FND-009.md) |
-| [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | todo | — | [FND-009](FND-009.md) |
+| [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | in_progress | codex-core | [FND-009](FND-009.md) |
 | [CORE-003](CORE-003.md) | Тип Investigation и fixture-builder мини-сценария «tiny-manor» | P0 | M | todo | — | [TRUTH-002](TRUTH-002.md), [CHAR-003](CHAR-003.md), [WORLD-002](WORLD-002.md) |
 | [ENG-001](ENG-001.md) | GameEngine: агрегат состояния, dispatch, действия move и wait | P0 | M | todo | — | [TIME-003](TIME-003.md), [TIME-004](TIME-004.md), [WORLD-001](WORLD-001.md), [TRUTH-002](TRUTH-002.md), [CORE-003](CORE-003.md) |
 | [ENG-002](ENG-002.md) | Проекция PlayerView и тест отсутствия утечек истины | P0 | M | todo | — | [ENG-001](ENG-001.md), [PROTO-002](PROTO-002.md) |

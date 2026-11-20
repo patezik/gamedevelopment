@@ -1,7 +1,7 @@
 ---
 id: CORE-002
 title: "Канонический JSON, хеширование состояния и генерация ID"
-status: todo
+status: in_progress
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: core
 depends_on: [FND-009]
 modules: ["packages/core/src/common"]
-assignee: null
-claimed_at: null
+assignee: codex-core
+claimed_at: "2026-11-20T05:11:49Z"
 ---
 
 # CORE-002 — Канонический JSON, хеширование состояния и генерация ID
