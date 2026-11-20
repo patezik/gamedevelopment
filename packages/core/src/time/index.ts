@@ -15,3 +15,10 @@ export {
   type SchedulerState,
   type SerializedEvent,
 } from './scheduler.ts';
+export {
+  TimeSystem,
+  type AdvanceResult,
+  type ClockEvent,
+  type PhaseHandler,
+  type TickContext,
+} from './time-system.ts';
