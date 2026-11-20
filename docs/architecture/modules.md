@@ -116,14 +116,20 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     registerHandler(kind: string, h: PhaseHandler): void;
   }
   interface AdvanceResult { from: GameMinutes; to: GameMinutes; processed: number; interruptedAt?: GameMinutes; interruptReason?: string }
-  function resolveActionCost(action: ActionKind, ctx: CostContext, table: ActionCostTable): ActionCost;
+  function resolveActionCost(action: ActionKind, ctx?: CostContext, table?: ActionCostTable): ActionCost;  // table по умолчанию — DEFAULT_ACTION_COSTS
+  function createActionCostTable(overrides?: unknown): ActionCostTable;  // дефолты + переопределения пресета
+  interface ActionCost { min: number; max: number; expected: number }   // целые минуты
+  interface CostModifier { id: string; order: number; apply(minutes: number, action: ActionKind, ctx: CostContext): number }
+  interface TravelTimeProvider { travelTime(from: string, to: string): number | null }  // LocationGraph подходит структурно
+  interface CostContext { travel?: { provider: TravelTimeProvider; from: string; to: string }; minutes?: number; conversationMinutes?: number; modifiers?: CostModifier[] }
   ```
 - **Вход/выход:** стоимость действия в минутах → обработанные события и новое время.
 - **Зависимости:** `rng` (только для вариативных стоимостей), `common`.
 - **События (DomainEvent):** `ClockAdvanced`, `PeriodChanged`, `DayChanged`, `DeadlineReached`,
   `ScheduledEventMissed`.
 - **Ошибки:** `TIME_NEGATIVE_ADVANCE`, `TIME_BEYOND_SCENARIO_END` (усекается до конца с исходом),
-  `SCHEDULER_PAST_EVENT` (планирование в прошлое), `SCHEDULER_INVALID_STATE` (повреждённый снимок
+  `ACTION_INVALID` (неизвестное или неприменимое действие), `COST_TABLE_INVALID` (неверная таблица
+  стоимостей пресета), `SCHEDULER_PAST_EVENT` (планирование в прошлое), `SCHEDULER_INVALID_STATE` (повреждённый снимок
   при `Scheduler.restore`).
 - **Тесты:** порядок одновременных событий; переходы часов/дней/периодов; прерывания;
   сериализация/восстановление; сценарии разной длительности (property-тест).
