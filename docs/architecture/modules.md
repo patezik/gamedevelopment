@@ -70,7 +70,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 - **Интерфейс:**
   ```ts
-  class Calendar { constructor(startIso: string); toDisplay(t: GameMinutes): { day: number; hh: number; mm: number; period: DayPeriod } }
+  class Calendar { constructor(startIso: string); toDisplay(t: GameMinutes): { day: number; hh: number; mm: number; period: DayPeriod; dateIso: string }; format(t: GameMinutes): string }
   enum TickPhase { Calendar = 0, Schedules = 1, Simulation = 2, WorldEvents = 3, Availability = 4, Timers = 5, Outcome = 6 }
   interface ScheduledEvent<K extends string = string> { id: string; at: GameMinutes; phase: TickPhase; priority: number; kind: K; payload: unknown }
   class Scheduler { schedule(e: Omit<ScheduledEvent, "id">): string; cancel(id: string): boolean; peek(): ScheduledEvent | undefined; popDue(t: GameMinutes): ScheduledEvent[]; serialize(): SchedulerState }
