@@ -2,13 +2,14 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 117 · in_progress: 5 · review: 0 · done: 17 · blocked: 1
+Всего задач: **140** · todo: 117 · in_progress: 4 · review: 0 · done: 18 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [CHAR-002](CHAR-002.md) — Граф отношений: типы, доверие, валентность, история (P0, S)
 - [KNOW-001](KNOW-001.md) — KnowledgeStore: убеждения, источники, память с размытием (P0, M)
 - [PROTO-002](PROTO-002.md) — Схемы PlayerView и PhoneView с фикстурами (P0, M)
+- [TIME-003](TIME-003.md) — TimeSystem.advance: фазы обработки, прерывания, события часов (P0, M)
 - [CNT-002](CNT-002.md) — MVP-сценарий: локации, предметы, архетипы, отношения (данные) (P0, L)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
 
@@ -70,7 +71,7 @@
 | [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | todo | — | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md) |
 | [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | todo | — | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
 | [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | done | claude-time-1 | [FND-009](FND-009.md) |
-| [TIME-002](TIME-002.md) | Scheduler: детерминированная очередь событий | P0 | M | in_progress | claude-time-1 | [TIME-001](TIME-001.md), [CORE-002](CORE-002.md) |
+| [TIME-002](TIME-002.md) | Scheduler: детерминированная очередь событий | P0 | M | done | claude-time-1 | [TIME-001](TIME-001.md), [CORE-002](CORE-002.md) |
 | [TIME-003](TIME-003.md) | TimeSystem.advance: фазы обработки, прерывания, события часов | P0 | M | todo | — | [TIME-002](TIME-002.md) |
 | [TIME-004](TIME-004.md) | ActionCostTable и resolveActionCost с модификаторами | P0 | S | in_progress | claude-time-2 | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [TRUTH-001](TRUTH-001.md) | Словарь фактов (Fact) и FactId | P0 | S | done | codex-core-1 | [CORE-002](CORE-002.md), [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |

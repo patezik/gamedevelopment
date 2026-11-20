@@ -88,6 +88,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run content:check
       - run: npm test -- --coverage
+      - name: Scheduler performance without coverage
+        run: node packages/core/test/performance/scheduler.ts
 
   godot:
     name: Godot tests
