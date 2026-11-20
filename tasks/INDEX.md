@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 124 · in_progress: 4 · review: 0 · done: 11 · blocked: 1
+Всего задач: **140** · todo: 124 · in_progress: 3 · review: 1 · done: 11 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -76,7 +76,7 @@
 | [TRUTH-001](TRUTH-001.md) | Словарь фактов (Fact) и FactId | P0 | S | todo | — | [CORE-002](CORE-002.md), [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
 | [TRUTH-002](TRUTH-002.md) | TruthLog, TruthModel и IncidentRecord | P0 | M | todo | — | [TRUTH-001](TRUTH-001.md) |
 | [TRUTH-003](TRUTH-003.md) | Проверка инвариантов Truth Model | P0 | S | todo | — | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
-| [WORLD-001](WORLD-001.md) | Граф локаций: перемещения, освещение, доступ по часам и замкам | P0 | M | in_progress | codex-core | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
+| [WORLD-001](WORLD-001.md) | Граф локаций: перемещения, освещение, доступ по часам и замкам | P0 | M | review | codex-core | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [WORLD-002](WORLD-002.md) | Предметы, контейнеры и история их перемещений | P0 | S | todo | — | [WORLD-001](WORLD-001.md) |
 
 ## Фаза 3 · M3 — Generator produces worlds (12)
