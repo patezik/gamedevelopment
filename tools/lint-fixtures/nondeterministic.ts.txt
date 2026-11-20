@@ -1,0 +1,1 @@
+export const values = [Math.random(), Date.now(), performance.now(), new Date(), Date()];
