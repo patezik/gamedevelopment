@@ -1,7 +1,7 @@
 ---
 id: CHAR-001
 title: "Модель персонажа: личность, биография, цели, страхи, доступы"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: characters
 depends_on: [CNT-001]
 modules: ["packages/core/src/characters/character.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-core
+claimed_at: "2026-11-20T06:16:23Z"
 ---
 
 # CHAR-001 — Модель персонажа: личность, биография, цели, страхи, доступы
