@@ -2,12 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 113 · in_progress: 6 · review: 1 · done: 19 · blocked: 1
+Всего задач: **140** · todo: 113 · in_progress: 5 · review: 1 · done: 20 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [KNOW-001](KNOW-001.md) — KnowledgeStore: убеждения, источники, память с размытием (P0, M)
 - [CNT-002](CNT-002.md) — MVP-сценарий: локации, предметы, архетипы, отношения (данные) (P0, L)
+- [PROTO-003](PROTO-003.md) — Генерация GDScript-констант протокола и контрактные тесты Godot (P0, S)
 
 ## Критический путь
 
@@ -30,7 +31,7 @@
 | [INV-002](INV-002.md) Утверждения (Claims) и правила дедукции | 5 |
 | [KNOW-002](KNOW-002.md) LiePolicy и показания: answer(question) → правда, ошибка или ложь | 5 |
 | [PHONE-001](PHONE-001.md) Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | 5 |
-| [PROTO-002](PROTO-002.md) Схемы PlayerView и PhoneView с фикстурами | 5 |
+| [EVD-003](EVD-003.md) Режим фиксации улик телефоном и порт EvidenceTokenPort | 4 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -62,7 +63,7 @@
 | [ENG-002](ENG-002.md) | Проекция PlayerView и тест отсутствия утечек истины | P0 | M | todo | — | [ENG-001](ENG-001.md), [PROTO-002](PROTO-002.md) |
 | [KNOW-001](KNOW-001.md) | KnowledgeStore: убеждения, источники, память с размытием | P0 | M | todo | — | [TRUTH-001](TRUTH-001.md) |
 | [PROTO-001](PROTO-001.md) | Каталог сообщений протокола (hello, welcome, action, event, qr, error) | P0 | M | done | codex-core | [FND-004](FND-004.md) |
-| [PROTO-002](PROTO-002.md) | Схемы PlayerView и PhoneView с фикстурами | P0 | M | in_progress | claude-proto-1 | [PROTO-001](PROTO-001.md) |
+| [PROTO-002](PROTO-002.md) | Схемы PlayerView и PhoneView с фикстурами | P0 | M | done | claude-proto-1 | [PROTO-001](PROTO-001.md) |
 | [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | todo | — | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
 | [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | todo | — | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md) |
 | [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | todo | — | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |

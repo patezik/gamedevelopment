@@ -10,3 +10,4 @@ export {
   parseClientMessage,
   parseServerMessage,
 } from './messages/index.ts';
+export * from './views/index.ts';
