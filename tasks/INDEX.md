@@ -2,12 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 129 · in_progress: 4 · review: 0 · done: 6 · blocked: 1
+Всего задач: **140** · todo: 129 · in_progress: 3 · review: 0 · done: 7 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [PROTO-001](PROTO-001.md) — Каталог сообщений протокола (hello, welcome, action, event, qr, error) (P0, M)
 - [TIME-001](TIME-001.md) — GameMinutes и Calendar: дни, часы, периоды суток (P0, S)
+- [SRV-008](SRV-008.md) — Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам (P0, S)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
 
 ## Критический путь
@@ -41,7 +42,7 @@
 | [FND-002](FND-002.md) | ESLint-правила детерминизма и границ импорта | P0 | S | done | codex-foundation | [FND-001](FND-001.md), [FND-009](FND-009.md) |
 | [FND-003](FND-003.md) | CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
 | [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | done | claude-protocol-1 | [FND-001](FND-001.md) |
-| [FND-005](FND-005.md) | Каркас apps/server: Fastify 5, конфигурация, /health, логирование | P0 | M | in_progress | codex-foundation | [FND-001](FND-001.md), [FND-004](FND-004.md) |
+| [FND-005](FND-005.md) | Каркас apps/server: Fastify 5, конфигурация, /health, логирование | P0 | M | done | codex-foundation | [FND-001](FND-001.md), [FND-004](FND-004.md) |
 | [FND-006](FND-006.md) | Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | P0 | M | blocked | codex-mobile | [FND-001](FND-001.md), [FND-004](FND-004.md) |
 | [FND-007](FND-007.md) | Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) | P0 | S | done | codex-desktop | — |
 | [FND-008](FND-008.md) | GUT 9.7.x, headless-запуск тестов Godot и CI-job | P0 | M | in_progress | codex-desktop | [FND-007](FND-007.md), [FND-003](FND-003.md) |
