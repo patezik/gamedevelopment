@@ -1,7 +1,7 @@
 ---
 id: CHAR-001
 title: "Модель персонажа: личность, биография, цели, страхи, доступы"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2
