@@ -1,7 +1,7 @@
 ---
 id: PROTO-001
 title: "Каталог сообщений протокола (hello, welcome, action, event, qr, error)"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2

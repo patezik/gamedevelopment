@@ -1,0 +1,51 @@
+{
+  "id": "_test_minimal",
+  "version": 1,
+  "title": {
+    "ru": "Тестовый сценарий"
+  },
+  "time": {
+    "startDateTime": "2026-01-14T08:00:00",
+    "durationMinutes": 120,
+    "historyStartMinutes": -60
+  },
+  "cast": {
+    "min": 2,
+    "max": 2,
+    "quotas": [
+      {
+        "archetype": "visitor",
+        "min": 2,
+        "max": 2
+      }
+    ]
+  },
+  "incident": {
+    "types": ["theft"],
+    "templates": ["missing_record"],
+    "minMotive": 0.4,
+    "victimConstraints": {
+      "excludeArchetypes": []
+    }
+  },
+  "criticalEvents": [],
+  "deadlines": [
+    {
+      "id": "deadline",
+      "at": 120,
+      "outcome": "time_up"
+    }
+  ],
+  "endings": ["solved", "time_up"],
+  "survival": {
+    "startVitals": {
+      "health": 10,
+      "sanity": 8,
+      "fatigue": 0
+    },
+    "staticCurve": "default"
+  },
+  "phone": {
+    "minQrShare": 0
+  }
+}
