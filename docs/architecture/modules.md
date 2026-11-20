@@ -29,6 +29,8 @@ interface Interval { from: GameMinutes; to: GameMinutes }   // полуинте�
 `Hasher.sha256(text)`. `sequentialId(prefix)` создаёт отдельную последовательность `prefix_1`,
 `prefix_2` и далее. `hashId(prefix, value, length)` добавляет к префиксу и подчёркиванию первые
 `length` символов хеша (от 1 до 64).
+`verbSchema` — формат глагола действия (`^[a-z][a-z0-9_]*$`), общий для событий `truth` (реэкспорт
+из `@hs/core/truth`) и правил контента, которые с ними сопоставляются.
 
 Зависимости между модулями ядра (стрелка = «использует»), циклы запрещены:
 
@@ -309,7 +311,11 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   function deriveClues(traces: Trace[], rules: ClueRules): Clue[];
   function discoverable(clue: Clue, ctx: DiscoveryContext): boolean;
   interface EvidenceTokenPort { issue(clueId: ClueId, expiresAt: GameMinutes): TokenRef }   // реализует сервер
+  function compileTraceRules(input: unknown): TraceRuleSet;          // EVIDENCE_RULE_INVALID
+  function tracesForEvent(event: TruthEvent, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">): Trace[];
+  function deriveTraces(truth: { events(): readonly TruthEvent[] }, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">): Trace[];
   ```
+  Семантика сопоставления и времени — [scenario-presets.md §5](../procedural-generation/scenario-presets.md).
 - **Зависимости:** `truth`, `world`, `knowledge` (свидетельские следы).
 - **События:** `ClueAvailable`, `ClueDestroyed`, `CaptureRequested`.
 - **Ошибки:** `EVIDENCE_RULE_INVALID` (на загрузке контента).
