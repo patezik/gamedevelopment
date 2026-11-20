@@ -175,3 +175,29 @@ test('loader reports the exact path for schema errors and dangling references', 
     rmSync(folder, { recursive: true, force: true });
   }
 });
+
+test('loader rejects trace rule verbs and locations that the trace compiler rejects', () => {
+  const folder = mkdtempSync(join(tmpdir(), 'hs-content-test-'));
+  try {
+    cpSync(fixture, folder, { recursive: true });
+    const file = join(folder, 'trace-rules.json');
+    const [rule] = valid.traceRules;
+    const [spec] = rule!.produces;
+    const write = (extra: object) => writeFileSync(file, JSON.stringify([rule, extra]));
+
+    write({ ...rule, produces: [{ ...spec, at: '$actor' }] });
+    expect(() => loadScenarioFromDir(folder)).toThrow(
+      /CONTENT_SCHEMA_ERROR traceRules\[1\]\.produces\[0\]\.at: Expected a location ID or one of: \$location/,
+    );
+    write({ ...rule, verb: 'take-item' });
+    expect(() => loadScenarioFromDir(folder)).toThrow(/CONTENT_SCHEMA_ERROR traceRules\[1\]\.verb/);
+
+    write({ ...rule, verb: 'take_item', produces: [{ ...spec, at: '$location' }] });
+    expect(loadScenarioFromDir(folder).traceRules.map(({ verb }) => verb)).toEqual([
+      'take',
+      'take_item',
+    ]);
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+});

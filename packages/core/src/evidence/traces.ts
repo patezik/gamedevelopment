@@ -4,7 +4,14 @@ import { traceRulesSchema } from '../content/index.ts';
 import type { EventId, TruthEvent } from '../truth/index.ts';
 import type { ItemRegistry } from '../world/index.ts';
 
-export type TraceRule = z.infer<typeof traceRulesSchema>[number];
+type DeepReadonly<T> = T extends (infer E)[]
+  ? readonly DeepReadonly<E>[]
+  : T extends object
+    ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+    : T;
+
+/** A compiled rule: content data validated by `traceRulesSchema` and frozen. */
+export type TraceRule = DeepReadonly<z.infer<typeof traceRulesSchema>[number]>;
 export type TraceSpec = TraceRule['produces'][number];
 export type TraceKind = TraceSpec['kind'];
 export type TraceId = string;
@@ -27,20 +34,18 @@ export interface TruthEventSource {
   events(): readonly TruthEvent[];
 }
 
+// Fields are declared explicitly: Node type stripping does not support parameter properties.
 export class EvidenceError extends Error {
-  constructor(
-    readonly code: 'EVIDENCE_RULE_INVALID',
-    readonly path: string,
-    message: string,
-  ) {
+  readonly code: 'EVIDENCE_RULE_INVALID';
+  readonly path: string;
+
+  constructor(code: 'EVIDENCE_RULE_INVALID', path: string, message: string) {
     super(`${code} at ${path}: ${message}`);
     this.name = 'EvidenceError';
+    this.code = code;
+    this.path = path;
   }
 }
-
-// `$location` is the only placeholder documented for `at` (scenario-presets.md §5).
-// Other placeholders are rejected until their meaning is defined (OQ-17).
-const LOCATION_VARIABLES = new Set(['$location']);
 
 function freezeTree<T>(value: T): T {
   if (typeof value === 'object' && value !== null) {
@@ -50,13 +55,26 @@ function freezeTree<T>(value: T): T {
   return value;
 }
 
-/** Validated trace rules; rule order defines the order of produced traces. */
+/**
+ * Validated trace rules; rule order defines the order of produced traces. The private field makes
+ * the class nominal, so a plain `{ rules }` object is rejected by the compiler and at runtime.
+ */
 export class TraceRuleSet {
-  private constructor(readonly rules: readonly TraceRule[]) {
+  readonly #rules: readonly TraceRule[];
+
+  private constructor(rules: readonly TraceRule[]) {
+    this.#rules = rules;
     Object.freeze(this);
   }
 
-  /** Validates content data; schema and placeholder errors raise `EVIDENCE_RULE_INVALID`. */
+  get rules(): readonly TraceRule[] {
+    return this.#rules;
+  }
+
+  /**
+   * Validates content data with `traceRulesSchema`, the schema the content loader uses, so both
+   * accept the same verbs and `at` placeholders. Violations raise `EVIDENCE_RULE_INVALID`.
+   */
   static compile(input: unknown): TraceRuleSet {
     const parsed = traceRulesSchema.safeParse(input);
     if (!parsed.success) {
@@ -68,20 +86,17 @@ export class TraceRuleSet {
         issue?.message ?? 'Invalid trace rules',
       );
     }
-
-    parsed.data.forEach((rule, row) => {
-      rule.produces.forEach(({ at }, entry) => {
-        if (at.startsWith('$') && !LOCATION_VARIABLES.has(at)) {
-          throw new EvidenceError(
-            'EVIDENCE_RULE_INVALID',
-            `traceRules.${row}.produces.${entry}.at`,
-            `Unsupported location placeholder "${at}"`,
-          );
-        }
-      });
-    });
-
     return new TraceRuleSet(freezeTree(parsed.data));
+  }
+
+  static assertCompiled(value: unknown): asserts value is TraceRuleSet {
+    if (typeof value !== 'object' || value === null || !(#rules in value)) {
+      throw new EvidenceError(
+        'EVIDENCE_RULE_INVALID',
+        'traceRules',
+        'Expected rules returned by compileTraceRules',
+      );
+    }
   }
 }
 
@@ -103,6 +118,17 @@ function matches(rule: TraceRule, event: TruthEvent, items: ItemTagSource): bool
   );
 }
 
+/**
+ * Inputs are safe integers (TruthLog and content schemas), but their sum may not be. There is no
+ * domain error code for event time, so a RangeError reports the event instead of a wrong trace.
+ */
+function safeMinute(minute: number, eventId: EventId, field: 'availableFrom' | 'decaysAt'): number {
+  if (!Number.isSafeInteger(minute)) {
+    throw new RangeError(`Trace ${field} of ${eventId} is outside the safe integer range`);
+  }
+  return minute;
+}
+
 function traceId(sourceEventId: EventId, rule: number, spec: number): TraceId {
   // A hash keeps truth event order and rule positions out of ids that may reach clue records.
   return hashId('tr', { sourceEventId, rule, spec }, 16);
@@ -120,19 +146,24 @@ export function tracesForEvent(
 ): Trace[] {
   // A trace is a consequence of its event, and consequences start once the event ends
   // (truth invariant 3: `cause.t + cause.duration <= effect.t`). Provisional, see OQ-16.
-  const availableFrom = event.t + event.duration;
+  TraceRuleSet.assertCompiled(rules);
+  const availableFrom = safeMinute(event.t + event.duration, event.id, 'availableFrom');
   const traces: Trace[] = [];
 
   rules.rules.forEach((rule, row) => {
     if (!matches(rule, event, items)) return;
     rule.produces.forEach((spec, entry) => {
+      const decaysAt =
+        typeof spec.decaysAfter === 'number'
+          ? safeMinute(availableFrom + spec.decaysAfter, event.id, 'decaysAt')
+          : undefined;
       traces.push({
         id: traceId(event.id, row, entry),
         kind: spec.kind,
         sourceEventId: event.id,
         location: spec.at === '$location' ? event.location : spec.at,
         availableFrom,
-        ...(typeof spec.decaysAfter === 'number' && { decaysAt: availableFrom + spec.decaysAfter }),
+        ...(decaysAt !== undefined && { decaysAt }),
       });
     });
   });
@@ -149,6 +180,7 @@ export function deriveTraces(
   rules: TraceRuleSet,
   items: ItemTagSource,
 ): Trace[] {
+  TraceRuleSet.assertCompiled(rules);
   const events = [...truth.events()].sort((a, b) => a.t - b.t || compareEventIds(a.id, b.id));
   return events.flatMap((event) => tracesForEvent(event, rules, items));
 }
