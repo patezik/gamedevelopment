@@ -150,6 +150,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   class LocationGraph {
     travelTime(a, b, who?: Actor): number | null;
     path(a, b, who?: Actor): LocationId[];
+    nextTimedStep(a, b, who: Actor, now: GameMinutes): TimedTravelStep | null;
     isAccessible(loc, who: Actor, t: GameMinutes): AccessCheck;
     lightingAt(loc, period: DayPeriod): Light;
   }
@@ -172,6 +173,9 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   Внутри правила должны выполняться все условия, из списка правил достаточно одного.
   Пустой список открывает доступ всем. Интервал включает начало и исключает конец, а при
   `from > to` пересекает полночь. При отказе возвращается причина из первого правила.
+- **Вход по времени:** `nextTimedStep` возвращает первое ребро маршрута с самым ранним прибытием
+  с учётом доступа, в виде `{ destination, departAt, arriveAt }`. Актёр может ждать открытия
+  в предыдущей локации. Метод возвращает `null`, если он уже в цели или допустимого маршрута нет.
 - **Нет маршрута:** `travelTime` возвращает `null`, `path` выдаёт `WORLD_NO_PATH`.
   Неизвестный идентификатор локации даёт `WORLD_UNKNOWN_LOCATION`.
 - **Предметы:** реестр начинает работу с заданной игровой минуты (по умолчанию `0`). Для каждого
@@ -282,6 +286,10 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 Подробно — [character-simulation.md](../simulation/character-simulation.md).
 
+- **SIM-001:** модуль экспортирует `SimulationRunner`, `SimulationRunnerOptions`, `Agent`,
+  `Activity` и `ActivityStep`. Раннер регистрирует обработчики фаз `Schedules` и `Simulation`
+  в переданном `TimeSystem`. `getAgent(characterId)` возвращает снимок текущей активности и
+  состояния RNG. Целевой интерфейс ниже включает возможности следующих задач SIM.
 - **Интерфейс:**
   ```ts
   interface Agent { characterId: CharacterId; lod: "focus" | "background"; activity?: Activity; goals: ActiveGoal[]; wariness: number; stress: number }
