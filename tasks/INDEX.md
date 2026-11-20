@@ -2,13 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 129 · in_progress: 2 · review: 0 · done: 8 · blocked: 1
+Всего задач: **140** · todo: 128 · in_progress: 3 · review: 0 · done: 8 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [CNT-001](CNT-001.md) — Схемы контента сценариев (zod) и загрузчик @hs/core/content (P0, L)
 - [PROTO-001](PROTO-001.md) — Каталог сообщений протокола (hello, welcome, action, event, qr, error) (P0, M)
-- [TIME-001](TIME-001.md) — GameMinutes и Calendar: дни, часы, периоды суток (P0, S)
 - [SRV-008](SRV-008.md) — Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам (P0, S)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
 
@@ -69,7 +68,7 @@
 | [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | todo | — | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
 | [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | todo | — | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md) |
 | [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | todo | — | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
-| [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | todo | — | [FND-009](FND-009.md) |
+| [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | in_progress | claude-time-1 | [FND-009](FND-009.md) |
 | [TIME-002](TIME-002.md) | Scheduler: детерминированная очередь событий | P0 | M | todo | — | [TIME-001](TIME-001.md), [CORE-002](CORE-002.md) |
 | [TIME-003](TIME-003.md) | TimeSystem.advance: фазы обработки, прерывания, события часов | P0 | M | todo | — | [TIME-002](TIME-002.md) |
 | [TIME-004](TIME-004.md) | ActionCostTable и resolveActionCost с модификаторами | P0 | S | todo | — | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
