@@ -2,11 +2,14 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 128 · in_progress: 3 · review: 1 · done: 7 · blocked: 1
+Всего задач: **140** · todo: 125 · in_progress: 3 · review: 0 · done: 11 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [PROTO-001](PROTO-001.md) — Каталог сообщений протокола (hello, welcome, action, event, qr, error) (P0, M)
+- [TIME-002](TIME-002.md) — Scheduler: детерминированная очередь событий (P0, M)
+- [TIME-004](TIME-004.md) — ActionCostTable и resolveActionCost с модификаторами (P0, S)
+- [WORLD-001](WORLD-001.md) — Граф локаций: перемещения, освещение, доступ по часам и замкам (P0, M)
+- [CNT-002](CNT-002.md) — MVP-сценарий: локации, предметы, архетипы, отношения (данные) (P0, L)
 - [SRV-008](SRV-008.md) — Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам (P0, S)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
 
@@ -14,14 +17,13 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[CORE-002](CORE-002.md) → [CNT-001](CNT-001.md) → [CHAR-001](CHAR-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[CHAR-001](CHAR-001.md) → [TRUTH-001](TRUTH-001.md) → [TRUTH-002](TRUTH-002.md) → [CORE-003](CORE-003.md) → [GEN-001](GEN-001.md) → [GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
 | Задача | Блокирует напрямую |
 |---|---|
 | [TRUTH-002](TRUTH-002.md) TruthLog, TruthModel и IncidentRecord | 7 |
-| [CNT-001](CNT-001.md) Схемы контента сценариев (zod) и загрузчик @hs/core/content | 6 |
 | [ENG-001](ENG-001.md) GameEngine: агрегат состояния, dispatch, действия move и wait | 6 |
 | [ENG-004](ENG-004.md) Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | 6 |
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
@@ -32,6 +34,7 @@
 | [GDT-004](GDT-004.md) Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | 5 |
 | [INV-002](INV-002.md) Утверждения (Claims) и правила дедукции | 5 |
 | [KNOW-002](KNOW-002.md) LiePolicy и показания: answer(question) → правда, ошибка или ложь | 5 |
+| [PHONE-001](PHONE-001.md) Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | 5 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -52,22 +55,22 @@
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [CHAR-001](CHAR-001.md) | Модель персонажа: личность, биография, цели, страхи, доступы | P0 | M | todo | — | [CNT-001](CNT-001.md) |
+| [CHAR-001](CHAR-001.md) | Модель персонажа: личность, биография, цели, страхи, доступы | P0 | M | in_progress | codex-core | [CNT-001](CNT-001.md) |
 | [CHAR-002](CHAR-002.md) | Граф отношений: типы, доверие, валентность, история | P0 | S | todo | — | [CHAR-001](CHAR-001.md) |
 | [CHAR-003](CHAR-003.md) | Расписания и рутины: whereShouldBe, переопределения | P0 | M | todo | — | [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
-| [CNT-001](CNT-001.md) | Схемы контента сценариев (zod) и загрузчик @hs/core/content | P0 | L | todo | — | [CORE-002](CORE-002.md) |
-| [CORE-001](CORE-001.md) | Детерминированный PRNG sfc32 с подпотоками fork(label) | P0 | M | in_progress | codex-core | [FND-009](FND-009.md) |
-| [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | in_progress | codex-core | [FND-009](FND-009.md) |
+| [CNT-001](CNT-001.md) | Схемы контента сценариев (zod) и загрузчик @hs/core/content | P0 | L | done | codex-core | [CORE-002](CORE-002.md) |
+| [CORE-001](CORE-001.md) | Детерминированный PRNG sfc32 с подпотоками fork(label) | P0 | M | done | codex-core | [FND-009](FND-009.md) |
+| [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-003](CORE-003.md) | Тип Investigation и fixture-builder мини-сценария «tiny-manor» | P0 | M | todo | — | [TRUTH-002](TRUTH-002.md), [CHAR-003](CHAR-003.md), [WORLD-002](WORLD-002.md) |
 | [ENG-001](ENG-001.md) | GameEngine: агрегат состояния, dispatch, действия move и wait | P0 | M | todo | — | [TIME-003](TIME-003.md), [TIME-004](TIME-004.md), [WORLD-001](WORLD-001.md), [TRUTH-002](TRUTH-002.md), [CORE-003](CORE-003.md) |
 | [ENG-002](ENG-002.md) | Проекция PlayerView и тест отсутствия утечек истины | P0 | M | todo | — | [ENG-001](ENG-001.md), [PROTO-002](PROTO-002.md) |
 | [KNOW-001](KNOW-001.md) | KnowledgeStore: убеждения, источники, память с размытием | P0 | M | todo | — | [TRUTH-001](TRUTH-001.md) |
-| [PROTO-001](PROTO-001.md) | Каталог сообщений протокола (hello, welcome, action, event, qr, error) | P0 | M | todo | — | [FND-004](FND-004.md) |
+| [PROTO-001](PROTO-001.md) | Каталог сообщений протокола (hello, welcome, action, event, qr, error) | P0 | M | in_progress | codex-core | [FND-004](FND-004.md) |
 | [PROTO-002](PROTO-002.md) | Схемы PlayerView и PhoneView с фикстурами | P0 | M | todo | — | [PROTO-001](PROTO-001.md) |
 | [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | todo | — | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
 | [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | todo | — | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md) |
 | [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | todo | — | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
-| [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | review | claude-time-1 | [FND-009](FND-009.md) |
+| [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | done | claude-time-1 | [FND-009](FND-009.md) |
 | [TIME-002](TIME-002.md) | Scheduler: детерминированная очередь событий | P0 | M | todo | — | [TIME-001](TIME-001.md), [CORE-002](CORE-002.md) |
 | [TIME-003](TIME-003.md) | TimeSystem.advance: фазы обработки, прерывания, события часов | P0 | M | todo | — | [TIME-002](TIME-002.md) |
 | [TIME-004](TIME-004.md) | ActionCostTable и resolveActionCost с модификаторами | P0 | S | todo | — | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |

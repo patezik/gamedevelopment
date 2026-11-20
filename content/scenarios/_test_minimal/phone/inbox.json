@@ -1,0 +1,7 @@
+[
+  {
+    "id": "missing_record",
+    "kind": "message",
+    "template": "В архиве пропала запись."
+  }
+]

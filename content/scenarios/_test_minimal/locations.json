@@ -1,0 +1,49 @@
+[
+  {
+    "id": "loc_hall",
+    "name": "Холл",
+    "description": "Вход в архив.",
+    "tags": ["public"],
+    "lighting": {
+      "morning": "bright",
+      "day": "bright",
+      "evening": "dim",
+      "night": "dark"
+    },
+    "access": [],
+    "hotspots": [],
+    "connections": [
+      {
+        "to": "loc_archive",
+        "minutes": 2
+      }
+    ]
+  },
+  {
+    "id": "loc_archive",
+    "name": "Архив",
+    "description": "Комната с журналами.",
+    "tags": ["archive"],
+    "lighting": {
+      "morning": "bright",
+      "day": "bright",
+      "evening": "dim",
+      "night": "dark"
+    },
+    "access": [],
+    "hotspots": [
+      {
+        "id": "desk",
+        "name": "Стол",
+        "description": "На столе лежит журнал.",
+        "itemIds": ["it_log"]
+      }
+    ],
+    "connections": [
+      {
+        "to": "loc_hall",
+        "minutes": 2
+      }
+    ]
+  }
+]

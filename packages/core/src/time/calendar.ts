@@ -1,5 +1,6 @@
-/** Minutes since the scenario start (t = 0). Negative values are generation prehistory. */
-export type GameMinutes = number;
+import type { GameMinutes } from '../common/index.ts';
+
+export type { GameMinutes } from '../common/index.ts';
 
 export type DayPeriod = 'morning' | 'day' | 'evening' | 'night';
 
@@ -32,6 +33,20 @@ function isLeapYear(y: number): boolean {
 function daysInMonth(y: number, m: number): number {
   if (m === 2) return isLeapYear(y) ? 29 : 28;
   return m === 4 || m === 6 || m === 9 || m === 11 ? 30 : 31;
+}
+
+function parseStartIso(startIso: string) {
+  const match = START_ISO.exec(startIso);
+  if (!match) return undefined;
+  const [y, m, d, hh, mm] = match.slice(1).map(Number) as [number, number, number, number, number];
+  if (m < 1 || m > 12 || d < 1 || d > daysInMonth(y, m) || hh > 23 || mm > 59) {
+    return undefined;
+  }
+  return { y, m, d, hh, mm };
+}
+
+export function isCalendarStartIso(value: string): boolean {
+  return parseStartIso(value) !== undefined;
 }
 
 /** Days since 1970-01-01 for a proleptic Gregorian date (Hinnant's days_from_civil). */
@@ -68,18 +83,9 @@ export class Calendar {
 
   /** @param startIso preset `time.startDateTime`, e.g. `2026-01-14T08:00:00` (local wall time). */
   constructor(startIso: string) {
-    const match = START_ISO.exec(startIso);
-    if (!match) throw new RangeError(`Invalid startDateTime: ${startIso}`);
-    const [y, m, d, hh, mm] = match.slice(1).map(Number) as [
-      number,
-      number,
-      number,
-      number,
-      number,
-    ];
-    if (m < 1 || m > 12 || d < 1 || d > daysInMonth(y, m) || hh > 23 || mm > 59) {
-      throw new RangeError(`Invalid startDateTime: ${startIso}`);
-    }
+    const parsed = parseStartIso(startIso);
+    if (!parsed) throw new RangeError(`Invalid startDateTime: ${startIso}`);
+    const { y, m, d, hh, mm } = parsed;
     this.startDays = daysFromCivil(y, m, d);
     this.startMinuteOfDay = hh * 60 + mm;
   }

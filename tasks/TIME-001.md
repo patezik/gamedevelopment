@@ -1,7 +1,7 @@
 ---
 id: TIME-001
 title: "GameMinutes и Calendar: дни, часы, периоды суток"
-status: review
+status: done
 priority: P0
 complexity: S
 phase: 2
