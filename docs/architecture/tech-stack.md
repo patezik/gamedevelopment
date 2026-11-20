@@ -26,6 +26,7 @@
 | qrcode | 1.5.4 | MIT | server | Матрица QR ([ADR 0010](adr/0010-qr-rendering-on-server.md)) |
 | pino | 10.x (через Fastify) | MIT | server | Структурированные логи |
 | vitest | 5.0.x | MIT | все TS-пакеты кроме mobile | Unit/integration тесты |
+| @vitest/coverage-v8 | 5.0.x | MIT | все TS-пакеты кроме mobile | Покрытие и пороги в CI |
 | fast-check | 4.10.x | MIT | core, generator, validator | Property-based тесты инвариантов |
 | tsx | 4.23.x | MIT | server, tools | Запуск TS в разработке |
 | eslint | 10.x | MIT | все | Линтинг, правила детерминизма |
@@ -66,7 +67,7 @@
 
 | Инструмент | Версия |
 |------------|--------|
-| GitHub Actions `actions/checkout`, `actions/setup-node` | актуальные мажорные (v5 / v5) — закрепляются в FND-003 |
+| GitHub Actions `actions/checkout`, `actions/setup-node` | v7 / v7 (мажорные версии закреплены в `.github/workflows/ci.yml`) |
 | Godot headless в CI | 4.7.2-stable Linux x86_64, скачивается с GitHub Releases godotengine/godot |
 
 ## 6. Проверка совместимости
