@@ -3,6 +3,9 @@
 Схемы — `@hs/protocol` (zod), решения — [ADR 0009](../architecture/adr/0009-protocol-schemas.md),
 безопасность — [ADR 0008](../architecture/adr/0008-pairing-and-security.md).
 
+Сгенерированные JSON Schema лежат в `packages/protocol/schemas/` (`npm run protocol:gen`; актуальность
+проверяет `npm run protocol:check`), пример конверта — `packages/protocol/fixtures/envelope.json`.
+
 ## 1. Транспорт
 
 - `ws://<host>:7420/ws` — одно соединение на клиента. JSON, UTF-8, максимум 256 КБ на сообщение.
@@ -22,6 +25,13 @@
 | `seq` | только сервер → клиент: монотонный номер события сессии (для `event`, `view.update`) |
 | `ack` | клиент → сервер: последний обработанный `seq` |
 | `payload` | данные по схеме типа |
+
+Правила разбора (`Envelope` в `@hs/protocol`):
+
+- `payload` обязателен и всегда объект (для `ping` — `{}`); его схему задаёт `type` (PROTO-001).
+- Конверт строгий: неизвестные поля отклоняются (`INVALID_MESSAGE`).
+- `v` проверяется только как положительное целое, а не равенство `PROTOCOL_VERSION`: сервер обязан
+  разобрать конверт клиента другой версии, чтобы ответить `PROTOCOL_MISMATCH`.
 
 ## 3. Каталог сообщений
 

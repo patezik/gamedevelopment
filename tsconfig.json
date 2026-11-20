@@ -1,7 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    // Scripts (e.g. protocol:gen) run directly on Node type stripping, which needs explicit .ts imports.
+    "allowImportingTsExtensions": true
   },
   "include": ["*.ts", "packages/**/*.ts", "apps/server/**/*.ts", "tools/**/*.ts"]
 }

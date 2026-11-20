@@ -23,7 +23,9 @@
     "tasks:check": "node tools/tasks/tasks.mjs validate",
     "tasks:ready": "node tools/tasks/tasks.mjs ready",
     "tasks:index": "node tools/tasks/tasks.mjs index",
-    "docs:check": "node tools/docs/check-links.mjs"
+    "docs:check": "node tools/docs/check-links.mjs",
+    "protocol:gen": "npm run protocol:gen -w @hs/protocol",
+    "protocol:check": "npm run protocol:check -w @hs/protocol"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
