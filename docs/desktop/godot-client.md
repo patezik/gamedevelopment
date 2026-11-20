@@ -68,6 +68,8 @@ apps/desktop/
 
 Актуальность файла проверяют `npm run protocol:check` и тест `packages/protocol/test/godot.test.ts`
 (в CI — в job «Lint, types and tests»): ручная правка или забытая регенерация роняют проверку.
+Фильтр `NODE_PATHS` в `.github/workflows/ci.yml` явно включает этот файл, чтобы PR, меняющий только
+его, тоже запускал Node job; это фиксирует `packages/protocol/test/ci-paths.test.ts`.
 
 ## 3. Потоки данных
 
@@ -111,6 +113,8 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   `fixtures/views`, разбирается без ошибок и соответствует форме своей схемы из
   `packages/protocol/schemas` — обязательные и неизвестные поля, JSON-типы, `const`, `enum`,
   варианты `oneOf`/`anyOf` (диапазоны и длины не проверяются: полная валидация — на сервере).
-  Новая фикстура без сопоставленной схемы роняет тест. `ProtocolConstants` сверяются со схемами
+  Новая фикстура без сопоставленной схемы роняет тест. Массивом примеров могут быть только
+  фикстуры-коллекции (`client-messages.json`, `server-messages.json`); остальные, в том числе
+  `PlayerView` и `PhoneView`, проверяются как один JSON-объект. `ProtocolConstants` сверяются со схемами
   (типы сообщений, событий, действий, коды ошибок, роли) и фикстурами (`v`, покрытие типов).
 - Smoke: все сцены из `src/scenes` загружаются и инстанцируются без ошибок.
