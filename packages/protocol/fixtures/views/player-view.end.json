@@ -1,0 +1,109 @@
+{
+  "clock": {
+    "t": 3010,
+    "day": 3,
+    "time": "18:10",
+    "period": "evening",
+    "remainingMinutes": 1310
+  },
+  "location": {
+    "id": "loc_lobby",
+    "name": "Вестибюль санатория",
+    "description": "Приехала полиция. В вестибюле тихо и непривычно светло.",
+    "lighting": "bright",
+    "hotspots": [],
+    "exits": []
+  },
+  "presentCharacters": [],
+  "availableActions": [],
+  "vitals": {
+    "health": 7,
+    "sanity": 4,
+    "fatigue": 55
+  },
+  "static": 60,
+  "inventory": [],
+  "caseBoard": {
+    "clues": [
+      {
+        "id": "clue_note",
+        "title": "Порванная записка",
+        "description": "Обрывок листа: «…в десять, у оранжереи. Не говори никому».",
+        "kind": "document",
+        "discoveredAt": 95,
+        "locationId": "loc_garden",
+        "captured": true
+      },
+      {
+        "id": "clue_footprints",
+        "title": "Следы сапог",
+        "description": "Грязные следы ведут от чёрного хода к процедурной.",
+        "kind": "physical",
+        "discoveredAt": 190,
+        "locationId": "loc_corridor",
+        "captured": true
+      },
+      {
+        "id": "clue_logbook",
+        "title": "Журнал выдачи ключей",
+        "description": "Ключ от процедурной взят в 21:40 вечером.",
+        "kind": "document",
+        "discoveredAt": 640,
+        "locationId": "loc_infirmary",
+        "captured": true
+      },
+      {
+        "id": "clue_nurse_alibi",
+        "title": "Показание дежурной",
+        "description": "Дежурная утверждает, что всю ночь не покидала пост.",
+        "kind": "testimonial",
+        "discoveredAt": 760,
+        "locationId": "loc_lobby",
+        "captured": true
+      },
+      {
+        "id": "clue_voicemail",
+        "title": "Запись на автоответчике",
+        "description": "Тихий мужской голос просит перезвонить «до полуночи».",
+        "kind": "digital",
+        "discoveredAt": 1180,
+        "locationId": "loc_office",
+        "captured": false
+      }
+    ],
+    "statements": [],
+    "contradictions": [],
+    "personsOfInterest": [],
+    "suspicions": [
+      {
+        "characterId": "ch_doctor",
+        "level": "prime"
+      }
+    ],
+    "timeline": []
+  },
+  "phone": {
+    "paired": true,
+    "online": true,
+    "battery": 12
+  },
+  "ending": {
+    "endingId": "solved",
+    "title": "Раскрытие",
+    "text": "Вы доказали мотив, средство и возможность. Полиция уводит виновного, а сигнал в трубках наконец стихает.",
+    "proven": {
+      "motive": true,
+      "means": true,
+      "opportunity": true
+    },
+    "recap": {
+      "summary": "Доктор Белов взял ключ от процедурной в 21:40 и в десять встретил жертву у оранжереи: их ссорила скрытая растрата.",
+      "responsible": [
+        {
+          "id": "ch_doctor",
+          "name": "Доктор Белов"
+        }
+      ]
+    }
+  }
+}

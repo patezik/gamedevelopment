@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Envelope } from '../envelope.ts';
 import { ErrorCode } from '../errors.ts';
+import { PhoneView, PlayerView } from '../views/index.ts';
 import { PlayerAction } from './actions.ts';
 
 export { ACTIONS_BY_ROLE, PlayerAction } from './actions.ts';
@@ -68,8 +69,8 @@ export const ServerMessage = z.discriminatedUnion('type', [
   serverEnvelope.extend({ type: z.literal('pong'), payload: empty }),
   serverEnvelope.extend({
     type: z.literal('view.update'),
-    // PROTO-002 supplies the two concrete view schemas.
-    payload: z.strictObject({ stateVersion: counter, view: z.record(z.string(), z.json()) }),
+    // The desktop connection receives a PlayerView and the phone a PhoneView.
+    payload: z.strictObject({ stateVersion: counter, view: z.union([PlayerView, PhoneView]) }),
   }),
   serverEnvelope.extend({
     type: z.literal('event'),

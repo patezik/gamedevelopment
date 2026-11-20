@@ -1,0 +1,143 @@
+{
+  "status": {
+    "time": "03:15",
+    "battery": 9,
+    "signal": 8
+  },
+  "apps": [
+    {
+      "id": "camera",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "contacts",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "calls",
+      "badge": 2,
+      "enabled": true
+    },
+    {
+      "id": "messages",
+      "badge": 1,
+      "enabled": true
+    },
+    {
+      "id": "gallery",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "files",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "notes",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "maps",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "browser",
+      "badge": 0,
+      "enabled": false
+    },
+    {
+      "id": "settings",
+      "badge": 0,
+      "enabled": true
+    }
+  ],
+  "contacts": [
+    {
+      "id": "ct_director",
+      "name": "Директор санатория",
+      "number": "+7 495 010-01-01"
+    },
+    {
+      "id": "ct_unknown",
+      "name": "",
+      "number": ""
+    }
+  ],
+  "threads": [
+    {
+      "id": "th_unknown",
+      "contactId": "ct_unknown",
+      "messages": [
+        {
+          "id": "m1",
+          "from": "them",
+          "text": "не… ходи… в подв",
+          "at": 2475,
+          "read": false
+        }
+      ],
+      "availableReplies": [
+        {
+          "id": "reply_who",
+          "text": "Кто это?"
+        }
+      ],
+      "unread": 1,
+      "typing": true
+    }
+  ],
+  "callLog": [
+    {
+      "id": "cl1",
+      "contactId": "ct_unknown",
+      "direction": "missed",
+      "at": 2470,
+      "durationMinutes": 0
+    },
+    {
+      "id": "cl2",
+      "contactId": "ct_unknown",
+      "direction": "missed",
+      "at": 2474,
+      "durationMinutes": 0
+    }
+  ],
+  "gallery": [
+    {
+      "id": "img_corridor",
+      "title": "Коридор",
+      "imageRef": "corridor_broken.jpg",
+      "takenAt": 2300
+    }
+  ],
+  "files": [],
+  "notes": [
+    {
+      "id": "n1",
+      "source": "auto",
+      "text": "Сигнал пропадает, батарея на исходе.",
+      "at": 2400
+    }
+  ],
+  "mapPins": [],
+  "browserPages": [],
+  "notifications": [
+    {
+      "id": "nt1",
+      "appId": "calls",
+      "title": "Пропущенный вызов",
+      "text": "",
+      "at": 2474,
+      "read": false
+    }
+  ],
+  "effects": {
+    "glitchLevel": 80,
+    "wallpaperVariant": "static_2"
+  }
+}
