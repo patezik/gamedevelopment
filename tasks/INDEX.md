@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 122 · in_progress: 2 · review: 0 · done: 15 · blocked: 1
+Всего задач: **140** · todo: 121 · in_progress: 3 · review: 0 · done: 15 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -11,7 +11,6 @@
 - [PROTO-002](PROTO-002.md) — Схемы PlayerView и PhoneView с фикстурами (P0, M)
 - [TIME-002](TIME-002.md) — Scheduler: детерминированная очередь событий (P0, M)
 - [TIME-004](TIME-004.md) — ActionCostTable и resolveActionCost с модификаторами (P0, S)
-- [WORLD-002](WORLD-002.md) — Предметы, контейнеры и история их перемещений (P0, S)
 - [CNT-002](CNT-002.md) — MVP-сценарий: локации, предметы, архетипы, отношения (данные) (P0, L)
 - [REL-004](REL-004.md) — Версионирование, CHANGELOG и релизный процесс (P2, S)
 
@@ -80,7 +79,7 @@
 | [TRUTH-002](TRUTH-002.md) | TruthLog, TruthModel и IncidentRecord | P0 | M | todo | — | [TRUTH-001](TRUTH-001.md) |
 | [TRUTH-003](TRUTH-003.md) | Проверка инвариантов Truth Model | P0 | S | todo | — | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
 | [WORLD-001](WORLD-001.md) | Граф локаций: перемещения, освещение, доступ по часам и замкам | P0 | M | done | codex-core | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
-| [WORLD-002](WORLD-002.md) | Предметы, контейнеры и история их перемещений | P0 | S | todo | — | [WORLD-001](WORLD-001.md) |
+| [WORLD-002](WORLD-002.md) | Предметы, контейнеры и история их перемещений | P0 | S | in_progress | codex-core-1 | [WORLD-001](WORLD-001.md) |
 
 ## Фаза 3 · M3 — Generator produces worlds (12)
 
