@@ -65,4 +65,32 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['packages/core/src/knowledge/store.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(?:^|/)truth(?:/|\\.[cm]?[jt]s$|$)',
+              allowImportNames: [
+                'factId',
+                'factSchema',
+                'matchProposition',
+                'FactId',
+                'Proposition',
+                'PropositionPattern',
+              ],
+              message: 'KnowledgeStore may only use proposition helpers and types (ADR 0005).',
+            },
+            {
+              regex: '(?:^|/)truth-model(?:\\.[cm]?[jt]s)?$',
+              message: 'KnowledgeStore must not read TruthModel (ADR 0005).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
