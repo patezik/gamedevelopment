@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 106 · in_progress: 7 · review: 1 · done: 25 · blocked: 1
+Всего задач: **140** · todo: 106 · in_progress: 6 · review: 2 · done: 25 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -98,7 +98,7 @@ _Нет задач, у которых выполнены все зависимо
 |---|---|---|---|---|---|---|
 | [CNT-004](CNT-004.md) | MVP-сценарий: правила следов и правила дедукции | P0 | M | todo | — | [EVD-001](EVD-001.md), [INV-002](INV-002.md), [CNT-003](CNT-003.md) |
 | [CNT-007](CNT-007.md) | Тюнинг MVP-пресета до порогов seed sweep | P0 | M | todo | — | [VAL-007](VAL-007.md), [VAL-004](VAL-004.md), [VAL-005](VAL-005.md), [VAL-006](VAL-006.md), [CNT-004](CNT-004.md), [SIM-005](SIM-005.md) |
-| [EVD-001](EVD-001.md) | Движок правил следов: TraceRule → Trace, закон сохранения улик | P0 | M | in_progress | egor-claude-evd-001 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md), [CNT-001](CNT-001.md) |
+| [EVD-001](EVD-001.md) | Движок правил следов: TraceRule → Trace, закон сохранения улик | P0 | M | review | egor-claude-evd-001 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md), [CNT-001](CNT-001.md) |
 | [EVD-002](EVD-002.md) | Улики (Clue): поддерживаемые утверждения, условия обнаружения, точки интереса | P0 | M | todo | — | [EVD-001](EVD-001.md) |
 | [EVD-003](EVD-003.md) | Режим фиксации улик телефоном и порт EvidenceTokenPort | P0 | S | todo | — | [EVD-002](EVD-002.md) |
 | [GEN-009](GEN-009.md) | Стадия EvidenceGen: следы и улики сгенерированного расследования | P0 | M | todo | — | [GEN-008](GEN-008.md), [EVD-002](EVD-002.md), [EVD-003](EVD-003.md) |
