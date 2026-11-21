@@ -28,6 +28,7 @@ const garden = 'loc_garden';
 const knife = 'it_knife';
 const key = 'it_key';
 const box = 'it_box';
+const chest = 'it_chest';
 const ring = 'it_ring';
 
 const minimal = loadScenarioFromDir(
@@ -57,7 +58,8 @@ const locations = [
 const items = [
   { id: knife, name: 'Knife', kind: 'tool', tags: [], locationId: office },
   { id: key, name: 'Key', kind: 'key', tags: [], locationId: hall },
-  { id: box, name: 'Box', kind: 'box', tags: [], locationId: cellar },
+  { id: chest, name: 'Chest', kind: 'chest', tags: [], locationId: cellar },
+  { id: box, name: 'Box', kind: 'box', tags: [], containerId: chest },
   { id: ring, name: 'Ring', kind: 'jewel', tags: [], containerId: box },
 ];
 
@@ -112,6 +114,38 @@ function dies(who: string, from: number): Fact {
 
 const target = (kind: EntityRef['kind'], id: string): EntityRef => ({ kind, id });
 
+/** A transition in the SIM-001 format: the origin is the location, the destination a target. */
+function move(
+  who: string,
+  from: string,
+  to: string,
+  t: number,
+  duration: number,
+  facts: Fact[] = [],
+): TruthEventInput {
+  return event(t, {
+    verb: 'move',
+    duration,
+    actorIds: [who],
+    location: from,
+    targets: [target('location', to)],
+    facts: [
+      { kind: 'did', who, verb: 'move', target: target('location', to), at: t, where: from },
+      ...facts,
+    ],
+  });
+}
+
+/** A stay in the SIM-001 format. */
+function stay(who: string, where: string, from: number, to: number): TruthEventInput {
+  return event(from, {
+    duration: to - from,
+    actorIds: [who],
+    location: where,
+    facts: [at(who, where, from, to)],
+  });
+}
+
 /**
  * A consistent murder: Anna takes the knife in the office, strikes Ivan in the hall at minute 36
  * and hides the knife in the box in the cellar. Boris stays in the hall throughout.
@@ -126,15 +160,7 @@ function story(options: { incident?: Partial<IncidentRecord>; debug?: boolean } 
   append(event(-60, { actorIds: [anna], facts: [at(anna, hall, -60, -10)] })); // ev_1
   append(event(-60, { actorIds: [ivan], location: office, facts: [at(ivan, office, -60, 0)] }));
   append(event(-60, { actorIds: [boris], facts: [at(boris, hall, -60, 100)] })); // ev_3
-  const arrive = append(
-    event(-10, {
-      verb: 'move',
-      duration: 5,
-      actorIds: [anna],
-      location: office,
-      facts: [at(anna, office, -5, 30)],
-    }),
-  );
+  const arrive = append(move(anna, hall, office, -10, 5, [at(anna, office, -5, 30)]));
   const take = append(
     event(0, {
       verb: 'take',
@@ -156,13 +182,9 @@ function story(options: { incident?: Partial<IncidentRecord>; debug?: boolean } 
     }),
   ); // ev_5
   w.items.move(knife, { kind: 'character', id: anna }, 0, take);
-  append(
-    event(0, { verb: 'move', duration: 10, actorIds: [ivan], facts: [at(ivan, hall, 10, 40)] }),
-  );
+  append(move(ivan, office, hall, 0, 10, [at(ivan, hall, 10, 40)]));
   append(event(15, { verb: 'talk', duration: 10, actorIds: [boris, ivan] })); // ev_7
-  append(
-    event(30, { verb: 'move', duration: 5, actorIds: [anna], facts: [at(anna, hall, 35, 50)] }),
-  );
+  append(move(anna, office, hall, 30, 5, [at(anna, hall, 35, 50)]));
   const strike = append(
     event(36, {
       verb: 'strike',
@@ -174,15 +196,7 @@ function story(options: { incident?: Partial<IncidentRecord>; debug?: boolean } 
     }),
   ); // ev_9
   append(event(36, { verb: 'shout', actorIds: [boris], causes: [strike] })); // ev_10
-  append(
-    event(50, {
-      verb: 'move',
-      duration: 3,
-      actorIds: [anna],
-      location: cellar,
-      facts: [at(anna, cellar, 53, 70)],
-    }),
-  );
+  append(move(anna, hall, cellar, 50, 3, [at(anna, cellar, 53, 70)]));
   const hide = append(
     event(55, {
       verb: 'hide',
@@ -371,19 +385,20 @@ describe('invariant 3: causes precede effects', () => {
     log.append(event(20, { causes: ['ev_99'] }));
     log.append(event(-5, { causes: ['ev_4'] }));
     log.append(event(-10, { causes: [cause] }));
+    // By code in table order, then by the log order of the events.
     expect(check(log)).toEqual([
+      expect.objectContaining({ code: 'CAUSE_UNKNOWN', eventIds: ['ev_3'], minute: 20 }),
+      expect.objectContaining({ code: 'CAUSE_SELF', eventIds: ['ev_4'], minute: -5 }),
       expect.objectContaining({
         code: 'CAUSE_NOT_BEFORE_EFFECT',
         eventIds: ['ev_5', cause],
         minute: -10,
       }),
-      expect.objectContaining({ code: 'CAUSE_SELF', eventIds: ['ev_4'], minute: -5 }),
       expect.objectContaining({
         code: 'CAUSE_NOT_BEFORE_EFFECT',
         eventIds: ['ev_2', cause],
         minute: 15,
       }),
-      expect.objectContaining({ code: 'CAUSE_UNKNOWN', eventIds: ['ev_3'], minute: 20 }),
     ]);
   });
 
@@ -415,14 +430,15 @@ describe('invariant 3: causes precede effects', () => {
     log.world.items.move(knife, { kind: 'location', id: hall }, 5, take);
     log.world.items.move(knife, { kind: 'location', id: cellar }, 10, 'ev_404');
     log.world.items.move(knife, { kind: 'location', id: office }, 12, take);
+    // Codes follow the table order: unknown causes before early moves.
     expect(check(log)).toEqual([
-      expect.objectContaining({ code: 'ITEM_MOVE_BEFORE_CAUSE', eventIds: [take], minute: 5 }),
       expect.objectContaining({
         code: 'ITEM_MOVE_UNKNOWN_CAUSE',
         eventIds: [],
         subject: { kind: 'item', id: knife },
         minute: 10,
       }),
+      expect.objectContaining({ code: 'ITEM_MOVE_BEFORE_CAUSE', eventIds: [take], minute: 5 }),
     ]);
   });
 });
@@ -660,5 +676,258 @@ describe('debug checks', () => {
   test('assertInvariants passes on a consistent log', () => {
     const log = story();
     expect(() => assertInvariants(log.truth, log.world)).not.toThrow();
+  });
+});
+
+describe('audit regressions: explicit move events', () => {
+  test('a transition shorter than the route is reported once', () => {
+    const log = blank();
+    log.append(stay(anna, hall, 0, 10));
+    const id = log.append(move(anna, hall, cellar, 10, 1));
+    log.append(stay(anna, cellar, 11, 20));
+    expect(check(log)).toEqual([
+      expect.objectContaining({ code: 'TRAVEL_TOO_FAST', eventIds: [id], minute: 10 }),
+    ]);
+  });
+
+  test('a transition against a one-way connection has no route', () => {
+    const log = blank();
+    const id = log.append(move(anna, cellar, hall, 0, 30));
+    expect(check(log)).toEqual([
+      expect.objectContaining({ code: 'TRAVEL_NO_ROUTE', eventIds: [id] }),
+    ]);
+  });
+
+  test('a transition to an unknown location is reported', () => {
+    const log = blank();
+    const id = log.append(move(anna, hall, 'loc_moon', 0, 30));
+    expect(check(log)).toEqual([
+      expect.objectContaining({ code: 'TRAVEL_UNKNOWN_LOCATION', eventIds: [id] }),
+    ]);
+  });
+
+  test('a transition that overlaps a stay elsewhere is reported', () => {
+    const log = blank();
+    const there = log.append(stay(anna, garden, 1, 5));
+    const id = log.append(move(anna, hall, cellar, 0, 3));
+    expect(check(log)).toEqual([
+      expect.objectContaining({
+        invariant: 1,
+        code: 'TRANSIT_OVERLAP',
+        eventIds: [there, id],
+        minute: 1,
+      }),
+    ]);
+  });
+
+  test('a transition must start where the previous stay ended', () => {
+    const log = blank();
+    const there = log.append(stay(anna, garden, 0, 5));
+    const id = log.append(move(anna, hall, cellar, 6, 3));
+    expect(check(log)).toEqual([
+      expect.objectContaining({ code: 'TRAVEL_NO_ROUTE', eventIds: [id, there], minute: 6 }),
+    ]);
+  });
+
+  test('accepts a transition that takes the route time and a SIM-001 style itinerary', () => {
+    const single = blank();
+    single.append(move(anna, hall, cellar, 0, 3));
+    expect(check(single)).toEqual([]);
+
+    const log = blank();
+    log.append(stay(anna, hall, -20, 10));
+    log.append(move(anna, hall, office, 10, 5));
+    log.append(move(anna, office, hall, 15, 5));
+    log.append(stay(anna, hall, 20, 30));
+    log.append(move(anna, hall, cellar, 30, 3));
+    log.append(stay(anna, cellar, 33, 40));
+    expect(check(log)).toEqual([]);
+  });
+});
+
+describe('audit regressions: keys at the time of the transition', () => {
+  function locked(keyFrom: number | undefined, format: 'move' | 'stays' = 'move') {
+    const log = blank();
+    log.append(stay(anna, office, 0, 10));
+    if (format === 'move') log.append(move(anna, office, vault, 10, 2));
+    log.append(stay(anna, vault, 12, 20));
+    if (keyFrom !== undefined) {
+      const take = log.append(
+        event(keyFrom, { verb: 'take', facts: [holds(anna, key, keyFrom, 30)] }),
+      );
+      log.world.items.move(key, { kind: 'character', id: anna }, keyFrom, take);
+    }
+    return log;
+  }
+
+  test('a key held before departure opens the door', () => {
+    expect(check(locked(-5))).toEqual([]);
+    expect(check(locked(-5, 'stays'))).toEqual([]);
+  });
+
+  test('a key obtained only after arrival does not open the door', () => {
+    expect(codes(check(locked(12)))).toEqual(['TRAVEL_NO_ROUTE']);
+    expect(codes(check(locked(12, 'stays')))).toEqual(['TRAVEL_NO_ROUTE']);
+  });
+
+  test('a key obtained between two transitions opens the second door', () => {
+    const log = blank();
+    log.append(stay(anna, vault, -10, 0));
+    log.append(move(anna, vault, office, 0, 2));
+    const take = log.append(
+      event(2, { verb: 'take', location: office, facts: [holds(anna, key, 2, 30)] }),
+    );
+    log.world.items.move(key, { kind: 'character', id: anna }, 2, take);
+    log.append(move(anna, office, vault, 2, 2));
+    log.append(stay(anna, vault, 4, 10));
+    expect(check(log)).toEqual([]);
+
+    const without = blank();
+    without.append(stay(anna, vault, -10, 0));
+    without.append(move(anna, vault, office, 0, 2));
+    const id = without.append(move(anna, office, vault, 2, 2));
+    without.append(stay(anna, vault, 4, 10));
+    expect(check(without)).toEqual([
+      expect.objectContaining({ code: 'TRAVEL_NO_ROUTE', eventIds: [id] }),
+    ]);
+  });
+
+  test('a key handed over before departure no longer opens the door for its former holder', () => {
+    const log = blank();
+    const take = log.append(event(-5, { verb: 'take', facts: [holds(anna, key, -5, 5)] }));
+    const give = log.append(event(5, { verb: 'give', facts: [holds(boris, key, 5, 30)] }));
+    log.world.items.move(key, { kind: 'character', id: anna }, -5, take);
+    log.world.items.move(key, { kind: 'character', id: boris }, 5, give);
+    log.append(stay(anna, office, 0, 10));
+    log.append(move(anna, office, vault, 10, 2));
+    expect(codes(check(log))).toEqual(['TRAVEL_NO_ROUTE']);
+  });
+
+  test('later registry history does not open a door retroactively', () => {
+    const log = blank();
+    log.append(stay(anna, office, 0, 10));
+    log.append(move(anna, office, vault, 10, 2));
+    const take = log.append(event(15, { verb: 'take', targets: [target('item', key)] }));
+    log.world.items.move(key, { kind: 'character', id: anna }, 15, take);
+    expect(codes(check(log))).toEqual(['TRAVEL_NO_ROUTE']);
+  });
+});
+
+describe('audit regressions: actions inside the death event', () => {
+  test('a did fact after the death recorded in the same event is reported', () => {
+    const log = blank();
+    const id = log.append(
+      event(5, {
+        verb: 'collapse',
+        actorIds: [boris],
+        facts: [
+          dies(boris, 7),
+          { kind: 'did', who: boris, verb: 'call', at: 8, where: hall },
+          { kind: 'did', who: boris, verb: 'gasp', at: 6, where: hall },
+        ],
+      }),
+    );
+    expect(check(log)).toEqual([
+      expect.objectContaining({ code: 'ACTION_AFTER_DEATH', eventIds: [id, id], minute: 8 }),
+    ]);
+  });
+});
+
+describe('audit regressions: location of did facts', () => {
+  test('reports a did fact away from where the character is, even if not an actor', () => {
+    const log = blank();
+    const here = log.append(stay(anna, hall, 0, 3));
+    const id = log.append(
+      event(1, {
+        actorIds: [boris],
+        location: office,
+        facts: [{ kind: 'did', who: anna, verb: 'take', at: 1, where: office }],
+      }),
+    );
+    expect(check(log)).toEqual([
+      expect.objectContaining({
+        code: 'ACTOR_ELSEWHERE',
+        eventIds: [id, here],
+        subject: target('character', anna),
+        minute: 1,
+      }),
+    ]);
+  });
+
+  test('accepts a did fact where the character is and reports an actor only once', () => {
+    const log = blank();
+    log.append(stay(anna, hall, 0, 3));
+    const fact = (where: string, t: number): Fact => ({
+      kind: 'did',
+      who: anna,
+      verb: 'take',
+      at: t,
+      where,
+    });
+    log.append(event(1, { actorIds: [boris], facts: [fact(hall, 1)] }));
+    expect(check(log)).toEqual([]);
+    log.append(event(2, { actorIds: [anna], location: office, facts: [fact(office, 2)] }));
+    expect(codes(check(log))).toEqual(['ACTOR_ELSEWHERE']);
+  });
+});
+
+describe('audit regressions: causes of container moves', () => {
+  test('checks every container an item can be in, once each', () => {
+    const log = blank();
+    const look = log.append(
+      event(10, { verb: 'look', targets: [target('item', ring), target('item', box)] }),
+    );
+    log.world.items.move(chest, { kind: 'location', id: hall }, 3, look);
+    log.world.items.move(box, { kind: 'location', id: cellar }, 12, 'ev_404');
+    expect(check(log)).toEqual([
+      expect.objectContaining({
+        code: 'ITEM_MOVE_UNKNOWN_CAUSE',
+        subject: target('item', box),
+        minute: 12,
+      }),
+      expect.objectContaining({
+        code: 'ITEM_MOVE_BEFORE_CAUSE',
+        eventIds: [look],
+        subject: target('item', chest),
+        minute: 3,
+      }),
+    ]);
+  });
+
+  test('accepts container moves that follow their causes', () => {
+    const log = blank();
+    const look = log.append(event(10, { verb: 'look', targets: [target('item', ring)] }));
+    log.world.items.move(chest, { kind: 'location', id: hall }, 10, look);
+    log.world.items.move(box, { kind: 'container', id: chest }, 11, look);
+    expect(check(log)).toEqual([]);
+  });
+});
+
+describe('audit regressions: debug checks with registry mirroring', () => {
+  test('takes, hand-overs and moves mirrored right after each append pass', () => {
+    const w = world();
+    const truth = new TruthModel(incident({ keyEventIds: [] }));
+    const writer = withInvariantChecks(truth, w, { enabled: true });
+    writer.append(stay(anna, office, 0, 10));
+    const take = writer.append(
+      event(5, {
+        verb: 'take',
+        actorIds: [anna],
+        location: office,
+        facts: [holds(anna, knife, 5, 20)],
+      }),
+    );
+    w.items.move(knife, { kind: 'character', id: anna }, 5, take);
+    const give = writer.append(
+      event(8, {
+        verb: 'give',
+        actorIds: [anna],
+        location: office,
+        facts: [holds(boris, knife, 20, 30)],
+      }),
+    );
+    w.items.move(knife, { kind: 'character', id: boris }, 20, give);
+    writer.append(move(anna, office, hall, 10, 5));
+    expect(() => assertInvariants(truth, w)).not.toThrow();
   });
 });
