@@ -29,3 +29,5 @@ ADR фиксирует значимое архитектурное решени�
 | [0012](0012-task-management-in-repo.md) | Задачи — Markdown-файлы с frontmatter в репозитории | Accepted |
 | [0013](0013-simulation-lod.md) | Событийная симуляция персонажей с уровнями детализации | Accepted |
 | [0014](0014-save-system.md) | Сохранения: seed + версия генератора + журнал действий + контрольный хеш | Accepted |
+| [0015](0015-time-aware-location-routing.md) | Маршруты NPC с учётом часов доступа | Proposed |
+| [0016](0016-physical-keys.md) | Физические ключи для запертых переходов (OQ-18) | Accepted |
