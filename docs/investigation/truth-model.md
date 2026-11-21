@@ -132,7 +132,7 @@ type Fact =
 истине или по реестру (правило графа: «замок пропускает только носителя нужного ключа»). SIM-001
 открывает замки ключами из `Character.access`, которые не попадают ни в истину, ни в реестр. Такой
 переход проверка отклоняет (`TRAVEL_NO_ROUTE`). Какая трактовка ключа обязательна — вопрос
-[OQ-14](../planning/open-questions.md).
+[OQ-18](../planning/open-questions.md).
 
 **Смерть** записывается фактом `{ kind: "state", entity: { kind: "character", id }, property:
 "alive", value: false, interval }`. Время смерти — `interval.from` самого раннего такого факта;
