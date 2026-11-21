@@ -37,6 +37,7 @@ const INVARIANT_OF = {
 export type InvariantViolationCode = keyof typeof INVARIANT_OF;
 
 export interface InvariantViolation {
+  /** `checkTruthInvariants` never reports invariant 6; SIM-002 checks it (truth-model.md §4). */
   readonly invariant: InvariantNumber;
   readonly code: InvariantViolationCode;
   /** The event where the violation shows first, then the events it conflicts with. */
@@ -598,14 +599,13 @@ function checkItems(ctx: Context): void {
 /** Invariant 5: nobody acts at or after the minute of their death. */
 function checkDeaths(ctx: Context): void {
   for (const event of ctx.events) {
-    // The event that records a death may name the dying character, e.g. a collapse.
-    const dyingHere = new Set(
-      event.facts.map(deathOf).flatMap((death) => (death ? [death.who] : [])),
-    );
     const reported = new Set<string>();
     const check = (who: string, minute: GameMinutes, end: GameMinutes, what: string): void => {
       const death = ctx.deaths.get(who);
-      if (!death || dyingHere.has(who) || reported.has(who)) return;
+      if (!death || reported.has(who)) return;
+      // The event that establishes a death may name the dying character, e.g. a collapse,
+      // unless it starts after the death it records.
+      if (death.eventId === event.id && event.t <= death.minute) return;
       if (minute >= death.minute) {
         reported.add(who);
         report(
@@ -662,7 +662,8 @@ function checkIncident(ctx: Context, truth: TruthModel): void {
  *
  * Invariant 6 (public events are observed by everyone present) is not checked here: observations
  * live in knowledge stores, which the truth module must not depend on (modules.md), and
- * `(truth, world)` carries no record of them. See truth-model.md §4.
+ * `(truth, world)` carries no record of them. SIM-002 checks it where observations are created;
+ * a validator check is open question OQ-13. See truth-model.md §4.
  *
  * Violations are grouped by invariant; within a group they follow sorted characters and items and
  * the chronological order of the log, so equal inputs give equal results.

@@ -569,6 +569,22 @@ describe('invariant 5: the dead do not act', () => {
     log.append(event(6, { actorIds: [boris] }));
     expect(check(log)).toEqual([expect.objectContaining({ eventIds: ['ev_3', 'ev_1'] })]);
   });
+
+  test('does not excuse actions in an event with a later death fact or a backdated death', () => {
+    const repeated = blank();
+    repeated.append(event(5, { verb: 'collapse', actorIds: [boris], facts: [dies(boris, 5)] }));
+    const id = repeated.append(event(7, { actorIds: [boris], facts: [dies(boris, 7)] }));
+    expect(check(repeated)).toEqual([
+      expect.objectContaining({ code: 'ACTION_AFTER_DEATH', eventIds: [id, 'ev_1'], minute: 7 }),
+    ]);
+
+    // The body is found at minute 10; the death itself happened at minute 5.
+    const backdated = blank();
+    const found = backdated.append(event(10, { actorIds: [boris], facts: [dies(boris, 5)] }));
+    expect(check(backdated)).toEqual([
+      expect.objectContaining({ code: 'ACTION_AFTER_DEATH', eventIds: [found, found], minute: 10 }),
+    ]);
+  });
 });
 
 describe('invariant 7: key events and culprits', () => {
