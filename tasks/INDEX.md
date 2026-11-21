@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 107 · in_progress: 6 · review: 1 · done: 25 · blocked: 1
+Всего задач: **140** · todo: 107 · in_progress: 5 · review: 2 · done: 25 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -71,7 +71,7 @@
 | [TIME-004](TIME-004.md) | ActionCostTable и resolveActionCost с модификаторами | P0 | S | review | claude-time-2 | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [TRUTH-001](TRUTH-001.md) | Словарь фактов (Fact) и FactId | P0 | S | done | codex-core-1 | [CORE-002](CORE-002.md), [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
 | [TRUTH-002](TRUTH-002.md) | TruthLog, TruthModel и IncidentRecord | P0 | M | done | codex-core-1 | [TRUTH-001](TRUTH-001.md) |
-| [TRUTH-003](TRUTH-003.md) | Проверка инвариантов Truth Model | P0 | S | in_progress | egor-claude-truth-003 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
+| [TRUTH-003](TRUTH-003.md) | Проверка инвариантов Truth Model | P0 | S | review | egor-claude-truth-003 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
 | [WORLD-001](WORLD-001.md) | Граф локаций: перемещения, освещение, доступ по часам и замкам | P0 | M | done | codex-core | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [WORLD-002](WORLD-002.md) | Предметы, контейнеры и история их перемещений | P0 | S | done | codex-core-1 | [WORLD-001](WORLD-001.md) |
 
