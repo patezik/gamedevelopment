@@ -1,0 +1,397 @@
+[
+  {
+    "id": "loc_hall",
+    "name": "Холл",
+    "description": "Просторный холл главного корпуса с колоннами и паркетом семидесятых годов. Над стойкой администратора гудит лампа дневного света, на стене висит выцветшая карта лесных маршрутов.",
+    "tags": ["public", "main_building", "hub"],
+    "lighting": { "morning": "bright", "day": "bright", "evening": "dim", "night": "dim" },
+    "access": [],
+    "hotspots": [
+      {
+        "id": "hs_hall_reception",
+        "name": "Стойка администратора",
+        "description": "Журнал регистрации гостей, звонок для вызова персонала и ящик с фонарями на случай отключения света.",
+        "itemIds": ["it_guest_register", "it_flashlight"]
+      },
+      {
+        "id": "hs_hall_fireplace",
+        "name": "Камин",
+        "description": "Камин с чугунной решёткой. Рядом стоит подставка с кочергой, на полке сохнут чьи-то перчатки.",
+        "itemIds": ["it_poker"]
+      },
+      {
+        "id": "hs_hall_bust",
+        "name": "Бюст основателя",
+        "description": "Бронзовый бюст первого главного врача на мраморной тумбе. Табличка протёрта до блеска.",
+        "itemIds": ["it_bronze_bust"]
+      },
+      {
+        "id": "hs_hall_landline",
+        "name": "Стационарный телефон",
+        "description": "Дисковый аппарат в деревянной кабинке. В трубке вместо гудка слышно ровное шипение."
+      }
+    ],
+    "connections": [
+      { "to": "loc_dining", "minutes": 2 },
+      { "to": "loc_doctor_office", "minutes": 2 },
+      { "to": "loc_treatment", "minutes": 4 },
+      { "to": "loc_room_1", "minutes": 1 },
+      { "to": "loc_greenhouse", "minutes": 3 },
+      { "to": "loc_lake_path", "minutes": 6 }
+    ]
+  },
+  {
+    "id": "loc_dining",
+    "name": "Столовая",
+    "description": "Длинный зал с накрахмаленными скатертями и тяжёлыми шторами. Окна выходят на заснеженный сосновый лес, по утрам здесь пахнет кашей и травяным чаем.",
+    "tags": ["public", "main_building", "food"],
+    "lighting": { "morning": "bright", "day": "bright", "evening": "dim", "night": "dark" },
+    "access": [],
+    "hotspots": [
+      {
+        "id": "hs_dining_buffet",
+        "name": "Буфет с самоваром",
+        "description": "Электрический самовар, стопки чашек и жестяная банка с фирменным травяным сбором.",
+        "itemIds": ["it_herbal_tea", "it_tea_cups"]
+      },
+      {
+        "id": "hs_dining_tables",
+        "name": "Столы у окна",
+        "description": "За каждым столом закреплены места гостей. На подоконнике забыта чья-то книга."
+      },
+      {
+        "id": "hs_dining_menu_board",
+        "name": "Доска с меню и объявлениями",
+        "description": "Меловая доска с меню на день и приколотые объявления о расписании процедур."
+      }
+    ],
+    "connections": [
+      { "to": "loc_hall", "minutes": 2 },
+      { "to": "loc_kitchen", "minutes": 1 }
+    ]
+  },
+  {
+    "id": "loc_kitchen",
+    "name": "Кухня",
+    "description": "Тесная кухня с промышленной плитой и кафелем в трещинах. За задней дверью начинается спуск к котельной.",
+    "tags": ["service", "main_building", "food", "staff"],
+    "lighting": { "morning": "bright", "day": "bright", "evening": "bright", "night": "dark" },
+    "access": [
+      { "from": 360, "to": 1320 },
+      { "archetypes": ["cook", "caretaker"] }
+    ],
+    "hotspots": [
+      {
+        "id": "hs_kitchen_stove",
+        "name": "Плита",
+        "description": "Шесть конфорок, на одной всегда томится бульон. Рядом висит график уборки.",
+        "itemIds": ["it_soup_pot"]
+      },
+      {
+        "id": "hs_kitchen_pantry",
+        "name": "Кладовая",
+        "description": "Полки с крупами, консервами и коробкой свечей на случай аварии.",
+        "itemIds": ["it_candles"]
+      },
+      {
+        "id": "hs_kitchen_knife_rack",
+        "name": "Разделочный стол",
+        "description": "Магнитная планка с ножами и деревянный молоток для отбивания мяса.",
+        "itemIds": ["it_meat_mallet"]
+      }
+    ],
+    "connections": [
+      { "to": "loc_dining", "minutes": 1 },
+      { "to": "loc_boiler", "minutes": 3, "locked": { "itemId": "it_key_boiler" } }
+    ]
+  },
+  {
+    "id": "loc_doctor_office",
+    "name": "Кабинет врача",
+    "description": "Кабинет главного врача: дубовый стол, кушетка за ширмой и стеклянный шкаф с медикаментами. На подоконнике стоит радиоприёмник, который ловит только помехи.",
+    "tags": ["medical", "staff", "private", "main_building"],
+    "lighting": { "morning": "bright", "day": "bright", "evening": "dim", "night": "dark" },
+    "access": [
+      { "from": 480, "to": 1200 },
+      { "archetypes": ["head_doctor", "nurse"] }
+    ],
+    "hotspots": [
+      {
+        "id": "hs_doctor_desk",
+        "name": "Письменный стол",
+        "description": "Стопки медицинских карт, журнал учёта препаратов и настольная лампа с зелёным абажуром.",
+        "itemIds": ["it_inventory_log", "it_appointment_book"]
+      },
+      {
+        "id": "hs_doctor_cabinet",
+        "name": "Шкаф с медикаментами",
+        "description": "Стеклянный шкаф с подписанными полками. Ключ обычно торчит в замочной скважине.",
+        "itemIds": ["it_medicine_cabinet"]
+      },
+      {
+        "id": "hs_doctor_screen",
+        "name": "Кушетка за ширмой",
+        "description": "Смотровая кушетка, застеленная одноразовой простынёй. За ширмой тесно и не видно двери."
+      }
+    ],
+    "connections": [
+      { "to": "loc_hall", "minutes": 2 },
+      { "to": "loc_treatment", "minutes": 2 },
+      { "to": "loc_archive", "minutes": 1, "locked": { "itemId": "it_key_archive" } }
+    ]
+  },
+  {
+    "id": "loc_treatment",
+    "name": "Процедурный корпус",
+    "description": "Отдельный корпус с ваннами, массажными столами и кабинетом ЛФК. Кафель пахнет хлоркой, трубы отопления постукивают в такт котлу.",
+    "tags": ["medical", "treatment", "semi_private"],
+    "lighting": { "morning": "bright", "day": "bright", "evening": "dim", "night": "dark" },
+    "access": [
+      { "from": 480, "to": 1260 },
+      { "archetypes": ["head_doctor", "nurse", "caretaker"] }
+    ],
+    "hotspots": [
+      {
+        "id": "hs_treatment_desk",
+        "name": "Пост медсестры",
+        "description": "Стол с журналом процедур и аптечкой первой помощи. Записи сделаны аккуратным почерком.",
+        "itemIds": ["it_procedure_journal", "it_first_aid_kit"]
+      },
+      {
+        "id": "hs_treatment_hydro_bath",
+        "name": "Ванна подводного массажа",
+        "description": "Глубокая ванна с панелью кранов. Пол вокруг всегда мокрый и скользкий."
+      },
+      {
+        "id": "hs_treatment_gym",
+        "name": "Кабинет ЛФК",
+        "description": "Шведская стенка, коврики и стойка с гантелями.",
+        "itemIds": ["it_dumbbell"]
+      },
+      {
+        "id": "hs_treatment_duty_room",
+        "name": "Дежурная комната",
+        "description": "Узкая комната с раскладушкой, электрочайником и шкафчиком для успокоительных.",
+        "itemIds": ["it_sedatives", "it_password_note"]
+      }
+    ],
+    "connections": [
+      { "to": "loc_hall", "minutes": 4 },
+      { "to": "loc_doctor_office", "minutes": 2 },
+      { "to": "loc_boiler", "minutes": 3, "locked": { "itemId": "it_key_boiler" } }
+    ]
+  },
+  {
+    "id": "loc_archive",
+    "name": "Архив",
+    "description": "Подвальная комната без окон за кабинетом врача. Стеллажи с картами пациентов с 1970-х годов, запах бумажной пыли и сырости.",
+    "tags": ["records", "staff", "private", "isolated"],
+    "lighting": { "morning": "dim", "day": "dim", "evening": "dark", "night": "dark" },
+    "access": [],
+    "hotspots": [
+      {
+        "id": "hs_archive_shelves",
+        "name": "Стеллажи с картами",
+        "description": "Картонные папки по годам. В одном ряду явно не хватает нескольких папок.",
+        "itemIds": ["it_medical_records"]
+      },
+      {
+        "id": "hs_archive_staff_box",
+        "name": "Ящик с личными делами",
+        "description": "Металлический ящик с личными делами сотрудников санатория.",
+        "itemIds": ["it_staff_files"]
+      }
+    ],
+    "connections": [
+      { "to": "loc_doctor_office", "minutes": 1, "locked": { "itemId": "it_key_archive" } }
+    ]
+  },
+  {
+    "id": "loc_boiler",
+    "name": "Котельная",
+    "description": "Полуподвальная котельная с гудящим котлом и сетью труб под потолком. В углу отгорожена каморка завхоза с топчаном.",
+    "tags": ["service", "hazard", "isolated", "staff"],
+    "lighting": { "morning": "dim", "day": "dim", "evening": "dim", "night": "dim" },
+    "access": [],
+    "hotspots": [
+      {
+        "id": "hs_boiler_furnace",
+        "name": "Топка котла",
+        "description": "Чугунная заслонка, за которой ревёт огонь. Здесь легко сжечь что угодно."
+      },
+      {
+        "id": "hs_boiler_valves",
+        "name": "Панель вентилей",
+        "description": "Манометры, вентили и журнал давления, который завхоз заполняет каждые четыре часа.",
+        "itemIds": ["it_pressure_log", "it_wrench"]
+      },
+      {
+        "id": "hs_boiler_cot",
+        "name": "Каморка завхоза",
+        "description": "Топчан, электрическая плитка и верстак с запасными предохранителями.",
+        "itemIds": ["it_spare_fuses"]
+      }
+    ],
+    "connections": [
+      { "to": "loc_kitchen", "minutes": 3, "locked": { "itemId": "it_key_boiler" } },
+      { "to": "loc_treatment", "minutes": 3, "locked": { "itemId": "it_key_boiler" } }
+    ]
+  },
+  {
+    "id": "loc_room_1",
+    "name": "Номера первого этажа",
+    "description": "Коридор жилого крыла с ковровой дорожкой и номерами по обе стороны. Батареи раскалены, но из щелей у окон тянет холодом.",
+    "tags": ["residential", "private", "main_building"],
+    "lighting": { "morning": "bright", "day": "bright", "evening": "dim", "night": "dark" },
+    "access": [],
+    "hotspots": [
+      {
+        "id": "hs_room1_corridor",
+        "name": "Коридор",
+        "description": "Длинная дорожка глушит шаги. Двери номеров с латунными цифрами."
+      },
+      {
+        "id": "hs_room1_linen",
+        "name": "Бельевая",
+        "description": "Кладовка с чистым бельём, полотенцами и тележкой горничной.",
+        "itemIds": ["it_linen_cart"]
+      },
+      {
+        "id": "hs_room1_bathroom",
+        "name": "Общая душевая",
+        "description": "Кафельная душевая с запотевшим зеркалом."
+      }
+    ],
+    "connections": [
+      { "to": "loc_hall", "minutes": 1 },
+      { "to": "loc_room_2", "minutes": 2 }
+    ]
+  },
+  {
+    "id": "loc_room_2",
+    "name": "Номера второго этажа",
+    "description": "Второй этаж жилого крыла: номера гостей и служебная квартира главного врача. Крутая деревянная лестница скрипит на каждой ступени.",
+    "tags": ["residential", "private", "main_building"],
+    "lighting": { "morning": "bright", "day": "bright", "evening": "dim", "night": "dark" },
+    "access": [],
+    "hotspots": [
+      {
+        "id": "hs_room2_stairs",
+        "name": "Лестница",
+        "description": "Крутая лестница с отполированными перилами. На нижней площадке негде удержаться."
+      },
+      {
+        "id": "hs_room2_balcony",
+        "name": "Общий балкон",
+        "description": "Балкон с видом на озеро. Пол покрыт ледяной коркой, перила низкие."
+      },
+      {
+        "id": "hs_room2_service_flat",
+        "name": "Служебная квартира",
+        "description": "Дверь квартиры главного врача с табличкой «Не беспокоить».",
+        "itemIds": ["it_desk_diary"]
+      }
+    ],
+    "connections": [
+      { "to": "loc_room_1", "minutes": 2 },
+      { "to": "loc_room_3", "minutes": 2 }
+    ]
+  },
+  {
+    "id": "loc_room_3",
+    "name": "Мансарда",
+    "description": "Мансарда с номерами люкс под скошенным потолком. В слуховое окно бьёт снег, ветер гудит в вентиляции.",
+    "tags": ["residential", "private", "main_building", "isolated"],
+    "lighting": { "morning": "dim", "day": "bright", "evening": "dim", "night": "dark" },
+    "access": [],
+    "hotspots": [
+      {
+        "id": "hs_room3_desk",
+        "name": "Письменный стол у окна",
+        "description": "Гостиничный блокнот с продавленными следами букв и бутылка коньяка.",
+        "itemIds": ["it_hotel_notepad", "it_cognac"]
+      },
+      {
+        "id": "hs_room3_wardrobe",
+        "name": "Встроенный шкаф",
+        "description": "Глубокий шкаф под скатом крыши, где легко спрятать сумку."
+      },
+      {
+        "id": "hs_room3_skylight",
+        "name": "Слуховое окно",
+        "description": "Окно открывается на заснеженную крышу. Защёлка давно сломана."
+      }
+    ],
+    "connections": [
+      { "to": "loc_room_2", "minutes": 2 }
+    ]
+  },
+  {
+    "id": "loc_greenhouse",
+    "name": "Оранжерея",
+    "description": "Стеклянная оранжерея с пальмами в кадках и душным влажным воздухом. Стёкла запотели изнутри, снаружи их заносит снегом.",
+    "tags": ["garden", "semi_private", "medical_supply"],
+    "lighting": { "morning": "bright", "day": "bright", "evening": "dark", "night": "dark" },
+    "access": [
+      { "from": 420, "to": 1260 },
+      { "archetypes": ["caretaker", "head_doctor"] }
+    ],
+    "hotspots": [
+      {
+        "id": "hs_greenhouse_shelves",
+        "name": "Полки с удобрениями",
+        "description": "Мешки с грунтом, распылители и флаконы средств от вредителей с черепом на этикетке.",
+        "itemIds": ["it_pesticide"]
+      },
+      {
+        "id": "hs_greenhouse_oleander",
+        "name": "Куст олеандра",
+        "description": "Цветущий олеандр в кадке. На табличке написано «Не трогать: ядовит».",
+        "itemIds": ["it_oleander_leaves"]
+      },
+      {
+        "id": "hs_greenhouse_tools",
+        "name": "Садовый инвентарь",
+        "description": "Лопаты, грабли и тяжёлый садовый совок в ящике у двери.",
+        "itemIds": ["it_garden_spade"]
+      }
+    ],
+    "connections": [
+      { "to": "loc_hall", "minutes": 3 },
+      { "to": "loc_lake_path", "minutes": 4 }
+    ]
+  },
+  {
+    "id": "loc_lake_path",
+    "name": "Тропа к озеру",
+    "description": "Расчищенная тропа между соснами к замёрзшему озеру. Фонари вдоль неё мигают, а за последним начинается белая тишина.",
+    "tags": ["outdoor", "isolated", "hazard"],
+    "lighting": { "morning": "dim", "day": "dim", "evening": "dark", "night": "dark" },
+    "access": [
+      { "from": 480, "to": 1020 },
+      { "archetypes": ["caretaker"] }
+    ],
+    "hotspots": [
+      {
+        "id": "hs_lake_steps",
+        "name": "Обледенелые ступени",
+        "description": "Каменные ступени к берегу, присыпанные снегом поверх льда."
+      },
+      {
+        "id": "hs_lake_gazebo",
+        "name": "Беседка",
+        "description": "Деревянная беседка, где курят тайком от врачей. На перилах банка с окурками.",
+        "itemIds": ["it_cigarette_tin"]
+      },
+      {
+        "id": "hs_lake_pier",
+        "name": "Мостки",
+        "description": "Мостки над замёрзшим озером. Лёд под ними тёмный и тонкий."
+      }
+    ],
+    "connections": [
+      { "to": "loc_greenhouse", "minutes": 4 },
+      { "to": "loc_hall", "minutes": 6 }
+    ]
+  }
+]

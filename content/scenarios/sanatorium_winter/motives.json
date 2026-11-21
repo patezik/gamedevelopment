@@ -1,0 +1,61 @@
+[
+  {
+    "id": "inheritance",
+    "when": {
+      "relation": { "type": "child", "from": "$c", "to": "$v" },
+      "secret": { "kind": "will_changed", "about": "$v", "knownBy": "$c" }
+    },
+    "strength": {
+      "base": 0.5,
+      "plus": [{ "if": { "trait": "$c.honesty", "lt": 0.4 }, "add": 0.2 }]
+    },
+    "evidenceHints": ["will_document", "notary_letter"]
+  },
+  {
+    "id": "blackmail",
+    "when": {
+      "relation": { "type": "blackmail", "from": "$v", "to": "$c" },
+      "secret": { "kind": "blackmail_material", "about": "$c", "knownBy": "$v" }
+    },
+    "strength": {
+      "base": 0.55,
+      "plus": [{ "if": { "trait": "$c.neuroticism", "gt": 0.6 }, "add": 0.15 }]
+    },
+    "evidenceHints": ["blackmail_note", "bank_transfer"]
+  },
+  {
+    "id": "jealousy",
+    "when": {
+      "relation": { "type": "spouse", "from": "$c", "to": "$v" },
+      "secret": { "kind": "affair", "about": "$v", "knownBy": "$c" }
+    },
+    "strength": {
+      "base": 0.45,
+      "plus": [{ "if": { "trait": "$c.impulsivity", "gt": 0.6 }, "add": 0.2 }]
+    },
+    "evidenceHints": ["love_letter", "phone_messages"]
+  },
+  {
+    "id": "revenge",
+    "when": {
+      "relation": { "type": "past_conflict", "from": "$c", "to": "$v" },
+      "secret": { "kind": "hit_and_run", "about": "$v", "knownBy": "$c" }
+    },
+    "strength": {
+      "base": 0.5,
+      "plus": [{ "if": { "trait": "$c.agreeableness", "lt": 0.3 }, "add": 0.2 }]
+    },
+    "evidenceHints": ["old_newspaper", "accident_report"]
+  },
+  {
+    "id": "malpractice_coverup",
+    "when": {
+      "secret": { "kind": "malpractice", "about": "$c", "knownBy": "$v" }
+    },
+    "strength": {
+      "base": 0.5,
+      "plus": [{ "if": { "trait": "$c.honesty", "lt": 0.4 }, "add": 0.15 }]
+    },
+    "evidenceHints": ["medical_record_gap", "archive_missing_folder"]
+  }
+]
