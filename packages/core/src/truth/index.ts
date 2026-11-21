@@ -14,6 +14,20 @@ export {
 } from './facts.ts';
 
 export {
+  assertInvariants,
+  checkTruthInvariants,
+  TruthInvariantError,
+  withInvariantChecks,
+  type InvariantCheckOptions,
+  type InvariantDebugOptions,
+  type InvariantNumber,
+  type InvariantViolation,
+  type InvariantViolationCode,
+  type InvariantWorld,
+  type TruthWriter,
+} from './invariants.ts';
+
+export {
   TruthError,
   TruthLog,
   TruthModel,
