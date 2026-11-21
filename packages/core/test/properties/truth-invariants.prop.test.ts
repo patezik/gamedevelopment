@@ -142,3 +142,70 @@ test('shortening one trip below the route time is always reported once', () => {
     }),
   );
 });
+
+test('a locked edge opens exactly when the registry gives the key by the minute of departure', () => {
+  const doors = [
+    {
+      ...template,
+      id: 'loc_a',
+      name: 'loc_a',
+      connections: [{ to: 'loc_b', minutes: 3, locked: { itemId: 'it_key' } }],
+    },
+    { ...template, id: 'loc_b', name: 'loc_b', connections: [] },
+  ];
+  const minutes = fc.integer({ min: -100, max: 100 });
+  fc.assert(
+    fc.property(minutes, minutes, (departure, keyAt) => {
+      const keyed = {
+        locations: new LocationGraph({ preset: minimal.preset, locations: doors }),
+        items: new ItemRegistry(
+          {
+            locations: doors,
+            items: [{ id: 'it_key', name: 'Key', kind: 'key', tags: [], locationId: 'loc_a' }],
+          },
+          new Map(),
+          -1000,
+        ),
+      };
+      const truth = new TruthModel({
+        type: 'theft',
+        victimIds: [],
+        culpritIds: [],
+        motive: 'f_0000000000000000',
+        means: 'it_key',
+        keyEventIds: [],
+        window: { from: -100, to: 100 },
+      });
+      const take = truth.append({
+        t: keyAt,
+        duration: 0,
+        verb: 'take',
+        actorIds: [],
+        location: 'loc_a',
+        targets: [{ kind: 'item', id: 'it_key' }],
+        causes: [],
+        facts: [],
+        traceIds: [],
+        visibility: 'public',
+      });
+      keyed.items.move('it_key', { kind: 'character', id: 'ch_walker' }, keyAt, take);
+      truth.append({
+        t: departure,
+        duration: 3,
+        verb: 'move',
+        actorIds: ['ch_walker'],
+        location: 'loc_a',
+        targets: [
+          { kind: 'location', id: 'loc_b' },
+          { kind: 'item', id: 'it_key' },
+        ],
+        causes: [],
+        facts: [],
+        traceIds: [],
+        visibility: 'public',
+      });
+      const codes = checkTruthInvariants(truth, keyed).map(({ code }) => code);
+      expect(codes).toEqual(keyAt <= departure ? [] : ['TRAVEL_NO_ROUTE']);
+    }),
+  );
+});

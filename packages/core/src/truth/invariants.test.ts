@@ -136,6 +136,12 @@ function move(
   });
 }
 
+/** A transition through a locked edge in the SIM-001 format, naming the key as an item target. */
+function keyedMove(who: string, from: string, to: string, t: number, duration: number) {
+  const input = move(who, from, to, t, duration);
+  return { ...input, targets: [...input.targets, target('item', key)] };
+}
+
 /** A stay in the SIM-001 format. */
 function stay(who: string, where: string, from: number, to: number): TruthEventInput {
   return event(from, {
@@ -929,5 +935,74 @@ describe('audit regressions: debug checks with registry mirroring', () => {
     w.items.move(knife, { kind: 'character', id: boris }, 20, give);
     writer.append(move(anna, office, hall, 10, 5));
     expect(() => assertInvariants(truth, w)).not.toThrow();
+  });
+});
+
+describe('physical keys at the minute of departure (ADR 0016)', () => {
+  /** Anna leaves the office for the vault at minute 10 and arrives at minute 12. */
+  function trip(options: { keyAt?: number | undefined; duration?: number } = {}) {
+    const { keyAt, duration = 2 } = options;
+    const log = blank();
+    log.append(stay(anna, office, 0, 10));
+    const id = log.append(keyedMove(anna, office, vault, 10, duration));
+    if (keyAt !== undefined) {
+      const take = log.append(event(keyAt, { verb: 'take', targets: [target('item', key)] }));
+      log.world.items.move(key, { kind: 'character', id: anna }, keyAt, take);
+    }
+    return { log, id };
+  }
+
+  test('a key received during the transition does not open the door it already passed', () => {
+    const { log, id } = trip({ keyAt: 11 });
+    expect(check(log)).toEqual([
+      expect.objectContaining({ code: 'TRAVEL_NO_ROUTE', eventIds: [id], minute: 10 }),
+    ]);
+  });
+
+  test.each([
+    ['before departure', 5, []],
+    ['in the minute of departure', 10, []],
+    ['one minute after departure', 11, ['TRAVEL_NO_ROUTE']],
+    ['in the minute of arrival', 12, ['TRAVEL_NO_ROUTE']],
+    ['never', undefined, ['TRAVEL_NO_ROUTE']],
+  ])('a key received %s', (_, keyAt, expected) => {
+    expect(codes(check(trip({ keyAt }).log))).toEqual(expected);
+  });
+
+  test('a key inside nested containers of the character opens the door', () => {
+    const { log } = trip();
+    const pack = log.append(event(5, { verb: 'pack', targets: [target('item', key)] }));
+    log.world.items.move(chest, { kind: 'character', id: anna }, 5, pack);
+    log.world.items.move(key, { kind: 'container', id: box }, 5, pack);
+    expect(check(log)).toEqual([]);
+  });
+
+  test('a key handed to another character before departure no longer opens the door', () => {
+    const { log } = trip({ keyAt: 0 });
+    const give = log.append(event(5, { verb: 'give', targets: [target('item', key)] }));
+    log.world.items.move(key, { kind: 'character', id: boris }, 5, give);
+    expect(codes(check(log))).toEqual(['TRAVEL_NO_ROUTE']);
+  });
+
+  test('a possession fact the registry does not mirror is no key', () => {
+    const log = blank();
+    log.append(stay(anna, office, 0, 10));
+    log.append(event(0, { verb: 'take', facts: [holds(anna, key, 0, 30)] }));
+    log.append(keyedMove(anna, office, vault, 10, 2));
+    expect(codes(check(log))).toEqual(['TRAVEL_NO_ROUTE', 'ITEM_PLACEMENT_CONFLICT']);
+  });
+
+  test('keeps the route time check for keyed and open transitions', () => {
+    expect(codes(check(trip({ keyAt: 5, duration: 1 }).log))).toEqual(['TRAVEL_TOO_FAST']);
+    const open = blank();
+    open.append(stay(anna, office, 0, 10));
+    open.append(move(anna, office, hall, 10, 5));
+    open.append(stay(anna, hall, 15, 20));
+    expect(check(open)).toEqual([]);
+  });
+
+  test('gives the same violations on repeated checks', () => {
+    const { log } = trip({ keyAt: 11 });
+    expect(check(log)).toEqual(check(log));
   });
 });
