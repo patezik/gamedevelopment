@@ -262,7 +262,8 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   function withInvariantChecks(tm: TruthModel, world: InvariantWorld, debug: { enabled: boolean }): { append(e: Omit<TruthEvent, "id">): EventId };
   ```
 - **Инварианты:** коды, трактовка смерти и debug-режим — [truth-model.md §4](../investigation/truth-model.md).
-  Инвариант 6 пока не проверяется (OQ-13).
+  `checkTruthInvariants` проверяет инварианты 1–5 и 7. Инвариант 6 проверяется в SIM-002,
+  его проверка в валидаторе — OQ-13.
 - **Зависимости:** `common`, `world`, `characters`.
 - **Ошибки:** `TRUTH_INVARIANT_VIOLATION` — `TruthInvariantError` из `assertInvariants` и
   `withInvariantChecks` при включённом флаге.
