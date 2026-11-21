@@ -5,7 +5,7 @@ import type { ScenarioContent } from '../content/index.ts';
 import { createRng, restoreRng, type Rng } from '../rng/index.ts';
 import { Calendar, TickPhase, TimeSystem } from '../time/index.ts';
 import { TruthModel } from '../truth/index.ts';
-import { LocationGraph } from '../world/index.ts';
+import { ItemRegistry, LocationGraph } from '../world/index.ts';
 import { SimulationRunner } from '@hs/core/simulation';
 
 const startDateTime = '2026-01-14T00:00:00';
@@ -13,6 +13,7 @@ const bed = 'loc_bed';
 const corridor = 'loc_corridor';
 const office = 'loc_office';
 const outside = 'loc_outside';
+const key = 'it_key';
 
 type Location = ScenarioContent['locations'][number];
 
@@ -54,6 +55,10 @@ function character(id: string, routine: RoutineBlock[], access: Character['acces
 type AgentCharacter = ReturnType<typeof character>;
 const alpha = character('ch_alpha', [block(0, 10, bed, 'sleep'), block(10, 1440, office, 'work')]);
 const beta = character('ch_beta', alpha.routine);
+const lockedLocations = [
+  location(bed, [{ to: office, minutes: 3, locked: { itemId: key } }]),
+  location(office, [{ to: bed, minutes: 3 }]),
+];
 
 function setup(
   characters: AgentCharacter[] = [alpha],
@@ -62,6 +67,9 @@ function setup(
     calendarStart?: string;
     endAt?: number;
     worldLocations?: Location[];
+    worldItems?: ScenarioContent['items'];
+    ownerByArchetype?: ReadonlyMap<string, string>;
+    itemChangeMinutes?: readonly number[];
     overrides?: ScheduleOverride[];
     initialLocations?: ReadonlyMap<string, string>;
     rng?: Rng;
@@ -72,6 +80,8 @@ function setup(
     calendarStart = startDateTime,
     endAt = 1440,
     worldLocations = locations,
+    worldItems = [],
+    ownerByArchetype,
     rng = createRng('routine-test'),
     ...options
   } = setupOptions;
@@ -96,6 +106,11 @@ function setup(
     phone: { minQrShare: 0 },
   };
   const world = new LocationGraph({ preset, locations: worldLocations });
+  const items = new ItemRegistry(
+    { locations: worldLocations, items: worldItems },
+    ownerByArchetype,
+    start,
+  );
   const truth = new TruthModel({
     type: 'theft',
     victimIds: [beta.id],
@@ -109,13 +124,36 @@ function setup(
     time,
     calendar,
     world,
+    items,
     truth,
     rng,
     characters,
     endAt,
     ...options,
   });
-  return { runner, time, truth, world };
+  return { runner, time, truth, world, items };
+}
+
+function moveItem(
+  state: Pick<ReturnType<typeof setup>, 'items' | 'truth'>,
+  id: string,
+  recipient: string,
+  minute: number,
+  giver?: string,
+): void {
+  const cause = state.truth.append({
+    t: minute,
+    duration: 0,
+    verb: giver ? 'give' : 'take',
+    actorIds: [giver ?? recipient],
+    location: bed,
+    targets: [{ kind: 'item', id }],
+    causes: [],
+    facts: [],
+    traceIds: [],
+    visibility: 'public',
+  });
+  state.items.move(id, { kind: 'character', id: recipient }, minute, cause);
 }
 
 describe('SimulationRunner', () => {
@@ -243,14 +281,16 @@ describe('SimulationRunner', () => {
   });
 
   it('checks access on arrival, leaving NPCs in place for denied, locked and unreachable steps', () => {
-    const staffWithKey = character(beta.id, alpha.routine, [{ itemId: 'it_key' }]);
-    const { time, truth } = setup([alpha, staffWithKey], {
+    const staffWithGrant = character(alpha.id, alpha.routine, [{ itemId: key }]);
+    const { time, truth } = setup([staffWithGrant, beta], {
+      worldItems: [{ id: key, name: 'Key', kind: 'key', tags: [], ownerArchetype: 'staff' }],
+      ownerByArchetype: new Map([['staff', beta.id]]),
       worldLocations: [
-        location(bed, [{ to: corridor, minutes: 2, locked: { itemId: 'it_key' } }]),
+        location(bed, [{ to: corridor, minutes: 2, locked: { itemId: key } }]),
         location(
           corridor,
           [{ to: office, minutes: 3 }],
-          [{ from: 12, to: 13, archetypes: ['staff'], itemId: 'it_key' }],
+          [{ from: 12, to: 13, archetypes: ['staff'], itemId: key }],
         ),
         location(office, [], [{ from: 0, to: 15 }]),
         location(outside),
@@ -262,12 +302,119 @@ describe('SimulationRunner', () => {
 
     time.advance(30);
     expect(truth.events().filter((event) => event.verb === 'move')).toMatchObject([
-      { actorIds: [beta.id], t: 10, duration: 2, location: bed },
+      {
+        actorIds: [beta.id],
+        t: 10,
+        duration: 2,
+        location: bed,
+        targets: [
+          { kind: 'location', id: corridor },
+          { kind: 'item', id: key },
+        ],
+      },
     ]);
     expect(truth.whereWas(beta.id, 12)).toBe(corridor);
     expect(truth.whereWas(beta.id, 29)).toBe(corridor);
     expect(truth.whereWas(alpha.id, 29)).toBe(bed);
     expect(truth.whoWasAt(office, { from: 0, to: 30 })).toEqual([]);
+  });
+
+  it('uses the new key holder when a handover is applied in the departure minute', () => {
+    function replay(characters: AgentCharacter[], advances: number[]) {
+      const state = setup(characters, {
+        worldItems: [{ id: key, name: 'Key', kind: 'key', tags: [], ownerArchetype: 'staff' }],
+        ownerByArchetype: new Map([['staff', alpha.id]]),
+        worldLocations: lockedLocations,
+      });
+      state.time.registerHandler('handover', {
+        phase: TickPhase.Schedules,
+        handle: () => moveItem(state, key, beta.id, 10, alpha.id),
+      });
+      state.time.schedule({ at: 10, kind: 'handover', priority: -1, payload: null });
+
+      for (const minutes of advances) state.time.advance(minutes);
+      expect(state.truth.events().filter(({ verb }) => verb === 'move')).toMatchObject([
+        { t: 10, duration: 3, actorIds: [beta.id] },
+      ]);
+      expect(state.truth.whereWas(alpha.id, 13)).toBe(bed);
+      expect(state.truth.whereWas(beta.id, 13)).toBe(office);
+      return { journal: state.truth.serialize(), hash: stateHash(state.truth.events()) };
+    }
+
+    expect(replay([beta, alpha], [13])).toEqual(replay([alpha, beta], [10, 3]));
+  });
+
+  it('uses a preregistered acquisition only from its minute, including a key carried in a bag', () => {
+    const bag = 'it_bag';
+    const state = setup([alpha], {
+      worldLocations: lockedLocations,
+      worldItems: [
+        { id: key, name: 'Key', kind: 'key', tags: [], containerId: bag },
+        { id: bag, name: 'Bag', kind: 'container', tags: [], locationId: bed },
+      ],
+    });
+    // The key is acquired at the original route's hypothetical arrival minute.
+    moveItem(state, bag, alpha.id, 13);
+    state.time.advance(12);
+    expect(state.truth.events().filter(({ verb }) => verb === 'move')).toEqual([]);
+    expect(state.truth.whereWas(alpha.id, 12)).toBe(bed);
+    state.time.advance(4);
+    expect(state.truth.events().filter(({ verb }) => verb === 'move')).toMatchObject([
+      {
+        t: 13,
+        duration: 3,
+        targets: [
+          { kind: 'location', id: office },
+          { kind: 'item', id: key },
+        ],
+      },
+    ]);
+    expect(state.truth.whereWas(alpha.id, 16)).toBe(office);
+  });
+
+  it('replans a blocked route at a declared minute for a live acquisition', () => {
+    const state = setup([alpha], {
+      worldLocations: lockedLocations,
+      worldItems: [{ id: key, name: 'Key', kind: 'key', tags: [], locationId: bed }],
+      itemChangeMinutes: [13],
+    });
+    state.time.registerHandler('acquire', {
+      phase: TickPhase.Schedules,
+      handle: () => moveItem(state, key, alpha.id, 13),
+    });
+    state.time.schedule({ at: 13, kind: 'acquire', priority: -1, payload: null });
+
+    state.time.advance(16);
+    expect(state.truth.events().filter(({ verb }) => verb === 'move')).toMatchObject([
+      { t: 13, duration: 3 },
+    ]);
+    expect(
+      state.truth.presenceIntervals(alpha.id).map(({ location, interval }) => [location, interval]),
+    ).toEqual([
+      [bed, { from: 0, to: 10 }],
+      [bed, { from: 10, to: 13 }],
+      [office, { from: 16, to: 1440 }],
+    ]);
+  });
+
+  it('chooses an open detour when a physical key is unavailable', () => {
+    const staffWithGrant = character(alpha.id, alpha.routine, [{ itemId: key }]);
+    const { time, truth } = setup([staffWithGrant], {
+      worldLocations: [
+        location(bed, [
+          { to: office, minutes: 3, locked: { itemId: key } },
+          { to: corridor, minutes: 2 },
+        ]),
+        location(corridor, [{ to: office, minutes: 3 }]),
+        location(office),
+      ],
+      worldItems: [{ id: key, name: 'Key', kind: 'key', tags: [], locationId: bed }],
+    });
+    time.advance(15);
+    expect(truth.events().filter(({ verb }) => verb === 'move')).toMatchObject([
+      { t: 10, duration: 2, targets: [{ kind: 'location', id: corridor }] },
+      { t: 12, duration: 3, targets: [{ kind: 'location', id: office }] },
+    ]);
   });
 
   it('takes an open detour if the shorter route would arrive too late', () => {

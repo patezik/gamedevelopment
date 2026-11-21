@@ -15,6 +15,7 @@ export interface TimedTravelStep {
   readonly destination: string;
   readonly departAt: GameMinutes;
   readonly arriveAt: GameMinutes;
+  readonly keyItemId?: string;
 }
 
 type AccessDenial = 'outside_hours' | 'archetype_not_allowed' | 'missing_item';
@@ -52,12 +53,21 @@ interface Route {
 export class LocationGraph {
   private readonly locations = new Map<string, Location>();
   private readonly calendar: Calendar;
+  readonly accessItemIds: readonly string[];
 
   constructor(content: Pick<ScenarioContent, 'locations' | 'preset'>) {
     this.calendar = new Calendar(content.preset.time.startDateTime);
+    const accessItemIds = new Set<string>();
     for (const location of content.locations) {
       this.locations.set(location.id, structuredClone(location));
+      for (const { itemId } of location.access) {
+        if (itemId !== undefined) accessItemIds.add(itemId);
+      }
+      for (const { locked } of location.connections) {
+        if (locked?.itemId !== undefined) accessItemIds.add(locked.itemId);
+      }
     }
+    this.accessItemIds = Object.freeze([...accessItemIds].sort());
   }
 
   travelTime(from: string, to: string, actor: Actor = {}): number | null {
@@ -179,6 +189,7 @@ export class LocationGraph {
               destination: edge.to,
               departAt: arriveAt - edge.minutes,
               arriveAt,
+              ...(edge.locked?.itemId !== undefined && { keyItemId: edge.locked.itemId }),
             },
           );
         }

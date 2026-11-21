@@ -8,16 +8,21 @@ import {
 import type { GameMinutes, Interval } from '../common/index.ts';
 import type { Rng, RngState } from '../rng/index.ts';
 import { TickPhase, type Calendar, type TickContext, type TimeSystem } from '../time/index.ts';
-import type { Fact, TruthModel } from '../truth/index.ts';
-import type { Actor, LocationGraph } from '../world/index.ts';
+import type { EntityRef, Fact, TruthModel } from '../truth/index.ts';
+import type { Actor, ItemRegistry, LocationGraph } from '../world/index.ts';
 
 const MINUTES_PER_DAY = 1440;
 const SCHEDULE_EVENT = 'simulation.routine';
 const STEP_EVENT = 'simulation.step';
 
-type RoutineCharacter = Pick<Character, 'id' | 'routine' | 'access' | 'archetypeId'>;
+type RoutineCharacter = Pick<Character, 'id' | 'routine' | 'archetypeId'>;
 
-type Move = { readonly kind: 'move'; readonly origin: string; readonly destination: string };
+type Move = {
+  readonly kind: 'move';
+  readonly origin: string;
+  readonly destination: string;
+  readonly keyItemId?: string;
+};
 type Stay = { readonly kind: 'stay'; readonly location: string };
 export type ActivityStep = Readonly<Interval> & (Move | Stay);
 
@@ -34,7 +39,6 @@ export interface Agent {
 
 interface AgentState {
   readonly character: RoutineCharacter;
-  readonly actor: Actor;
   readonly rng: Rng;
   readonly priority: number;
   readonly overrides: readonly ScheduleOverride[];
@@ -48,11 +52,14 @@ export interface SimulationRunnerOptions {
   readonly time: TimeSystem;
   readonly calendar: Calendar;
   readonly world: LocationGraph;
+  readonly items: Pick<ItemRegistry, 'locate' | 'history'>;
   readonly truth: TruthModel;
   readonly rng: Rng;
   readonly characters: readonly RoutineCharacter[];
   readonly overrides?: readonly ScheduleOverride[];
   readonly initialLocations?: ReadonlyMap<string, string>;
+  /** Known minutes of item updates that will be written before the Simulation phase. */
+  readonly itemChangeMinutes?: readonly GameMinutes[];
   /** Exclusive end of the interval owned by this runner. Use the same calendar as TimeSystem. */
   readonly endAt: GameMinutes;
 }
@@ -61,6 +68,8 @@ export class SimulationRunner {
   readonly #agents = new Map<string, AgentState>();
   readonly #calendar: Calendar;
   readonly #world: LocationGraph;
+  readonly #items: SimulationRunnerOptions['items'];
+  readonly #itemChangeMinutes: readonly GameMinutes[];
   readonly #truth: TruthModel;
   readonly #endAt: GameMinutes;
 
@@ -68,19 +77,26 @@ export class SimulationRunner {
     time,
     calendar,
     world,
+    items,
     truth,
     rng,
     characters,
     overrides = [],
     initialLocations,
+    itemChangeMinutes = [],
     endAt,
   }: SimulationRunnerOptions) {
     const start = time.now();
     if (!Number.isSafeInteger(endAt) || endAt < start) {
       throw new RangeError('Simulation end must be a safe integer at or after the current time');
     }
+    if (itemChangeMinutes.some((minute) => !Number.isSafeInteger(minute))) {
+      throw new RangeError('Item changes must be scheduled at safe integer minutes');
+    }
     this.#calendar = calendar;
     this.#world = world;
+    this.#items = items;
+    this.#itemChangeMinutes = itemChangeMinutes.toSorted((a, b) => a - b);
     this.#truth = truth;
     this.#endAt = endAt;
 
@@ -88,7 +104,7 @@ export class SimulationRunner {
     const sorted = characters.toSorted((a, b) => (a.id < b.id ? -1 : Number(a.id > b.id)));
     for (const [priority, input] of sorted.entries()) {
       const character = structuredClone(input);
-      const { id, archetypeId, access } = character;
+      const { id } = character;
       if (!id) throw new RangeError('Character ID cannot be empty');
       if (this.#agents.has(id)) throw new RangeError(`Duplicate character ID: ${id}`);
       validateRoutine(character);
@@ -104,10 +120,6 @@ export class SimulationRunner {
           throw new RangeError(`Invalid schedule override for ${id}`);
         }
       }
-      const actor: Actor = {
-        archetypeId,
-        itemIds: new Set(access.flatMap((grant) => ('itemId' in grant ? [grant.itemId] : []))),
-      };
       const block = whereShouldBe(character, start, ownOverrides, calendar);
       const initialLocation = initialLocations?.get(id);
       const location = initialLocation ?? block.location;
@@ -116,15 +128,17 @@ export class SimulationRunner {
         ...character.routine.map((entry) => entry.location),
         ...ownOverrides.map((override) => override.block.location),
       ]);
-      for (const destination of destinations) world.travelTime(destination, destination, actor);
-      if (initialLocation === undefined && !world.isAccessible(location, actor, start).ok) {
+      for (const destination of destinations) world.travelTime(destination, destination);
+      if (
+        initialLocation === undefined &&
+        !world.isAccessible(location, this.#accessAt(character, start).actor, start).ok
+      ) {
         throw new RangeError(
           `An initial location is required for ${id} when ${location} is inaccessible`,
         );
       }
       this.#agents.set(id, {
         character,
-        actor,
         location,
         priority,
         block,
@@ -220,18 +234,42 @@ export class SimulationRunner {
   }
 
   #planStep(agent: AgentState, now: GameMinutes): ActivityStep {
-    const { location, actor, block, nextBoundary } = agent;
+    const { location, block, nextBoundary } = agent;
     const stay = { kind: 'stay', location, from: now, to: nextBoundary } as const;
+    if (location === block.location) return stay;
+    const { actor, nextChange } = this.#accessAt(agent.character, now);
     const hop = this.#world.nextTimedStep(location, block.location, actor, now);
-    if (!hop || hop.arriveAt > this.#endAt) return stay;
-    if (hop.departAt > now) return { ...stay, to: Math.min(nextBoundary, hop.departAt) };
+    const stayUntil = Math.min(nextBoundary, nextChange);
+    if (!hop || hop.arriveAt > this.#endAt) return { ...stay, to: stayUntil };
+    if (hop.departAt > now) return { ...stay, to: Math.min(stayUntil, hop.departAt) };
     return {
       kind: 'move',
       origin: location,
       destination: hop.destination,
       from: now,
       to: hop.arriveAt,
+      ...(hop.keyItemId !== undefined && { keyItemId: hop.keyItemId }),
     };
+  }
+
+  #accessAt(character: RoutineCharacter, now: GameMinutes): { actor: Actor; nextChange: number } {
+    const itemIds = new Set<string>();
+    let nextChange = this.#itemChangeMinutes.find((minute) => minute > now) ?? Infinity;
+    for (const keyId of this.#world.accessItemIds) {
+      let id = keyId;
+      for (;;) {
+        const change = this.#items.history(id).find(({ t }) => t > now);
+        if (change) nextChange = Math.min(nextChange, change.t);
+        const placement = this.#items.locate(id, now);
+        if (placement.kind === 'container') {
+          id = placement.id;
+        } else {
+          if (placement.kind === 'character' && placement.id === character.id) itemIds.add(keyId);
+          break;
+        }
+      }
+    }
+    return { actor: { archetypeId: character.archetypeId, itemIds }, nextChange };
   }
 
   #recordStep(who: string, step: ActivityStep): void {
@@ -242,13 +280,17 @@ export class SimulationRunner {
     const fact: Fact = target
       ? { kind: 'did', who, verb: kind, target, at: from, where: location }
       : { kind: 'at', who, where: location, interval: { from, to } };
+    const targets: EntityRef[] = target ? [target] : [];
+    if (step.kind === 'move' && step.keyItemId !== undefined) {
+      targets.push({ kind: 'item', id: step.keyItemId });
+    }
     this.#truth.append({
       t: from,
       duration: to - from,
       verb: kind,
       actorIds: [who],
       location,
-      targets: target ? [target] : [],
+      targets,
       causes: [],
       facts: [fact],
       traceIds: [],
