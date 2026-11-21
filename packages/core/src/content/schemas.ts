@@ -221,7 +221,8 @@ export const traceRulesSchema = z.array(
           template: id,
           supports: z.array(text),
           captureMode: z.enum(['direct', 'qr']).optional(),
-          decaysAfter: minutes.nullable().optional(),
+          // A zero decay would give an empty availability window; null means no decay.
+          decaysAfter: minutes.positive().nullable().optional(),
           requires: z.strictObject({ itemId: id }).optional(),
         }),
       )
