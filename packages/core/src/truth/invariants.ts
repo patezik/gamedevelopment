@@ -439,23 +439,18 @@ function checkSinglePresence(ctx: Context): void {
 }
 
 /**
- * Keys a character carries while travelling during `transit`: possession facts and registry
- * placements that hold at some minute of the transit itself. A key received at the destination,
- * returned before departure or registered later does not count.
+ * Physical keys a character carries when departing (ADR 0016): items the registry places with
+ * the character in that minute, directly or in containers the character holds. Moves recorded
+ * in that minute count; a key received on the way or on arrival does not open a door already
+ * passed. Possession facts are not a source of ownership, and the registry only knows items the
+ * truth refers to, such as the item target of a `move`.
  */
-function carriedItems(ctx: Context, who: string, transit: Interval): Set<string> {
+function carriedItems(ctx: Context, who: string, departure: GameMinutes): Set<string> {
   const carried = new Set<string>();
-  for (const [itemId, holdings] of ctx.holdings) {
-    if (holdings.some((holding) => holding.who === who && overlaps(holding.interval, transit))) {
-      carried.add(itemId);
-    }
-  }
   for (const itemId of ctx.registeredItems) {
-    const held = placementChanges(ctx, itemId, transit).some((minute) => {
-      const root = rootPlacement(ctx.world.items, itemId, minute);
-      return root.kind === 'character' && root.id === who;
-    });
-    if (held) carried.add(itemId);
+    if (!covered(ctx.world.items, itemId, departure)) continue;
+    const root = rootPlacement(ctx.world.items, itemId, departure);
+    if (root.kind === 'character' && root.id === who) carried.add(itemId);
   }
   return carried;
 }
@@ -474,8 +469,7 @@ interface Trip {
 function checkTrip(ctx: Context, trip: Trip): void {
   const { who, origin, destination, departure, arrival, eventIds, minute } = trip;
   const available = arrival - departure;
-  const transit = { from: departure, to: Math.max(arrival, departure + 1) };
-  const actor: Actor = { itemIds: carriedItems(ctx, who, transit) };
+  const actor: Actor = { itemIds: carriedItems(ctx, who, departure) };
   const details = { subject: character(who), minute };
   let minutes: number | null;
   try {
