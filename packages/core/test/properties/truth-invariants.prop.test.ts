@@ -49,8 +49,13 @@ const itinerary = fc.record({
 
 type Plan = typeof itinerary extends fc.Arbitrary<infer T> ? T : never;
 
-/** A walk along the graph that waits at least the route time between stays, except `shortTrip`. */
-function walk({ start, first, steps }: Plan, shortTrip?: number) {
+type Format = 'stays' | 'moves';
+
+/**
+ * A walk along the graph that waits at least the route time between stays, except `shortTrip`.
+ * With `moves`, each trip is also an explicit move event in the SIM-001 format.
+ */
+function walk({ start, first, steps }: Plan, format: Format, shortTrip?: number) {
   const truth = new TruthModel({
     type: 'murder',
     victimIds: [],
@@ -92,27 +97,47 @@ function walk({ start, first, steps }: Plan, shortTrip?: number) {
     const options = edges[where]!;
     const edge = options[next % options.length]!;
     const travel = world.locations.travelTime(where, edge.to)!;
-    minute = to + (index === shortTrip ? travel - 1 : travel + slack);
+    const duration = index === shortTrip ? travel - 1 : travel + slack;
+    if (format === 'moves') {
+      const destination = { kind: 'location', id: edge.to } as const;
+      truth.append({
+        t: to,
+        duration,
+        verb: 'move',
+        actorIds: ['ch_walker'],
+        location: where,
+        targets: [destination],
+        causes: [],
+        facts: [
+          { kind: 'did', who: 'ch_walker', verb: 'move', target: destination, at: to, where },
+        ],
+        traceIds: [],
+        visibility: 'public',
+      });
+    }
+    minute = to + duration;
     where = edge.to;
   }
   return truth;
 }
 
+const formats = fc.constantFrom<Format>('stays', 'moves');
+
 test('itineraries that respect the graph pass invariants 1–3', () => {
   fc.assert(
-    fc.property(itinerary, (plan) => {
-      expect(checkTruthInvariants(walk(plan), world)).toEqual([]);
+    fc.property(itinerary, formats, (plan, format) => {
+      expect(checkTruthInvariants(walk(plan, format), world)).toEqual([]);
     }),
   );
 });
 
-test('shortening one trip below the route time is always reported', () => {
+test('shortening one trip below the route time is always reported once', () => {
   fc.assert(
-    fc.property(itinerary, fc.nat(), (plan, pick) => {
-      // The last step has no following stay, so only earlier steps produce a trip.
-      fc.pre(plan.steps.length > 1);
-      const trip = pick % (plan.steps.length - 1);
-      const violations = checkTruthInvariants(walk(plan, trip), world);
+    fc.property(itinerary, formats, fc.nat(), (plan, format, pick) => {
+      // Without moves the last step has no following stay, so only earlier steps produce a trip.
+      const trips = format === 'moves' ? plan.steps.length : plan.steps.length - 1;
+      fc.pre(trips > 0);
+      const violations = checkTruthInvariants(walk(plan, format, pick % trips), world);
       expect(violations.map(({ code }) => code)).toEqual(['TRAVEL_TOO_FAST']);
     }),
   );

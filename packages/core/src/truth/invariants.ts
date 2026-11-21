@@ -13,8 +13,10 @@ import type { EventId, TruthEvent, TruthEventInput, TruthModel } from './truth-m
 /** Number of the invariant in truth-model.md §4. */
 export type InvariantNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
+// Declaration order is also the order of codes within an invariant in the result.
 const INVARIANT_OF = {
   PRESENCE_OVERLAP: 1,
+  TRANSIT_OVERLAP: 1,
   ACTOR_ELSEWHERE: 1,
   TRAVEL_TOO_FAST: 2,
   TRAVEL_NO_ROUTE: 2,
@@ -83,6 +85,16 @@ interface Stay {
   readonly order: number;
 }
 
+/** A stay from an `at` fact, or a transition from a `move` event with one location target. */
+interface Segment {
+  readonly kind: 'stay' | 'move';
+  readonly start: string;
+  readonly end: string;
+  readonly interval: Interval;
+  readonly eventId: EventId;
+  readonly order: number;
+}
+
 interface Holding {
   readonly who: string;
   readonly interval: Interval;
@@ -102,10 +114,13 @@ interface Context {
   readonly incremental: boolean;
   readonly newestId: EventId;
   readonly stays: ReadonlyMap<string, readonly Stay[]>;
+  readonly segments: ReadonlyMap<string, readonly Segment[]>;
   readonly holdings: ReadonlyMap<string, readonly Holding[]>;
   readonly deaths: ReadonlyMap<string, Death>;
   /** Items the truth refers to that exist in the registry, sorted by id. */
   readonly registeredItems: readonly string[];
+  /** Each registered item with every container it is ever in, directly or transitively. */
+  readonly chains: ReadonlyMap<string, readonly string[]>;
   readonly violations: InvariantViolation[];
 }
 
@@ -227,16 +242,23 @@ function rootPlacement(
   return placement;
 }
 
-/** The item and every container it could be inside since `minute`, directly or transitively. */
+// Far beyond any scenario, yet small enough for exact integer midpoints.
+const EARLIEST_MINUTE = -(2 ** 52);
+const LATEST_MINUTE = 2 ** 52;
+
+/**
+ * The item and every container it is ever inside, directly or transitively, from the start of
+ * the registry on. The registry does not list its items, so the walk starts from known ids.
+ */
 function containmentChain(
   items: InvariantWorld['items'],
   id: string,
-  minute: GameMinutes,
+  registryStart: GameMinutes,
 ): string[] {
   const chain = new Set([id]);
   for (const current of chain) {
     const placements = [
-      items.locate(current, minute),
+      items.locate(current, registryStart),
       ...items.history(current).map(({ to }) => to),
     ];
     for (const placement of placements) {
@@ -246,10 +268,24 @@ function containmentChain(
   return [...chain];
 }
 
+/** Minutes in `window` at which the root placement of an item may change, in order. */
+function placementChanges(ctx: Context, itemId: string, window: Interval): GameMinutes[] {
+  const start = firstCoveredMinute(ctx.world.items, itemId, window);
+  if (start === undefined) return [];
+  const minutes = new Set([start]);
+  for (const id of ctx.chains.get(itemId) ?? [itemId]) {
+    for (const { t } of ctx.world.items.history(id)) {
+      if (t > start && t < window.to) minutes.add(t);
+    }
+  }
+  return [...minutes].sort((a, b) => a - b);
+}
+
 function collect(truth: TruthModel, world: InvariantWorld, incremental: boolean): Context {
   const events = truth.events();
   const byId = new Map(events.map((event) => [event.id, event]));
   const stays = new Map<string, Stay[]>();
+  const segments = new Map<string, Segment[]>();
   const holdings = new Map<string, Holding[]>();
   const deaths = new Map<string, Death>();
   const referencedItems = new Set<string>();
@@ -259,15 +295,29 @@ function collect(truth: TruthModel, world: InvariantWorld, incremental: boolean)
     for (const target of event.targets) {
       if (target.kind === 'item') referencedItems.add(target.id);
     }
-    for (const fact of event.facts) {
+    const destinations = event.targets.filter(({ kind }) => kind === 'location');
+    // A move names its origin as the location and its destination as the only location target
+    // (SIM-001). Moves without one destination describe the trip by `at` facts only.
+    if (event.verb === 'move' && destinations.length === 1) {
       order += 1;
-      if (fact.kind === 'at') {
-        push(stays, fact.who, {
-          where: fact.where,
-          interval: fact.interval,
+      const interval = { from: event.t, to: event.t + event.duration };
+      for (const actor of unique(event.actorIds)) {
+        push(segments, actor, {
+          kind: 'move',
+          start: event.location,
+          end: destinations[0]!.id,
+          interval,
           eventId: event.id,
           order,
         });
+      }
+    }
+    for (const fact of event.facts) {
+      order += 1;
+      if (fact.kind === 'at') {
+        const stay = { where: fact.where, interval: fact.interval, eventId: event.id, order };
+        push(stays, fact.who, stay);
+        push(segments, fact.who, { kind: 'stay', start: fact.where, end: fact.where, ...stay });
       } else if (fact.kind === 'possessed') {
         referencedItems.add(fact.item);
         push(holdings, fact.item, {
@@ -286,7 +336,23 @@ function collect(truth: TruthModel, world: InvariantWorld, incremental: boolean)
       }
     }
   }
-  for (const list of [...stays.values(), ...holdings.values()]) list.sort(byIntervalThenOrder);
+  for (const list of [...stays.values(), ...segments.values(), ...holdings.values()]) {
+    list.sort(byIntervalThenOrder);
+  }
+
+  const registeredItems = [...referencedItems].filter((id) => isRegistered(world.items, id)).sort();
+  const chains = new Map<string, string[]>();
+  const [anyItem] = registeredItems;
+  // All items share the start minute of the registry.
+  const registryStart =
+    anyItem === undefined
+      ? undefined
+      : firstCoveredMinute(world.items, anyItem, { from: EARLIEST_MINUTE, to: LATEST_MINUTE });
+  if (registryStart !== undefined) {
+    for (const id of registeredItems) {
+      chains.set(id, containmentChain(world.items, id, registryStart));
+    }
+  }
 
   return {
     world,
@@ -295,9 +361,11 @@ function collect(truth: TruthModel, world: InvariantWorld, incremental: boolean)
     incremental,
     newestId: `ev_${events.length}`,
     stays,
+    segments,
     holdings,
     deaths,
-    registeredItems: [...referencedItems].filter((id) => isRegistered(world.items, id)).sort(),
+    registeredItems,
+    chains,
     violations: [],
   };
 }
@@ -321,98 +389,165 @@ function checkSinglePresence(ctx: Context): void {
     }
   }
 
+  for (const [who, segments] of sortedEntries(ctx.segments)) {
+    for (const [index, first] of segments.entries()) {
+      for (const second of segments.slice(index + 1)) {
+        if (second.interval.from >= first.interval.to) break;
+        // Two stays are invariant 1 above; a transition must not overlap anything.
+        if (first.kind === 'stay' && second.kind === 'stay') continue;
+        if (!overlaps(first.interval, second.interval)) continue;
+        report(
+          ctx,
+          'TRANSIT_OVERLAP',
+          [second.eventId, first.eventId],
+          `${who} is in transit and somewhere else at minute ${second.interval.from}`,
+          { subject: character(who), minute: second.interval.from },
+        );
+      }
+    }
+  }
+
   for (const event of ctx.events) {
-    // The location of a move is its origin or its destination; presence facts describe the trip.
-    if (event.verb === 'move') continue;
-    const occupied = span(event);
-    for (const actor of unique(event.actorIds)) {
-      const elsewhere = ctx.stays
-        .get(actor)
-        ?.find(({ where, interval }) => where !== event.location && overlaps(interval, occupied));
-      if (!elsewhere) continue;
-      const minute = Math.max(occupied.from, elsewhere.interval.from);
+    const reported = new Set<string>();
+    const elsewhere = (who: string, where: string, occupied: Interval): void => {
+      if (reported.has(who)) return;
+      const stay = ctx.stays
+        .get(who)
+        ?.find((entry) => entry.where !== where && overlaps(entry.interval, occupied));
+      if (!stay) return;
+      reported.add(who);
+      const minute = Math.max(occupied.from, stay.interval.from);
       report(
         ctx,
         'ACTOR_ELSEWHERE',
-        [event.id, elsewhere.eventId],
-        `${actor} acts at ${event.location} while at ${elsewhere.where} at minute ${minute}`,
-        { subject: character(actor), minute },
+        [event.id, stay.eventId],
+        `${who} acts at ${where} while at ${stay.where} at minute ${minute}`,
+        { subject: character(who), minute },
       );
+    };
+
+    // A move is in transit, checked above and under invariant 2.
+    if (event.verb !== 'move') {
+      for (const actor of unique(event.actorIds)) elsewhere(actor, event.location, span(event));
+    }
+    for (const fact of event.facts) {
+      if (fact.kind === 'did' && fact.verb !== 'move') {
+        elsewhere(fact.who, fact.where, { from: fact.at, to: fact.at + 1 });
+      }
     }
   }
 }
 
-/** Keys a character may carry during a trip, according to the truth and the item registry. */
-function carriedItems(ctx: Context, who: string, window: Interval): Set<string> {
+/**
+ * Keys a character carries while travelling during `transit`: possession facts and registry
+ * placements that hold at some minute of the transit itself. A key received at the destination,
+ * returned before departure or registered later does not count.
+ */
+function carriedItems(ctx: Context, who: string, transit: Interval): Set<string> {
   const carried = new Set<string>();
   for (const [itemId, holdings] of ctx.holdings) {
-    if (holdings.some((holding) => holding.who === who && overlaps(holding.interval, window))) {
+    if (holdings.some((holding) => holding.who === who && overlaps(holding.interval, transit))) {
       carried.add(itemId);
     }
   }
   for (const itemId of ctx.registeredItems) {
-    for (const minute of [window.from, window.to - 1]) {
-      if (!covered(ctx.world.items, itemId, minute)) continue;
+    const held = placementChanges(ctx, itemId, transit).some((minute) => {
       const root = rootPlacement(ctx.world.items, itemId, minute);
-      if (root.kind === 'character' && root.id === who) carried.add(itemId);
-    }
+      return root.kind === 'character' && root.id === who;
+    });
+    if (held) carried.add(itemId);
   }
   return carried;
 }
 
-function checkTrip(ctx: Context, who: string, from: Stay, to: Stay): void {
-  const available = to.interval.from - from.interval.to;
-  // The window includes the last minute at the origin and the first minute at the destination.
-  const actor: Actor = {
-    itemIds: carriedItems(ctx, who, { from: from.interval.to - 1, to: to.interval.from + 1 }),
-  };
+interface Trip {
+  readonly who: string;
+  readonly origin: string;
+  readonly destination: string;
+  readonly departure: GameMinutes;
+  readonly arrival: GameMinutes;
+  readonly eventIds: readonly EventId[];
+  /** The start of the first event in `eventIds`. */
+  readonly minute: GameMinutes;
+}
+
+function checkTrip(ctx: Context, trip: Trip): void {
+  const { who, origin, destination, departure, arrival, eventIds, minute } = trip;
+  const available = arrival - departure;
+  const transit = { from: departure, to: Math.max(arrival, departure + 1) };
+  const actor: Actor = { itemIds: carriedItems(ctx, who, transit) };
+  const details = { subject: character(who), minute };
   let minutes: number | null;
   try {
-    minutes = ctx.world.locations.travelTime(from.where, to.where, actor);
+    minutes = ctx.world.locations.travelTime(origin, destination, actor);
   } catch (error) {
     if (!(error instanceof WorldError && error.code === 'WORLD_UNKNOWN_LOCATION')) throw error;
     report(
       ctx,
       'TRAVEL_UNKNOWN_LOCATION',
-      [to.eventId, from.eventId],
-      `${who} travels between ${from.where} and ${to.where}, which are not both in the world`,
-      { subject: character(who), minute: to.interval.from },
+      eventIds,
+      `${who} travels between ${origin} and ${destination}, which are not both in the world`,
+      details,
     );
     return;
   }
 
-  const details = { subject: character(who), minute: to.interval.from };
   if (minutes === null) {
     report(
       ctx,
       'TRAVEL_NO_ROUTE',
-      [to.eventId, from.eventId],
-      `${who} reaches ${to.where} from ${from.where} without a route`,
+      eventIds,
+      `${who} reaches ${destination} from ${origin} without a route`,
       details,
     );
   } else if (minutes > available) {
     report(
       ctx,
       'TRAVEL_TOO_FAST',
-      [to.eventId, from.eventId],
-      `${who} travels from ${from.where} to ${to.where} in ${available} min, the route takes ${minutes} min`,
+      eventIds,
+      `${who} travels from ${origin} to ${destination} in ${available} min, the route takes ${minutes} min`,
       details,
     );
   }
 }
 
-/** Invariant 2: consecutive stays in different locations leave enough time for the route. */
+/**
+ * Invariant 2: every recorded transition takes at least the route time, and consecutive stays
+ * and transitions connect: the next one starts where the previous one ended, after the route time.
+ */
 function checkTravel(ctx: Context): void {
-  for (const [who, stays] of sortedEntries(ctx.stays)) {
-    let previous: Stay | undefined;
-    for (const stay of stays) {
-      if (previous && previous.interval.to > stay.interval.from) {
-        // Overlapping stays belong to invariant 1; keep the stay that ends last as the origin.
-        if (stay.interval.to > previous.interval.to) previous = stay;
-        continue;
+  for (const [who, segments] of sortedEntries(ctx.segments)) {
+    let previous: Segment | undefined;
+    for (const segment of segments) {
+      const { interval } = segment;
+      if (previous && previous.interval.to > interval.from) {
+        // Overlaps belong to invariant 1; keep the segment that ends last as the origin.
+        if (interval.to > previous.interval.to) previous = segment;
+      } else {
+        if (previous && previous.end !== segment.start) {
+          checkTrip(ctx, {
+            who,
+            origin: previous.end,
+            destination: segment.start,
+            departure: previous.interval.to,
+            arrival: interval.from,
+            eventIds: [segment.eventId, previous.eventId],
+            minute: interval.from,
+          });
+        }
+        previous = segment;
       }
-      if (previous && previous.where !== stay.where) checkTrip(ctx, who, previous, stay);
-      previous = stay;
+      if (segment.kind === 'move' && segment.start !== segment.end) {
+        checkTrip(ctx, {
+          who,
+          origin: segment.start,
+          destination: segment.end,
+          departure: interval.from,
+          arrival: interval.to,
+          eventIds: [segment.eventId],
+          minute: interval.from,
+        });
+      }
     }
   }
 }
@@ -504,7 +639,9 @@ function checkCausality(ctx: Context): void {
   }
   reportCycles(ctx, instantLinks);
 
-  for (const itemId of ctx.registeredItems) {
+  // Containers carry the items inside them, so their moves need valid causes too.
+  const moved = [...new Set([...ctx.chains.values()].flat())].sort();
+  for (const itemId of moved) {
     for (const move of ctx.world.items.history(itemId)) {
       const cause = ctx.byId.get(move.cause);
       if (!cause) {
@@ -531,21 +668,13 @@ function checkCausality(ctx: Context): void {
 }
 
 function firstPlacementConflict(
-  items: InvariantWorld['items'],
+  ctx: Context,
   itemId: string,
   holding: Holding,
 ): { minute: GameMinutes; placement: ItemPlacement } | undefined {
-  const start = firstCoveredMinute(items, itemId, holding.interval);
-  if (start === undefined) return undefined;
   // The root placement can only change when the item or one of its containers moves.
-  const minutes = new Set([start]);
-  for (const id of containmentChain(items, itemId, start)) {
-    for (const { t } of items.history(id)) {
-      if (t > start && t < holding.interval.to) minutes.add(t);
-    }
-  }
-  for (const minute of [...minutes].sort((a, b) => a - b)) {
-    const placement = rootPlacement(items, itemId, minute);
+  for (const minute of placementChanges(ctx, itemId, holding.interval)) {
+    const placement = rootPlacement(ctx.world.items, itemId, minute);
     if (placement.kind !== 'character' || placement.id !== holding.who) {
       return { minute, placement };
     }
@@ -582,7 +711,7 @@ function checkItems(ctx: Context): void {
     }
     for (const holding of holdings) {
       if (ctx.incremental && holding.eventId === ctx.newestId) continue;
-      const conflict = firstPlacementConflict(ctx.world.items, itemId, holding);
+      const conflict = firstPlacementConflict(ctx, itemId, holding);
       if (!conflict) continue;
       const { minute, placement } = conflict;
       report(
@@ -600,12 +729,18 @@ function checkItems(ctx: Context): void {
 function checkDeaths(ctx: Context): void {
   for (const event of ctx.events) {
     const reported = new Set<string>();
-    const check = (who: string, minute: GameMinutes, end: GameMinutes, what: string): void => {
+    const check = (
+      who: string,
+      minute: GameMinutes,
+      end: GameMinutes,
+      what: string,
+      asActor: boolean,
+    ): void => {
       const death = ctx.deaths.get(who);
       if (!death || reported.has(who)) return;
-      // The event that establishes a death may name the dying character, e.g. a collapse,
-      // unless it starts after the death it records.
-      if (death.eventId === event.id && event.t <= death.minute) return;
+      // The event that establishes a death may name the dying character as its actor, e.g. a
+      // collapse, unless it starts after the death it records. Its did facts are checked as usual.
+      if (asActor && death.eventId === event.id && event.t <= death.minute) return;
       if (minute >= death.minute) {
         reported.add(who);
         report(
@@ -628,10 +763,10 @@ function checkDeaths(ctx: Context): void {
     };
 
     for (const actor of unique(event.actorIds)) {
-      check(actor, event.t, event.t + event.duration, `acts in ${event.id}`);
+      check(actor, event.t, event.t + event.duration, `acts in ${event.id}`, true);
     }
     for (const fact of event.facts) {
-      if (fact.kind === 'did') check(fact.who, fact.at, fact.at, `does ${fact.verb}`);
+      if (fact.kind === 'did') check(fact.who, fact.at, fact.at, `does ${fact.verb}`, false);
     }
   }
 }
@@ -665,8 +800,9 @@ function checkIncident(ctx: Context, truth: TruthModel): void {
  * `(truth, world)` carries no record of them. SIM-002 checks it where observations are created;
  * a validator check is open question OQ-13. See truth-model.md §4.
  *
- * Violations are grouped by invariant; within a group they follow sorted characters and items and
- * the chronological order of the log, so equal inputs give equal results.
+ * Violations are ordered by invariant, then by code in the order of truth-model.md §4, then by
+ * traversal: characters and items by id and then by time, events in log order (minute, then
+ * event number). Equal inputs give equal results.
  */
 export function checkTruthInvariants(
   truth: TruthModel,
@@ -680,7 +816,11 @@ export function checkTruthInvariants(
   checkItems(ctx);
   checkDeaths(ctx);
   checkIncident(ctx, truth);
-  return ctx.violations;
+  // Stable sort: codes in declaration order, then the traversal order of each check.
+  const codeOrder = Object.keys(INVARIANT_OF);
+  return ctx.violations.toSorted(
+    (a, b) => a.invariant - b.invariant || codeOrder.indexOf(a.code) - codeOrder.indexOf(b.code),
+  );
 }
 
 /** Throws `TruthInvariantError` when `checkTruthInvariants` finds any violation. */
