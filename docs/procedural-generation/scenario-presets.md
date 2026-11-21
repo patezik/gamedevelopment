@@ -79,21 +79,40 @@ content/scenarios/<scenarioId>/
 ] }
 ```
 
-Правила интерпретирует `@hs/core/evidence` (`compileTraceRules`, `tracesForEvent`, `deriveTraces`):
+Правила интерпретирует `@hs/core/evidence` (`compileTraceRules`, `tracesForEvent`, `deriveTraces`);
+решения — [ADR 0017](../architecture/adr/0017-trace-conservation-and-payload.md).
 
 - Правило срабатывает на событие истины, если `verb` совпадает с глаголом события и хотя бы одна
   цель события вида `item` удовлетворяет **всем** условиям `when` одновременно: `itemId` — id
   предмета, `targetTag` — тег предмета из `items.json`. Правило без `when` (или с пустым `when`)
   срабатывает на каждое событие своего глагола. Цели других видов (`location`, `document`,
   `character`) условиям `when` не удовлетворяют.
-- Правило срабатывает не более одного раза на событие; каждый элемент `produces` даёт один след.
-  Сработали несколько правил — следы всех правил, в порядке правил в файле и элементов `produces`.
+- Правило срабатывает не более одного раза на событие; каждый элемент `produces` даёт не более
+  одного следа. Сработали несколько правил — следы всех правил, в порядке правил в файле и
+  элементов `produces`.
 - `verb` правила имеет тот же формат, что глагол события `TruthLog` (`verbSchema` из
   `@hs/core/common`: `^[a-z][a-z0-9_]*$`, например `take_item`; `take-item` недопустим).
 - `at` — id локации или `$location` (локация события); список подстановок —
   `TRACE_LOCATION_PLACEHOLDERS`. Другие подстановки в `at` и недопустимый `verb` отклоняет одна и
   та же схема `traceRulesSchema`: при загрузке сценария — `CONTENT_SCHEMA_ERROR`, в
   `compileTraceRules` — `EVIDENCE_RULE_INVALID`.
+- **Закон сохранения улик.** Для каждого глагола сокрытия — `hide`, `destroy`, `stage`
+  (`CONCEALMENT_VERBS`) — в наборе обязательно правило без условий `when`, у которого хотя бы один
+  элемент `produces` без `requires`. Иначе `compileTraceRules` бросает `EVIDENCE_RULE_INVALID`
+  (путь `traceRules`). Загрузчик контента этот закон не проверяет.
+- Полезная нагрузка следа: `template` — из правила; `captureMode` — `qr` или `auto` (`direct` и
+  отсутствие поля); `supports` — строки правила с подстановкой `$location` (локация события),
+  `$t` (начало события) и `$actor` (строка повторяется для каждого различного участника, без
+  участников — отбрасывается), без дубликатов. Другие `$`-подстановки в `supports` отклоняет
+  `compileTraceRules`.
+- `itemId` следа — носитель: `requires.itemId`, иначе первая цель-предмет, удовлетворившая `when`
+  (для правила без условий — первая цель-предмет события). След с `requires` не порождается, если
+  носителя нет в мире (`ItemRegistry`) или он уничтожен к `availableFrom`.
+- Уничтожение: событие `destroy` уничтожает свою первую цель-предмет в момент `t + duration`;
+  учитывается только первое уничтожение предмета. След с этим `itemId` получает `destroyedBy`
+  (id события) и `destroyedAt`, если `availableFrom < destroyedAt < decaysAt`. Следы самого
+  `destroy` начинаются в момент уничтожения и им не уничтожаются. `tracesForEvent` учитывает
+  уничтожение, только если передан журнал истины четвёртым аргументом.
 - `tracesForEvent` и `deriveTraces` принимают только `TraceRuleSet` из `compileTraceRules`
   (глубоко заморожен; объект `{ rules }` той же формы отклоняется типами и `EVIDENCE_RULE_INVALID`).
 - `sourceEventId` следа — id события. Id следа — `tr_` + 16 hex-символов хеша от
@@ -101,15 +120,12 @@ content/scenarios/<scenarioId>/
   порядок событий. Перестановка правил в файле меняет id следов.
 - `availableFrom = t + duration` события (следствие доступно после завершения причины, инвариант 3
   [truth-model.md](../investigation/truth-model.md)); `decaysAt = availableFrom + decaysAfter`, если
-  `decaysAfter` — число; `null` или отсутствие поля — след не исчезает. Время может быть
-  отрицательным (предыстория). Если `availableFrom` или `decaysAt` выходит за диапазон безопасных
-  целых чисел, вычисление прерывается `RangeError` с id события (кода домена для времени события
-  нет), частичный результат не возвращается. Временные границы предварительные —
-  [OQ-16](../planning/open-questions.md).
+  `decaysAfter` — число (`> 0`); `null` или отсутствие поля — след не исчезает. След существует на
+  полуинтервале `[availableFrom, min(decaysAt, destroyedAt))` — `isTraceAvailable(trace, t)`.
+  Время может быть отрицательным (предыстория). Если `availableFrom`, `decaysAt` или `destroyedAt`
+  выходит за диапазон безопасных целых чисел, вычисление прерывается `RangeError` с id события
+  (кода домена для времени события нет), частичный результат не возвращается.
 - Журнал истины не изменяется: `TruthEvent.traceIds` движок следов не заполняет.
-- Ещё не интерпретируются: `template`, `supports`, `captureMode`, `requires`, `Trace.itemId`
-  ([OQ-15](../planning/open-questions.md)), `destroyedBy` и закон сохранения улик — вторичный след
-  сокрытия ([OQ-14](../planning/open-questions.md)).
 
 ## 6. Локации, предметы и персонажи
 

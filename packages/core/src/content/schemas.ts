@@ -199,7 +199,7 @@ export const crimesSchema = z
 
 /**
  * Placeholders a trace rule may use for `at`. The evidence compiler validates with this schema, so
- * the loader and the compiler accept the same values. Adding one needs the decision in OQ-17.
+ * the loader and the compiler accept the same values. Extend only on a content request (ADR 0017).
  */
 export const TRACE_LOCATION_PLACEHOLDERS: readonly string[] = Object.freeze(['$location']);
 const traceLocation = z
