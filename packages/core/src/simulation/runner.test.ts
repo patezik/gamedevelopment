@@ -4,7 +4,7 @@ import { stateHash } from '../common/index.ts';
 import type { ScenarioContent } from '../content/index.ts';
 import { createRng, restoreRng, type Rng } from '../rng/index.ts';
 import { Calendar, TickPhase, TimeSystem } from '../time/index.ts';
-import { TruthModel } from '../truth/index.ts';
+import { checkTruthInvariants, TruthModel } from '../truth/index.ts';
 import { ItemRegistry, LocationGraph } from '../world/index.ts';
 import { SimulationRunner } from '@hs/core/simulation';
 
@@ -538,7 +538,7 @@ describe('SimulationRunner', () => {
 
   it('TIME-003 test 10: reproduces the journal and stateHash for 24 hours of prehistory', () => {
     const simulate = (characters: AgentCharacter[], advances: number[]) => {
-      const { time, truth, world } = setup(characters, {
+      const { time, truth, world, items } = setup(characters, {
         start: -1440,
         rng: createRng('same-seed'),
       });
@@ -566,6 +566,7 @@ describe('SimulationRunner', () => {
           );
         }
       }
+      expect(checkTruthInvariants(truth, { locations: world, items })).toEqual([]);
       return { journal: truth.serialize(), hash: stateHash(events) };
     };
 
