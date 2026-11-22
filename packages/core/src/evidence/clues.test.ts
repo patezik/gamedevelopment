@@ -49,6 +49,7 @@ test('rejects circular and missing clue prerequisites', () => {
     discovery: { ...first.discovery, requires: [{ kind: 'clue' as const, id: second.id }] },
   };
   expect(() => validateCluePrerequisites([first, second])).not.toThrow();
+  expect(() => validateCluePrerequisites([first, first])).toThrow(/Duplicate/);
   expect(() => validateCluePrerequisites([dependent, second])).toThrow(/Circular/);
   expect(() => validateCluePrerequisites([dependent])).toThrow(/Unknown/);
 });
