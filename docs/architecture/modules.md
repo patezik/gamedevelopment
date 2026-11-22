@@ -269,16 +269,28 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   interface Belief { proposition: Proposition; confidence: number; source: "observed" | "told" | "read" | "inferred"; fromCharacter?: CharacterId; acquiredAt: GameMinutes; fuzzMinutes: number }
-  class KnowledgeStore { add(b: Belief): void; query(p: PropositionPattern): Belief[]; recall(p, now): Belief | undefined /* с размытием времени */ }
+  class KnowledgeStore {
+    add(b: Belief): void;
+    query(p: PropositionPattern): Belief[];
+    recall(p: PropositionPattern, now: GameMinutes): Belief | undefined;
+    serialize(): string;
+    static deserialize(json: string): KnowledgeStore;
+  }
   interface LiePolicy { conceal: PropositionPattern[]; fabricate: Fabrication[] }   // что скрывать, что выдумывать
   function buildLiePolicy(c: Character, truth: TruthModel, kb: KnowledgeStore): LiePolicy;
   interface Statement { id: string; speakerId: CharacterId; proposition: Proposition; veracity: "true" | "mistaken" | "lie" /* скрыто от клиента */; topic: TopicId; at: GameMinutes }
   function answer(q: Question, speaker: SpeakerContext): Statement[];
   ```
-- **Зависимости:** `truth`, `characters`.
-- **Ошибки:** нет (отсутствие знания → ответ «не знаю» / уклонение).
-- **Тесты:** персонаж не знает того, чего не наблюдал/не слышал; ложь только при наличии мотива
-  скрывать; размытие времени в пределах `fuzzMinutes`; детерминизм ответов.
+- **Хранилище:** `KnowledgeStore` использует только схему, идентификатор и сопоставление пропозиций
+  из `@hs/core/truth/facts`. `query` возвращает сохранённые убеждения по убыванию уверенности и
+  времени получения.
+  При равенстве используется возрастание `FactId`. `recall` выбирает первое совпадение, доступное
+  к указанной минуте, и размывает время в возвращаемой копии.
+- **Снимок:** `serialize` сохраняет JSON-массив убеждений в порядке `FactId`.
+- **Ошибки:** `recall` возвращает `undefined`, когда доступного совпадения нет. Некорректные
+  убеждения, минуты запроса и снимки отклоняются при проверке схемы или чтении JSON.
+- **Тесты:** субъективные убеждения, размытие времени в пределах `fuzzMinutes`, детерминизм
+  воспоминаний и восстановление из снимка. Для показаний также проверяется наличие мотива скрывать.
 
 ## 7. `@hs/core/simulation` — Character Simulation System
 
