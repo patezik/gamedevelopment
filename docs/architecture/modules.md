@@ -29,6 +29,8 @@ interface Interval { from: GameMinutes; to: GameMinutes }   // полуинте�
 `Hasher.sha256(text)`. `sequentialId(prefix)` создаёт отдельную последовательность `prefix_1`,
 `prefix_2` и далее. `hashId(prefix, value, length)` добавляет к префиксу и подчёркиванию первые
 `length` символов хеша (от 1 до 64).
+`verbSchema` — формат глагола действия (`^[a-z][a-z0-9_]*$`), общий для событий `truth` (реэкспорт
+из `@hs/core/truth`) и правил контента, которые с ними сопоставляются.
 
 Зависимости между модулями ядра (стрелка = «использует»), циклы запрещены:
 
@@ -275,16 +277,28 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   interface Belief { proposition: Proposition; confidence: number; source: "observed" | "told" | "read" | "inferred"; fromCharacter?: CharacterId; acquiredAt: GameMinutes; fuzzMinutes: number }
-  class KnowledgeStore { add(b: Belief): void; query(p: PropositionPattern): Belief[]; recall(p, now): Belief | undefined /* с размытием времени */ }
+  class KnowledgeStore {
+    add(b: Belief): void;
+    query(p: PropositionPattern): Belief[];
+    recall(p: PropositionPattern, now: GameMinutes): Belief | undefined;
+    serialize(): string;
+    static deserialize(json: string): KnowledgeStore;
+  }
   interface LiePolicy { conceal: PropositionPattern[]; fabricate: Fabrication[] }   // что скрывать, что выдумывать
   function buildLiePolicy(c: Character, truth: TruthModel, kb: KnowledgeStore): LiePolicy;
   interface Statement { id: string; speakerId: CharacterId; proposition: Proposition; veracity: "true" | "mistaken" | "lie" /* скрыто от клиента */; topic: TopicId; at: GameMinutes }
   function answer(q: Question, speaker: SpeakerContext): Statement[];
   ```
-- **Зависимости:** `truth`, `characters`.
-- **Ошибки:** нет (отсутствие знания → ответ «не знаю» / уклонение).
-- **Тесты:** персонаж не знает того, чего не наблюдал/не слышал; ложь только при наличии мотива
-  скрывать; размытие времени в пределах `fuzzMinutes`; детерминизм ответов.
+- **Хранилище:** `KnowledgeStore` использует только схему, идентификатор и сопоставление пропозиций
+  из `@hs/core/truth/facts`. `query` возвращает сохранённые убеждения по убыванию уверенности и
+  времени получения.
+  При равенстве используется возрастание `FactId`. `recall` выбирает первое совпадение, доступное
+  к указанной минуте, и размывает время в возвращаемой копии.
+- **Снимок:** `serialize` сохраняет JSON-массив убеждений в порядке `FactId`.
+- **Ошибки:** `recall` возвращает `undefined`, когда доступного совпадения нет. Некорректные
+  убеждения, минуты запроса и снимки отклоняются при проверке схемы или чтении JSON.
+- **Тесты:** субъективные убеждения, размытие времени в пределах `fuzzMinutes`, детерминизм
+  воспоминаний и восстановление из снимка. Для показаний также проверяется наличие мотива скрывать.
 
 ## 7. `@hs/core/simulation` — Character Simulation System
 
@@ -312,12 +326,19 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   interface TraceRule { verb: Verb; when?: Condition; produces: TraceSpec[] }   // из content/*/trace-rules.json
-  interface Trace { id: TraceId; kind: "physical" | "document" | "digital" | "testimonial"; sourceEventId: EventId; location?: LocationId; itemId?: ItemId; availableFrom: GameMinutes; decaysAt?: GameMinutes; destroyedBy?: EventId }
+  interface Trace { id: TraceId; kind: "physical" | "document" | "digital" | "testimonial"; sourceEventId: EventId; template: TemplateId; supports: ClaimRef[]; captureMode: "auto" | "qr"; location?: LocationId; itemId?: ItemId; availableFrom: GameMinutes; decaysAt?: GameMinutes; destroyedBy?: EventId; destroyedAt?: GameMinutes }
   interface Clue { id: ClueId; traceId: TraceId; supports: ClaimRef[]; discovery: DiscoveryCondition; captureMode: "auto" | "qr"; presentation: PresentationRef }
   function deriveClues(traces: Trace[], rules: ClueRules): Clue[];
   function discoverable(clue: Clue, ctx: DiscoveryContext): boolean;
   interface EvidenceTokenPort { issue(clueId: ClueId, expiresAt: GameMinutes): TokenRef }   // реализует сервер
+  function compileTraceRules(input: unknown): TraceRuleSet;          // EVIDENCE_RULE_INVALID, закон сохранения
+  function tracesForEvent(event: TruthEvent, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">, truth?: { events(): readonly TruthEvent[] }): Trace[];
+  function deriveTraces(truth: { events(): readonly TruthEvent[] }, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">): Trace[];
+  function isTraceAvailable(trace: Trace, t: GameMinutes): boolean;   // [availableFrom, min(decaysAt, destroyedAt))
+  const CONCEALMENT_VERBS: readonly ["hide", "destroy", "stage"];
   ```
+  Семантика сопоставления, полезной нагрузки, уничтожения и времени —
+  [scenario-presets.md §5](../procedural-generation/scenario-presets.md), [ADR 0017](adr/0017-trace-conservation-and-payload.md).
 - **Зависимости:** `truth`, `world`, `knowledge` (свидетельские следы).
 - **События:** `ClueAvailable`, `ClueDestroyed`, `CaptureRequested`.
 - **Ошибки:** `EVIDENCE_RULE_INVALID` (на загрузке контента).
@@ -374,6 +395,29 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 ## 12. `@hs/core/game` — GameEngine, действия, представления, сохранения
 
+- **Расследование (CORE-003):**
+  ```ts
+  interface WorldState { locations: LocationGraph; items: ItemRegistry; durationMinutes: number }
+  interface Investigation {
+    scenarioId: string; seed: string; generatorVersion: string;
+    world: WorldState; characters: readonly Character[]; relationships: RelationshipGraph;
+    truth: TruthModel; secrets: readonly Secret[];
+  }
+  interface Secret { id: string; fact: Fact; knownBy: CharacterId[] }
+  function snapshotInvestigation(inv: Investigation): InvestigationSnapshot;
+  function serializeInvestigation(inv: Investigation): string;
+  function deserializeInvestigation(json: string): Investigation;
+  ```
+  `WorldState` экспортируется из `@hs/core/world`. `LocationGraph.startDateTime` задаёт начало
+  календаря. `InvestigationBuilder` принимает метаданные, мир, персонажей и истину. Начальные
+  отношения и секреты можно оставить пустыми. Каждый вызов `build()` создаёт независимый экземпляр.
+- **Снимок расследования:** `snapshotInvestigation` возвращает JSON-данные, пригодные для
+  `stateHash`. Кодирование использует `canonicalJson` и сохраняет порядок добавления событий,
+  отношений и перемещений предметов в одну минуту. Загрузка проверяет структуру и ссылки,
+  восстанавливает доменные классы и сообщает `INVESTIGATION_INVALID` при повреждении снимка.
+  Проверка инвариантов игровой хронологии относится к TRUTH-003. Поля `clues`, `lies` и
+  `phoneSeed` добавляются как необязательные по мере реализации соответствующих модулей.
+  Снимок предназначен для сервера и не входит в `PlayerView` или `PhoneView`.
 - **Интерфейс:**
   ```ts
   type PlayerAction = MoveAction | ExamineAction | TalkAction | InterrogateAction | ReadAction | UseItemAction | PickLockAction

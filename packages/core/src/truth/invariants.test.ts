@@ -1,5 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
+import { tinyManor } from '../../test/fixtures/tiny-manor.ts';
+import { deserializeInvestigation, serializeInvestigation } from '../game/index.ts';
 import { loadScenarioFromDir } from '../content/index.ts';
 import { ItemRegistry, LocationGraph } from '../world/index.ts';
 import {
@@ -1005,4 +1007,11 @@ describe('physical keys at the minute of departure (ADR 0016)', () => {
     const { log } = trip({ keyAt: 11 });
     expect(check(log)).toEqual(check(log));
   });
+});
+
+test('validates the tiny-manor investigation before and after serialization', () => {
+  const original = tinyManor();
+  const restored = deserializeInvestigation(serializeInvestigation(original));
+  expect(checkTruthInvariants(original.truth, original.world)).toEqual([]);
+  expect(checkTruthInvariants(restored.truth, restored.world)).toEqual([]);
 });

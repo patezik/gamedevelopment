@@ -1,0 +1,47 @@
+[
+  { "id": "it_key_boiler", "name": "Ключ от котельной", "kind": "key", "tags": ["key", "metal"], "ownerArchetype": "caretaker" },
+  { "id": "it_key_archive", "name": "Ключ от архива", "kind": "key", "tags": ["key", "metal"], "ownerArchetype": "head_doctor" },
+  { "id": "it_nurse_tablet", "name": "Рабочий планшет медсестры", "kind": "device", "tags": ["device", "digital", "password_protected", "medical"], "ownerArchetype": "nurse" },
+
+  { "id": "it_guest_register", "name": "Журнал регистрации гостей", "kind": "document", "tags": ["document", "record", "registry"], "locationId": "loc_hall" },
+  { "id": "it_flashlight", "name": "Фонарь", "kind": "tool", "tags": ["tool", "light"], "locationId": "loc_hall" },
+  { "id": "it_poker", "name": "Каминная кочерга", "kind": "tool", "tags": ["heavy", "metal", "tool"], "locationId": "loc_hall" },
+  { "id": "it_bronze_bust", "name": "Бронзовый бюст", "kind": "decor", "tags": ["heavy", "metal", "decor"], "locationId": "loc_hall" },
+
+  { "id": "it_herbal_tea", "name": "Банка травяного сбора", "kind": "food", "tags": ["drink", "food", "shared"], "locationId": "loc_dining" },
+  { "id": "it_tea_cups", "name": "Чашки для чая", "kind": "tableware", "tags": ["tableware", "glass", "shared"], "locationId": "loc_dining" },
+
+  { "id": "it_soup_pot", "name": "Кастрюля с бульоном", "kind": "food", "tags": ["food", "shared"], "locationId": "loc_kitchen" },
+  { "id": "it_candles", "name": "Коробка свечей", "kind": "tool", "tags": ["light", "tool", "emergency"], "locationId": "loc_kitchen" },
+  { "id": "it_meat_mallet", "name": "Молоток для отбивания мяса", "kind": "tool", "tags": ["heavy", "kitchen", "tool"], "locationId": "loc_kitchen" },
+
+  { "id": "it_inventory_log", "name": "Журнал учёта препаратов", "kind": "document", "tags": ["document", "record", "medical", "inventory"], "locationId": "loc_doctor_office" },
+  { "id": "it_appointment_book", "name": "Книга записи на приём", "kind": "document", "tags": ["document", "record", "schedule"], "locationId": "loc_doctor_office" },
+  { "id": "it_medicine_cabinet", "name": "Шкаф с медикаментами", "kind": "container", "tags": ["container", "medical", "furniture"], "locationId": "loc_doctor_office" },
+  { "id": "it_digoxin", "name": "Ампулы дигоксина", "kind": "substance", "tags": ["poison", "medical", "drug"], "containerId": "it_medicine_cabinet" },
+  { "id": "it_morphine", "name": "Ампулы морфина", "kind": "substance", "tags": ["poison", "medical", "drug", "controlled"], "containerId": "it_medicine_cabinet" },
+
+  { "id": "it_procedure_journal", "name": "Журнал процедур", "kind": "document", "tags": ["document", "record", "medical", "schedule"], "locationId": "loc_treatment" },
+  { "id": "it_first_aid_kit", "name": "Аптечка", "kind": "medical", "tags": ["medical", "kit"], "locationId": "loc_treatment" },
+  { "id": "it_sedatives", "name": "Успокоительное", "kind": "medical", "tags": ["medical", "sedative"], "locationId": "loc_treatment" },
+  { "id": "it_password_note", "name": "Стикер с паролем", "kind": "document", "tags": ["document", "note", "password"], "locationId": "loc_treatment" },
+  { "id": "it_dumbbell", "name": "Гантель", "kind": "tool", "tags": ["heavy", "metal", "sport"], "locationId": "loc_treatment" },
+
+  { "id": "it_medical_records", "name": "Медицинские карты пациентов", "kind": "document", "tags": ["document", "record", "medical", "archive"], "locationId": "loc_archive" },
+  { "id": "it_staff_files", "name": "Личные дела сотрудников", "kind": "document", "tags": ["document", "record", "archive", "personnel"], "locationId": "loc_archive" },
+
+  { "id": "it_pressure_log", "name": "Журнал давления котла", "kind": "document", "tags": ["document", "record", "boiler"], "locationId": "loc_boiler" },
+  { "id": "it_wrench", "name": "Газовый ключ", "kind": "tool", "tags": ["heavy", "metal", "tool", "boiler"], "locationId": "loc_boiler" },
+  { "id": "it_spare_fuses", "name": "Запасные предохранители", "kind": "tool", "tags": ["tool", "electric"], "locationId": "loc_boiler" },
+
+  { "id": "it_linen_cart", "name": "Тележка горничной", "kind": "container", "tags": ["container", "furniture", "cleaning"], "locationId": "loc_room_1" },
+  { "id": "it_desk_diary", "name": "Ежедневник главного врача", "kind": "document", "tags": ["document", "personal", "schedule"], "locationId": "loc_room_2" },
+  { "id": "it_hotel_notepad", "name": "Гостиничный блокнот", "kind": "document", "tags": ["document", "note", "personal"], "locationId": "loc_room_3" },
+  { "id": "it_cognac", "name": "Бутылка коньяка", "kind": "food", "tags": ["drink", "glass", "alcohol"], "locationId": "loc_room_3" },
+
+  { "id": "it_pesticide", "name": "Средство от вредителей", "kind": "substance", "tags": ["poison", "chemical", "garden"], "locationId": "loc_greenhouse" },
+  { "id": "it_oleander_leaves", "name": "Листья олеандра", "kind": "substance", "tags": ["poison", "plant", "garden"], "locationId": "loc_greenhouse" },
+  { "id": "it_garden_spade", "name": "Садовая лопата", "kind": "tool", "tags": ["heavy", "metal", "tool", "garden"], "locationId": "loc_greenhouse" },
+
+  { "id": "it_cigarette_tin", "name": "Банка с окурками", "kind": "misc", "tags": ["trace_carrier", "outdoor"], "locationId": "loc_lake_path" }
+]

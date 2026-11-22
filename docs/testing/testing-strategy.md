@@ -28,7 +28,8 @@
 
 - Контент (`content/**.json`) валидируется zod-схемами в тесте `content.test.ts` и в CI-шаге
   `npm run content:check`.
-- JSON Schema протокола регенерируется и сравнивается в CI (`npm run protocol:check`).
+- JSON Schema протокола и `protocol_constants.gd` регенерируются и сравниваются с закоммиченными
+  (`npm run protocol:check`; в CI — тестами `schemas.test.ts` и `godot.test.ts` пакета `@hs/protocol`).
 - Задачи проверяются `npm run tasks:check`; ссылки документации — `npm run docs:check`.
 
 ## 4. Тестирование WebSocket

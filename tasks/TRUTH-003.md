@@ -1,7 +1,7 @@
 ---
 id: TRUTH-003
 title: "Проверка инвариантов Truth Model"
-status: review
+status: done
 priority: P0
 complexity: S
 phase: 2
