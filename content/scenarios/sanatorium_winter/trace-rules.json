@@ -1,0 +1,76 @@
+[
+  {
+    "verb": "take",
+    "when": { "targetTag": "poison" },
+    "produces": [
+      { "kind": "physical", "at": "$location", "template": "missing_substance", "supports": ["means($actor)"], "captureMode": "qr", "decaysAfter": null }
+    ]
+  },
+  {
+    "verb": "take",
+    "when": { "itemId": "it_digoxin" },
+    "produces": [
+      { "kind": "document", "at": "loc_doctor_office", "template": "inventory_log_gap", "supports": ["presence($actor,$location,$t)"], "requires": { "itemId": "it_inventory_log" } }
+    ]
+  },
+  {
+    "verb": "take",
+    "when": { "itemId": "it_morphine" },
+    "produces": [
+      { "kind": "document", "at": "loc_doctor_office", "template": "inventory_log_gap", "supports": ["presence($actor,$location,$t)"], "requires": { "itemId": "it_inventory_log" } }
+    ]
+  },
+  {
+    "verb": "take",
+    "when": { "targetTag": "heavy" },
+    "produces": [
+      { "kind": "physical", "at": "$location", "template": "missing_object", "supports": ["means($actor)"], "captureMode": "qr" }
+    ]
+  },
+  {
+    "verb": "take",
+    "when": { "itemId": "it_key_boiler" },
+    "produces": [
+      { "kind": "testimonial", "at": "$location", "template": "key_missing_noticed", "supports": ["means($actor)"] }
+    ]
+  },
+  {
+    "verb": "poison",
+    "produces": [
+      { "kind": "physical", "at": "$location", "template": "residue_in_cup", "supports": ["means($actor)", "presence($actor,$location,$t)"], "captureMode": "qr", "decaysAfter": 720 },
+      { "kind": "testimonial", "at": "$location", "template": "seen_near_victim", "supports": ["presence($actor,$location,$t)"] }
+    ]
+  },
+  {
+    "verb": "strike",
+    "produces": [
+      { "kind": "physical", "at": "$location", "template": "blood_stain", "supports": ["presence($actor,$location,$t)"], "captureMode": "qr", "decaysAfter": 1440 },
+      { "kind": "physical", "at": "$location", "template": "wound_shape", "supports": ["means($actor)"], "captureMode": "qr" }
+    ]
+  },
+  {
+    "verb": "tamper",
+    "produces": [
+      { "kind": "physical", "at": "$location", "template": "tool_marks_on_valve", "supports": ["means($actor)"], "captureMode": "qr" },
+      { "kind": "document", "at": "loc_boiler", "template": "pressure_log_anomaly", "supports": ["opportunity($actor)"], "requires": { "itemId": "it_pressure_log" } }
+    ]
+  },
+  {
+    "verb": "stage",
+    "produces": [
+      { "kind": "physical", "at": "$location", "template": "staging_inconsistency", "supports": ["opportunity($actor)"], "captureMode": "qr" }
+    ]
+  },
+  {
+    "verb": "hide",
+    "produces": [
+      { "kind": "physical", "at": "$location", "template": "disturbed_hiding_place", "supports": ["presence($actor,$location,$t)"], "captureMode": "qr" }
+    ]
+  },
+  {
+    "verb": "destroy",
+    "produces": [
+      { "kind": "physical", "at": "$location", "template": "burnt_remains", "supports": ["presence($actor,$location,$t)"], "captureMode": "qr" }
+    ]
+  }
+]

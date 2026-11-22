@@ -2,11 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 105 · in_progress: 4 · review: 0 · done: 30 · blocked: 1
+Всего задач: **140** · todo: 104 · in_progress: 4 · review: 0 · done: 31 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [GEN-001](GEN-001.md) — Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION (P0, M)
+- [CNT-003](CNT-003.md) — MVP-сценарий: шаблоны преступлений и правила мотивов (P0, M)
 - [EVD-002](EVD-002.md) — Улики (Clue): поддерживаемые утверждения, условия обнаружения, точки интереса (P0, M)
 - [KNOW-002](KNOW-002.md) — LiePolicy и показания: answer(question) → правда, ошибка или ложь (P0, L)
 - [GDT-001](GDT-001.md) — Autoload Backend: REST и WebSocketPeer, переподключение (P0, M)
@@ -82,9 +82,9 @@
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [CNT-002](CNT-002.md) | MVP-сценарий: локации, предметы, архетипы, отношения (данные) | P0 | L | in_progress | egor-claude-cnt-002 | [CNT-001](CNT-001.md) |
+| [CNT-002](CNT-002.md) | MVP-сценарий: локации, предметы, архетипы, отношения (данные) | P0 | L | done | egor-claude-cnt-002 | [CNT-001](CNT-001.md) |
 | [CNT-003](CNT-003.md) | MVP-сценарий: шаблоны преступлений и правила мотивов | P0 | M | todo | — | [CNT-002](CNT-002.md) |
-| [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | todo | — | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
+| [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | in_progress | codex-engine-27 | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
 | [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | todo | — | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
 | [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | todo | — | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
 | [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | todo | — | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
