@@ -1,7 +1,7 @@
 ---
 id: KNOW-001
 title: "KnowledgeStore: убеждения, источники, память с размытием"
-status: in_progress
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -48,10 +48,10 @@ KnowledgeStore.
 
 ## Критерии приёмки
 
-- [ ] KnowledgeStore не импортирует TruthModel (lint/тест).
-- [ ] recall детерминирован.
-- [ ] Убеждение может быть ложным (proposition не обязана совпадать с истиной).
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] KnowledgeStore не импортирует TruthModel (lint/тест).
+- [x] recall детерминирован.
+- [x] Убеждение может быть ложным (proposition не обязана совпадать с истиной).
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
