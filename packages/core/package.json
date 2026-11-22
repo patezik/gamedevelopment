@@ -9,6 +9,7 @@
     "./common": "./src/common/index.ts",
     "./content": "./src/content/index.ts",
     "./evidence": "./src/evidence/index.ts",
+    "./game": "./src/game/index.ts",
     "./rng": "./src/rng/index.ts",
     "./time": "./src/time/index.ts",
     "./truth": "./src/truth/index.ts",

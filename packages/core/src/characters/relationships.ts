@@ -1,20 +1,34 @@
+import { z } from 'zod';
 import type { Character } from './character.ts';
 
 type CharacterId = Character['id'];
 type EventId = string;
 
-export type RelationType =
-  | 'parent'
-  | 'child'
-  | 'sibling'
-  | 'spouse'
-  | 'romance'
-  | 'friendship'
-  | 'rivalry'
-  | 'debt'
-  | 'employment'
-  | 'blackmail'
-  | 'past_conflict';
+const relationTypeSchema = z.enum([
+  'parent',
+  'child',
+  'sibling',
+  'spouse',
+  'romance',
+  'friendship',
+  'rivalry',
+  'debt',
+  'employment',
+  'blackmail',
+  'past_conflict',
+]);
+const id = z.string().min(1);
+export const relationshipSchema = z.strictObject({
+  a: id,
+  b: id,
+  type: relationTypeSchema,
+  trust: z.number().min(-1).max(1),
+  valence: z.number().min(0).max(1),
+  intensity: z.number().min(0).max(1),
+  history: z.array(id),
+});
+
+export type RelationType = z.infer<typeof relationTypeSchema>;
 
 export interface Relationship {
   readonly a: CharacterId;
@@ -56,6 +70,7 @@ function snapshot(edge: Edge): Relationship {
 export class RelationshipGraph {
   readonly #neighbors = new Map<CharacterId, Map<CharacterId, Map<RelationType, Edge>>>();
   readonly #types = new Map<RelationType, Edge[]>();
+  readonly #originals: Edge[] = [];
 
   constructor(relationships: Iterable<NewRelationship> = []) {
     for (const relationship of relationships) this.add(relationship);
@@ -77,8 +92,15 @@ export class RelationshipGraph {
       intensity: bounded(intensity, 0),
       history: [...history],
     };
-    this.#insert({ a, b, type, state });
+    const edge = { a, b, type, state };
+    this.#insert(edge);
+    this.#originals.push(edge);
     if (reverse) this.#insert({ a: b, b: a, type: reverse, state });
+  }
+
+  /** Original edges in insertion order. The constructor reconstructs their reverse edges. */
+  snapshot(): Relationship[] {
+    return this.#originals.map(snapshot);
   }
 
   get(a: CharacterId, b: CharacterId, type?: RelationType): Relationship | undefined {
