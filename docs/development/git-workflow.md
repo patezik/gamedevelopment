@@ -37,4 +37,4 @@ claim(SRV-004): claude-server-2
 
 - `tasks/INDEX.md` генерируется — при конфликте возьмите любую сторону и выполните `npm run tasks:index`.
 - `package-lock.json` — `git checkout --theirs package-lock.json && npm install`.
-- Сгенерированные схемы протокола — `npm run protocol:gen`.
+- Сгенерированные схемы протокола и `protocol_constants.gd` — `npm run protocol:gen`.

@@ -46,7 +46,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE: ${{ github.event.before }}
-          NODE_PATHS: '^(packages/|apps/(server|mobile)/|tools/|content/|\.github/workflows/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.mjs$|vitest\.config\.ts$|\.nvmrc$)'
+          NODE_PATHS: '^(packages/|apps/(server|mobile)/|apps/desktop/src/net/protocol_constants\.gd$|tools/|content/|\.github/workflows/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.mjs$|vitest\.config\.ts$|\.nvmrc$)'
           GODOT_PATHS: '^(apps/desktop/|packages/protocol/|tools/test-godot\.mjs$|\.github/workflows/ci\.yml$|package\.json$|\.nvmrc$)'
         run: |
           report_match() {
