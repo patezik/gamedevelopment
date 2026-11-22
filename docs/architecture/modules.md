@@ -29,6 +29,8 @@ interface Interval { from: GameMinutes; to: GameMinutes }   // полуинте�
 `Hasher.sha256(text)`. `sequentialId(prefix)` создаёт отдельную последовательность `prefix_1`,
 `prefix_2` и далее. `hashId(prefix, value, length)` добавляет к префиксу и подчёркиванию первые
 `length` символов хеша (от 1 до 64).
+`verbSchema` — формат глагола действия (`^[a-z][a-z0-9_]*$`), общий для событий `truth` (реэкспорт
+из `@hs/core/truth`) и правил контента, которые с ними сопоставляются.
 
 Зависимости между модулями ядра (стрелка = «использует»), циклы запрещены:
 
@@ -304,12 +306,19 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   interface TraceRule { verb: Verb; when?: Condition; produces: TraceSpec[] }   // из content/*/trace-rules.json
-  interface Trace { id: TraceId; kind: "physical" | "document" | "digital" | "testimonial"; sourceEventId: EventId; location?: LocationId; itemId?: ItemId; availableFrom: GameMinutes; decaysAt?: GameMinutes; destroyedBy?: EventId }
+  interface Trace { id: TraceId; kind: "physical" | "document" | "digital" | "testimonial"; sourceEventId: EventId; template: TemplateId; supports: ClaimRef[]; captureMode: "auto" | "qr"; location?: LocationId; itemId?: ItemId; availableFrom: GameMinutes; decaysAt?: GameMinutes; destroyedBy?: EventId; destroyedAt?: GameMinutes }
   interface Clue { id: ClueId; traceId: TraceId; supports: ClaimRef[]; discovery: DiscoveryCondition; captureMode: "auto" | "qr"; presentation: PresentationRef }
   function deriveClues(traces: Trace[], rules: ClueRules): Clue[];
   function discoverable(clue: Clue, ctx: DiscoveryContext): boolean;
   interface EvidenceTokenPort { issue(clueId: ClueId, expiresAt: GameMinutes): TokenRef }   // реализует сервер
+  function compileTraceRules(input: unknown): TraceRuleSet;          // EVIDENCE_RULE_INVALID, закон сохранения
+  function tracesForEvent(event: TruthEvent, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">, truth?: { events(): readonly TruthEvent[] }): Trace[];
+  function deriveTraces(truth: { events(): readonly TruthEvent[] }, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">): Trace[];
+  function isTraceAvailable(trace: Trace, t: GameMinutes): boolean;   // [availableFrom, min(decaysAt, destroyedAt))
+  const CONCEALMENT_VERBS: readonly ["hide", "destroy", "stage"];
   ```
+  Семантика сопоставления, полезной нагрузки, уничтожения и времени —
+  [scenario-presets.md §5](../procedural-generation/scenario-presets.md), [ADR 0017](adr/0017-trace-conservation-and-payload.md).
 - **Зависимости:** `truth`, `world`, `knowledge` (свидетельские следы).
 - **События:** `ClueAvailable`, `ClueDestroyed`, `CaptureRequested`.
 - **Ошибки:** `EVIDENCE_RULE_INVALID` (на загрузке контента).
