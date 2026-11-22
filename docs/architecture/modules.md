@@ -402,6 +402,10 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   }
   interface DispatchResult { ok: boolean; error?: ErrorCode; minutesSpent: number; events: DomainEvent[]; outcome?: GameOutcome }
   ```
+- ENG-001 принимает стартовую локацию, таблицу затрат и данные доступа игрока через `EnginePorts`.
+  `move` и `wait` используют `TimeSystem.advance`; отклонённое действие сохраняет состояние.
+  `GameSnapshot` содержит серверное расследование, игровую минуту, локацию игрока и хеш
+  исходного расследования. Снимок остаётся на сервере.
 - **Блокировка взаимодействия:** во время диалога или звонка (`activeInteraction`) действия,
   несовместимые с ним, отклоняются `ACTION_BLOCKED` (ENG-005).
 - **Ошибки:** `ACTION_INVALID`, `ACTION_NOT_AVAILABLE`, `ACTION_BLOCKED`, `GAME_OVER`.
