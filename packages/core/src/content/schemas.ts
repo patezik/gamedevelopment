@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PERSONALITY_TRAITS } from '../common/index.ts';
+import { PERSONALITY_TRAITS, verbSchema } from '../common/index.ts';
 import { isCalendarStartIso } from '../time/index.ts';
 
 export const scenarioIdSchema = z.string().regex(/^_?[a-z0-9]+(?:[_-][a-z0-9]+)*$/);
@@ -197,19 +197,32 @@ export const crimesSchema = z
   )
   .min(1);
 
+/**
+ * Placeholders a trace rule may use for `at`. The evidence compiler validates with this schema, so
+ * the loader and the compiler accept the same values. Extend only on a content request (ADR 0017).
+ */
+export const TRACE_LOCATION_PLACEHOLDERS: readonly string[] = Object.freeze(['$location']);
+const traceLocation = z
+  .string()
+  .refine((at) => id.safeParse(at).success || TRACE_LOCATION_PLACEHOLDERS.includes(at), {
+    error: `Expected a location ID or one of: ${TRACE_LOCATION_PLACEHOLDERS.join(', ')}`,
+  });
+
 export const traceRulesSchema = z.array(
   z.strictObject({
-    verb: id,
+    // Must be a verb that a TruthLog event can carry.
+    verb: verbSchema,
     when: z.strictObject({ targetTag: id.optional(), itemId: id.optional() }).optional(),
     produces: z
       .array(
         z.strictObject({
           kind: z.enum(['physical', 'document', 'digital', 'testimonial']),
-          at: z.union([id, z.string().regex(/^\$[a-z][a-zA-Z0-9_]*$/)]),
+          at: traceLocation,
           template: id,
           supports: z.array(text),
           captureMode: z.enum(['direct', 'qr']).optional(),
-          decaysAfter: minutes.nullable().optional(),
+          // A zero decay would give an empty availability window; null means no decay.
+          decaysAfter: minutes.positive().nullable().optional(),
           requires: z.strictObject({ itemId: id }).optional(),
         }),
       )

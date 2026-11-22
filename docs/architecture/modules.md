@@ -29,6 +29,8 @@ interface Interval { from: GameMinutes; to: GameMinutes }   // полуинте�
 `Hasher.sha256(text)`. `sequentialId(prefix)` создаёт отдельную последовательность `prefix_1`,
 `prefix_2` и далее. `hashId(prefix, value, length)` добавляет к префиксу и подчёркиванию первые
 `length` символов хеша (от 1 до 64).
+`verbSchema` — формат глагола действия (`^[a-z][a-z0-9_]*$`), общий для событий `truth` (реэкспорт
+из `@hs/core/truth`) и правил контента, которые с ними сопоставляются.
 
 Зависимости между модулями ядра (стрелка = «использует»), циклы запрещены:
 
@@ -316,12 +318,19 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   interface TraceRule { verb: Verb; when?: Condition; produces: TraceSpec[] }   // из content/*/trace-rules.json
-  interface Trace { id: TraceId; kind: "physical" | "document" | "digital" | "testimonial"; sourceEventId: EventId; location?: LocationId; itemId?: ItemId; availableFrom: GameMinutes; decaysAt?: GameMinutes; destroyedBy?: EventId }
+  interface Trace { id: TraceId; kind: "physical" | "document" | "digital" | "testimonial"; sourceEventId: EventId; template: TemplateId; supports: ClaimRef[]; captureMode: "auto" | "qr"; location?: LocationId; itemId?: ItemId; availableFrom: GameMinutes; decaysAt?: GameMinutes; destroyedBy?: EventId; destroyedAt?: GameMinutes }
   interface Clue { id: ClueId; traceId: TraceId; supports: ClaimRef[]; discovery: DiscoveryCondition; captureMode: "auto" | "qr"; presentation: PresentationRef }
   function deriveClues(traces: Trace[], rules: ClueRules): Clue[];
   function discoverable(clue: Clue, ctx: DiscoveryContext): boolean;
   interface EvidenceTokenPort { issue(clueId: ClueId, expiresAt: GameMinutes): TokenRef }   // реализует сервер
+  function compileTraceRules(input: unknown): TraceRuleSet;          // EVIDENCE_RULE_INVALID, закон сохранения
+  function tracesForEvent(event: TruthEvent, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">, truth?: { events(): readonly TruthEvent[] }): Trace[];
+  function deriveTraces(truth: { events(): readonly TruthEvent[] }, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">): Trace[];
+  function isTraceAvailable(trace: Trace, t: GameMinutes): boolean;   // [availableFrom, min(decaysAt, destroyedAt))
+  const CONCEALMENT_VERBS: readonly ["hide", "destroy", "stage"];
   ```
+  Семантика сопоставления, полезной нагрузки, уничтожения и времени —
+  [scenario-presets.md §5](../procedural-generation/scenario-presets.md), [ADR 0017](adr/0017-trace-conservation-and-payload.md).
 - **Зависимости:** `truth`, `world`, `knowledge` (свидетельские следы).
 - **События:** `ClueAvailable`, `ClueDestroyed`, `CaptureRequested`.
 - **Ошибки:** `EVIDENCE_RULE_INVALID` (на загрузке контента).
@@ -378,6 +387,29 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 ## 12. `@hs/core/game` — GameEngine, действия, представления, сохранения
 
+- **Расследование (CORE-003):**
+  ```ts
+  interface WorldState { locations: LocationGraph; items: ItemRegistry; durationMinutes: number }
+  interface Investigation {
+    scenarioId: string; seed: string; generatorVersion: string;
+    world: WorldState; characters: readonly Character[]; relationships: RelationshipGraph;
+    truth: TruthModel; secrets: readonly Secret[];
+  }
+  interface Secret { id: string; fact: Fact; knownBy: CharacterId[] }
+  function snapshotInvestigation(inv: Investigation): InvestigationSnapshot;
+  function serializeInvestigation(inv: Investigation): string;
+  function deserializeInvestigation(json: string): Investigation;
+  ```
+  `WorldState` экспортируется из `@hs/core/world`. `LocationGraph.startDateTime` задаёт начало
+  календаря. `InvestigationBuilder` принимает метаданные, мир, персонажей и истину. Начальные
+  отношения и секреты можно оставить пустыми. Каждый вызов `build()` создаёт независимый экземпляр.
+- **Снимок расследования:** `snapshotInvestigation` возвращает JSON-данные, пригодные для
+  `stateHash`. Кодирование использует `canonicalJson` и сохраняет порядок добавления событий,
+  отношений и перемещений предметов в одну минуту. Загрузка проверяет структуру и ссылки,
+  восстанавливает доменные классы и сообщает `INVESTIGATION_INVALID` при повреждении снимка.
+  Проверка инвариантов игровой хронологии относится к TRUTH-003. Поля `clues`, `lies` и
+  `phoneSeed` добавляются как необязательные по мере реализации соответствующих модулей.
+  Снимок предназначен для сервера и не входит в `PlayerView` или `PhoneView`.
 - **Интерфейс:**
   ```ts
   type PlayerAction = MoveAction | ExamineAction | TalkAction | InterrogateAction | ReadAction | UseItemAction | PickLockAction

@@ -1,7 +1,7 @@
 ---
 id: KNOW-001
 title: "KnowledgeStore: убеждения, источники, память с размытием"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2
