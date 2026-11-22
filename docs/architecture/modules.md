@@ -257,10 +257,18 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     facts(filter?: FactFilter): Fact[];
     readonly incident: IncidentRecord;
   }
-  function checkTruthInvariants(tm: TruthModel, world: WorldState): InvariantViolation[];
+  interface InvariantWorld { locations: Pick<LocationGraph, "travelTime">; items: Pick<ItemRegistry, "locate" | "history"> }   // WorldState подходит структурно
+  interface InvariantViolation { invariant: 1 | 2 | 3 | 4 | 5 | 6 | 7; code: InvariantViolationCode; eventIds: EventId[]; subject?: EntityRef; minute?: GameMinutes; message: string }
+  function checkTruthInvariants(tm: TruthModel, world: InvariantWorld, opts?: { incremental?: boolean }): InvariantViolation[];
+  function assertInvariants(tm: TruthModel, world: InvariantWorld, opts?: { incremental?: boolean }): void;
+  function withInvariantChecks(tm: TruthModel, world: InvariantWorld, debug: { enabled: boolean }): { append(e: Omit<TruthEvent, "id">): EventId };
   ```
+- **Инварианты:** коды, трактовка смерти и debug-режим — [truth-model.md §4](../investigation/truth-model.md).
+  `checkTruthInvariants` проверяет инварианты 1–5 и 7. Инвариант 6 проверяется в SIM-002,
+  его проверка в валидаторе — OQ-13.
 - **Зависимости:** `common`, `world`, `characters`.
-- **Ошибки:** `TRUTH_INVARIANT_VIOLATION` (в тестах и debug-сборке — исключение).
+- **Ошибки:** `TRUTH_INVARIANT_VIOLATION` — `TruthInvariantError` из `assertInvariants` и
+  `withInvariantChecks` при включённом флаге.
 - **Тесты:** инварианты (нет двойного присутствия, перемещения не быстрее графа, причина раньше
   следствия, предмет у одного владельца); `whereWas` на границах интервалов.
 
