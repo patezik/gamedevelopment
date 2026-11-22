@@ -16,3 +16,15 @@ export {
   type TraceSpec,
   type TruthEventSource,
 } from './traces.ts';
+export {
+  deriveClues,
+  discoverable,
+  validateCluePrerequisites,
+  type Clue,
+  type ClueRule,
+  type ClueRules,
+  type DiscoveryAction,
+  type DiscoveryCondition,
+  type DiscoveryContext,
+  type DiscoveryRequirement,
+} from './clues.ts';
