@@ -150,8 +150,10 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   interface Location { id: LocationId; name: string; tags: string[]; lighting: Record<DayPeriod, Light>; access: AccessRule[]; hotspots: HotspotDef[] }
   interface Connection { from: LocationId; to: LocationId; minutes: number; locked?: LockDef }
   class LocationGraph {
+    readonly accessItemIds: readonly ItemId[];
     travelTime(a, b, who?: Actor): number | null;
     path(a, b, who?: Actor): LocationId[];
+    nextTimedStep(a, b, who: Actor, now: GameMinutes): TimedTravelStep | null;
     isAccessible(loc, who: Actor, t: GameMinutes): AccessCheck;
     lightingAt(loc, period: DayPeriod): Light;
   }
@@ -174,6 +176,12 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   Внутри правила должны выполняться все условия, из списка правил достаточно одного.
   Пустой список открывает доступ всем. Интервал включает начало и исключает конец, а при
   `from > to` пересекает полночь. При отказе возвращается причина из первого правила.
+- **Вход по времени ([ADR 0015](adr/0015-time-aware-location-routing.md)):** `nextTimedStep` возвращает
+  первое ребро маршрута с самым ранним прибытием с учётом доступа, в виде
+  `{ destination, departAt, arriveAt, keyItemId? }`. Актёр может ждать открытия в предыдущей
+  локации. Метод возвращает `null`, если он уже в цели или допустимого маршрута нет.
+  `accessItemIds` перечисляет предметы из замков и условий входа. Для NPC набор
+  `Actor.itemIds` формируется из реестра по [ADR 0016](adr/0016-physical-keys.md).
 - **Нет маршрута:** `travelTime` возвращает `null`, `path` выдаёт `WORLD_NO_PATH`.
   Неизвестный идентификатор локации даёт `WORLD_UNKNOWN_LOCATION`.
 - **Предметы:** реестр начинает работу с заданной игровой минуты (по умолчанию `0`). Для каждого
@@ -257,10 +265,18 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     facts(filter?: FactFilter): Fact[];
     readonly incident: IncidentRecord;
   }
-  function checkTruthInvariants(tm: TruthModel, world: WorldState): InvariantViolation[];
+  interface InvariantWorld { locations: Pick<LocationGraph, "travelTime">; items: Pick<ItemRegistry, "locate" | "history"> }   // WorldState подходит структурно
+  interface InvariantViolation { invariant: 1 | 2 | 3 | 4 | 5 | 6 | 7; code: InvariantViolationCode; eventIds: EventId[]; subject?: EntityRef; minute?: GameMinutes; message: string }
+  function checkTruthInvariants(tm: TruthModel, world: InvariantWorld, opts?: { incremental?: boolean }): InvariantViolation[];
+  function assertInvariants(tm: TruthModel, world: InvariantWorld, opts?: { incremental?: boolean }): void;
+  function withInvariantChecks(tm: TruthModel, world: InvariantWorld, debug: { enabled: boolean }): { append(e: Omit<TruthEvent, "id">): EventId };
   ```
+- **Инварианты:** коды, трактовка смерти и debug-режим — [truth-model.md §4](../investigation/truth-model.md).
+  `checkTruthInvariants` проверяет инварианты 1–5 и 7. Инвариант 6 проверяется в SIM-002,
+  его проверка в валидаторе — OQ-13.
 - **Зависимости:** `common`, `world`, `characters`.
-- **Ошибки:** `TRUTH_INVARIANT_VIOLATION` (в тестах и debug-сборке — исключение).
+- **Ошибки:** `TRUTH_INVARIANT_VIOLATION` — `TruthInvariantError` из `assertInvariants` и
+  `withInvariantChecks` при включённом флаге.
 - **Тесты:** инварианты (нет двойного присутствия, перемещения не быстрее графа, причина раньше
   следствия, предмет у одного владельца); `whereWas` на границах интервалов.
 
@@ -296,6 +312,11 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 Подробно — [character-simulation.md](../simulation/character-simulation.md).
 
+- **SIM-001:** модуль экспортирует `SimulationRunner`, `SimulationRunnerOptions`, `Agent`,
+  `Activity` и `ActivityStep`. Раннер регистрирует обработчики фаз `Schedules` и `Simulation`
+  в переданном `TimeSystem`. Порт `items` предоставляет `ItemRegistry.locate` и `history` для
+  проверки физического владения ключами. `getAgent(characterId)` возвращает снимок текущей активности и
+  состояния RNG. Целевой интерфейс ниже включает возможности следующих задач SIM.
 - **Интерфейс:**
   ```ts
   interface Agent { characterId: CharacterId; lod: "focus" | "background"; activity?: Activity; goals: ActiveGoal[]; wariness: number; stress: number }

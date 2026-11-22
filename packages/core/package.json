@@ -12,6 +12,7 @@
     "./evidence": "./src/evidence/index.ts",
     "./game": "./src/game/index.ts",
     "./rng": "./src/rng/index.ts",
+    "./simulation": "./src/simulation/index.ts",
     "./time": "./src/time/index.ts",
     "./truth": "./src/truth/index.ts",
     "./truth/facts": "./src/truth/facts.ts",
