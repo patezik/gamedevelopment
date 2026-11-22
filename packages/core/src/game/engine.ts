@@ -51,7 +51,7 @@ export class GameEngine {
     minute: number,
   ) {
     const { locations, durationMinutes } = investigation.world;
-    const { startDateTime } = locations.snapshot();
+    const { startDateTime } = locations;
     locations.isAccessible(locationId, ports.player ?? {}, minute);
     if (!Number.isSafeInteger(minute) || minute < 0 || minute > durationMinutes) {
       throw new RangeError('Snapshot minute is outside the scenario');
@@ -89,8 +89,8 @@ export class GameEngine {
 
   dispatch(source: 'desktop' | 'phone', input: PlayerAction): DispatchResult {
     const parsed = PlayerAction.safeParse(input);
-    const allowed: readonly PlayerAction['type'][] = ACTIONS_BY_ROLE[source];
-    if (!parsed.success || !allowed.includes(parsed.data.type)) return rejected('ACTION_INVALID');
+    const allowed: readonly PlayerAction['type'][] | undefined = ACTIONS_BY_ROLE[source];
+    if (!parsed.success || !allowed?.includes(parsed.data.type)) return rejected('ACTION_INVALID');
 
     const action = parsed.data;
     const { locations, durationMinutes } = this.investigation.world;
