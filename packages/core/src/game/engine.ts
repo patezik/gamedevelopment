@@ -1,6 +1,14 @@
 import { ACTIONS_BY_ROLE, PlayerAction, type ErrorCode } from '@hs/protocol';
 import { stateHash } from '../common/index.ts';
 import {
+  discoverable,
+  issueEvidenceCapture,
+  type Clue,
+  type DiscoveryContext,
+  type EvidenceTokenPort,
+  type PendingCapture,
+} from '../evidence/index.ts';
+import {
   ActionCostError,
   Calendar,
   TimeSystem,
@@ -19,6 +27,7 @@ export interface EnginePorts {
   readonly startLocationId: string;
   readonly actionCosts?: ActionCostTable;
   readonly player?: Actor;
+  readonly evidenceTokens?: EvidenceTokenPort;
 }
 
 export interface GameSnapshot {
@@ -26,6 +35,7 @@ export interface GameSnapshot {
   readonly initialInvestigationHash: string;
   readonly minute: number;
   readonly locationId: string;
+  readonly pendingCapture?: PendingCapture;
 }
 
 export interface DispatchResult {
@@ -42,6 +52,7 @@ function rejected(error: ErrorCode): DispatchResult {
 
 export class GameEngine {
   readonly #time: TimeSystem;
+  #pendingCapture: PendingCapture | undefined;
 
   private constructor(
     private readonly investigation: Investigation,
@@ -78,13 +89,52 @@ export class GameEngine {
     if (snapshot.initialInvestigationHash !== stateHash(serializeInvestigation(investigation))) {
       throw new Error('Snapshot belongs to a different investigation');
     }
-    return new GameEngine(
+    const engine = new GameEngine(
       deserializeInvestigation(snapshot.investigation),
       snapshot.initialInvestigationHash,
       ports,
       snapshot.locationId,
       snapshot.minute,
     );
+    engine.#pendingCapture = snapshot.pendingCapture && { ...snapshot.pendingCapture };
+    return engine;
+  }
+
+  pendingEvidenceCapture(): PendingCapture | undefined {
+    const pending = this.#pendingCapture;
+    if (
+      !pending ||
+      pending.locationId !== this.locationId ||
+      pending.expiresAt <= this.#time.now() ||
+      this.#time.now() >= this.investigation.world.durationMinutes
+    )
+      return undefined;
+    return { ...pending };
+  }
+
+  requestEvidenceCapture(
+    clue: Clue,
+    context: Pick<DiscoveryContext, 'action' | 'has'>,
+  ): PendingCapture | undefined {
+    const port = this.ports.evidenceTokens;
+    const minute = this.#time.now();
+    if (
+      !port ||
+      clue.captureMode !== 'qr' ||
+      minute >= this.investigation.world.durationMinutes ||
+      !discoverable(clue, { ...context, locationId: this.locationId, minute })
+    )
+      return undefined;
+
+    const pending = this.pendingEvidenceCapture();
+    if (pending?.clueId === clue.id) return pending;
+    if (this.#pendingCapture) {
+      port.revoke(this.#pendingCapture.tokenId);
+      this.#pendingCapture = undefined;
+    }
+    const issued = issueEvidenceCapture(clue, minute, port);
+    this.#pendingCapture = issued;
+    return { ...issued };
   }
 
   dispatch(source: 'desktop' | 'phone', input: PlayerAction): DispatchResult {
@@ -166,11 +216,13 @@ export class GameEngine {
   }
 
   snapshot(): GameSnapshot {
+    const pendingCapture = this.#pendingCapture;
     return {
       investigation: serializeInvestigation(this.investigation),
       initialInvestigationHash: this.initialInvestigationHash,
       minute: this.#time.now(),
       locationId: this.locationId,
+      ...(pendingCapture ? { pendingCapture: { ...pendingCapture } } : {}),
     };
   }
 

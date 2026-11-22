@@ -28,3 +28,9 @@ export {
   type DiscoveryContext,
   type DiscoveryRequirement,
 } from './clues.ts';
+export {
+  distributeCaptureModes,
+  issueEvidenceCapture,
+  type EvidenceTokenPort,
+  type PendingCapture,
+} from './capture.ts';
