@@ -1,7 +1,7 @@
 ---
 id: PROTO-003
 title: "Генерация GDScript-констант протокола и контрактные тесты Godot"
-status: review
+status: done
 priority: P0
 complexity: S
 phase: 5
