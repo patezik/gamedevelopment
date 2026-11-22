@@ -65,4 +65,21 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['packages/core/src/knowledge/store.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex:
+                '^(?:@hs/core/truth(?:$|/(?!facts$))|(?:\\.\\.?/)+truth(?:$|/|\\.[cm]?[jt]s$))',
+              message: 'Use @hs/core/truth/facts for propositions (ADR 0005).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

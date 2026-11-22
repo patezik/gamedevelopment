@@ -1,0 +1,133 @@
+[
+  {
+    "id": "rel_staff_employment",
+    "type": "employment",
+    "fromArchetypes": ["nurse", "caretaker", "cook"],
+    "toArchetypes": ["head_doctor"],
+    "secrets": [
+      { "kind": "embezzlement", "template": "secret_embezzlement" },
+      { "kind": "falsified_records", "template": "secret_falsified_records" },
+      { "kind": "drug_theft", "template": "secret_drug_theft" },
+      { "kind": "addiction", "template": "secret_addiction" }
+    ]
+  },
+  {
+    "id": "rel_doctor_nurse_romance",
+    "type": "romance",
+    "fromArchetypes": ["head_doctor"],
+    "toArchetypes": ["nurse"],
+    "secrets": [
+      { "kind": "affair", "template": "secret_affair" }
+    ]
+  },
+  {
+    "id": "rel_guest_romance",
+    "type": "romance",
+    "fromArchetypes": ["guest_entrepreneur", "guest_blogger", "guest_relative"],
+    "toArchetypes": ["guest_entrepreneur", "guest_blogger", "guest_relative", "cook"],
+    "secrets": [
+      { "kind": "affair", "template": "secret_affair" },
+      { "kind": "illegitimate_child", "template": "secret_illegitimate_child" }
+    ]
+  },
+  {
+    "id": "rel_family_parent",
+    "type": "parent",
+    "fromArchetypes": ["guest_pensioner", "guest_retired_officer"],
+    "toArchetypes": ["guest_relative", "guest_entrepreneur"],
+    "secrets": [
+      { "kind": "will_changed", "template": "secret_will_changed" },
+      { "kind": "hidden_debt", "template": "secret_hidden_debt" }
+    ]
+  },
+  {
+    "id": "rel_family_siblings",
+    "type": "sibling",
+    "fromArchetypes": ["guest_relative", "guest_entrepreneur"],
+    "toArchetypes": ["guest_entrepreneur", "guest_relative", "guest_blogger"],
+    "secrets": [
+      { "kind": "will_changed", "template": "secret_will_changed" },
+      { "kind": "false_identity", "template": "secret_false_identity" }
+    ]
+  },
+  {
+    "id": "rel_married_guests",
+    "type": "spouse",
+    "fromArchetypes": ["guest_entrepreneur", "guest_retired_officer"],
+    "toArchetypes": ["guest_pensioner", "guest_blogger"],
+    "secrets": [
+      { "kind": "affair", "template": "secret_affair" },
+      { "kind": "insurance_fraud", "template": "secret_insurance_fraud" }
+    ]
+  },
+  {
+    "id": "rel_money_owed",
+    "type": "debt",
+    "fromArchetypes": ["nurse", "caretaker", "cook", "guest_blogger", "guest_relative"],
+    "toArchetypes": ["guest_entrepreneur", "head_doctor", "guest_retired_officer"],
+    "secrets": [
+      { "kind": "gambling_debt", "template": "secret_gambling_debt" },
+      { "kind": "hidden_debt", "template": "secret_hidden_debt" }
+    ]
+  },
+  {
+    "id": "rel_leverage",
+    "type": "blackmail",
+    "fromArchetypes": ["guest_blogger", "nurse", "caretaker", "guest_relative"],
+    "toArchetypes": ["head_doctor", "guest_entrepreneur", "guest_retired_officer", "cook"],
+    "secrets": [
+      { "kind": "blackmail_material", "template": "secret_blackmail_material" },
+      { "kind": "past_conviction", "template": "secret_past_conviction" },
+      { "kind": "malpractice", "template": "secret_malpractice" }
+    ]
+  },
+  {
+    "id": "rel_grievance_malpractice",
+    "type": "past_conflict",
+    "fromArchetypes": ["guest_relative"],
+    "toArchetypes": ["head_doctor", "nurse"],
+    "secrets": [
+      { "kind": "malpractice", "template": "secret_malpractice" },
+      { "kind": "falsified_records", "template": "secret_falsified_records" }
+    ]
+  },
+  {
+    "id": "rel_grievance_accident",
+    "type": "past_conflict",
+    "fromArchetypes": ["guest_retired_officer"],
+    "toArchetypes": ["guest_entrepreneur", "caretaker", "head_doctor", "cook"],
+    "secrets": [
+      { "kind": "hit_and_run", "template": "secret_hit_and_run" }
+    ]
+  },
+  {
+    "id": "rel_land_dispute",
+    "type": "rivalry",
+    "fromArchetypes": ["guest_entrepreneur"],
+    "toArchetypes": ["head_doctor", "caretaker", "guest_pensioner"],
+    "secrets": [
+      { "kind": "land_deal", "template": "secret_land_deal" },
+      { "kind": "embezzlement", "template": "secret_embezzlement" }
+    ]
+  },
+  {
+    "id": "rel_exposure",
+    "type": "rivalry",
+    "fromArchetypes": ["guest_blogger"],
+    "toArchetypes": ["head_doctor", "guest_entrepreneur", "guest_relative"],
+    "secrets": [
+      { "kind": "secret_investigation", "template": "secret_secret_investigation" },
+      { "kind": "false_identity", "template": "secret_false_identity" }
+    ]
+  },
+  {
+    "id": "rel_old_friends",
+    "type": "friendship",
+    "fromArchetypes": ["guest_pensioner", "guest_retired_officer", "caretaker", "cook"],
+    "toArchetypes": ["guest_pensioner", "guest_retired_officer", "caretaker", "cook", "nurse"],
+    "secrets": [
+      { "kind": "terminal_diagnosis", "template": "secret_terminal_diagnosis" },
+      { "kind": "illegitimate_child", "template": "secret_illegitimate_child" }
+    ]
+  }
+]

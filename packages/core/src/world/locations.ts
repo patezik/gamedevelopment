@@ -14,6 +14,13 @@ export interface Actor {
   readonly itemIds?: ReadonlySet<string>;
 }
 
+export interface TimedTravelStep {
+  readonly destination: string;
+  readonly departAt: GameMinutes;
+  readonly arriveAt: GameMinutes;
+  readonly keyItemId?: string;
+}
+
 type AccessDenial = 'outside_hours' | 'archetype_not_allowed' | 'missing_item';
 export type AccessCheck = { ok: true } | { ok: false; reason: AccessDenial };
 type WorldErrorCode = 'WORLD_UNKNOWN_LOCATION' | 'WORLD_NO_PATH';
@@ -43,11 +50,13 @@ function deniedBy(rule: AccessRule, actor: Actor, minute: number): AccessDenial 
 interface Route {
   minutes: number;
   path: string[];
+  firstStep: TimedTravelStep | undefined;
 }
 
 export class LocationGraph {
   private readonly locations = new Map<string, Location>();
   private readonly calendar: Calendar;
+  readonly accessItemIds: readonly string[];
   readonly startDateTime: string;
 
   constructor(content: Pick<ScenarioContent, 'locations' | 'preset'>);
@@ -55,9 +64,17 @@ export class LocationGraph {
   constructor(content: LocationGraphContent) {
     this.startDateTime = content.preset.time.startDateTime;
     this.calendar = new Calendar(this.startDateTime);
+    const accessItemIds = new Set<string>();
     for (const location of content.locations) {
       this.locations.set(location.id, structuredClone(location));
+      for (const { itemId } of location.access) {
+        if (itemId !== undefined) accessItemIds.add(itemId);
+      }
+      for (const { locked } of location.connections) {
+        if (locked?.itemId !== undefined) accessItemIds.add(locked.itemId);
+      }
     }
+    this.accessItemIds = Object.freeze([...accessItemIds].sort());
   }
 
   snapshot(): { startDateTime: string; locations: Location[] } {
@@ -75,6 +92,11 @@ export class LocationGraph {
     const route = this.findRoute(from, to, actor);
     if (!route) throw new WorldError('WORLD_NO_PATH', `No path from ${from} to ${to}`);
     return route.path;
+  }
+
+  /** First edge of the earliest-arrival route, including any wait before departure. */
+  nextTimedStep(from: string, to: string, actor: Actor, now: GameMinutes): TimedTravelStep | null {
+    return this.findRoute(from, to, actor, now)?.firstStep ?? null;
   }
 
   lightingAt(id: string, period: DayPeriod): Light {
@@ -102,12 +124,31 @@ export class LocationGraph {
     return location;
   }
 
-  private findRoute(from: string, to: string, actor: Actor): Route | undefined {
+  private nextEntry(id: string, actor: Actor, earliest: GameMinutes): GameMinutes | null {
+    const { access } = this.getLocation(id);
+    if (access.length === 0) return earliest;
+
+    const { hh, mm } = this.calendar.toDisplay(earliest);
+    const minute = hh * 60 + mm;
+    const minutesPerDay = 1440;
+    let next = Infinity;
+    for (const rule of access) {
+      if (deniedBy(rule, actor, minute) === undefined) return earliest;
+      const opening = (rule.from ?? 0) % minutesPerDay;
+      if (deniedBy(rule, actor, opening) === undefined) {
+        next = Math.min(next, earliest + ((opening - minute + minutesPerDay) % minutesPerDay));
+      }
+    }
+    return Number.isFinite(next) ? next : null;
+  }
+
+  private findRoute(from: string, to: string, actor: Actor, now?: GameMinutes): Route | undefined {
     this.getLocation(from);
     this.getLocation(to);
     const pending = new Map([[from, 0]]);
     const visited = new Set<string>();
     const previous = new Map<string, string>();
+    const firstSteps = new Map<string, TimedTravelStep>();
 
     while (pending.size > 0) {
       let current: string | undefined;
@@ -124,7 +165,7 @@ export class LocationGraph {
         for (let id: string | undefined = to; id !== undefined; id = previous.get(id)) {
           path.push(id);
         }
-        return { minutes, path: path.reverse() };
+        return { minutes, path: path.reverse(), firstStep: firstSteps.get(to) };
       }
 
       pending.delete(current);
@@ -137,7 +178,13 @@ export class LocationGraph {
         ) {
           continue;
         }
-        const candidate = minutes + edge.minutes;
+        let candidate = minutes + edge.minutes;
+        if (now !== undefined) {
+          // An earlier arrival can wait for every opening a later arrival could use.
+          const entry = this.nextEntry(edge.to, actor, now + candidate);
+          if (entry === null) continue;
+          candidate = entry - now;
+        }
         const known = pending.get(edge.to) ?? Infinity;
         const predecessor = previous.get(edge.to);
         if (
@@ -148,6 +195,18 @@ export class LocationGraph {
         }
         pending.set(edge.to, candidate);
         previous.set(edge.to, current);
+        if (now !== undefined) {
+          const arriveAt = now + candidate;
+          firstSteps.set(
+            edge.to,
+            firstSteps.get(current) ?? {
+              destination: edge.to,
+              departAt: arriveAt - edge.minutes,
+              arriveAt,
+              ...(edge.locked?.itemId !== undefined && { keyItemId: edge.locked.itemId }),
+            },
+          );
+        }
       }
     }
     return undefined;

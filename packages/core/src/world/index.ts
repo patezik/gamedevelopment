@@ -14,6 +14,7 @@ export {
   type AccessRule,
   type Actor,
   type Light,
+  type TimedTravelStep,
 } from './locations.ts';
 
 export {
