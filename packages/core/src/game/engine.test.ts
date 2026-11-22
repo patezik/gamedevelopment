@@ -56,3 +56,27 @@ describe('GameEngine', () => {
     expect(restored.stateHash()).toBe(engine.stateHash());
   });
 });
+
+test('time expiration during travel does not record a completed transition', () => {
+  const investigation = tinyManor();
+  const shortened = { ...investigation, world: { ...investigation.world, durationMinutes: 2 } };
+  const engine = GameEngine.create(shortened, ports);
+
+  expect(engine.dispatch('desktop', { type: 'move', locationId: 'loc_study' })).toMatchObject({
+    ok: true,
+    minutesSpent: 2,
+    outcome: 'time_expired',
+  });
+  const snapshot = engine.snapshot();
+  expect(snapshot).toMatchObject({ locationId: 'loc_hall', minute: 2 });
+  expect(deserializeInvestigation(snapshot.investigation).truth.events().at(-1)).toMatchObject({
+    verb: 'attempt_move',
+    duration: 2,
+    location: 'loc_hall',
+  });
+  expect(engine.dispatch('desktop', { type: 'wait', minutes: 15 })).toMatchObject({
+    ok: false,
+    error: 'GAME_OVER',
+    minutesSpent: 0,
+  });
+});

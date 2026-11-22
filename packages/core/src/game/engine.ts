@@ -137,10 +137,11 @@ export class GameEngine {
 
     const elapsed = this.#time.advance(minutes);
     const minutesSpent = elapsed.to - elapsed.from;
+    const completed = minutesSpent === minutes;
     this.investigation.truth.append({
       t: now,
       duration: minutesSpent,
-      verb: action.type,
+      verb: action.type === 'move' && !completed ? 'attempt_move' : action.type,
       actorIds: ['player'],
       location: this.locationId,
       targets:
@@ -155,7 +156,7 @@ export class GameEngine {
       traceIds: [],
       visibility: 'public',
     });
-    if (minutesSpent === minutes) this.locationId = destination;
+    if (completed) this.locationId = destination;
     return {
       ok: true,
       minutesSpent,
