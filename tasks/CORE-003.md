@@ -1,7 +1,7 @@
 ---
 id: CORE-003
 title: "Тип Investigation и fixture-builder мини-сценария «tiny-manor»"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 2
