@@ -366,6 +366,29 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 ## 12. `@hs/core/game` — GameEngine, действия, представления, сохранения
 
+- **Расследование (CORE-003):**
+  ```ts
+  interface WorldState { locations: LocationGraph; items: ItemRegistry; durationMinutes: number }
+  interface Investigation {
+    scenarioId: string; seed: string; generatorVersion: string;
+    world: WorldState; characters: readonly Character[]; relationships: RelationshipGraph;
+    truth: TruthModel; secrets: readonly Secret[];
+  }
+  interface Secret { id: string; fact: Fact; knownBy: CharacterId[] }
+  function snapshotInvestigation(inv: Investigation): InvestigationSnapshot;
+  function serializeInvestigation(inv: Investigation): string;
+  function deserializeInvestigation(json: string): Investigation;
+  ```
+  `WorldState` экспортируется из `@hs/core/world`. `LocationGraph.startDateTime` задаёт начало
+  календаря. `InvestigationBuilder` принимает метаданные, мир, персонажей и истину. Начальные
+  отношения и секреты можно оставить пустыми. Каждый вызов `build()` создаёт независимый экземпляр.
+- **Снимок расследования:** `snapshotInvestigation` возвращает JSON-данные, пригодные для
+  `stateHash`. Кодирование использует `canonicalJson` и сохраняет порядок добавления событий,
+  отношений и перемещений предметов в одну минуту. Загрузка проверяет структуру и ссылки,
+  восстанавливает доменные классы и сообщает `INVESTIGATION_INVALID` при повреждении снимка.
+  Проверка инвариантов игровой хронологии относится к TRUTH-003. Поля `clues`, `lies` и
+  `phoneSeed` добавляются как необязательные по мере реализации соответствующих модулей.
+  Снимок предназначен для сервера и не входит в `PlayerView` или `PhoneView`.
 - **Интерфейс:**
   ```ts
   type PlayerAction = MoveAction | ExamineAction | TalkAction | InterrogateAction | ReadAction | UseItemAction | PickLockAction
