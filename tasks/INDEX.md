@@ -2,15 +2,19 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 102 · in_progress: 2 · review: 1 · done: 33 · blocked: 2
+Всего задач: **140** · todo: 102 · in_progress: 2 · review: 0 · done: 34 · blocked: 2
 
 ## Готовы к взятию сейчас
 
+- [ENG-002](ENG-002.md) — Проекция PlayerView и тест отсутствия утечек истины (P0, M)
 - [SIM-002](SIM-002.md) — Восприятие: наблюдения присутствующих → убеждения (P0, M)
 - [CNT-003](CNT-003.md) — MVP-сценарий: шаблоны преступлений и правила мотивов (P0, M)
 - [SIM-004](SIM-004.md) — Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot (P0, M)
 - [KNOW-002](KNOW-002.md) — LiePolicy и показания: answer(question) → правда, ошибка или ложь (P0, L)
 - [VAL-001](VAL-001.md) — Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE (P0, S)
+- [SRV-001](SRV-001.md) — SessionManager: сессии, очередь действий, жизненный цикл (P0, M)
+- [SURV-001](SURV-001.md) — Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости (P0, M)
+- [SAVE-001](SAVE-001.md) — Формат сохранения и replay с проверкой хеша (P1, M)
 
 ## Критический путь
 
@@ -22,7 +26,6 @@
 
 | Задача | Блокирует напрямую |
 |---|---|
-| [ENG-001](ENG-001.md) GameEngine: агрегат состояния, dispatch, действия move и wait | 6 |
 | [ENG-004](ENG-004.md) Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | 6 |
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
 | [ENG-003](ENG-003.md) Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | 5 |
@@ -34,6 +37,7 @@
 | [PHONE-001](PHONE-001.md) Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | 5 |
 | [EVD-003](EVD-003.md) Режим фиксации улик телефоном и порт EvidenceTokenPort | 4 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
+| [SRV-001](SRV-001.md) SessionManager: сессии, очередь действий, жизненный цикл | 4 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -61,7 +65,7 @@
 | [CORE-001](CORE-001.md) | Детерминированный PRNG sfc32 с подпотоками fork(label) | P0 | M | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-003](CORE-003.md) | Тип Investigation и fixture-builder мини-сценария «tiny-manor» | P0 | M | done | egor-codex-core-003 | [TRUTH-002](TRUTH-002.md), [CHAR-003](CHAR-003.md), [WORLD-002](WORLD-002.md) |
-| [ENG-001](ENG-001.md) | GameEngine: агрегат состояния, dispatch, действия move и wait | P0 | M | review | codex-engine-27 | [TIME-003](TIME-003.md), [TIME-004](TIME-004.md), [WORLD-001](WORLD-001.md), [TRUTH-002](TRUTH-002.md), [CORE-003](CORE-003.md) |
+| [ENG-001](ENG-001.md) | GameEngine: агрегат состояния, dispatch, действия move и wait | P0 | M | done | codex-engine-27 | [TIME-003](TIME-003.md), [TIME-004](TIME-004.md), [WORLD-001](WORLD-001.md), [TRUTH-002](TRUTH-002.md), [CORE-003](CORE-003.md) |
 | [ENG-002](ENG-002.md) | Проекция PlayerView и тест отсутствия утечек истины | P0 | M | todo | — | [ENG-001](ENG-001.md), [PROTO-002](PROTO-002.md) |
 | [KNOW-001](KNOW-001.md) | KnowledgeStore: убеждения, источники, память с размытием | P0 | M | done | egor-codex-1 | [TRUTH-001](TRUTH-001.md) |
 | [PROTO-001](PROTO-001.md) | Каталог сообщений протокола (hello, welcome, action, event, qr, error) | P0 | M | done | codex-core | [FND-004](FND-004.md) |
