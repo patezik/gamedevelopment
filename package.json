@@ -25,6 +25,7 @@
     "lint": "eslint .",
     "typecheck": "tsc",
     "test": "vitest run",
+    "test:godot": "node tools/test-godot.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "tasks:check": "node tools/tasks/tasks.mjs validate",
@@ -32,7 +33,8 @@
     "tasks:index": "node tools/tasks/tasks.mjs index",
     "docs:check": "node tools/docs/check-links.mjs",
     "protocol:gen": "npm run protocol:gen -w @hs/protocol",
-    "protocol:check": "npm run protocol:check -w @hs/protocol"
+    "protocol:check": "npm run protocol:check -w @hs/protocol",
+    "content:check": "node tools/check-content.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

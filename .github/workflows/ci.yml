@@ -1,4 +1,4 @@
-# CI. Jobs for Godot and seed sweep are added by tasks FND-008, VAL-008.
+# CI. The seed sweep job is added by VAL-008.
 name: CI
 
 on:
@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       node: ${{ steps.filter.outputs.node }}
+      godot: ${{ steps.filter.outputs.godot }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -44,17 +45,30 @@ jobs:
       - id: filter
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          NODE_PATHS: '^(packages/|apps/server/|tools/|content/|\.github/workflows/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.mjs$|vitest\.config\.ts$|\.nvmrc$)'
+          PUSH_BEFORE: ${{ github.event.before }}
+          NODE_PATHS: '^(packages/|apps/(server|mobile)/|apps/desktop/src/net/protocol_constants\.gd$|tools/|content/|\.github/workflows/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.mjs$|vitest\.config\.ts$|\.nvmrc$)'
+          GODOT_PATHS: '^(apps/desktop/|packages/protocol/|tools/test-godot\.mjs$|\.github/workflows/ci\.yml$|package\.json$|\.nvmrc$)'
         run: |
+          report_match() {
+            if grep -qE "$2" <<< "$changed_paths"; then
+              echo "$1=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$1=false" >> "$GITHUB_OUTPUT"
+            fi
+          }
+
           if [ -z "$BASE_SHA" ]; then
             echo "node=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          changed_paths=$(git diff --name-only "$BASE_SHA"...HEAD)
-          if grep -qE "$NODE_PATHS" <<< "$changed_paths"; then
-            echo "node=true" >> "$GITHUB_OUTPUT"
+            if git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+              changed_paths=$(git diff --name-only "$PUSH_BEFORE" HEAD)
+              report_match godot "$GODOT_PATHS"
+            else
+              echo "godot=true" >> "$GITHUB_OUTPUT"
+            fi
           else
-            echo "node=false" >> "$GITHUB_OUTPUT"
+            changed_paths=$(git diff --name-only "$BASE_SHA"...HEAD)
+            report_match node "$NODE_PATHS"
+            report_match godot "$GODOT_PATHS"
           fi
 
   node:
@@ -72,4 +86,41 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run content:check
       - run: npm test -- --coverage
+      - name: Scheduler performance without coverage
+        run: node packages/core/test/performance/scheduler.ts
+
+  godot:
+    name: Godot tests
+    needs: changes
+    if: needs.changes.outputs.godot == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      GODOT_VERSION: 4.7.2-stable
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/cache@v6
+        id: cache-godot
+        with:
+          path: ${{ runner.temp }}/godot
+          key: godot-${{ runner.os }}-x86_64-${{ env.GODOT_VERSION }}
+      - name: Install Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          archive="Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          cd "$RUNNER_TEMP"
+          curl --fail --location --silent --show-error --retry 3 \
+            --output "$archive" \
+            "https://github.com/godotengine/godot-builds/releases/download/$GODOT_VERSION/$archive"
+          printf '%s  %s\n' \
+            '9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65' \
+            "$archive" | sha512sum --check
+          unzip -q "$archive" -d godot
+          chmod +x "godot/${archive%.zip}"
+      - name: Run headless tests
+        run: GODOT_BIN="$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}_linux.x86_64" npm run test:godot

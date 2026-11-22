@@ -1,7 +1,7 @@
 ---
 id: CHAR-002
 title: "Граф отношений: типы, доверие, валентность, история"
-status: todo
+status: done
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: characters
 depends_on: [CHAR-001]
 modules: ["packages/core/src/characters/relationships.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-small-1
+claimed_at: "2026-11-20T08:10:27Z"
 ---
 
 # CHAR-002 — Граф отношений: типы, доверие, валентность, история
@@ -47,9 +47,9 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Симметричные типы хранятся согласованно.
-- [ ] trust/valence ограничены [-1, 1] / [0, 1].
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Симметричные типы хранятся согласованно.
+- [x] trust/valence ограничены [-1, 1] / [0, 1].
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

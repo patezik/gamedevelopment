@@ -3,8 +3,11 @@
 Схемы — `@hs/protocol` (zod), решения — [ADR 0009](../architecture/adr/0009-protocol-schemas.md),
 безопасность — [ADR 0008](../architecture/adr/0008-pairing-and-security.md).
 
-Сгенерированные JSON Schema лежат в `packages/protocol/schemas/` (`npm run protocol:gen`; актуальность
-проверяет `npm run protocol:check`), пример конверта — `packages/protocol/fixtures/envelope.json`.
+Сгенерированные JSON Schema лежат в `packages/protocol/schemas/`, GDScript-константы для Godot —
+в `apps/desktop/src/net/protocol_constants.gd` (`npm run protocol:gen`; актуальность обоих проверяет
+`npm run protocol:check`, см. [godot-client.md §2.1](../desktop/godot-client.md#21-константы-протокола)),
+пример конверта — `packages/protocol/fixtures/envelope.json`.
+Примеры всех сообщений собраны в `client-messages.json` и `server-messages.json` в том же каталоге.
 
 ## 1. Транспорт
 
@@ -35,6 +38,12 @@
 
 ## 3. Каталог сообщений
 
+`parseClientMessage` и `parseServerMessage` принимают уже разобранный JSON и возвращают
+`{ ok: true, message }` или `{ ok: false, error: "INVALID_MESSAGE" }`. При разборе проверяются
+тип, направление и поля сообщения. Для проверки версии на сервере сначала разбирается общий
+`Envelope`, затем сравнивается `v` и только после этого проверяется payload по каталогу.
+Счётчики и `minutesSpent` — неотрицательные целые. Идентификаторы и ссылки — непустые строки.
+
 ### Клиент → сервер
 
 | type | payload | Кто |
@@ -59,6 +68,11 @@
 | `error` | `{ code: ErrorCode, message, requestId? }` |
 | `peer.status` | `{ desktop: "online" \| "offline", phone: "online" \| "offline" \| "unpaired" }` |
 
+Варианты `ClientEvent` по полю `type`: `notification` с `notificationId`, `incomingCall`
+с `callId`, `scanResult` с полями `qr.result`, `gameOver` без дополнительных полей.
+Схема `view.update` проверяет, что `view` — это `PlayerView` или `PhoneView` (§6); сообщение с пустым
+или смешанным `view` отвергается.
+
 ## 4. Действия по ролям
 
 | Действие | desktop | phone |
@@ -69,6 +83,32 @@
 | `captureEvidence` | — | через `qr.scan` |
 
 Сервер проверяет роль: действие не своей роли → `ACTION_INVALID`.
+Таблица `ACTIONS_BY_ROLE` перечисляет действия для прямого `action.request`. Сервер
+сам создаёт `captureEvidence { tokenId }` после проверки `qr.scan`.
+
+Действия различаются по полю `type`. Остальные поля перечислены ниже.
+
+| Действие | Поля |
+|----------|------|
+| `move` | `locationId` |
+| `examineLocation` | — |
+| `examineHotspot` | `hotspotId` |
+| `talk` | `characterId, topicId` |
+| `interrogate` | `characterId, subject`, где `subject` — `{ type: "evidence", clueId }` или `{ type: "contradiction", contradictionId }` |
+| `read` | `documentId` |
+| `useItem` | `itemId, targetId?` |
+| `pickLock` | `targetId` |
+| `rest`, `wait` | `minutes` — положительное целое |
+| `accuse` | `caseFile: { accusedIds, motive?, means?, opportunity?, evidence }, confirm`; `confirm` — логическое значение |
+| `markSuspicion` | `characterId, level, note?`; `level` — неотрицательное целое |
+| `call` | `contactId` |
+| `answerCall` | `callId` |
+| `callChoice` | `choiceId` |
+| `message` | `contactId, templateId` |
+| `browse` | `pageId` |
+| `openFile` | `fileId` |
+| `unlockFile` | `fileId, password` |
+| `addNote` | `text` |
 
 ## 5. Коды ошибок (`ErrorCode`)
 
@@ -78,30 +118,80 @@
 `QR_INVALID`, `QR_WRONG_SESSION`, `QR_EXPIRED`, `QR_ALREADY_USED`, `QR_PRECONDITION_FAILED`,
 `SAVE_NOT_FOUND`, `SAVE_DESYNC`, `GENERATION_UNSOLVABLE`, `RATE_LIMITED`, `INTERNAL`.
 
-## 6. Представления (сокращённо)
+## 6. Представления
+
+Схемы — `packages/protocol/src/views` (`PlayerView`, `PhoneView` и вложенные типы), JSON Schema —
+`schemas/player-view.json` и `schemas/phone-view.json`, примеры — `fixtures/views/*.json`
+(`start`, `mid`, `end` и дополнительные для каждого представления; клиенты разрабатываются по ним
+параллельно с ядром). Сообщение `view.update` несёт `PlayerView` на desktop-соединении и `PhoneView`
+на phone-соединении. Все объекты **строгие**: неизвестный ключ на любой глубине отвергается.
+
+Единицы и диапазоны: время — `GameMinutes` (целые минуты, в предыстории отрицательные), `clock.time`
+и `status.time` — `HH:mm`; `health`, `sanity` — 0–10; `fatigue`, `static`, `battery`, `signal`,
+`glitchLevel` — 0–100 (`signal` падает с ростом `static`).
 
 ```ts
 interface PlayerView {
-  clock: { t: GameMinutes; day: number; time: string; period: DayPeriod; remainingMinutes: number };
-  location: { id; name; description; lighting; hotspots: HotspotView[]; exits: ExitView[] };
+  clock: { t; day; time: "HH:mm"; period: "morning"|"day"|"evening"|"night"; remainingMinutes };
+  location: { id; name; description; lighting: "bright"|"dim"|"dark";
+              hotspots: { id; name; examined }[];                       // examined — история игрока, не «есть ли улика»
+              exits: { locationId; name; minutes; blockedReason? }[] };
   presentCharacters: { id; name; portraitRef; demeanor }[];
-  availableActions: { action: PlayerAction; label; costPreview: { min: number; max: number }; blockedReason? }[];
-  vitals: { health; sanity; fatigue }; static: number; inventory: ItemView[];
-  caseBoard: { clues: ClueView[]; statements: StatementView[]; contradictions; personsOfInterest; suspicions; timeline };
-  pendingCapture?: { tokenId: string; clueTitle: string; expiresInMinutes: number };
-  interaction?: DialogueView;  phone: { paired: boolean; online: boolean; battery: number };
-  ending?: EndingView;
+  availableActions: { action: PlayerAction; label; costPreview: { min; max }; blockedReason? }[];
+  vitals: { health; sanity; fatigue }; static; inventory: { id; name; description }[];
+  caseBoard: {
+    clues: { id; title; description; kind: "physical"|"document"|"digital"|"testimonial";
+             discoveredAt; locationId; captured }[];
+    statements: { id; characterId; topicId; text; heardAt }[];
+    contradictions: { id; statementId; againstId; summary }[];          // только когда у игрока есть обе стороны
+    personsOfInterest: { characterId; name; linkedClueIds }[];
+    suspicions: { characterId; level: "none"|"possible"|"prime"; note? }[];
+    timeline: { id; from; to?; text; sourceIds }[];
+  };
+  pendingCapture?: { tokenId; clueTitle; expiresInMinutes };
+  interaction?: { characterId; characterName;                           // DialogueView
+                  topics: { id; label; costPreview }[];
+                  presentable: { type: "evidence"|"contradiction"; id; label }[];
+                  history: { speaker: "player"|"other"; text; at }[] };
+  phone: { paired; online; battery };
+  ending?: { endingId: "solved"|"partial"|"wrong_accusation"|"time_up"|"death"|"madness";
+             title; text; proven?: { motive; means; opportunity };
+             recap?: { summary; responsible: { id; name }[] } };        // разбор истины, только в концовке
 }
 interface PhoneView {
-  status: { time: string; battery: number; signal: number /* Static → «помехи» */ };
-  apps: { id: string; badge: number; enabled: boolean }[];
-  contacts; threads; callLog; activeCall?; gallery; files; notes; mapPins; browserPages; notifications;
-  effects: { glitchLevel: number; wallpaperVariant?: string };
+  status: { time; battery; signal };
+  apps: { id; badge; enabled }[];
+  contacts: { id; name; number; portraitRef? }[];                       // неизвестный номер: name показывает номер или пуст
+  threads: { id; contactId; messages: { id; from: "me"|"them"; text; at; read }[];
+             availableReplies: { id; text }[]; unread; typing? }[];
+  callLog: { id; contactId; direction: "incoming"|"outgoing"|"missed"; at; durationMinutes }[];
+  activeCall?: { callId; contactId; state: "ringing"|"active";
+                 lines: { speaker: "player"|"other"; text }[]; choices: { id; text }[] };
+  gallery: { id; title; imageRef; takenAt; caption? }[];
+  files: { id; name; locked; passwordHint?; content? }[];               // locked ⇒ без content
+  notes: { id; source: "auto"|"player"; text; at }[];
+  mapPins: { id; locationId; label; seenAt? }[];
+  browserPages: { id; title; url; text }[];
+  notifications: { id; appId; title; text; at; read }[];
+  effects: { glitchLevel; wallpaperVariant? };
 }
 ```
 
-Поля истины (`veracity`, `culpritIds`, `truth`, `hallucination`) **запрещены** в представлениях;
-тест ENG-002 проверяет это на сериализованных снимках.
+**Истина не покидает сервер.** Поля `veracity`, `culpritIds`, `truth`, `hallucination`
+(`FORBIDDEN_VIEW_KEYS`) **запрещены** в представлениях. Защита двойная: тесты `@hs/protocol`
+проверяют, что ни схемы, ни фикстуры не содержат таких ключей (и вообще ключей с корнями
+`veracity`/`culprit`/`hallucinat`/`truth`), а строгость схем отвергает любой лишний ключ на любой
+глубине, то есть проекция, по ошибке скопировавшая объект истины, не пройдёт валидацию. Тест ENG-002
+проверяет то же на сериализованных снимках.
+
+Правила, закладываемые в форму данных:
+
+- **Галлюцинации неотличимы по структуре.** Элементы телефона (например, снимок в `gallery`) имеют
+  одинаковые поля независимо от происхождения; признак «галлюцинация» существует только на сервере
+  (survival-horror.md §5). Игрок распознаёт их опытным путём, а не по форме данных.
+- **Единственное легальное раскрытие истины** — `ending.recap`, и только в концовке (ENG-006). Поле
+  названо нейтрально (`responsible`), чтобы запрещённые ключи не появлялись ни в одном представлении.
+- Запертый файл не несёт `content` (проверяется схемой): содержимое приходит только после `unlockFile`.
 
 ## 7. Последовательности
 

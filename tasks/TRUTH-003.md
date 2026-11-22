@@ -1,7 +1,7 @@
 ---
 id: TRUTH-003
 title: "Проверка инвариантов Truth Model"
-status: todo
+status: in_progress
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: truth
 depends_on: [TRUTH-002, WORLD-002]
 modules: ["packages/core/src/truth/invariants.ts"]
-assignee: null
-claimed_at: null
+assignee: egor-claude-truth-003
+claimed_at: "2026-11-20T16:09:09Z"
 ---
 
 # TRUTH-003 — Проверка инвариантов Truth Model

@@ -1,0 +1,7 @@
+[
+  {
+    "id": "means_from_log",
+    "establishes": "means($actor)",
+    "requires": ["access_to_record($actor)"]
+  }
+]

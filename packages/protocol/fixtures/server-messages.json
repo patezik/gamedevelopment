@@ -1,0 +1,168 @@
+[
+  {
+    "v": 1,
+    "type": "welcome",
+    "id": "s-1",
+    "payload": {
+      "sessionId": "session-1",
+      "role": "phone",
+      "protocolVersion": 1,
+      "serverVersion": "0.1.0",
+      "stateVersion": 1,
+      "lastSeq": 2
+    }
+  },
+  {
+    "v": 1,
+    "type": "pong",
+    "id": "s-2",
+    "payload": {}
+  },
+  {
+    "v": 1,
+    "type": "view.update",
+    "id": "s-3",
+    "payload": {
+      "stateVersion": 2,
+      "view": {
+        "status": {
+          "time": "08:00",
+          "battery": 100,
+          "signal": 100
+        },
+        "apps": [
+          {
+            "id": "camera",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "contacts",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "calls",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "messages",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "gallery",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "files",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "notes",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "maps",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "browser",
+            "badge": 0,
+            "enabled": true
+          },
+          {
+            "id": "settings",
+            "badge": 0,
+            "enabled": true
+          }
+        ],
+        "contacts": [
+          {
+            "id": "ct_director",
+            "name": "Директор санатория",
+            "number": "+7 495 010-01-01"
+          },
+          {
+            "id": "ct_station",
+            "name": "Участковый",
+            "number": "+7 495 010-02-02"
+          }
+        ],
+        "threads": [],
+        "callLog": [],
+        "gallery": [],
+        "files": [],
+        "notes": [],
+        "mapPins": [],
+        "browserPages": [],
+        "notifications": [],
+        "effects": {
+          "glitchLevel": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "type": "event",
+    "id": "s-4",
+    "payload": {
+      "event": {
+        "type": "incomingCall",
+        "callId": "call-1"
+      }
+    }
+  },
+  {
+    "v": 1,
+    "type": "action.result",
+    "id": "s-5",
+    "payload": {
+      "requestId": "c-3",
+      "ok": true,
+      "minutesSpent": 5
+    }
+  },
+  {
+    "v": 1,
+    "type": "qr.result",
+    "id": "s-6",
+    "payload": {
+      "ok": false,
+      "error": "QR_EXPIRED"
+    }
+  },
+  {
+    "v": 1,
+    "type": "resync",
+    "id": "s-7",
+    "payload": {
+      "reason": "buffer_miss"
+    }
+  },
+  {
+    "v": 1,
+    "type": "error",
+    "id": "s-8",
+    "payload": {
+      "code": "INVALID_MESSAGE",
+      "message": "Invalid message",
+      "requestId": "c-3"
+    }
+  },
+  {
+    "v": 1,
+    "type": "peer.status",
+    "id": "s-9",
+    "payload": {
+      "desktop": "online",
+      "phone": "unpaired"
+    }
+  }
+]

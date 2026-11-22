@@ -29,13 +29,30 @@ apps/server/src/
 └── app.ts         — сборка Fastify; server.ts — запуск
 ```
 
+### Конфигурация
+
+Сервер читает переменные окружения перед открытием порта и завершает запуск с ошибкой, если
+значение не проходит проверку.
+
+| Переменная | По умолчанию | Допустимые значения |
+|------------|--------------|---------------------|
+| `HS_PORT` | `7420` | Целое от 1 до 65535 |
+| `HS_HOST` | `0.0.0.0` | Непустой адрес привязки или имя хоста |
+| `HS_PUBLIC_HOST` | не задан | IPv4-адрес или имя хоста без порта (символы `A–Z a–z 0–9 . -`); отменяет определение LAN-адреса для QR |
+| `HS_DATA_DIR` | `.hollow-signal` в домашнем каталоге | Непустой путь к каталогу данных |
+| `HS_LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent` |
+| `HS_DEBUG_TRUTH` | `0` | `0` выключает флаг, `1` включает |
+
+Каркас сервера читает `HS_DATA_DIR` и `HS_DEBUG_TRUTH` при старте. Сохранения и маршрут отладки
+появятся с серверными модулями.
+
 ## 3. REST API (`/api/v1`)
 
 | Метод и путь | Аутентификация | Тело / ответ | Ошибки |
 |--------------|----------------|--------------|--------|
 | `GET /health` | — | `{ status, version, protocolVersion }` | — |
 | `GET /scenarios` | — | `[{ id, title, durationMinutes }]` | — |
-| `GET /network` | — | `{ candidates: [{ address, interface, recommended }] }` — LAN-адреса для QR привязки | — |
+| `GET /network` | — | `{ candidates: [{ address, interface, recommended, virtual }] }` — LAN-адреса для QR привязки, лучшие первыми; `virtual` — похож на Docker/WSL/VM/VPN (остаётся в списке, но ниже); `recommended` — не более одного; `HS_PUBLIC_HOST` идёт первым. Подробности — [setup.md §6](../development/setup.md) | — |
 | `POST /sessions` | — | `{ scenarioId, seed? }` → `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }` | `SCENARIO_NOT_FOUND`, `GENERATION_UNSOLVABLE` |
 | `POST /sessions/:id/pairing-code` | desktop | → новый `pairing` | `SESSION_NOT_FOUND` |
 | `GET /sessions/:id/pairing-qr` | desktop | → `{ size, modules }` | |
@@ -73,6 +90,8 @@ created → (pairing) → active → (game over) → finished → (TTL 30 мин
 
 ## 6. Логирование
 
+- Каркас пишет HTTP-метод, шаблон маршрута, статус и время ответа. Параметры URL, заголовки и тела
+  запросов в эту запись не попадают.
 - pino JSON; поля: `sessionId`, `role`, `msgType`, `durationMs`. Токены, коды и содержимое
   истины не логируются (кроме `HS_DEBUG_TRUTH`).
 - Генерация логирует `seed`, `generatorVersion`, попытки, время стадий.

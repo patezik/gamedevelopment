@@ -1,7 +1,7 @@
 ---
 id: PROTO-002
 title: "Схемы PlayerView и PhoneView с фикстурами"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: protocol
 depends_on: [PROTO-001]
 modules: ["packages/protocol/src/views"]
-assignee: null
-claimed_at: null
+assignee: claude-proto-1
+claimed_at: "2026-11-20T08:24:18Z"
 ---
 
 # PROTO-002 — Схемы PlayerView и PhoneView с фикстурами
@@ -47,10 +47,10 @@ Godot и мобильное приложение разрабатываются 
 
 ## Критерии приёмки
 
-- [ ] 3+ фикстуры каждого представления.
-- [ ] Тест запрета ключей истины.
-- [ ] Схемы экспортированы в JSON Schema.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] 3+ фикстуры каждого представления.
+- [x] Тест запрета ключей истины.
+- [x] Схемы экспортированы в JSON Schema.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

@@ -37,20 +37,31 @@ npm run docs:check          # проверка ссылок документац
 | `npm run docs:check` | проверка относительных ссылок в Markdown | сейчас |
 | `npm run lint` / `typecheck` / `test` | проверки TS-кода (на пустом наборе пакетов завершаются с кодом 0) | сейчас |
 | `npm run format` / `format:check` | форматирование Prettier (Markdown не форматируется) | сейчас |
-| `npm run dev:server` | Session Server на `0.0.0.0:7420` | после FND-005, FND-010 |
+| `npm run dev -w @hs/server` | Session Server на `0.0.0.0:7420` с перезапуском при изменениях | сейчас |
+| `npm run start -w @hs/server` | Session Server без режима наблюдения | сейчас |
 | `npm run dev:mobile` | `npx expo start` в `apps/mobile` | после FND-006, FND-010 |
-| `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | после FND-008 |
+| `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | сейчас |
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
 | `npm run protocol:gen` / `protocol:check` | регенерация схем и GDScript-констант | после FND-004, PROTO-003 |
-| `npm run content:check` | валидация данных сценариев | после CNT-001 |
+| `npm run content:check` | валидация данных сценариев и ссылок между файлами | сейчас |
 
 ## 4. Godot
 
-1. Скачайте Godot 4.7.2-stable с godotengine.org или установите пакетным менеджером
-   (Windows: `winget install GodotEngine.GodotEngine`).
+1. Скачайте стандартную сборку [Godot 4.7.2-stable](https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable).
 2. Задайте переменную `GODOT_BIN` — путь к исполняемому файлу (на Windows — `*_console.exe` для
    вывода в терминал).
 3. Откройте `apps/desktop/project.godot` в редакторе.
+
+Запустите тесты из корня репозитория. Команда сама импортирует проект и запускает GUT.
+
+```powershell
+$env:GODOT_BIN = 'C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe'
+npm.cmd run test:godot
+```
+
+```bash
+GODOT_BIN=/path/to/godot npm run test:godot
+```
 
 ## 5. Мобильное приложение
 
@@ -64,10 +75,44 @@ npm run dev:mobile           # покажет QR Expo Go — это QR разр�
 
 ## 6. Сеть и брандмауэр
 
-- Windows: при первом запуске сервера разрешите доступ Node.js в **частных** сетях.
-- macOS: разрешите входящие подключения для `node` в настройках брандмауэра.
-- Если у компьютера несколько адресов (VPN, WSL, Docker), выберите адрес домашней сети на экране
-  привязки или задайте `HS_PUBLIC_HOST=<ip>` (после SRV-008).
+Для проверки запущенного сервера откройте `http://localhost:7420/api/v1/health`. Ответ содержит
+`status`, версию сервера и версию протокола. Переменные окружения перечислены в
+[документации сервера](../backend/backend.md).
+
+### Какой адрес попадёт в QR
+
+Сервер слушает все интерфейсы (`0.0.0.0`), но телефону нужен один адрес компьютера в вашей сети.
+`GET /api/v1/network` возвращает кандидатов `{ address, interface, recommended, virtual }`:
+
+- Отбрасываются только заведомо непригодные адреса: loopback (`127.*`), link-local (`169.254.*`),
+  `0.0.0.0`, multicast и IPv6.
+- Адреса, похожие на Docker, WSL/Hyper-V, виртуальные машины и VPN (по имени интерфейса, префиксу
+  MAC-адреса или диапазону Docker `172.17.0.0/16`), остаются в списке с `virtual: true` и идут
+  последними. Определение эвристическое: оно не знает, в какой сети ваш телефон.
+- `recommended: true` получает один адрес: самый «домашний» из не виртуальных (`192.168.*`, затем `10.*`,
+  затем `172.16–31.*`). Если нашлись только виртуальные, рекомендации нет, выбирайте вручную.
+- `HS_PUBLIC_HOST=<ip или имя>` (без порта) отменяет определение: этот адрес идёт первым и
+  рекомендован. Используйте его, если рекомендованный адрес неверный (две сети, VPN без признаков).
+
+Проверить адрес можно с телефона: откройте в его браузере `http://<адрес>:7420/api/v1/health`
+(телефон и компьютер в одной сети). Если страница открылась, привязка по этому адресу сработает.
+
+### Брандмауэр
+
+Без разрешения входящих подключений телефон не достучится, даже если адрес верный.
+
+- **Windows:** при первом запуске нажмите «Разрешить» для Node.js в **частных** сетях. Если окна не
+  было: «Брандмауэр Защитника Windows» → «Разрешение взаимодействия с приложением» → Node.js →
+  «Частная». Либо в PowerShell от администратора:
+  `New-NetFirewallRule -DisplayName "Hollow Signal" -Direction Inbound -Protocol TCP -LocalPort 7420 -Action Allow -Profile Private`.
+  Домашняя сеть должна иметь профиль «Частная», а не «Общедоступная».
+- **macOS:** «Системные настройки» → «Сеть» → «Брандмауэр» → «Параметры» → разрешите входящие
+  подключения для `node`.
+- **Linux (firewalld, например Fedora):** `sudo firewall-cmd --add-port=7420/tcp` (до перезагрузки)
+  или с `--permanent`, затем `sudo firewall-cmd --reload`.
+- Если задан другой `HS_PORT`, откройте его вместо 7420.
+- Гостевой Wi-Fi и «изоляция клиентов» на роутере запрещают устройствам видеть друг друга: нужна
+  обычная домашняя сеть.
 
 ## 7. Частые проблемы
 
@@ -76,4 +121,4 @@ npm run dev:mobile           # покажет QR Expo Go — это QR разр�
 | Телефон не подключается к серверу | разные сети, гостевой Wi-Fi, брандмауэр | одна сеть, разрешить Node в брандмауэре, проверить адрес |
 | Expo Go: «project is incompatible» | версия Expo Go не совпадает с SDK | обновить Expo Go; см. ADR 0007 о версиях |
 | Expo Go просит войти | требование Expo Go 2026 | `npx expo login` и вход в приложении |
-| Порт 7420 занят | другой процесс | `HS_PORT=7421 npm run dev:server` |
+| Порт 7420 занят | другой процесс | задайте `HS_PORT=7421` и запустите `npm run dev -w @hs/server` |

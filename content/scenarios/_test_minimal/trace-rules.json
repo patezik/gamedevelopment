@@ -1,0 +1,19 @@
+[
+  {
+    "verb": "take",
+    "when": {
+      "targetTag": "record"
+    },
+    "produces": [
+      {
+        "kind": "document",
+        "at": "loc_archive",
+        "template": "missing_record",
+        "supports": ["means($actor)"],
+        "requires": {
+          "itemId": "it_log"
+        }
+      }
+    ]
+  }
+]

@@ -1,7 +1,7 @@
 ---
 id: CORE-003
 title: "Тип Investigation и fixture-builder мини-сценария «tiny-manor»"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: core
 depends_on: [TRUTH-002, CHAR-003, WORLD-002]
 modules: ["packages/core/src/game/investigation.ts", "packages/core/test/fixtures"]
-assignee: null
-claimed_at: null
+assignee: egor-codex-core-003
+claimed_at: "2026-11-20T15:43:17Z"
 ---
 
 # CORE-003 — Тип Investigation и fixture-builder мини-сценария «tiny-manor»
@@ -18,6 +18,8 @@ claimed_at: null
 ## Описание
 
 Движок, валидатор и Investigation Engine должны тестироваться до готовности генератора. Нужен общий тип расследования и ручной мини-сценарий.
+
+Проверка `tiny-manor` через `checkTruthInvariants` выполнена во временном worktree с [TRUTH-003](TRUTH-003.md). Воспроизведение описано в [PR #32](https://github.com/patezik/gamedevelopment/pull/32).
 
 ## Цель
 
@@ -51,14 +53,15 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] tiny-manor проходит checkTruthInvariants (после TRUTH-003 — тест включается).
-- [ ] Сериализация туда-обратно сохраняет stateHash.
-- [ ] Builder документирован JSDoc-примером.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] `checkTruthInvariants` возвращает пустой список для `tiny-manor` до и после сериализации во временном worktree с TRUTH-003.
+- [x] Сериализация туда-обратно сохраняет stateHash.
+- [x] Builder документирован JSDoc-примером.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
 - Unit: builder, сериализация.
+- Постоянный интеграционный тест с `checkTruthInvariants` включается после слияния TRUTH-003.
 
 ## Требования к документации
 

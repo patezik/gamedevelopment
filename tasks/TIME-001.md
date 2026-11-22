@@ -1,7 +1,7 @@
 ---
 id: TIME-001
 title: "GameMinutes и Calendar: дни, часы, периоды суток"
-status: todo
+status: done
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: time
 depends_on: [FND-009]
 modules: ["packages/core/src/time/calendar.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-time-1
+claimed_at: "2026-11-20T05:23:40Z"
 ---
 
 # TIME-001 — GameMinutes и Calendar: дни, часы, периоды суток
@@ -48,11 +48,11 @@ Calendar с тестами границ.
 
 ## Критерии приёмки
 
-- [ ] t = 0 → день 1, время старта пресета.
-- [ ] Переходы 23:59 → 00:00 меняют день; 05:59 → 06:00 меняет период night → morning.
-- [ ] Отрицательные t дают день 0 и ранее.
-- [ ] Нет использования Date.now; парсинг startIso детерминирован (без часовых поясов — локальное «настенное» время).
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] t = 0 → день 1, время старта пресета.
+- [x] Переходы 23:59 → 00:00 меняют день; 05:59 → 06:00 меняет период night → morning.
+- [x] Отрицательные t дают день 0 и ранее.
+- [x] Нет использования Date.now; парсинг startIso детерминирован (без часовых поясов — локальное «настенное» время).
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

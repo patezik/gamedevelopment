@@ -1,7 +1,7 @@
 ---
 id: CORE-002
 title: "Канонический JSON, хеширование состояния и генерация ID"
-status: todo
+status: done
 priority: P0
 complexity: S
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: core
 depends_on: [FND-009]
 modules: ["packages/core/src/common"]
-assignee: null
-claimed_at: null
+assignee: codex-core
+claimed_at: "2026-11-20T05:11:49Z"
 ---
 
 # CORE-002 — Канонический JSON, хеширование состояния и генерация ID
@@ -48,10 +48,10 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] canonicalJson({b:1,a:2}) === canonicalJson({a:2,b:1}).
-- [ ] NaN/undefined в данных вызывают ошибку с путём к полю.
-- [ ] Интервалы — полуинтервалы [from, to), граничные случаи покрыты тестами.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] canonicalJson({b:1,a:2}) === canonicalJson({a:2,b:1}).
+- [x] NaN/undefined в данных вызывают ошибку с путём к полю.
+- [x] Интервалы — полуинтервалы [from, to), граничные случаи покрыты тестами.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "protect_record",
+    "when": {
+      "secret": {
+        "kind": "missing_record",
+        "about": "$v",
+        "knownBy": "$c"
+      }
+    },
+    "strength": {
+      "base": 0.5,
+      "plus": []
+    },
+    "evidenceHints": ["missing_record"]
+  }
+]

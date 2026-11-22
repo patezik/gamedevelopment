@@ -1,7 +1,7 @@
 ---
 id: CHAR-003
 title: "Расписания и рутины: whereShouldBe, переопределения"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: characters
 depends_on: [CHAR-001, WORLD-001]
 modules: ["packages/core/src/characters/schedule.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-core-1
+claimed_at: "2026-11-20T07:08:33Z"
 ---
 
 # CHAR-003 — Расписания и рутины: whereShouldBe, переопределения
@@ -49,10 +49,10 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Ночные блоки, переходящие через полночь, поддерживаются.
-- [ ] Override имеет приоритет над рутиной.
-- [ ] Дыра в расписании — ошибка валидации.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Ночные блоки, переходящие через полночь, поддерживаются.
+- [x] Override имеет приоритет над рутиной.
+- [x] Дыра в расписании — ошибка валидации.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

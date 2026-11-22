@@ -19,7 +19,7 @@
 
 | Пакет | Версия | Лицензия | Используется в | Зачем |
 |-------|--------|----------|----------------|-------|
-| fastify | 5.12.x | MIT | server | HTTP, валидация, `inject` для тестов |
+| fastify | 5.12.x (5.12.8 в lockfile) | MIT | server | HTTP, валидация, `inject` для тестов |
 | @fastify/websocket | 11.3.x | MIT | server | WebSocket-эндпоинт поверх ws |
 | ws | 8.22.x | MIT | server, tools | WebSocket (сервер и тестовые клиенты) |
 | zod | 4.6.x | MIT | protocol, core, server, mobile | Схемы, вывод типов, JSON Schema |
@@ -27,8 +27,8 @@
 | pino | 10.x (через Fastify) | MIT | server | Структурированные логи |
 | vitest | 5.0.x | MIT | все TS-пакеты кроме mobile | Unit/integration тесты |
 | @vitest/coverage-v8 | 5.0.x | MIT | все TS-пакеты кроме mobile | Покрытие и пороги в CI |
-| fast-check | 4.10.x | MIT | core, generator, validator | Property-based тесты инвариантов |
-| tsx | 4.23.x | MIT | server, tools | Запуск TS в разработке |
+| fast-check | 4.10.x (4.10.3 в lockfile) | MIT | core, generator, validator | Property-based тесты инвариантов |
+| tsx | 4.23.x (4.23.15 в lockfile) | MIT | server, tools | Запуск TS в разработке |
 | eslint | 10.x | MIT | все | Линтинг, правила детерминизма |
 | typescript-eslint | 8.72.x | MIT | все | TS-правила |
 | prettier | 3.9.x | MIT | все | Форматирование |
@@ -66,7 +66,7 @@
 
 | Аддон | Версия | Лицензия | Зачем |
 |-------|--------|----------|-------|
-| GUT (Godot Unit Test) | 9.7.x (9.7.0 — совместимость с 4.7) | MIT | Автотесты GDScript |
+| GUT (Godot Unit Test) | [9.7.1](https://github.com/bitwes/Gut/releases/tag/v9.7.1) | MIT, шрифты OFL 1.1 | Автотесты GDScript. Копия `addons/gut` из коммита `aeb5d4f3f7f0a6c9b5e178876d6c99b791fda605` |
 
 Других аддонов нет. QR рисуется из матрицы сервера, сеть и JSON — встроенные API.
 
@@ -74,8 +74,8 @@
 
 | Инструмент | Версия |
 |------------|--------|
-| GitHub Actions `actions/checkout`, `actions/setup-node` | v7 / v7 (мажорные версии закреплены в `.github/workflows/ci.yml`) |
-| Godot headless в CI | 4.7.2-stable Linux x86_64, скачивается с GitHub Releases godotengine/godot |
+| GitHub Actions `actions/checkout`, `actions/setup-node`, `actions/cache` | v7 / v7 / v6 (`actions/cache` — MIT) |
+| Godot headless в CI | 4.7.2-stable Linux x86_64, официальный GitHub Releases `godotengine/godot-builds`, архив проверяется по SHA-512 |
 
 ## 6. Проверка совместимости
 

@@ -1,0 +1,100 @@
+{
+  "status": {
+    "time": "18:10",
+    "battery": 12,
+    "signal": 40
+  },
+  "apps": [
+    {
+      "id": "camera",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "contacts",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "calls",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "messages",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "gallery",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "files",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "notes",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "maps",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "browser",
+      "badge": 0,
+      "enabled": true
+    },
+    {
+      "id": "settings",
+      "badge": 0,
+      "enabled": true
+    }
+  ],
+  "contacts": [
+    {
+      "id": "ct_station",
+      "name": "Участковый",
+      "number": "+7 495 010-02-02"
+    }
+  ],
+  "threads": [],
+  "callLog": [],
+  "gallery": [
+    {
+      "id": "img_logbook",
+      "title": "Журнал выдачи ключей",
+      "imageRef": "clue_logbook.jpg",
+      "takenAt": 642
+    }
+  ],
+  "files": [],
+  "notes": [
+    {
+      "id": "n1",
+      "source": "auto",
+      "text": "Дело закрыто.",
+      "at": 3010
+    }
+  ],
+  "mapPins": [],
+  "browserPages": [],
+  "notifications": [
+    {
+      "id": "nt1",
+      "appId": "messages",
+      "title": "Участковый",
+      "text": "Спасибо за помощь. Мы забираем его.",
+      "at": 3011,
+      "read": false
+    }
+  ],
+  "effects": {
+    "glitchLevel": 0
+  }
+}

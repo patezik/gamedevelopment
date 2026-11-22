@@ -1,7 +1,7 @@
 ---
 id: CORE-001
 title: "Детерминированный PRNG sfc32 с подпотоками fork(label)"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: core
 depends_on: [FND-009]
 modules: ["packages/core/src/rng"]
-assignee: null
-claimed_at: null
+assignee: codex-core
+claimed_at: "2026-11-20T05:21:23Z"
 ---
 
 # CORE-001 — Детерминированный PRNG sfc32 с подпотоками fork(label)
@@ -48,11 +48,11 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Golden-значения первых 10 nextU32 для seed "alpha" и "beta" зафиксированы в тесте.
-- [ ] fork("a") и fork("b") дают разные последовательности; fork не сдвигает родительский поток.
-- [ ] restoreRng(state) продолжает последовательность точно.
-- [ ] int(min,max) включает границы; распределение проходит χ²-тест на 10⁵ выборках (p > 0.01).
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Golden-значения первых 10 nextU32 для seed "alpha" и "beta" зафиксированы в тесте.
+- [x] fork("a") и fork("b") дают разные последовательности; fork не сдвигает родительский поток.
+- [x] restoreRng(state) продолжает последовательность точно.
+- [x] int(min,max) включает границы; распределение проходит χ²-тест на 10⁵ выборках (p > 0.01).
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
