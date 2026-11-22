@@ -1,3 +1,4 @@
+import { deriveClues, type Clue } from '../../src/evidence/index.ts';
 import { RelationshipGraph, type Character } from '@hs/core/characters';
 import type { ScenarioContent } from '@hs/core/content';
 import { InvestigationBuilder, type Investigation } from '@hs/core/game';
@@ -242,4 +243,27 @@ export function tinyManor(seed = 'tiny-manor-fixture'): Investigation {
     .withTruth(truth)
     .withSecrets([{ id: secretId, fact: debt, knownBy: [owner, bursar] }])
     .build();
+}
+
+export function tinyManorWithClues(
+  seed?: string,
+): Investigation & { readonly clues: readonly Clue[] } {
+  const investigation = tinyManor(seed);
+  const sourceEventId = investigation.truth.incident.keyEventIds[0]!;
+  const clues = deriveClues(
+    [
+      {
+        id: 'trace_missing_ledger',
+        kind: 'document',
+        sourceEventId,
+        template: 'missing_ledger',
+        supports: ['means(bursar)'],
+        captureMode: 'qr',
+        location: study,
+        availableFrom: 0,
+      },
+    ],
+    new Map([['missing_ledger', { action: { type: 'read', documentId: 'ledger_note' } }]]),
+  );
+  return { ...investigation, clues };
 }
