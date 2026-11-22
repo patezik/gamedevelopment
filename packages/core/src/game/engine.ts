@@ -101,22 +101,22 @@ export class GameEngine {
     const actor = this.ports.player ?? {};
     let minutes: number;
     let destination = this.locationId;
+    let movementKey: string | undefined;
     try {
       if (action.type === 'move') {
         destination = action.locationId;
-        if (
-          locations.path(this.locationId, destination, actor).length !== 2 ||
-          !locations.isAccessible(destination, actor, now).ok
-        ) {
+        const connection = locations.directConnection(this.locationId, destination, actor);
+        if (!connection || !locations.isAccessible(destination, actor, now).ok) {
           return rejected('ACTION_NOT_AVAILABLE');
         }
+        movementKey = connection.locked?.itemId;
         minutes = resolveActionCost(
           'move',
           {
             travel: {
               from: this.locationId,
               to: destination,
-              provider: { travelTime: (from, to) => locations.travelTime(from, to, actor) },
+              provider: { travelTime: () => connection.minutes },
             },
           },
           this.ports.actionCosts,
@@ -143,7 +143,13 @@ export class GameEngine {
       verb: action.type,
       actorIds: ['player'],
       location: this.locationId,
-      targets: action.type === 'move' ? [{ kind: 'location', id: destination }] : [],
+      targets:
+        action.type === 'move'
+          ? [
+              { kind: 'location', id: destination },
+              ...(movementKey ? [{ kind: 'item' as const, id: movementKey }] : []),
+            ]
+          : [],
       causes: [],
       facts: [],
       traceIds: [],
