@@ -17,6 +17,7 @@ export {
   phoneTemplatesSchema,
   presetSchema,
   relationshipsSchema,
+  TRACE_LOCATION_PLACEHOLDERS,
   textTemplatesSchema,
   traceRulesSchema,
 } from './schemas.ts';
