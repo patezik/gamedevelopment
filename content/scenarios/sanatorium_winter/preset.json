@@ -1,0 +1,53 @@
+{
+  "id": "sanatorium_winter",
+  "version": 1,
+  "title": {
+    "ru": "Санаторий «Сосновый бор»"
+  },
+  "time": {
+    "startDateTime": "2026-01-14T08:00:00",
+    "durationMinutes": 4320,
+    "historyStartMinutes": -1440
+  },
+  "cast": {
+    "min": 7,
+    "max": 7,
+    "quotas": [
+      { "archetype": "head_doctor", "min": 1, "max": 1 },
+      { "archetype": "nurse", "min": 1, "max": 1 },
+      { "archetype": "caretaker", "min": 1, "max": 1 },
+      { "archetype": "cook", "min": 1, "max": 1 },
+      { "archetype": "guest_entrepreneur", "min": 0, "max": 1 },
+      { "archetype": "guest_pensioner", "min": 0, "max": 1 },
+      { "archetype": "guest_blogger", "min": 0, "max": 1 },
+      { "archetype": "guest_retired_officer", "min": 0, "max": 1 },
+      { "archetype": "guest_relative", "min": 0, "max": 1 }
+    ]
+  },
+  "incident": {
+    "types": ["murder"],
+    "templates": ["poisoning", "staged_fall", "boiler_accident"],
+    "minMotive": 0.4,
+    "victimConstraints": {
+      "excludeArchetypes": []
+    }
+  },
+  "criticalEvents": [
+    {
+      "id": "blackout",
+      "at": 2280,
+      "earlierIf": { "staticAtLeast": 50, "at": 1920 }
+    }
+  ],
+  "deadlines": [
+    { "id": "police_arrival", "at": 4320, "outcome": "time_up" }
+  ],
+  "endings": ["solved", "partial", "wrong_accusation", "time_up", "death", "madness"],
+  "survival": {
+    "startVitals": { "health": 10, "sanity": 8, "fatigue": 10 },
+    "staticCurve": "default"
+  },
+  "phone": {
+    "minQrShare": 0.3
+  }
+}

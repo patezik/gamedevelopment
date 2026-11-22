@@ -1,0 +1,452 @@
+[
+  {
+    "id": "head_doctor",
+    "title": "Главный врач",
+    "names": [
+      "Виктор Андреевич Ларионов",
+      "Елена Борисовна Каштанова",
+      "Олег Петрович Суворин",
+      "Наталья Игоревна Ремезова",
+      "Аркадий Львович Гольцман",
+      "Ирина Владимировна Шестакова",
+      "Геннадий Сергеевич Мохов",
+      "Тамара Николаевна Белозёрова"
+    ],
+    "personality": {
+      "openness": [0.3, 0.6],
+      "conscientiousness": [0.6, 0.9],
+      "extraversion": [0.3, 0.6],
+      "agreeableness": [0.3, 0.6],
+      "neuroticism": [0.3, 0.7],
+      "honesty": [0.2, 0.7],
+      "courage": [0.4, 0.7],
+      "impulsivity": [0.1, 0.4]
+    },
+    "routine": [
+      { "from": 0, "to": 420, "locationId": "loc_room_2", "activity": "sleep" },
+      { "from": 420, "to": 480, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 480, "to": 780, "locationId": "loc_doctor_office", "activity": "consult" },
+      { "from": 780, "to": 840, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 840, "to": 960, "locationId": "loc_treatment", "activity": "rounds" },
+      { "from": 960, "to": 1080, "locationId": "loc_doctor_office", "activity": "paperwork" },
+      { "from": 1080, "to": 1140, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 1140, "to": 1230, "locationId": "loc_archive", "activity": "review_records" },
+      { "from": 1230, "to": 1440, "locationId": "loc_room_2", "activity": "rest" }
+    ],
+    "access": [
+      { "locationId": "loc_doctor_office" },
+      { "locationId": "loc_treatment" },
+      { "locationId": "loc_archive" },
+      { "locationId": "loc_greenhouse" },
+      { "itemId": "it_key_archive" },
+      { "itemId": "it_medicine_cabinet" }
+    ],
+    "biography": [
+      { "text": "Тридцать лет медицинского стажа, из них пятнадцать — во главе санатория.", "tags": ["medical", "career"] },
+      { "text": "Красный диплом Томского медицинского института висит в рамке над столом.", "tags": ["education", "medical"] },
+      { "text": "Кабинет увешан грамотами областного минздрава, но последняя датирована 2014 годом.", "tags": ["career", "past"] },
+      { "text": "По вечерам засиживается в архиве допоздна и никого туда не пускает.", "tags": ["habit", "secret_hint"] },
+      { "text": "Санаторий держится на личных связях с чиновниками и редкими спонсорами.", "tags": ["finance", "local"] },
+      { "text": "Смерть пациента в 2019 году обернулась проверкой прокуратуры, закрытой без последствий.", "tags": ["past", "medical", "conflict"] },
+      { "text": "Каждое утро начинается с чашки крепкого кофе и сводки погоды по радио.", "tags": ["habit"] },
+      { "text": "Взрослые дети живут в Москве и звонят только по праздникам.", "tags": ["family"] }
+    ]
+  },
+  {
+    "id": "nurse",
+    "title": "Медсестра",
+    "names": [
+      "Светлана Олеговна Кравец",
+      "Ольга Дмитриевна Лапина",
+      "Юлия Сергеевна Тихомирова",
+      "Марина Викторовна Еремеева",
+      "Анастасия Павловна Зуева",
+      "Людмила Аркадьевна Горохова",
+      "Дарья Андреевна Серова",
+      "Вера Ильинична Пахомова"
+    ],
+    "personality": {
+      "openness": [0.3, 0.6],
+      "conscientiousness": [0.5, 0.9],
+      "extraversion": [0.3, 0.7],
+      "agreeableness": [0.5, 0.9],
+      "neuroticism": [0.4, 0.8],
+      "honesty": [0.4, 0.8],
+      "courage": [0.3, 0.6],
+      "impulsivity": [0.2, 0.5]
+    },
+    "routine": [
+      { "from": 0, "to": 420, "locationId": "loc_treatment", "activity": "sleep" },
+      { "from": 420, "to": 480, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 480, "to": 780, "locationId": "loc_treatment", "activity": "procedures" },
+      { "from": 780, "to": 840, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 840, "to": 1020, "locationId": "loc_treatment", "activity": "procedures" },
+      { "from": 1020, "to": 1080, "locationId": "loc_doctor_office", "activity": "paperwork" },
+      { "from": 1080, "to": 1140, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 1140, "to": 1260, "locationId": "loc_room_1", "activity": "rounds" },
+      { "from": 1260, "to": 1440, "locationId": "loc_treatment", "activity": "night_duty" }
+    ],
+    "access": [
+      { "locationId": "loc_treatment" },
+      { "locationId": "loc_doctor_office" },
+      { "itemId": "it_medicine_cabinet" },
+      { "itemId": "it_nurse_tablet" }
+    ],
+    "biography": [
+      { "text": "Двенадцать лет работы в реанимации районной больницы до переезда в «Сосновый бор».", "tags": ["medical", "career"] },
+      { "text": "Знает в лицо каждого постоянного гостя и помнит их диагнозы наизусть.", "tags": ["medical", "habit"] },
+      { "text": "На рабочем планшете — график процедур и личные заметки о пациентах.", "tags": ["digital", "medical"] },
+      { "text": "Пароли записывает на стикерах и прячет их в дежурной комнате.", "tags": ["habit", "digital", "secret_hint"] },
+      { "text": "Ипотека за однокомнатную квартиру в райцентре съедает больше половины зарплаты.", "tags": ["finance"] },
+      { "text": "Сын-студент учится в колледже в Новосибирске и часто просит денег.", "tags": ["family", "finance"] },
+      { "text": "Ночные дежурства давно стали привычкой: днём сон не идёт.", "tags": ["habit", "health"] },
+      { "text": "Подрабатывает уколами на дому у жителей соседней деревни.", "tags": ["finance", "local"] }
+    ]
+  },
+  {
+    "id": "caretaker",
+    "title": "Завхоз",
+    "names": [
+      "Степан Ильич Кузьмин",
+      "Валентина Петровна Огнёва",
+      "Михаил Фёдорович Гуляев",
+      "Николай Семёнович Дронов",
+      "Раиса Григорьевна Шмелёва",
+      "Анатолий Васильевич Щукин",
+      "Борис Матвеевич Ерохин",
+      "Зинаида Павловна Клюева"
+    ],
+    "personality": {
+      "openness": [0.1, 0.4],
+      "conscientiousness": [0.4, 0.8],
+      "extraversion": [0.1, 0.4],
+      "agreeableness": [0.3, 0.6],
+      "neuroticism": [0.2, 0.5],
+      "honesty": [0.3, 0.7],
+      "courage": [0.5, 0.9],
+      "impulsivity": [0.2, 0.6]
+    },
+    "routine": [
+      { "from": 0, "to": 360, "locationId": "loc_boiler", "activity": "sleep" },
+      { "from": 360, "to": 420, "locationId": "loc_boiler", "activity": "maintenance" },
+      { "from": 420, "to": 540, "locationId": "loc_lake_path", "activity": "clear_snow" },
+      { "from": 540, "to": 600, "locationId": "loc_kitchen", "activity": "eat" },
+      { "from": 600, "to": 780, "locationId": "loc_room_1", "activity": "maintenance" },
+      { "from": 780, "to": 840, "locationId": "loc_boiler", "activity": "maintenance" },
+      { "from": 840, "to": 960, "locationId": "loc_greenhouse", "activity": "gardening" },
+      { "from": 960, "to": 1080, "locationId": "loc_treatment", "activity": "maintenance" },
+      { "from": 1080, "to": 1140, "locationId": "loc_kitchen", "activity": "eat" },
+      { "from": 1140, "to": 1200, "locationId": "loc_hall", "activity": "lock_up" },
+      { "from": 1200, "to": 1440, "locationId": "loc_boiler", "activity": "rest" }
+    ],
+    "access": [
+      { "locationId": "loc_boiler" },
+      { "locationId": "loc_kitchen" },
+      { "locationId": "loc_greenhouse" },
+      { "locationId": "loc_lake_path" },
+      { "locationId": "loc_treatment" },
+      { "itemId": "it_key_boiler" }
+    ],
+    "biography": [
+      { "text": "Работает в санатории дольше всех, ещё с тех времён, когда здесь был профсоюзный профилакторий.", "tags": ["past", "local"] },
+      { "text": "Котёл знает на слух и чинит его без чертежей.", "tags": ["skill", "boiler"] },
+      { "text": "Живёт прямо при котельной, в каморке за перегородкой.", "tags": ["habit", "local"] },
+      { "text": "Ключ от котельной всегда висит на поясе вместе со связкой подсобок.", "tags": ["habit", "access"] },
+      { "text": "Служба в армии на Дальнем Востоке — тема, на которую разговор никогда не заходит.", "tags": ["military", "past"] },
+      { "text": "По вечерам пропускает рюмку-другую деревенского самогона.", "tags": ["habit", "health"] },
+      { "text": "Слишком хорошо знает цены на цветной металл в районной скупке.", "tags": ["finance", "crime", "secret_hint"] },
+      { "text": "Двое внуков в райцентре — единственные, кому звонит каждую неделю.", "tags": ["family"] }
+    ]
+  },
+  {
+    "id": "cook",
+    "title": "Повар",
+    "names": [
+      "Галина Степановна Рябова",
+      "Фархад Рустамович Алиев",
+      "Алла Викторовна Зимина",
+      "Руслан Олегович Бережной",
+      "Тимур Ахметович Сафин",
+      "Надежда Ивановна Коровина",
+      "Эдуард Петрович Мельник",
+      "Лариса Юрьевна Кислова"
+    ],
+    "personality": {
+      "openness": [0.3, 0.6],
+      "conscientiousness": [0.4, 0.8],
+      "extraversion": [0.4, 0.8],
+      "agreeableness": [0.3, 0.7],
+      "neuroticism": [0.3, 0.6],
+      "honesty": [0.4, 0.8],
+      "courage": [0.3, 0.7],
+      "impulsivity": [0.4, 0.8]
+    },
+    "routine": [
+      { "from": 0, "to": 330, "locationId": "loc_room_1", "activity": "sleep" },
+      { "from": 330, "to": 600, "locationId": "loc_kitchen", "activity": "cook" },
+      { "from": 600, "to": 630, "locationId": "loc_lake_path", "activity": "smoke" },
+      { "from": 630, "to": 840, "locationId": "loc_kitchen", "activity": "cook" },
+      { "from": 840, "to": 900, "locationId": "loc_dining", "activity": "rest" },
+      { "from": 900, "to": 1140, "locationId": "loc_kitchen", "activity": "cook" },
+      { "from": 1140, "to": 1230, "locationId": "loc_dining", "activity": "clean" },
+      { "from": 1230, "to": 1440, "locationId": "loc_room_1", "activity": "rest" }
+    ],
+    "access": [
+      { "locationId": "loc_kitchen" },
+      { "locationId": "loc_dining" }
+    ],
+    "biography": [
+      { "text": "Двадцать лет у плиты: заводская столовая, кафе на трассе, теперь санаторий.", "tags": ["career", "food"] },
+      { "text": "Фирменный травяной сбор санатория составляется по собственному рецепту.", "tags": ["food", "habit"] },
+      { "text": "Курит в беседке у озера в перерыве между завтраком и обедом.", "tags": ["habit"] },
+      { "text": "Ревниво следит за кладовой и пересчитывает продукты каждый вечер.", "tags": ["habit", "food"] },
+      { "text": "Судимость за драку в молодости — тайна, известная только главному врачу.", "tags": ["crime", "past", "secret_hint"] },
+      { "text": "Часть зарплаты уходит на лечение больной матери.", "tags": ["family", "finance"] },
+      { "text": "Громко поёт на кухне старые эстрадные песни, когда никого нет рядом.", "tags": ["habit"] },
+      { "text": "Мечтает о собственном кафе и откладывает каждую копейку.", "tags": ["finance", "goal"] }
+    ]
+  },
+  {
+    "id": "guest_entrepreneur",
+    "title": "Предприниматель",
+    "names": [
+      "Артём Викторович Гранин",
+      "Кристина Олеговна Мельникова",
+      "Денис Романович Хабаров",
+      "Алиса Эдуардовна Зорина",
+      "Максим Сергеевич Тарасов",
+      "Виктория Андреевна Лебедь",
+      "Игорь Вадимович Сомов",
+      "Эвелина Рустамовна Каримова"
+    ],
+    "personality": {
+      "openness": [0.4, 0.7],
+      "conscientiousness": [0.3, 0.7],
+      "extraversion": [0.6, 0.9],
+      "agreeableness": [0.2, 0.5],
+      "neuroticism": [0.3, 0.7],
+      "honesty": [0.2, 0.6],
+      "courage": [0.5, 0.8],
+      "impulsivity": [0.4, 0.8]
+    },
+    "routine": [
+      { "from": 1320, "to": 480, "locationId": "loc_room_3", "activity": "sleep" },
+      { "from": 480, "to": 540, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 540, "to": 600, "locationId": "loc_treatment", "activity": "procedure" },
+      { "from": 600, "to": 720, "locationId": "loc_room_3", "activity": "phone_calls" },
+      { "from": 720, "to": 780, "locationId": "loc_lake_path", "activity": "walk" },
+      { "from": 780, "to": 840, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 840, "to": 1020, "locationId": "loc_hall", "activity": "work" },
+      { "from": 1020, "to": 1080, "locationId": "loc_treatment", "activity": "procedure" },
+      { "from": 1080, "to": 1140, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 1140, "to": 1320, "locationId": "loc_hall", "activity": "socialize" }
+    ],
+    "access": [
+      { "locationId": "loc_room_3" }
+    ],
+    "biography": [
+      { "text": "Собственная сеть автомоек в Новосибирске и два кредита под её расширение.", "tags": ["finance", "career"] },
+      { "text": "Каждую зиму — «детокс» в санатории, где пьётся больше, чем дома.", "tags": ["habit", "health"] },
+      { "text": "Ведёт переговоры о покупке земли санатория под загородный отель.", "tags": ["finance", "conflict", "secret_hint"] },
+      { "text": "Не расстаётся с телефоном даже на процедурах.", "tags": ["habit", "digital"] },
+      { "text": "Брак трещит по швам, и развод обещает быть дорогим.", "tags": ["family", "finance"] },
+      { "text": "Щедрые чаевые персоналу — способ быть в курсе всех слухов.", "tags": ["habit", "social"] },
+      { "text": "Налоговая проверка компании назначена на февраль.", "tags": ["finance", "crime"] },
+      { "text": "Детство в соседнем посёлке и смутные воспоминания о летних сменах в этом санатории.", "tags": ["past", "local"] }
+    ]
+  },
+  {
+    "id": "guest_pensioner",
+    "title": "Пенсионер, постоянный гость",
+    "names": [
+      "Антонина Фёдоровна Сухова",
+      "Пётр Ефимович Ланской",
+      "Клавдия Ивановна Мирошникова",
+      "Леонид Аркадьевич Беляев",
+      "Нина Сергеевна Вершинина",
+      "Семён Яковлевич Ройтман",
+      "Евдокия Матвеевна Карпова",
+      "Владимир Степанович Окунев"
+    ],
+    "personality": {
+      "openness": [0.2, 0.5],
+      "conscientiousness": [0.5, 0.8],
+      "extraversion": [0.4, 0.8],
+      "agreeableness": [0.4, 0.8],
+      "neuroticism": [0.4, 0.8],
+      "honesty": [0.5, 0.9],
+      "courage": [0.2, 0.5],
+      "impulsivity": [0.1, 0.3]
+    },
+    "routine": [
+      { "from": 1260, "to": 420, "locationId": "loc_room_1", "activity": "sleep" },
+      { "from": 420, "to": 540, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 540, "to": 660, "locationId": "loc_treatment", "activity": "procedure" },
+      { "from": 660, "to": 780, "locationId": "loc_greenhouse", "activity": "walk" },
+      { "from": 780, "to": 840, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 840, "to": 960, "locationId": "loc_room_1", "activity": "nap" },
+      { "from": 960, "to": 1080, "locationId": "loc_hall", "activity": "knit" },
+      { "from": 1080, "to": 1140, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 1140, "to": 1260, "locationId": "loc_hall", "activity": "watch_tv" }
+    ],
+    "access": [
+      { "locationId": "loc_room_1" }
+    ],
+    "biography": [
+      { "text": "Двадцать лет подряд — каждый январь в «Сосновом бору».", "tags": ["habit", "local"] },
+      { "text": "Сорок лет учительского стажа: литература и русский язык в сельской школе.", "tags": ["career", "education"] },
+      { "text": "Помнит всех главных врачей санатория и любит сравнивать их не в пользу нынешнего.", "tags": ["past", "social"] },
+      { "text": "Единственная ценность — трёхкомнатная квартира в центре Томска, на которую претендуют племянники.", "tags": ["finance", "family"] },
+      { "text": "Принимает сердечные препараты по расписанию, которое держит в голове медсестра.", "tags": ["health", "medical"] },
+      { "text": "Вяжет у камина и замечает, кто и когда проходит через холл.", "tags": ["habit", "social"] },
+      { "text": "Хранит старые семейные письма в шкатулке и перечитывает их по вечерам.", "tags": ["family", "past"] },
+      { "text": "Плохо спит и по ночам бродит по коридорам жилого крыла.", "tags": ["habit", "health"] }
+    ]
+  },
+  {
+    "id": "guest_blogger",
+    "title": "Блогер",
+    "names": [
+      "Даниил Ветров",
+      "Ева Литвинова",
+      "Кирилл Савченко",
+      "Полина Гордеева",
+      "Глеб Мартынов",
+      "Софья Рыжова",
+      "Марк Бессонов",
+      "Алёна Чернышёва"
+    ],
+    "personality": {
+      "openness": [0.7, 1],
+      "conscientiousness": [0.2, 0.5],
+      "extraversion": [0.5, 0.9],
+      "agreeableness": [0.3, 0.6],
+      "neuroticism": [0.3, 0.7],
+      "honesty": [0.3, 0.7],
+      "courage": [0.6, 0.9],
+      "impulsivity": [0.6, 0.9]
+    },
+    "routine": [
+      { "from": 120, "to": 600, "locationId": "loc_room_2", "activity": "sleep" },
+      { "from": 600, "to": 660, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 660, "to": 780, "locationId": "loc_greenhouse", "activity": "film" },
+      { "from": 780, "to": 840, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 840, "to": 960, "locationId": "loc_lake_path", "activity": "film" },
+      { "from": 960, "to": 1080, "locationId": "loc_treatment", "activity": "procedure" },
+      { "from": 1080, "to": 1140, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 1140, "to": 1260, "locationId": "loc_hall", "activity": "socialize" },
+      { "from": 1260, "to": 120, "locationId": "loc_room_2", "activity": "edit_video" }
+    ],
+    "access": [
+      { "locationId": "loc_room_2" }
+    ],
+    "biography": [
+      { "text": "Канал о заброшенных советских здравницах — сто тысяч подписчиков и ни одной спонсорской интеграции.", "tags": ["media", "digital"] },
+      { "text": "Снимает всё подряд на телефон и экшн-камеру, даже разговоры за обедом.", "tags": ["media", "habit"] },
+      { "text": "Собирает материал о давней смерти пациента в санатории для громкого ролика.", "tags": ["media", "past", "secret_hint"] },
+      { "text": "Живёт на донаты и рекламу, денег вечно не хватает.", "tags": ["finance"] },
+      { "text": "Детство в детском доме под Барнаулом.", "tags": ["family", "past"] },
+      { "text": "Ложится под утро после монтажа и встаёт к обеду.", "tags": ["habit"] },
+      { "text": "Иск о клевете от бывшего героя ролика до сих пор не закрыт.", "tags": ["crime", "media", "conflict"] },
+      { "text": "Хорошо разбирается в замках и любит пробираться туда, куда не пускают.", "tags": ["skill", "secret_hint"] }
+    ]
+  },
+  {
+    "id": "guest_retired_officer",
+    "title": "Отставной офицер",
+    "names": [
+      "Юрий Константинович Барсуков",
+      "Галина Тимофеевна Стрельцова",
+      "Валерий Николаевич Крутов",
+      "Сергей Павлович Ястребов",
+      "Людмила Ростиславовна Гриневич",
+      "Анатолий Евгеньевич Рысев",
+      "Вячеслав Игоревич Полозов",
+      "Ольга Анатольевна Державина"
+    ],
+    "personality": {
+      "openness": [0.1, 0.4],
+      "conscientiousness": [0.7, 1],
+      "extraversion": [0.3, 0.6],
+      "agreeableness": [0.2, 0.5],
+      "neuroticism": [0.1, 0.4],
+      "honesty": [0.4, 0.8],
+      "courage": [0.7, 1],
+      "impulsivity": [0.2, 0.5]
+    },
+    "routine": [
+      { "from": 1320, "to": 360, "locationId": "loc_room_1", "activity": "sleep" },
+      { "from": 360, "to": 480, "locationId": "loc_hall", "activity": "exercise" },
+      { "from": 480, "to": 540, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 540, "to": 720, "locationId": "loc_lake_path", "activity": "walk" },
+      { "from": 720, "to": 780, "locationId": "loc_treatment", "activity": "procedure" },
+      { "from": 780, "to": 840, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 840, "to": 960, "locationId": "loc_room_1", "activity": "rest" },
+      { "from": 960, "to": 1080, "locationId": "loc_hall", "activity": "play_chess" },
+      { "from": 1080, "to": 1140, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 1140, "to": 1320, "locationId": "loc_room_1", "activity": "read" }
+    ],
+    "access": [
+      { "locationId": "loc_room_1" }
+    ],
+    "biography": [
+      { "text": "Двадцать пять лет службы в погранвойсках, последнее звание — подполковник.", "tags": ["military", "career"] },
+      { "text": "Подъём в шесть утра без будильника и зарядка в любую погоду.", "tags": ["habit", "military"] },
+      { "text": "Старое ранение колена — причина ежегодного курса процедур.", "tags": ["health", "military"] },
+      { "text": "Играет в шахматы в холле и не прощает соперникам ошибок.", "tags": ["habit", "social"] },
+      { "text": "Сын погиб в ДТП десять лет назад; водитель скрылся и так и не найден.", "tags": ["family", "trauma", "past"] },
+      { "text": "Военная пенсия — главный доход, но к ней регулярно добавляются переводы неизвестного происхождения.", "tags": ["finance", "secret_hint"] },
+      { "text": "Охотничий опыт и твёрдая рука.", "tags": ["skill"] },
+      { "text": "Не доверяет врачам и сверяет каждое назначение со справочником.", "tags": ["medical", "conflict", "habit"] }
+    ]
+  },
+  {
+    "id": "guest_relative",
+    "title": "Родственник бывшего пациента",
+    "names": [
+      "Алексей Игоревич Сафронов",
+      "Мария Олеговна Вяземская",
+      "Роман Андреевич Ковалёв",
+      "Екатерина Сергеевна Бродская",
+      "Илья Павлович Назаров",
+      "Татьяна Юрьевна Лескова",
+      "Никита Владимирович Аксёнов",
+      "Ксения Дмитриевна Озерова"
+    ],
+    "personality": {
+      "openness": [0.4, 0.7],
+      "conscientiousness": [0.4, 0.8],
+      "extraversion": [0.2, 0.5],
+      "agreeableness": [0.3, 0.6],
+      "neuroticism": [0.5, 0.9],
+      "honesty": [0.3, 0.7],
+      "courage": [0.4, 0.7],
+      "impulsivity": [0.3, 0.7]
+    },
+    "routine": [
+      { "from": 0, "to": 540, "locationId": "loc_room_2", "activity": "sleep" },
+      { "from": 540, "to": 600, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 600, "to": 720, "locationId": "loc_room_1", "activity": "visit" },
+      { "from": 720, "to": 780, "locationId": "loc_treatment", "activity": "procedure" },
+      { "from": 780, "to": 840, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 840, "to": 960, "locationId": "loc_greenhouse", "activity": "walk" },
+      { "from": 960, "to": 1080, "locationId": "loc_doctor_office", "activity": "consult" },
+      { "from": 1080, "to": 1140, "locationId": "loc_dining", "activity": "eat" },
+      { "from": 1140, "to": 1320, "locationId": "loc_hall", "activity": "socialize" },
+      { "from": 1320, "to": 1440, "locationId": "loc_room_2", "activity": "phone_calls" }
+    ],
+    "access": [
+      { "locationId": "loc_room_2" }
+    ],
+    "biography": [
+      { "text": "Отец умер в этом санатории в 2019 году после «планового» курса процедур.", "tags": ["family", "past", "medical"] },
+      { "text": "Работает фармацевтом в аптечной сети и разбирается в дозировках.", "tags": ["medical", "career", "skill"] },
+      { "text": "Бронь номера оформлена на девичью фамилию матери.", "tags": ["family", "secret_hint"] },
+      { "text": "Копия заключения о смерти отца всегда лежит в сумке.", "tags": ["past", "medical"] },
+      { "text": "Долги по микрозаймам растут быстрее, чем зарплата.", "tags": ["finance"] },
+      { "text": "Задаёт персоналу слишком много вопросов о прошлом санатория.", "tags": ["social", "past"] },
+      { "text": "Плохо переносит холод и без нужды почти не выходит на улицу.", "tags": ["habit", "health"] },
+      { "text": "Младший брат живёт с матерью и каждый вечер ждёт новостей по видеосвязи.", "tags": ["family", "digital"] }
+    ]
+  }
+]

@@ -3,8 +3,10 @@
 Схемы — `@hs/protocol` (zod), решения — [ADR 0009](../architecture/adr/0009-protocol-schemas.md),
 безопасность — [ADR 0008](../architecture/adr/0008-pairing-and-security.md).
 
-Сгенерированные JSON Schema лежат в `packages/protocol/schemas/` (`npm run protocol:gen`; актуальность
-проверяет `npm run protocol:check`), пример конверта — `packages/protocol/fixtures/envelope.json`.
+Сгенерированные JSON Schema лежат в `packages/protocol/schemas/`, GDScript-константы для Godot —
+в `apps/desktop/src/net/protocol_constants.gd` (`npm run protocol:gen`; актуальность обоих проверяет
+`npm run protocol:check`, см. [godot-client.md §2.1](../desktop/godot-client.md#21-константы-протокола)),
+пример конверта — `packages/protocol/fixtures/envelope.json`.
 Примеры всех сообщений собраны в `client-messages.json` и `server-messages.json` в том же каталоге.
 
 ## 1. Транспорт

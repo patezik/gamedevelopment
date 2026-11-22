@@ -1,0 +1,23 @@
+[
+  {
+    "id": "opportunity_from_presence",
+    "establishes": "opportunity($c)",
+    "requires": ["presence($c,$incident.location,$incident.window)"],
+    "excludes": ["alibi($c,$incident.window)"]
+  },
+  {
+    "id": "alibi_from_witness",
+    "establishes": "alibi($c,$i)",
+    "requires": ["presence($c,$l,$i)", "testimony($w,presence($c,$l,$i))"]
+  },
+  {
+    "id": "motive_from_secret",
+    "establishes": "motive($c,$v)",
+    "requires": ["knows($c,$s)", "about($s,$v)"]
+  },
+  {
+    "id": "contradiction_presence",
+    "establishes": "contradiction($c)",
+    "requires": ["statement($c,presence($c,$l,$i))", "presence($c,$l2,$i)"]
+  }
+]

@@ -15,5 +15,38 @@
         }
       }
     ]
+  },
+  {
+    "verb": "hide",
+    "produces": [
+      {
+        "kind": "physical",
+        "at": "$location",
+        "template": "disturbed_dust",
+        "supports": ["presence($actor,$location,$t)"]
+      }
+    ]
+  },
+  {
+    "verb": "destroy",
+    "produces": [
+      {
+        "kind": "physical",
+        "at": "$location",
+        "template": "ash_residue",
+        "supports": ["presence($actor,$location,$t)"]
+      }
+    ]
+  },
+  {
+    "verb": "stage",
+    "produces": [
+      {
+        "kind": "physical",
+        "at": "$location",
+        "template": "staged_scene",
+        "supports": ["opportunity($actor)"]
+      }
+    ]
   }
 ]

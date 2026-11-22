@@ -1,7 +1,7 @@
 ---
 id: TIME-004
 title: "ActionCostTable и resolveActionCost с модификаторами"
-status: review
+status: done
 priority: P0
 complexity: S
 phase: 2

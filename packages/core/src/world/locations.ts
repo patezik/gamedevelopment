@@ -3,6 +3,9 @@ import type { ScenarioContent } from '../content/index.ts';
 import { Calendar, type DayPeriod } from '../time/index.ts';
 
 type Location = ScenarioContent['locations'][number];
+type LocationGraphContent = Pick<ScenarioContent, 'locations'> & {
+  preset: { time: Pick<ScenarioContent['preset']['time'], 'startDateTime'> };
+};
 export type AccessRule = Location['access'][number];
 export type Light = Location['lighting'][DayPeriod];
 
@@ -54,9 +57,13 @@ export class LocationGraph {
   private readonly locations = new Map<string, Location>();
   private readonly calendar: Calendar;
   readonly accessItemIds: readonly string[];
+  readonly startDateTime: string;
 
-  constructor(content: Pick<ScenarioContent, 'locations' | 'preset'>) {
-    this.calendar = new Calendar(content.preset.time.startDateTime);
+  constructor(content: Pick<ScenarioContent, 'locations' | 'preset'>);
+  constructor(content: LocationGraphContent);
+  constructor(content: LocationGraphContent) {
+    this.startDateTime = content.preset.time.startDateTime;
+    this.calendar = new Calendar(this.startDateTime);
     const accessItemIds = new Set<string>();
     for (const location of content.locations) {
       this.locations.set(location.id, structuredClone(location));
@@ -68,6 +75,13 @@ export class LocationGraph {
       }
     }
     this.accessItemIds = Object.freeze([...accessItemIds].sort());
+  }
+
+  snapshot(): { startDateTime: string; locations: Location[] } {
+    return {
+      startDateTime: this.startDateTime,
+      locations: structuredClone([...this.locations.values()]),
+    };
   }
 
   travelTime(from: string, to: string, actor: Actor = {}): number | null {
