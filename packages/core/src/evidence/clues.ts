@@ -57,13 +57,14 @@ export function discoverable(clue: Clue, context: DiscoveryContext): boolean {
     actionTarget(condition.action) === actionTarget(context.action) &&
     condition.availableFrom <= context.minute &&
     (condition.availableUntil === undefined || context.minute < condition.availableUntil) &&
-    condition.requires.every(context.has)
+    condition.requires.every((requirement) => context.has(requirement))
   );
 }
 
 /** Clue prerequisites form a directed graph within the generated case. */
 export function validateCluePrerequisites(clues: readonly Clue[]): void {
   const byId = new Map(clues.map((clue) => [clue.id, clue]));
+  if (byId.size !== clues.length) throw new Error('Duplicate clue ID');
   const visiting = new Set<string>();
   const complete = new Set<string>();
 
