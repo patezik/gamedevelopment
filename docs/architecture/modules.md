@@ -29,6 +29,8 @@ interface Interval { from: GameMinutes; to: GameMinutes }   // полуинте�
 `Hasher.sha256(text)`. `sequentialId(prefix)` создаёт отдельную последовательность `prefix_1`,
 `prefix_2` и далее. `hashId(prefix, value, length)` добавляет к префиксу и подчёркиванию первые
 `length` символов хеша (от 1 до 64).
+`verbSchema` — формат глагола действия (`^[a-z][a-z0-9_]*$`), общий для событий `truth` (реэкспорт
+из `@hs/core/truth`) и правил контента, которые с ними сопоставляются.
 
 Зависимости между модулями ядра (стрелка = «использует»), циклы запрещены:
 
@@ -148,8 +150,10 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   interface Location { id: LocationId; name: string; tags: string[]; lighting: Record<DayPeriod, Light>; access: AccessRule[]; hotspots: HotspotDef[] }
   interface Connection { from: LocationId; to: LocationId; minutes: number; locked?: LockDef }
   class LocationGraph {
+    readonly accessItemIds: readonly ItemId[];
     travelTime(a, b, who?: Actor): number | null;
     path(a, b, who?: Actor): LocationId[];
+    nextTimedStep(a, b, who: Actor, now: GameMinutes): TimedTravelStep | null;
     isAccessible(loc, who: Actor, t: GameMinutes): AccessCheck;
     lightingAt(loc, period: DayPeriod): Light;
   }
@@ -172,6 +176,12 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   Внутри правила должны выполняться все условия, из списка правил достаточно одного.
   Пустой список открывает доступ всем. Интервал включает начало и исключает конец, а при
   `from > to` пересекает полночь. При отказе возвращается причина из первого правила.
+- **Вход по времени ([ADR 0015](adr/0015-time-aware-location-routing.md)):** `nextTimedStep` возвращает
+  первое ребро маршрута с самым ранним прибытием с учётом доступа, в виде
+  `{ destination, departAt, arriveAt, keyItemId? }`. Актёр может ждать открытия в предыдущей
+  локации. Метод возвращает `null`, если он уже в цели или допустимого маршрута нет.
+  `accessItemIds` перечисляет предметы из замков и условий входа. Для NPC набор
+  `Actor.itemIds` формируется из реестра по [ADR 0016](adr/0016-physical-keys.md).
 - **Нет маршрута:** `travelTime` возвращает `null`, `path` выдаёт `WORLD_NO_PATH`.
   Неизвестный идентификатор локации даёт `WORLD_UNKNOWN_LOCATION`.
 - **Предметы:** реестр начинает работу с заданной игровой минуты (по умолчанию `0`). Для каждого
@@ -255,10 +265,18 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     facts(filter?: FactFilter): Fact[];
     readonly incident: IncidentRecord;
   }
-  function checkTruthInvariants(tm: TruthModel, world: WorldState): InvariantViolation[];
+  interface InvariantWorld { locations: Pick<LocationGraph, "travelTime">; items: Pick<ItemRegistry, "locate" | "history"> }   // WorldState подходит структурно
+  interface InvariantViolation { invariant: 1 | 2 | 3 | 4 | 5 | 6 | 7; code: InvariantViolationCode; eventIds: EventId[]; subject?: EntityRef; minute?: GameMinutes; message: string }
+  function checkTruthInvariants(tm: TruthModel, world: InvariantWorld, opts?: { incremental?: boolean }): InvariantViolation[];
+  function assertInvariants(tm: TruthModel, world: InvariantWorld, opts?: { incremental?: boolean }): void;
+  function withInvariantChecks(tm: TruthModel, world: InvariantWorld, debug: { enabled: boolean }): { append(e: Omit<TruthEvent, "id">): EventId };
   ```
+- **Инварианты:** коды, трактовка смерти и debug-режим — [truth-model.md §4](../investigation/truth-model.md).
+  `checkTruthInvariants` проверяет инварианты 1–5 и 7. Инвариант 6 проверяется в SIM-002,
+  его проверка в валидаторе — OQ-13.
 - **Зависимости:** `common`, `world`, `characters`.
-- **Ошибки:** `TRUTH_INVARIANT_VIOLATION` (в тестах и debug-сборке — исключение).
+- **Ошибки:** `TRUTH_INVARIANT_VIOLATION` — `TruthInvariantError` из `assertInvariants` и
+  `withInvariantChecks` при включённом флаге.
 - **Тесты:** инварианты (нет двойного присутствия, перемещения не быстрее графа, причина раньше
   следствия, предмет у одного владельца); `whereWas` на границах интервалов.
 
@@ -267,21 +285,38 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   interface Belief { proposition: Proposition; confidence: number; source: "observed" | "told" | "read" | "inferred"; fromCharacter?: CharacterId; acquiredAt: GameMinutes; fuzzMinutes: number }
-  class KnowledgeStore { add(b: Belief): void; query(p: PropositionPattern): Belief[]; recall(p, now): Belief | undefined /* с размытием времени */ }
+  class KnowledgeStore {
+    add(b: Belief): void;
+    query(p: PropositionPattern): Belief[];
+    recall(p: PropositionPattern, now: GameMinutes): Belief | undefined;
+    serialize(): string;
+    static deserialize(json: string): KnowledgeStore;
+  }
   interface LiePolicy { conceal: PropositionPattern[]; fabricate: Fabrication[] }   // что скрывать, что выдумывать
   function buildLiePolicy(c: Character, truth: TruthModel, kb: KnowledgeStore): LiePolicy;
   interface Statement { id: string; speakerId: CharacterId; proposition: Proposition; veracity: "true" | "mistaken" | "lie" /* скрыто от клиента */; topic: TopicId; at: GameMinutes }
   function answer(q: Question, speaker: SpeakerContext): Statement[];
   ```
-- **Зависимости:** `truth`, `characters`.
-- **Ошибки:** нет (отсутствие знания → ответ «не знаю» / уклонение).
-- **Тесты:** персонаж не знает того, чего не наблюдал/не слышал; ложь только при наличии мотива
-  скрывать; размытие времени в пределах `fuzzMinutes`; детерминизм ответов.
+- **Хранилище:** `KnowledgeStore` использует только схему, идентификатор и сопоставление пропозиций
+  из `@hs/core/truth/facts`. `query` возвращает сохранённые убеждения по убыванию уверенности и
+  времени получения.
+  При равенстве используется возрастание `FactId`. `recall` выбирает первое совпадение, доступное
+  к указанной минуте, и размывает время в возвращаемой копии.
+- **Снимок:** `serialize` сохраняет JSON-массив убеждений в порядке `FactId`.
+- **Ошибки:** `recall` возвращает `undefined`, когда доступного совпадения нет. Некорректные
+  убеждения, минуты запроса и снимки отклоняются при проверке схемы или чтении JSON.
+- **Тесты:** субъективные убеждения, размытие времени в пределах `fuzzMinutes`, детерминизм
+  воспоминаний и восстановление из снимка. Для показаний также проверяется наличие мотива скрывать.
 
 ## 7. `@hs/core/simulation` — Character Simulation System
 
 Подробно — [character-simulation.md](../simulation/character-simulation.md).
 
+- **SIM-001:** модуль экспортирует `SimulationRunner`, `SimulationRunnerOptions`, `Agent`,
+  `Activity` и `ActivityStep`. Раннер регистрирует обработчики фаз `Schedules` и `Simulation`
+  в переданном `TimeSystem`. Порт `items` предоставляет `ItemRegistry.locate` и `history` для
+  проверки физического владения ключами. `getAgent(characterId)` возвращает снимок текущей активности и
+  состояния RNG. Целевой интерфейс ниже включает возможности следующих задач SIM.
 - **Интерфейс:**
   ```ts
   interface Agent { characterId: CharacterId; lod: "focus" | "background"; activity?: Activity; goals: ActiveGoal[]; wariness: number; stress: number }
@@ -304,12 +339,19 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   interface TraceRule { verb: Verb; when?: Condition; produces: TraceSpec[] }   // из content/*/trace-rules.json
-  interface Trace { id: TraceId; kind: "physical" | "document" | "digital" | "testimonial"; sourceEventId: EventId; location?: LocationId; itemId?: ItemId; availableFrom: GameMinutes; decaysAt?: GameMinutes; destroyedBy?: EventId }
+  interface Trace { id: TraceId; kind: "physical" | "document" | "digital" | "testimonial"; sourceEventId: EventId; template: TemplateId; supports: ClaimRef[]; captureMode: "auto" | "qr"; location?: LocationId; itemId?: ItemId; availableFrom: GameMinutes; decaysAt?: GameMinutes; destroyedBy?: EventId; destroyedAt?: GameMinutes }
   interface Clue { id: ClueId; traceId: TraceId; supports: ClaimRef[]; discovery: DiscoveryCondition; captureMode: "auto" | "qr"; presentation: PresentationRef }
   function deriveClues(traces: Trace[], rules: ClueRules): Clue[];
   function discoverable(clue: Clue, ctx: DiscoveryContext): boolean;
   interface EvidenceTokenPort { issue(clueId: ClueId, expiresAt: GameMinutes): TokenRef }   // реализует сервер
+  function compileTraceRules(input: unknown): TraceRuleSet;          // EVIDENCE_RULE_INVALID, закон сохранения
+  function tracesForEvent(event: TruthEvent, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">, truth?: { events(): readonly TruthEvent[] }): Trace[];
+  function deriveTraces(truth: { events(): readonly TruthEvent[] }, rules: TraceRuleSet, items: Pick<ItemRegistry, "get">): Trace[];
+  function isTraceAvailable(trace: Trace, t: GameMinutes): boolean;   // [availableFrom, min(decaysAt, destroyedAt))
+  const CONCEALMENT_VERBS: readonly ["hide", "destroy", "stage"];
   ```
+  Семантика сопоставления, полезной нагрузки, уничтожения и времени —
+  [scenario-presets.md §5](../procedural-generation/scenario-presets.md), [ADR 0017](adr/0017-trace-conservation-and-payload.md).
 - **Зависимости:** `truth`, `world`, `knowledge` (свидетельские следы).
 - **События:** `ClueAvailable`, `ClueDestroyed`, `CaptureRequested`.
 - **Ошибки:** `EVIDENCE_RULE_INVALID` (на загрузке контента).

@@ -2,11 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 105 · in_progress: 5 · review: 1 · done: 28 · blocked: 1
+Всего задач: **140** · todo: 104 · in_progress: 1 · review: 1 · done: 33 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [GEN-001](GEN-001.md) — Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION (P0, M)
+- [SIM-002](SIM-002.md) — Восприятие: наблюдения присутствующих → убеждения (P0, M)
+- [CNT-003](CNT-003.md) — MVP-сценарий: шаблоны преступлений и правила мотивов (P0, M)
+- [SIM-004](SIM-004.md) — Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot (P0, M)
+- [EVD-002](EVD-002.md) — Улики (Clue): поддерживаемые утверждения, условия обнаружения, точки интереса (P0, M)
+- [KNOW-002](KNOW-002.md) — LiePolicy и показания: answer(question) → правда, ошибка или ложь (P0, L)
+- [VAL-001](VAL-001.md) — Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE (P0, S)
 - [GDT-001](GDT-001.md) — Autoload Backend: REST и WebSocketPeer, переподключение (P0, M)
 
 ## Критический путь
@@ -60,11 +65,11 @@
 | [CORE-003](CORE-003.md) | Тип Investigation и fixture-builder мини-сценария «tiny-manor» | P0 | M | done | egor-codex-core-003 | [TRUTH-002](TRUTH-002.md), [CHAR-003](CHAR-003.md), [WORLD-002](WORLD-002.md) |
 | [ENG-001](ENG-001.md) | GameEngine: агрегат состояния, dispatch, действия move и wait | P0 | M | review | codex-engine-27 | [TIME-003](TIME-003.md), [TIME-004](TIME-004.md), [WORLD-001](WORLD-001.md), [TRUTH-002](TRUTH-002.md), [CORE-003](CORE-003.md) |
 | [ENG-002](ENG-002.md) | Проекция PlayerView и тест отсутствия утечек истины | P0 | M | todo | — | [ENG-001](ENG-001.md), [PROTO-002](PROTO-002.md) |
-| [KNOW-001](KNOW-001.md) | KnowledgeStore: убеждения, источники, память с размытием | P0 | M | in_progress | egor-codex-1 | [TRUTH-001](TRUTH-001.md) |
+| [KNOW-001](KNOW-001.md) | KnowledgeStore: убеждения, источники, память с размытием | P0 | M | done | egor-codex-1 | [TRUTH-001](TRUTH-001.md) |
 | [PROTO-001](PROTO-001.md) | Каталог сообщений протокола (hello, welcome, action, event, qr, error) | P0 | M | done | codex-core | [FND-004](FND-004.md) |
 | [PROTO-002](PROTO-002.md) | Схемы PlayerView и PhoneView с фикстурами | P0 | M | done | claude-proto-1 | [PROTO-001](PROTO-001.md) |
 | [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | todo | — | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
-| [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | in_progress | egor-codex-sim-001 | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md) |
+| [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | done | egor-codex-sim-001 | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
 | [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | todo | — | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
 | [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | done | claude-time-1 | [FND-009](FND-009.md) |
 | [TIME-002](TIME-002.md) | Scheduler: детерминированная очередь событий | P0 | M | done | claude-time-1 | [TIME-001](TIME-001.md), [CORE-002](CORE-002.md) |
@@ -72,7 +77,7 @@
 | [TIME-004](TIME-004.md) | ActionCostTable и resolveActionCost с модификаторами | P0 | S | done | claude-time-2 | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [TRUTH-001](TRUTH-001.md) | Словарь фактов (Fact) и FactId | P0 | S | done | codex-core-1 | [CORE-002](CORE-002.md), [CHAR-001](CHAR-001.md), [WORLD-001](WORLD-001.md) |
 | [TRUTH-002](TRUTH-002.md) | TruthLog, TruthModel и IncidentRecord | P0 | M | done | codex-core-1 | [TRUTH-001](TRUTH-001.md) |
-| [TRUTH-003](TRUTH-003.md) | Проверка инвариантов Truth Model | P0 | S | in_progress | egor-claude-truth-003 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
+| [TRUTH-003](TRUTH-003.md) | Проверка инвариантов Truth Model | P0 | S | done | egor-claude-truth-003 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
 | [WORLD-001](WORLD-001.md) | Граф локаций: перемещения, освещение, доступ по часам и замкам | P0 | M | done | codex-core | [TIME-001](TIME-001.md), [CNT-001](CNT-001.md) |
 | [WORLD-002](WORLD-002.md) | Предметы, контейнеры и история их перемещений | P0 | S | done | codex-core-1 | [WORLD-001](WORLD-001.md) |
 
@@ -80,9 +85,9 @@
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [CNT-002](CNT-002.md) | MVP-сценарий: локации, предметы, архетипы, отношения (данные) | P0 | L | in_progress | egor-claude-cnt-002 | [CNT-001](CNT-001.md) |
+| [CNT-002](CNT-002.md) | MVP-сценарий: локации, предметы, архетипы, отношения (данные) | P0 | L | done | egor-claude-cnt-002 | [CNT-001](CNT-001.md) |
 | [CNT-003](CNT-003.md) | MVP-сценарий: шаблоны преступлений и правила мотивов | P0 | M | todo | — | [CNT-002](CNT-002.md) |
-| [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | todo | — | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
+| [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | in_progress | codex-engine-27 | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
 | [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | todo | — | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
 | [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | todo | — | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
 | [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | todo | — | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
@@ -99,7 +104,7 @@
 |---|---|---|---|---|---|---|
 | [CNT-004](CNT-004.md) | MVP-сценарий: правила следов и правила дедукции | P0 | M | todo | — | [EVD-001](EVD-001.md), [INV-002](INV-002.md), [CNT-003](CNT-003.md) |
 | [CNT-007](CNT-007.md) | Тюнинг MVP-пресета до порогов seed sweep | P0 | M | todo | — | [VAL-007](VAL-007.md), [VAL-004](VAL-004.md), [VAL-005](VAL-005.md), [VAL-006](VAL-006.md), [CNT-004](CNT-004.md), [SIM-005](SIM-005.md) |
-| [EVD-001](EVD-001.md) | Движок правил следов: TraceRule → Trace, закон сохранения улик | P0 | M | in_progress | egor-claude-evd-001 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md), [CNT-001](CNT-001.md) |
+| [EVD-001](EVD-001.md) | Движок правил следов: TraceRule → Trace, закон сохранения улик | P0 | M | done | egor-claude-evd-001 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md), [CNT-001](CNT-001.md) |
 | [EVD-002](EVD-002.md) | Улики (Clue): поддерживаемые утверждения, условия обнаружения, точки интереса | P0 | M | todo | — | [EVD-001](EVD-001.md) |
 | [EVD-003](EVD-003.md) | Режим фиксации улик телефоном и порт EvidenceTokenPort | P0 | S | todo | — | [EVD-002](EVD-002.md) |
 | [GEN-009](GEN-009.md) | Стадия EvidenceGen: следы и улики сгенерированного расследования | P0 | M | todo | — | [GEN-008](GEN-008.md), [EVD-002](EVD-002.md), [EVD-003](EVD-003.md) |

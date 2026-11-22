@@ -1,0 +1,51 @@
+[
+  {
+    "id": "poisoning",
+    "incidentType": "murder",
+    "requires": {
+      "means": { "itemTag": "poison" },
+      "minWindowMinutes": 20,
+      "locationTags": ["private", "medical"],
+      "traits": {}
+    },
+    "plan": [
+      { "step": "acquire", "verb": "take", "target": "$means", "duration": 5, "before": "act" },
+      { "step": "act", "verb": "poison", "target": "$victim", "duration": 10 },
+      { "step": "conceal", "verb": "hide", "target": "$means", "duration": 5, "after": "act", "optional": false }
+    ],
+    "deathDelayMinutes": [60, 180]
+  },
+  {
+    "id": "staged_fall",
+    "incidentType": "murder",
+    "requires": {
+      "means": { "itemTag": "heavy" },
+      "minWindowMinutes": 20,
+      "locationTags": ["residential", "hazard"],
+      "traits": {}
+    },
+    "plan": [
+      { "step": "acquire", "verb": "take", "target": "$means", "duration": 3, "before": "act" },
+      { "step": "act", "verb": "strike", "target": "$victim", "duration": 2 },
+      { "step": "stage", "verb": "stage", "target": "$victim", "duration": 10, "after": "act", "optional": false },
+      { "step": "conceal", "verb": "hide", "target": "$means", "duration": 5, "after": "stage", "optional": false }
+    ]
+  },
+  {
+    "id": "boiler_accident",
+    "incidentType": "murder",
+    "requires": {
+      "means": { "itemTag": "key", "itemId": "it_key_boiler" },
+      "minWindowMinutes": 30,
+      "locationTags": ["hazard", "service"],
+      "traits": {}
+    },
+    "plan": [
+      { "step": "acquire", "verb": "take", "target": "$means", "duration": 2, "before": "sabotage" },
+      { "step": "sabotage", "verb": "tamper", "target": "$location", "duration": 15 },
+      { "step": "stage", "verb": "stage", "target": "$location", "duration": 10, "after": "sabotage", "optional": false },
+      { "step": "conceal", "verb": "hide", "target": "$means", "duration": 3, "after": "stage", "optional": false }
+    ],
+    "deathDelayMinutes": [30, 120]
+  }
+]

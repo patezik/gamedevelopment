@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { canonicalJson, hashId } from '../common/index.ts';
+import { canonicalJson, hashId, verbSchema } from '../common/index.ts';
+
+export { verbSchema };
 
 const idSchema = z.string().min(1);
 const minuteSchema = z.int();
@@ -12,7 +14,6 @@ export const entityRefSchema = z.strictObject({
   id: idSchema,
 });
 
-export const verbSchema = z.string().regex(/^[a-z][a-z0-9_]*$/);
 export const factIdSchema = z.string().regex(/^f_[a-f0-9]{16}$/);
 export const factSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('at'), who: idSchema, where: idSchema, interval: intervalSchema }),

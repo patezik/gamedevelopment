@@ -1,0 +1,18 @@
+export {
+  CONCEALMENT_VERBS,
+  EvidenceError,
+  SUPPORT_PLACEHOLDERS,
+  compileTraceRules,
+  deriveTraces,
+  isTraceAvailable,
+  tracesForEvent,
+  type ItemTagSource,
+  type Trace,
+  type TraceCaptureMode,
+  type TraceId,
+  type TraceKind,
+  type TraceRule,
+  type TraceRuleSet,
+  type TraceSpec,
+  type TruthEventSource,
+} from './traces.ts';
