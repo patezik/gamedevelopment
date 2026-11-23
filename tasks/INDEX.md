@@ -2,17 +2,14 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 84 · in_progress: 3 · review: 0 · done: 52 · blocked: 1
+Всего задач: **140** · todo: 81 · in_progress: 6 · review: 0 · done: 52 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [SIM-003](SIM-003.md) — Встречи NPC и обмен знаниями, дрейф отношений (P0, M)
-- [VAL-006](VAL-006.md) — Проверки V-PHONE-REQUIRED и V-DETERMINISM (P0, S)
 - [GDT-002](GDT-002.md) — Autoload GameStore и SceneRouter (P0, S)
 - [TOOL-001](TOOL-001.md) — Фейковые клиенты desktop/phone (CLI и библиотека) для тестов (P0, M)
 - [CNT-005](CNT-005.md) — Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы (P0, L)
 - [INT-005](INT-005.md) — Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot (P0, L)
-- [SRV-007](SRV-007.md) — Сохранения: автосохранение, чекпойнты, список и загрузка (P1, M)
 - [INT-008](INT-008.md) — Спайк: TLS с pinning через QR и облачный ретранслятор → ADR (P2, M)
 
 ## Критический путь
@@ -96,7 +93,7 @@
 | [GEN-006](GEN-006.md) | Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых | P0 | L | todo | — | [GEN-005](GEN-005.md), [GEN-002](GEN-002.md) |
 | [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | todo | — | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
 | [GEN-008](GEN-008.md) | Стадия HistorySimulation: симуляция предыстории с исполнением плана | P0 | L | todo | — | [GEN-007](GEN-007.md), [SIM-002](SIM-002.md), [SIM-003](SIM-003.md), [SIM-004](SIM-004.md) |
-| [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | todo | — | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
+| [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | in_progress | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
 ## Фаза 4 · M4 — Solvable investigations (24)
@@ -124,7 +121,7 @@
 | [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | todo | — | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | todo | — | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | todo | — | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
-| [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | todo | — | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
+| [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | in_progress | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
 | [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | todo | — | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
 | [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
 
@@ -149,7 +146,7 @@
 | [SRV-004](SRV-004.md) | WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume | P0 | L | done | codex-prototype-27 | [SRV-003](SRV-003.md), [PROTO-001](PROTO-001.md) |
 | [SRV-005](SRV-005.md) | Рассылка представлений и событий с фильтром по роли | P0 | M | todo | — | [SRV-004](SRV-004.md), [ENG-002](ENG-002.md), [PHONE-001](PHONE-001.md) |
 | [SRV-006](SRV-006.md) | QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan | P0 | M | done | claude-qr-1 | [SRV-003](SRV-003.md), [EVD-003](EVD-003.md) |
-| [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | todo | — | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
+| [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | in_progress | claude-w2 | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
 | [SRV-008](SRV-008.md) | Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам | P0 | S | done | claude-server-1 | [FND-005](FND-005.md) |
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | todo | — | [SRV-004](SRV-004.md) |
