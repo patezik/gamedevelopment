@@ -1,7 +1,7 @@
 ---
 id: SAVE-001
 title: "Формат сохранения и replay с проверкой хеша"
-status: review
+status: done
 priority: P1
 complexity: M
 phase: 2

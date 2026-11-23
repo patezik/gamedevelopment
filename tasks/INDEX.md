@@ -2,17 +2,23 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 86 · in_progress: 10 · review: 1 · done: 41 · blocked: 2
+Всего задач: **140** · todo: 86 · in_progress: 4 · review: 0 · done: 48 · blocked: 2
 
 ## Готовы к взятию сейчас
 
-_Нет задач, у которых выполнены все зависимости._
+- [GEN-004](GEN-004.md) — Стадия SocialGen: отношения и секреты (P0, M)
+- [SIM-003](SIM-003.md) — Встречи NPC и обмен знаниями, дрейф отношений (P0, M)
+- [INV-001](INV-001.md) — PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал (P0, S)
+- [TOOL-001](TOOL-001.md) — Фейковые клиенты desktop/phone (CLI и библиотека) для тестов (P0, M)
+- [CNT-005](CNT-005.md) — Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы (P0, L)
+- [SRV-007](SRV-007.md) — Сохранения: автосохранение, чекпойнты, список и загрузка (P1, M)
+- [INT-008](INT-008.md) — Спайк: TLS с pinning через QR и облачный ретранслятор → ADR (P2, M)
 
 ## Критический путь
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -24,12 +30,12 @@ _Нет задач, у которых выполнены все зависимо
 | [GDT-002](GDT-002.md) Autoload GameStore и SceneRouter | 5 |
 | [GDT-004](GDT-004.md) Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | 5 |
 | [INV-002](INV-002.md) Утверждения (Claims) и правила дедукции | 5 |
-| [KNOW-002](KNOW-002.md) LiePolicy и показания: answer(question) → правда, ошибка или ложь | 5 |
 | [PHONE-001](PHONE-001.md) Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | 5 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
 | [GDT-010](GDT-010.md) Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | 3 |
+| [INV-001](INV-001.md) PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | 3 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -58,13 +64,13 @@ _Нет задач, у которых выполнены все зависимо
 | [CORE-002](CORE-002.md) | Канонический JSON, хеширование состояния и генерация ID | P0 | S | done | codex-core | [FND-009](FND-009.md) |
 | [CORE-003](CORE-003.md) | Тип Investigation и fixture-builder мини-сценария «tiny-manor» | P0 | M | done | egor-codex-core-003 | [TRUTH-002](TRUTH-002.md), [CHAR-003](CHAR-003.md), [WORLD-002](WORLD-002.md) |
 | [ENG-001](ENG-001.md) | GameEngine: агрегат состояния, dispatch, действия move и wait | P0 | M | done | codex-engine-27 | [TIME-003](TIME-003.md), [TIME-004](TIME-004.md), [WORLD-001](WORLD-001.md), [TRUTH-002](TRUTH-002.md), [CORE-003](CORE-003.md) |
-| [ENG-002](ENG-002.md) | Проекция PlayerView и тест отсутствия утечек истины | P0 | M | in_progress | codex-prototype-27 | [ENG-001](ENG-001.md), [PROTO-002](PROTO-002.md) |
+| [ENG-002](ENG-002.md) | Проекция PlayerView и тест отсутствия утечек истины | P0 | M | done | codex-prototype-27 | [ENG-001](ENG-001.md), [PROTO-002](PROTO-002.md) |
 | [KNOW-001](KNOW-001.md) | KnowledgeStore: убеждения, источники, память с размытием | P0 | M | done | egor-codex-1 | [TRUTH-001](TRUTH-001.md) |
 | [PROTO-001](PROTO-001.md) | Каталог сообщений протокола (hello, welcome, action, event, qr, error) | P0 | M | done | codex-core | [FND-004](FND-004.md) |
 | [PROTO-002](PROTO-002.md) | Схемы PlayerView и PhoneView с фикстурами | P0 | M | done | claude-proto-1 | [PROTO-001](PROTO-001.md) |
-| [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | review | codex-prototype-27 | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
+| [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | done | codex-prototype-27 | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
 | [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | done | egor-codex-sim-001 | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
-| [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | in_progress | codex-prototype-27 | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
+| [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
 | [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | done | claude-time-1 | [FND-009](FND-009.md) |
 | [TIME-002](TIME-002.md) | Scheduler: детерминированная очередь событий | P0 | M | done | claude-time-1 | [TIME-001](TIME-001.md), [CORE-002](CORE-002.md) |
 | [TIME-003](TIME-003.md) | TimeSystem.advance: фазы обработки, прерывания, события часов | P0 | M | done | codex-time-1 | [TIME-002](TIME-002.md) |
@@ -82,8 +88,8 @@ _Нет задач, у которых выполнены все зависимо
 | [CNT-002](CNT-002.md) | MVP-сценарий: локации, предметы, архетипы, отношения (данные) | P0 | L | done | egor-claude-cnt-002 | [CNT-001](CNT-001.md) |
 | [CNT-003](CNT-003.md) | MVP-сценарий: шаблоны преступлений и правила мотивов | P0 | M | in_progress | egor-claude-cnt-003 | [CNT-002](CNT-002.md) |
 | [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | done | codex-engine-27 | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
-| [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | in_progress | codex-prototype-27 | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
-| [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | in_progress | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
+| [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | done | codex-prototype-27 | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
+| [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | done | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
 | [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | todo | — | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
 | [GEN-005](GEN-005.md) | Стадия ConflictGen: правила мотивов для всех пар персонажей | P0 | M | todo | — | [GEN-004](GEN-004.md) |
 | [GEN-006](GEN-006.md) | Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых | P0 | L | todo | — | [GEN-005](GEN-005.md), [GEN-002](GEN-002.md) |
@@ -109,7 +115,7 @@ _Нет задач, у которых выполнены все зависимо
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | todo | — | [INV-002](INV-002.md) |
 | [INV-004](INV-004.md) | Обнаружение противоречий между показаниями и фактами | P0 | M | todo | — | [INV-002](INV-002.md) |
 | [INV-005](INV-005.md) | CaseFile и evaluateAccusation | P0 | M | todo | — | [INV-002](INV-002.md), [TRUTH-002](TRUTH-002.md) |
-| [KNOW-002](KNOW-002.md) | LiePolicy и показания: answer(question) → правда, ошибка или ложь | P0 | L | in_progress | codex-prototype-27 | [KNOW-001](KNOW-001.md), [CHAR-002](CHAR-002.md) |
+| [KNOW-002](KNOW-002.md) | LiePolicy и показания: answer(question) → правда, ошибка или ложь | P0 | L | done | codex-prototype-27 | [KNOW-001](KNOW-001.md), [CHAR-002](CHAR-002.md) |
 | [SIM-005](SIM-005.md) | Цели ConcealEvidence, SpreadRumor, ProtectSelf, MeetCharacter, SeekInformation | P0 | L | todo | — | [SIM-004](SIM-004.md), [SIM-003](SIM-003.md), [EVD-001](EVD-001.md) |
 | [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | todo | — | [SIM-003](SIM-003.md) |
 | [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | in_progress | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
@@ -139,7 +145,7 @@ _Нет задач, у которых выполнены все зависимо
 | [SRV-001](SRV-001.md) | SessionManager: сессии, очередь действий, жизненный цикл | P0 | M | done | codex-engine-27 | [FND-005](FND-005.md), [ENG-001](ENG-001.md) |
 | [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | todo | — | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
 | [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | done | codex-prototype-27 | [SRV-001](SRV-001.md) |
-| [SRV-004](SRV-004.md) | WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume | P0 | L | in_progress | codex-prototype-27 | [SRV-003](SRV-003.md), [PROTO-001](PROTO-001.md) |
+| [SRV-004](SRV-004.md) | WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume | P0 | L | done | codex-prototype-27 | [SRV-003](SRV-003.md), [PROTO-001](PROTO-001.md) |
 | [SRV-005](SRV-005.md) | Рассылка представлений и событий с фильтром по роли | P0 | M | todo | — | [SRV-004](SRV-004.md), [ENG-002](ENG-002.md), [PHONE-001](PHONE-001.md) |
 | [SRV-006](SRV-006.md) | QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan | P0 | M | done | claude-qr-1 | [SRV-003](SRV-003.md), [EVD-003](EVD-003.md) |
 | [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | todo | — | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
