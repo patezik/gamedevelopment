@@ -6,16 +6,22 @@ import type { ServerConfig } from './config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from './config/network.ts';
 
 import { registerPairingRoutes, type PairingService } from './pairing/index.ts';
+import { registerGateway, SessionGateway } from './gateway/index.ts';
 
 export interface AppDependencies {
   /** Defaults to `os.networkInterfaces`; replaced in tests. */
   networkInterfaces?: () => NetworkInterfaces;
   pairing?: PairingService;
+  gateway?: SessionGateway;
 }
 
 export function buildApp(
   config: ServerConfig,
-  { networkInterfaces = os.networkInterfaces, pairing }: AppDependencies = {},
+  {
+    networkInterfaces = os.networkInterfaces,
+    pairing,
+    gateway = new SessionGateway({ serverVersion: serverPackage.version }),
+  }: AppDependencies = {},
 ) {
   const app = Fastify({
     logger: { level: config.logLevel },
@@ -35,6 +41,15 @@ export function buildApp(
     );
     done();
   });
+
+  registerGateway(app, gateway);
+  if (pairing) {
+    const unsubscribe = pairing.onDeviceRevoked((session) => gateway.revokePhone(session));
+    app.addHook('onClose', (_instance, done) => {
+      unsubscribe();
+      done();
+    });
+  }
 
   app.get('/api/v1/health', () => ({
     status: 'ok',

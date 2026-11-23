@@ -9,12 +9,15 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fastify/websocket": "~11.3.4",
     "@hs/core": "*",
     "@hs/protocol": "*",
     "fastify": "~5.12.8",
+    "ws": "~8.22.0",
     "zod": "~4.6.7"
   },
   "devDependencies": {
+    "@types/ws": "~8.18.1",
     "tsx": "~4.23.15"
   }
 }

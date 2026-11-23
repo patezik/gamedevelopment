@@ -21,20 +21,20 @@ interface CodeEntry {
   failures: number;
 }
 
-function hash(token: string): string {
+export function hashSessionToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
 export function issueToken(session: Session, role: SessionRole): string {
   const token = randomBytes(32).toString('base64url');
-  session.setTokenHash(role, hash(token));
+  session.setTokenHash(role, hashSessionToken(token));
   return token;
 }
 
 export function verifyToken(session: Session, role: SessionRole, token: string): boolean {
   const expected = session.tokenHash(role);
   return expected !== undefined &&
-    timingSafeEqual(Buffer.from(hash(token), 'hex'), Buffer.from(expected, 'hex'));
+    timingSafeEqual(Buffer.from(hashSessionToken(token), 'hex'), Buffer.from(expected, 'hex'));
 }
 
 class PairingError extends Error {
@@ -62,6 +62,7 @@ export class PairingService {
   readonly #codes = new Map<string, CodeEntry>();
   readonly #sessionCodes = new Map<string, string>();
   readonly #attempts = new Map<string, number[]>();
+  readonly #revocationListeners = new Set<(session: Session) => void>();
   #nextCleanup = 0;
 
   constructor(sessions: Pick<SessionManager, 'get'>, options: PairingOptions) {
@@ -121,7 +122,14 @@ export class PairingService {
   }
 
   revokeDevice(session: Session): void {
-    if (session.clearTokenHash('phone')) this.#options.onDeviceRevoked?.(session, 'DEVICE_REVOKED');
+    if (!session.clearTokenHash('phone')) return;
+    this.#options.onDeviceRevoked?.(session, 'DEVICE_REVOKED');
+    for (const listener of this.#revocationListeners) listener(session);
+  }
+
+  onDeviceRevoked(listener: (session: Session) => void): () => void {
+    this.#revocationListeners.add(listener);
+    return () => { this.#revocationListeners.delete(listener); };
   }
 
   async pair(body: unknown, ip: string) {

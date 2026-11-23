@@ -22,6 +22,7 @@
 | fastify | 5.12.x (5.12.8 в lockfile) | MIT | server | HTTP, валидация, `inject` для тестов |
 | @fastify/websocket | 11.3.x | MIT | server | WebSocket-эндпоинт поверх ws |
 | ws | 8.22.x | MIT | server, tools | WebSocket (сервер и тестовые клиенты) |
+| @types/ws | 8.18.x | MIT | server (dev) | Типы WebSocket для шлюза и тестов |
 | zod | 4.6.x | MIT | protocol, core, server, mobile | Схемы, вывод типов, JSON Schema |
 | qrcode | 1.5.4 | MIT | server | Матрица QR ([ADR 0010](adr/0010-qr-rendering-on-server.md)) |
 | pino | 10.x (через Fastify) | MIT | server | Структурированные логи |
