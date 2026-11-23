@@ -371,16 +371,18 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     markCaptured(clueId: ClueId, at: GameMinutes): boolean;               // PlayerKnowledgeError INVESTIGATION_UNKNOWN_CLUE
     addStatement(s: Statement | HeardStatement): boolean;                 // veracity вырезается в рантайме
     addContact(id: CharacterId, at: GameMinutes): boolean;
+    readonly suspicions: readonly Suspicion[];   // отметки игрока (INV-003)
+    markSuspicion(id: CharacterId, level: "none" | "possible" | "prime", note?: string): boolean;   // без затрат времени
     serialize(): PlayerKnowledgeSnapshot;  static restore(saved: unknown): PlayerKnowledge;   // INVESTIGATION_INVALID_STATE
   }
   type Claim = { kind: "motive" | "means" | "opportunity" | "presence" | "alibi" | "contradiction"; subject: CharacterId; detail: unknown }
   function compileDeductionRules(input: unknown): DeductionRules;       // DeductionRulesError DEDUCTION_RULES_INVALID (INV-002)
   function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules, ctx?: ClaimContext): EstablishedClaim[];
   // ClaimContext = { clues: Map<ClueId, { supports }>; incident?: { location; window } } — известное игроку, не истина
-  function personsOfInterest(pk: PlayerKnowledge): PersonOfInterest[];   // Suspect — производное от знаний игрока
+  function personsOfInterest(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">): PersonOfInterest[];   // INV-003; подсказка, не Suspect
   function detectContradictions(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">, toleranceMinutes?: number): Contradiction[];   // INV-004; событие ContradictionFound — contradictionEvents()
   interface CaseFile { accusedIds: CharacterId[]; motive?: ClaimRef; means?: ClaimRef; opportunity?: ClaimRef; evidence: ClueId[] }
-  function evaluateAccusation(cf: CaseFile, truth: IncidentRecord, pk: PlayerKnowledge): AccusationOutcome;
+  function evaluateAccusation(cf: CaseFile, truth: IncidentRecord, pk: PlayerKnowledge, ctx: AccusationContext): AccusationOutcome;   // ctx = ClaimContext + rules, hallucinatedClueIds? (INV-005)
   ```
 - **Зависимости:** `evidence`, `knowledge`; **доступ к `truth` только в `evaluateAccusation`.**
 - **События:** `ClueDiscovered`, `StatementHeard`, `ContradictionFound`, `PersonOfInterestAdded`,
@@ -437,6 +439,10 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 ## 12. `@hs/core/game` — GameEngine, действия, представления, сохранения
 
+- **Загрузка сохранения.** `Regenerate` возвращает `ReplayRuntime` с обязательным полем
+  `readonly generatorVersion: string` из фактически сгенерированного расследования. Перед
+  восстановлением чекпойнта и replay `loadSave` сверяет его с версией файла по
+  [ADR 0019](adr/0019-save-generator-compatibility.md).
 - **Расследование (CORE-003):**
   ```ts
   interface WorldState { locations: LocationGraph; items: ItemRegistry; durationMinutes: number }
