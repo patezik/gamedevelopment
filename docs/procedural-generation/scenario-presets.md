@@ -129,6 +129,13 @@ content/scenarios/<scenarioId>/
 
 ## 6. Локации, предметы и персонажи
 
+`preset.world` может задать `startLocationId` и список `variants`. По seed выбирается один
+вариант целиком. Поле `doors` переопределяет замок существующего направленного ребра
+по `from` и `to`. Значение `locked: null` открывает ребро. Поле `spawns` заменяет начальное
+размещение предмета по `itemId`. В `placement` указываются `kind` (`location`, `container`
+или `archetype`) и `id` соответствующей записи. Без `world` используются исходные локации
+и предметы, стартом служит первая локация.
+
 | Файл | Поля записи |
 |------|-------------|
 | `locations.json` | `id`, `name`, `description`, `tags`, `lighting`, `access`, `hotspots`, `connections` |
