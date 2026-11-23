@@ -1,7 +1,7 @@
 ---
 id: SURV-004
 title: "Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона"
-status: todo
+status: in_progress
 priority: P1
 complexity: S
 phase: 7
@@ -9,8 +9,8 @@ milestone: M7
 area: survival
 depends_on: [SURV-001, WORLD-002, PHONE-001]
 modules: ["packages/core/src/survival/inventory.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-w3
+claimed_at: "2026-11-23T19:49:14Z"
 ---
 
 # SURV-004 — Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона
