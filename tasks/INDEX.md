@@ -2,12 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 71 · in_progress: 6 · review: 0 · done: 62 · blocked: 1
+Всего задач: **140** · todo: 70 · in_progress: 7 · review: 0 · done: 62 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [INV-005](INV-005.md) — CaseFile и evaluateAccusation (P0, M)
-- [VAL-002](VAL-002.md) — Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE (P0, L)
 - [SRV-005](SRV-005.md) — Рассылка представлений и событий с фильтром по роли (P0, M)
 - [CNT-006](CNT-006.md) — Контент телефона: сообщения NPC, страницы браузера, файлы, обои (P0, M)
 - [ENG-003](ENG-003.md) — Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых (P0, L)
@@ -124,7 +123,7 @@
 | [SIM-005](SIM-005.md) | Цели ConcealEvidence, SpreadRumor, ProtectSelf, MeetCharacter, SeekInformation | P0 | L | done | claude-w5 | [SIM-004](SIM-004.md), [SIM-003](SIM-003.md), [EVD-001](EVD-001.md) |
 | [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | todo | — | [SIM-003](SIM-003.md) |
 | [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | done | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
-| [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | todo | — | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
+| [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | in_progress | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
 | [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | todo | — | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | todo | — | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | todo | — | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
