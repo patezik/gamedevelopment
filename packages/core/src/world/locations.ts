@@ -87,6 +87,10 @@ export class LocationGraph {
     };
   }
 
+  describe(id: string): Location {
+    return structuredClone(this.getLocation(id));
+  }
+
   directConnection(from: string, to: string, actor: Actor = {}): Location['connections'][number] | undefined {
     const connection = this.getLocation(from).connections.find((edge) => edge.to === to);
     if (!connection || (connection.locked && !actor.itemIds?.has(connection.locked.itemId ?? ''))) {

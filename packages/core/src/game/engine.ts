@@ -22,6 +22,7 @@ import {
   serializeInvestigation,
   type Investigation,
 } from './investigation.ts';
+import { moveCost, projectPlayerView } from './views.ts';
 
 export interface EnginePorts {
   readonly startLocationId: string;
@@ -168,15 +169,10 @@ export class GameEngine {
           return rejected('ACTION_NOT_AVAILABLE');
         }
         movementKey = connection.locked?.itemId;
-        minutes = resolveActionCost(
-          'move',
-          {
-            travel: {
-              from: this.locationId,
-              to: destination,
-              provider: { travelTime: () => connection.minutes },
-            },
-          },
+        minutes = moveCost(
+          this.locationId,
+          destination,
+          connection.minutes,
           this.ports.actionCosts,
         ).expected;
       } else {
@@ -221,6 +217,17 @@ export class GameEngine {
       events: elapsed.events,
       ...(elapsed.to === durationMinutes ? { outcome: 'time_expired' as const } : {}),
     };
+  }
+
+  playerView() {
+    return projectPlayerView({
+      investigation: this.investigation,
+      locationId: this.locationId,
+      minute: this.#time.now(),
+      ...(this.ports.player && { actor: this.ports.player }),
+      ...(this.ports.actionCosts && { actionCosts: this.ports.actionCosts }),
+      ...(this.#pendingCapture && { pendingCapture: this.#pendingCapture }),
+    });
   }
 
   snapshot(): GameSnapshot {
