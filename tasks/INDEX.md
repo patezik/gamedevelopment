@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 67 · in_progress: 8 · review: 2 · done: 62 · blocked: 1
+Всего задач: **140** · todo: 66 · in_progress: 9 · review: 2 · done: 62 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -11,7 +11,6 @@
 - [GDT-004](GDT-004.md) — Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью (P0, L)
 - [GDT-006](GDT-006.md) — HUD: часы, календарь, остаток времени, показатели, Static, статус телефона (P0, S)
 - [INV-003](INV-003.md) — Персоны интереса и отметки подозрений игрока (P1, S)
-- [SIM-007](SIM-007.md) — LOD симуляции (focus/background) и бенчмарки (P1, M)
 - [QA-004](QA-004.md) — Совместимость сохранений между версиями генератора и политика миграций (P1, M)
 - [GDT-011](GDT-011.md) — Debug-панель: seed, время, просмотр истины в debug-режиме (P2, S)
 
@@ -118,7 +117,7 @@
 | [INV-005](INV-005.md) | CaseFile и evaluateAccusation | P0 | M | in_progress | claude-w1 | [INV-002](INV-002.md), [TRUTH-002](TRUTH-002.md) |
 | [KNOW-002](KNOW-002.md) | LiePolicy и показания: answer(question) → правда, ошибка или ложь | P0 | L | done | codex-prototype-27 | [KNOW-001](KNOW-001.md), [CHAR-002](CHAR-002.md) |
 | [SIM-005](SIM-005.md) | Цели ConcealEvidence, SpreadRumor, ProtectSelf, MeetCharacter, SeekInformation | P0 | L | done | claude-w5 | [SIM-004](SIM-004.md), [SIM-003](SIM-003.md), [EVD-001](EVD-001.md) |
-| [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | todo | — | [SIM-003](SIM-003.md) |
+| [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | in_progress | claude-w5 | [SIM-003](SIM-003.md) |
 | [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | done | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
 | [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | in_progress | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
 | [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | todo | — | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
