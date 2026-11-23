@@ -37,6 +37,29 @@ export function crossCheck(content: ScenarioContent): ContentIssue[] {
   const endings = new Set(content.preset.endings);
   const traceVerbs = new Set(content.traceRules.map(({ verb }) => verb));
 
+  const world = content.preset.world;
+  reference(locations, world?.startLocationId, 'preset.world.startLocationId');
+  const variants = world?.variants ?? [];
+  index(variants, 'preset.world.variants');
+  variants.forEach((variant, row) => {
+    const path = `preset.world.variants[${row}]`;
+    variant.doors?.forEach(({ from, to, locked }, entry) => {
+      const doorPath = `${path}.doors[${entry}]`;
+      const destinations = new Set(
+        content.locations.find(({ id }) => id === from)?.connections.map(({ to }) => to),
+      );
+      reference(locations, from, `${doorPath}.from`);
+      reference(destinations, to, `${doorPath}.to`);
+      reference(items, locked?.itemId, `${doorPath}.locked.itemId`);
+    });
+    variant.spawns?.forEach(({ itemId, placement }, entry) => {
+      const spawnPath = `${path}.spawns[${entry}]`;
+      const targets = { location: locations, container: items, archetype: archetypes };
+      reference(items, itemId, `${spawnPath}.itemId`);
+      reference(targets[placement.kind], placement.id, `${spawnPath}.placement.id`);
+    });
+  });
+
   references(crimes, content.preset.incident.templates, 'preset.incident.templates');
   references(
     archetypes,
