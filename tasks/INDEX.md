@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 100 · in_progress: 1 · review: 0 · done: 37 · blocked: 2
+Всего задач: **140** · todo: 100 · in_progress: 0 · review: 0 · done: 38 · blocked: 2
 
 ## Готовы к взятию сейчас
 
@@ -14,8 +14,10 @@
 - [SIM-004](SIM-004.md) — Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot (P0, M)
 - [KNOW-002](KNOW-002.md) — LiePolicy и показания: answer(question) → правда, ошибка или ложь (P0, L)
 - [VAL-001](VAL-001.md) — Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE (P0, S)
+- [SRV-003](SRV-003.md) — Сервис привязки: коды, rate limit, токены устройств, POST /pair (P0, M)
 - [SURV-001](SURV-001.md) — Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости (P0, M)
 - [SAVE-001](SAVE-001.md) — Формат сохранения и replay с проверкой хеша (P1, M)
+- [SRV-009](SRV-009.md) — Диагностика: структурированные логи, debug-истина по флагу (P1, S)
 
 ## Критический путь
 
@@ -36,9 +38,9 @@
 | [KNOW-002](KNOW-002.md) LiePolicy и показания: answer(question) → правда, ошибка или ложь | 5 |
 | [PHONE-001](PHONE-001.md) Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | 5 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
-| [SRV-001](SRV-001.md) SessionManager: сессии, очередь действий, жизненный цикл | 4 |
 | [SURV-001](SURV-001.md) Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | 4 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
+| [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -145,7 +147,7 @@
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | todo | — | [MOB-003](MOB-003.md) |
 | [PHONE-001](PHONE-001.md) | Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | P0 | L | todo | — | [INV-001](INV-001.md), [PROTO-002](PROTO-002.md) |
 | [PROTO-003](PROTO-003.md) | Генерация GDScript-констант протокола и контрактные тесты Godot | P0 | S | done | egor-claude-proto-003 | [PROTO-002](PROTO-002.md), [FND-008](FND-008.md) |
-| [SRV-001](SRV-001.md) | SessionManager: сессии, очередь действий, жизненный цикл | P0 | M | in_progress | codex-engine-27 | [FND-005](FND-005.md), [ENG-001](ENG-001.md) |
+| [SRV-001](SRV-001.md) | SessionManager: сессии, очередь действий, жизненный цикл | P0 | M | done | codex-engine-27 | [FND-005](FND-005.md), [ENG-001](ENG-001.md) |
 | [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | todo | — | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
 | [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | todo | — | [SRV-001](SRV-001.md) |
 | [SRV-004](SRV-004.md) | WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume | P0 | L | todo | — | [SRV-003](SRV-003.md), [PROTO-001](PROTO-001.md) |

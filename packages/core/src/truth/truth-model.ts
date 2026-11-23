@@ -52,8 +52,13 @@ interface Possession {
 }
 
 export class TruthError extends Error {
-  constructor(readonly code: 'TRUTH_UNKNOWN_EVENT' | 'TRUTH_INVALID_EVENT_ID', readonly eventId: EventId) {
+  readonly code: 'TRUTH_UNKNOWN_EVENT' | 'TRUTH_INVALID_EVENT_ID';
+  readonly eventId: EventId;
+
+  constructor(code: TruthError['code'], eventId: EventId) {
     super(`${code}: ${eventId}`);
+    this.code = code;
+    this.eventId = eventId;
     this.name = 'TruthError';
   }
 }
