@@ -145,8 +145,9 @@ export function scoreSpreadRumor(state: NpcState, rumors: number, listeners: num
 
 /**
  * Retelling distorts a belief deterministically from `rng`: confidence drops by the told factor,
- * a `did` time and `at`/`possessed`/`state` intervals shift by 5–15 minutes, and a `motive`
- * loses its basis. A shifted proposition never equals the original.
+ * a `did` time, `relation.since` (from `acquiredAt` if unset) and `at`/`possessed`/`state`
+ * intervals shift by 5–15 minutes, and a `motive` loses its basis and gets a `rumored_` type
+ * prefix. Every kind changes, so the result never equals the original proposition.
  */
 export function distortRumor(belief: Belief, rng: Rng): Belief {
   const stream = rng.fork('distort');
@@ -156,7 +157,11 @@ export function distortRumor(belief: Belief, rng: Rng): Belief {
   if (p.kind === 'did') proposition = { ...p, at: p.at + shift };
   else if (p.kind === 'at' || p.kind === 'possessed' || p.kind === 'state') {
     proposition = { ...p, interval: { from: p.interval.from + shift, to: p.interval.to + shift } };
-  } else if (p.kind === 'motive') proposition = { ...p, basis: [] };
+  } else if (p.kind === 'relation') {
+    proposition = { ...p, since: (p.since ?? belief.acquiredAt) + shift };
+  } else if (p.kind === 'motive') {
+    proposition = { ...p, basis: [], motiveType: `rumored_${p.motiveType}` };
+  }
   return {
     ...belief,
     proposition,

@@ -7,7 +7,7 @@ import { loadScenarioFromDir } from '../../content/index.ts';
 import { compileTraceRules, type Trace } from '../../evidence/index.ts';
 import { KnowledgeStore, type Belief } from '../../knowledge/index.ts';
 import { createRng } from '../../rng/index.ts';
-import { TruthLog } from '../../truth/index.ts';
+import { TruthLog, type Proposition } from '../../truth/index.ts';
 import { ItemRegistry } from '../../world/index.ts';
 import {
   concealEvidence,
@@ -51,6 +51,7 @@ const unused = () => {
 };
 
 test('ConcealEvidence property: every concealment leaves a secondary trace (500 seeds)', () => {
+  const verbs = new Set<string>();
   fc.assert(
     fc.property(
       fc.string({ minLength: 1 }),
@@ -60,9 +61,9 @@ test('ConcealEvidence property: every concealment leaves a secondary trace (500 
       (seed, impulsivity, conscientiousness, now) => {
         const log = new TruthLog();
         const got: Trace[][] = [];
-        const itemId = minimal.items[0]!.id;
+        const item = minimal.items[now % minimal.items.length]!;
         const goal = concealEvidence({
-          incriminating: () => [{ entity: { kind: 'item', id: itemId }, location: hall }],
+          incriminating: () => [{ entity: { kind: 'item', id: item.id }, location: hall }],
           record: (input) => log.append(input),
           rules,
           items,
@@ -78,11 +79,16 @@ test('ConcealEvidence property: every concealment leaves a secondary trace (500 
         expect(got).toHaveLength(1);
         expect(got[0]!.length).toBeGreaterThanOrEqual(1);
         const [event] = log.events();
+        expect(log.events()).toHaveLength(1);
         expect(['hide', 'destroy']).toContain(event!.verb);
+        expect(event!.targets).toEqual([{ kind: 'item', id: item.id }]);
+        for (const trace of got[0]!) expect(trace.sourceEventId).toBe(event!.id);
+        verbs.add(event!.verb);
       },
     ),
     { numRuns: 500 },
   );
+  expect([...verbs].sort()).toEqual(['destroy', 'hide']);
 });
 
 test('ConcealEvidence needs wariness above 0.5 and a known target', () => {
@@ -105,14 +111,42 @@ const rumor = (at: number): Belief => ({
   fuzzMinutes: 0,
 });
 
-test('rumor distortion is deterministic, lossy and marked as told', () => {
+const span = (at: number) => ({ from: at, to: at + 30 });
+const propositions = (at: number): Proposition[] => [
+  { kind: 'did', who: 'ch_b', verb: 'hide', at, where: hall },
+  { kind: 'at', who: 'ch_b', where: hall, interval: span(at) },
+  { kind: 'possessed', who: 'ch_b', item: 'it_log', interval: span(at) },
+  {
+    kind: 'state',
+    entity: { kind: 'item', id: 'it_log' },
+    property: 'p',
+    value: 1,
+    interval: span(at),
+  },
+  { kind: 'relation', a: 'ch_a', b: 'ch_b', relType: 'friend' },
+  { kind: 'relation', a: 'ch_a', b: 'ch_b', relType: 'friend', since: at },
+  { kind: 'motive', who: 'ch_b', against: 'ch_c', motiveType: 'envy', basis: [] },
+  {
+    kind: 'motive',
+    who: 'ch_b',
+    against: 'ch_c',
+    motiveType: 'envy',
+    basis: ['f_0123456789abcdef'],
+  },
+];
+
+test('rumor distortion is deterministic, lossy and changes every kind of proposition', () => {
   fc.assert(
     fc.property(fc.string(), fc.integer({ min: 0, max: 3000 }), (seed, at) => {
-      const a = distortRumor(rumor(at), createRng(seed));
-      expect(distortRumor(rumor(at), createRng(seed))).toEqual(a);
-      expect(a.proposition).not.toEqual(rumor(at).proposition);
-      expect(a.confidence).toBeCloseTo(0.72);
-      expect(a.source).toBe('told');
+      for (const proposition of propositions(at)) {
+        const belief = { ...rumor(at), proposition };
+        const a = distortRumor(belief, createRng(seed));
+        expect(distortRumor(belief, createRng(seed))).toEqual(a);
+        expect(a.proposition, proposition.kind).not.toEqual(proposition);
+        expect(a.proposition.kind).toBe(proposition.kind);
+        expect(a.confidence).toBeCloseTo(0.72);
+        expect(a.source).toBe('told');
+      }
     }),
     { numRuns: 100 },
   );
