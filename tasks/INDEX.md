@@ -2,17 +2,17 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 59 · in_progress: 14 · review: 1 · done: 65 · blocked: 1
+Всего задач: **140** · todo: 59 · in_progress: 13 · review: 0 · done: 67 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-_Нет задач, у которых выполнены все зависимости._
+- [GEN-006](GEN-006.md) — Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых (P0, L)
 
 ## Критический путь
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -85,7 +85,7 @@ _Нет задач, у которых выполнены все зависимо
 | [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | done | codex-prototype-27 | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
 | [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | done | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
 | [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | done | egor-claude-gen-004 | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
-| [GEN-005](GEN-005.md) | Стадия ConflictGen: правила мотивов для всех пар персонажей | P0 | M | in_progress | egor-claude-gen-005 | [GEN-004](GEN-004.md) |
+| [GEN-005](GEN-005.md) | Стадия ConflictGen: правила мотивов для всех пар персонажей | P0 | M | done | egor-claude-gen-005 | [GEN-004](GEN-004.md) |
 | [GEN-006](GEN-006.md) | Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых | P0 | L | todo | — | [GEN-005](GEN-005.md), [GEN-002](GEN-002.md) |
 | [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | todo | — | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
 | [GEN-008](GEN-008.md) | Стадия HistorySimulation: симуляция предыстории с исполнением плана | P0 | L | todo | — | [GEN-007](GEN-007.md), [SIM-002](SIM-002.md), [SIM-003](SIM-003.md), [SIM-004](SIM-004.md) |
@@ -152,7 +152,7 @@ _Нет задач, у которых выполнены все зависимо
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [CNT-005](CNT-005.md) | Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | P0 | L | in_progress | claude-w1 | [KNOW-002](KNOW-002.md), [CNT-002](CNT-002.md) |
-| [CNT-006](CNT-006.md) | Контент телефона: сообщения NPC, страницы браузера, файлы, обои | P0 | M | review | egor-claude-cnt-006 | [PHONE-001](PHONE-001.md), [CNT-002](CNT-002.md) |
+| [CNT-006](CNT-006.md) | Контент телефона: сообщения NPC, страницы браузера, файлы, обои | P0 | M | done | egor-claude-cnt-006 | [PHONE-001](PHONE-001.md), [CNT-002](CNT-002.md) |
 | [ENG-003](ENG-003.md) | Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | P0 | L | in_progress | egor-claude-eng-003 | [ENG-001](ENG-001.md), [EVD-002](EVD-002.md), [INV-001](INV-001.md), [KNOW-002](KNOW-002.md), [WORLD-002](WORLD-002.md) |
 | [ENG-004](ENG-004.md) | Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | P0 | L | todo | — | [ENG-003](ENG-003.md), [PHONE-001](PHONE-001.md), [EVD-003](EVD-003.md) |
 | [ENG-005](ENG-005.md) | Блокировка взаимодействий и арбитраж действий desktop/phone | P1 | S | todo | — | [ENG-003](ENG-003.md) |
