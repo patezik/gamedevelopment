@@ -134,6 +134,25 @@ function setup(
   return { runner, time, truth, world, items };
 }
 
+it('records public routine observations after all positions for the minute are available', () => {
+  const absent = character('ch_absent', [block(0, 1440, outside)]);
+  const { runner, time, truth } = setup([alpha, absent, beta]);
+  time.advance(1);
+  for (const event of truth.events()) {
+    const present = truth.whoWasAt(event.location, { from: event.t, to: event.t + 1 });
+    for (const observer of [alpha, beta, absent]) {
+      expect(
+        runner.knowledgeOf(observer.id)?.query({
+          kind: 'did',
+          who: event.actorIds[0]!,
+          verb: event.verb,
+          at: event.t,
+        }),
+      ).toHaveLength(present.includes(observer.id) ? 1 : 0);
+    }
+  }
+});
+
 function moveItem(
   state: Pick<ReturnType<typeof setup>, 'items' | 'truth'>,
   id: string,

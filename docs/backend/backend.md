@@ -43,8 +43,8 @@ apps/server/src/
 | `HS_LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent` |
 | `HS_DEBUG_TRUTH` | `0` | `0` выключает флаг, `1` включает |
 
-Каркас сервера читает `HS_DATA_DIR` и `HS_DEBUG_TRUTH` при старте. Сохранения и маршрут отладки
-появятся с серверными модулями.
+Каркас сервера читает `HS_DATA_DIR` и `HS_DEBUG_TRUTH` при старте. С `HS_DEBUG_TRUTH=1` сервер при
+запуске пишет предупреждение, а отладочные маршруты (§3, §6) регистрируются; без флага их нет вообще.
 
 ## 3. REST API (`/api/v1`)
 
@@ -64,7 +64,11 @@ apps/server/src/
 | `DELETE /sessions/:id/device` | desktop | отвязать телефон | |
 | `GET /saves` | — (локальный сервер) | `[{ saveId, scenarioId, seed, updatedAt, gameTime }]` | |
 | `POST /saves/:saveId/load` | — | → `{ sessionId, desktopToken, pairing }` | `SAVE_NOT_FOUND`, `SAVE_DESYNC` |
-| `GET /sessions/:id/debug/truth` | desktop + `HS_DEBUG_TRUTH=1` | журнал истины | 404 если флаг выключен |
+| `GET /sessions/:id/debug/truth` | desktop + `HS_DEBUG_TRUTH=1` | `{ sessionId, scenarioId, seed, generatorVersion, minute, truth }`: журнал истины целиком | 404 если флаг выключен (маршрута нет); `UNAUTHORIZED`, `SESSION_NOT_FOUND`, 501 если движок сессии нельзя осмотреть |
+| `GET /sessions/:id/debug/export` | desktop + `HS_DEBUG_TRUTH=1` | репро-пакет `{ format: "hollow-signal-repro", exportedAt, server, session, scenarioId, seed, generatorVersion, stateHash, snapshot }` | как у `debug/truth` |
+
+Оба отладочных ответа содержат решение: они идут с `Cache-Control: no-store`, а каждое обращение
+записывается в лог предупреждением (сессия, без содержимого).
 
 Аутентификация desktop — заголовок `Authorization: Bearer <desktopToken>`. Ошибки — формат
 `{ error: { code, message } }`, HTTP 4xx/5xx.
@@ -107,10 +111,37 @@ created → (pairing) → active → (game over) → finished → (TTL 30 мин
 ## 6. Логирование
 
 - Каркас пишет HTTP-метод, шаблон маршрута, статус и время ответа. Параметры URL, заголовки и тела
-  запросов в эту запись не попадают.
-- pino JSON; поля: `sessionId`, `role`, `msgType`, `durationMs`. Токены, коды и содержимое
-  истины не логируются (кроме `HS_DEBUG_TRUTH`).
+  запросов в эту запись не попадают. Для маршрутов сессии добавляется `sessionId` (только если значение
+  имеет формат UUID).
+- Сбой сервера (исключение без статуса или статус ≥ 500) пишется отдельной записью `request failed`
+  уровня `error` с кодом `INTERNAL`. Текст исключения и стек могут содержать секреты и пропускаются.
+  Отказы, вызванные клиентом (401,
+  404, ошибки валидации), отдельной записи не получают: они видны статусом в строке ответа.
+- pino JSON; поля: `sessionId`, `role`, `msgType`, `durationMs`. **Токены, коды и содержимое истины не
+  логируются никогда**, в том числе при `HS_DEBUG_TRUTH=1`: отладочная истина отдаётся только ответом
+  эндпоинта. Второй рубеж: pino заменяет на `[redacted]` значения полей `authorization`, `cookie`,
+  `token`, `tokenId`, `deviceToken`, `desktopToken`, `pairingCode`, `sig`, `signature`, `secret`,
+  `sessionSecret`, `password`, `raw`, `qrPayload` на любой глубине (до двух уровней вложенности), если
+  кто-то залогирует объект с такими полями.
 - Генерация логирует `seed`, `generatorVersion`, попытки, время стадий.
+
+### Отладка и репро
+
+- `GET /sessions/:id/debug/truth` и `GET /sessions/:id/debug/export` существуют только при
+  `HS_DEBUG_TRUTH=1` и только для токена desktop. Без флага маршрутов нет, и ответ неотличим от
+  ответа на любой неизвестный путь (404), в том числе для верного токена. Флага недостаточно: маршруты
+  регистрируются, только если приложению переданы зависимости диагностики. В релизных сборках флаг
+  должен игнорироваться ([truth-model.md §6](../investigation/truth-model.md)): это забота упаковки
+  (INT-005), здесь признака релиза нет.
+- **Экспорт репро** как команда: `HS_DESKTOP_TOKEN=<desktopToken> npm run export-repro -w @hs/server --
+  <sessionId> [--url http://127.0.0.1:7420] [--out repro.json]`. Токен берётся только из окружения
+  (командная строка видна другим процессам и попадает в историю оболочки), файл создаётся с правами
+  `0600` на POSIX, потому что содержит решение. На Windows файл наследует ACL каталога назначения.
+  `desktopToken` возвращает `POST /sessions`.
+- Репро-пакет содержит снимок движка (сериализованное расследование вместе с истиной, минуту, локацию),
+  хеш состояния, `seed`, `scenarioId`, `generatorVersion` и версии сервера и протокола.
+  `GameEngine.restore(bundle.snapshot, investigation, ports)` даёт то же состояние (проверяется тестом).
+  Истории действий в пакете пока нет: её добавит формат сохранения (SAVE-001).
 
 ## 7. Тесты
 

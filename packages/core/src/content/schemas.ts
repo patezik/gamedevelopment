@@ -16,6 +16,40 @@ export const presetSchema = z.strictObject({
   id: scenarioIdSchema,
   version: z.int().positive(),
   title: z.record(z.string().min(1), text).refine((title) => Object.keys(title).length > 0),
+  world: z
+    .strictObject({
+      startLocationId: id.optional(),
+      variants: z
+        .array(
+          z.strictObject({
+            id,
+            doors: z
+              .array(
+                z.strictObject({
+                  from: id,
+                  to: id,
+                  locked: z.strictObject({ itemId: id.optional() }).nullable(),
+                }),
+              )
+              .optional(),
+            spawns: z
+              .array(
+                z.strictObject({
+                  itemId: id,
+                  placement: z.discriminatedUnion('kind', [
+                    z.strictObject({ kind: z.literal('location'), id }),
+                    z.strictObject({ kind: z.literal('container'), id }),
+                    z.strictObject({ kind: z.literal('archetype'), id }),
+                  ]),
+                }),
+              )
+              .optional(),
+          }),
+        )
+        .min(1)
+        .optional(),
+    })
+    .optional(),
   time: z.strictObject({
     startDateTime: z.string().refine(isCalendarStartIso, {
       error: 'Expected a valid local date and time in YYYY-MM-DDTHH:mm[:00] format',
@@ -127,7 +161,7 @@ export const archetypesSchema = z
         }),
       ),
       access: z.array(z.strictObject({ locationId: id.optional(), itemId: id.optional() })),
-      biography: z.array(z.strictObject({ text, tags: ids })),
+      biography: z.array(z.strictObject({ text, tags: ids, excludes: ids.optional() })),
     }),
   )
   .min(1);

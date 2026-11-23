@@ -1,7 +1,7 @@
 ---
 id: KNOW-002
 title: "LiePolicy и показания: answer(question) → правда, ошибка или ложь"
-status: in_progress
+status: done
 priority: P0
 complexity: L
 phase: 4
@@ -50,10 +50,10 @@ claimed_at: "2026-11-23T09:37:33Z"
 
 ## Критерии приёмки
 
-- [ ] Невиновный без секретов не лжёт (property).
-- [ ] Ложь всегда относится к пропозициям из conceal/fabricate.
-- [ ] Ошибка памяти не превышает fuzzMinutes.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Невиновный без секретов не лжёт (property).
+- [x] Ложь всегда относится к пропозициям из conceal/fabricate.
+- [x] Ошибка памяти не превышает fuzzMinutes.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
