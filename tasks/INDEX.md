@@ -2,13 +2,15 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 86 · in_progress: 6 · review: 0 · done: 46 · blocked: 2
+Всего задач: **140** · todo: 86 · in_progress: 5 · review: 0 · done: 47 · blocked: 2
 
 ## Готовы к взятию сейчас
 
 - [GEN-004](GEN-004.md) — Стадия SocialGen: отношения и секреты (P0, M)
 - [SIM-003](SIM-003.md) — Встречи NPC и обмен знаниями, дрейф отношений (P0, M)
+- [INV-001](INV-001.md) — PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал (P0, S)
 - [TOOL-001](TOOL-001.md) — Фейковые клиенты desktop/phone (CLI и библиотека) для тестов (P0, M)
+- [CNT-005](CNT-005.md) — Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы (P0, L)
 - [INT-008](INT-008.md) — Спайк: TLS с pinning через QR и облачный ретранслятор → ADR (P2, M)
 
 ## Критический путь
@@ -27,12 +29,12 @@
 | [GDT-002](GDT-002.md) Autoload GameStore и SceneRouter | 5 |
 | [GDT-004](GDT-004.md) Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | 5 |
 | [INV-002](INV-002.md) Утверждения (Claims) и правила дедукции | 5 |
-| [KNOW-002](KNOW-002.md) LiePolicy и показания: answer(question) → правда, ошибка или ложь | 5 |
 | [PHONE-001](PHONE-001.md) Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | 5 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
 | [GDT-010](GDT-010.md) Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | 3 |
+| [INV-001](INV-001.md) PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | 3 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -112,7 +114,7 @@
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | todo | — | [INV-002](INV-002.md) |
 | [INV-004](INV-004.md) | Обнаружение противоречий между показаниями и фактами | P0 | M | todo | — | [INV-002](INV-002.md) |
 | [INV-005](INV-005.md) | CaseFile и evaluateAccusation | P0 | M | todo | — | [INV-002](INV-002.md), [TRUTH-002](TRUTH-002.md) |
-| [KNOW-002](KNOW-002.md) | LiePolicy и показания: answer(question) → правда, ошибка или ложь | P0 | L | in_progress | codex-prototype-27 | [KNOW-001](KNOW-001.md), [CHAR-002](CHAR-002.md) |
+| [KNOW-002](KNOW-002.md) | LiePolicy и показания: answer(question) → правда, ошибка или ложь | P0 | L | done | codex-prototype-27 | [KNOW-001](KNOW-001.md), [CHAR-002](CHAR-002.md) |
 | [SIM-005](SIM-005.md) | Цели ConcealEvidence, SpreadRumor, ProtectSelf, MeetCharacter, SeekInformation | P0 | L | todo | — | [SIM-004](SIM-004.md), [SIM-003](SIM-003.md), [EVD-001](EVD-001.md) |
 | [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | todo | — | [SIM-003](SIM-003.md) |
 | [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | in_progress | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |

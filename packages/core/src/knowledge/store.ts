@@ -81,6 +81,19 @@ function roundProposition(proposition: Proposition, step: number): Proposition {
   }
 }
 
+/** Applies the same memory decay to one belief already selected by the caller. */
+export function recallBelief(belief: Belief, now: GameMinutes): Belief {
+  const memory = structuredClone(belief);
+  const elapsed = BigInt(now) - BigInt(memory.acquiredAt);
+  memory.fuzzMinutes = Math.min(
+    Number.MAX_SAFE_INTEGER,
+    memory.fuzzMinutes + Number(elapsed / MINUTES_PER_FUZZ_MINUTE),
+  );
+  const step = roundingStep(memory.fuzzMinutes);
+  if (step > 1) memory.proposition = roundProposition(memory.proposition, step);
+  return memory;
+}
+
 /** A character's subjective knowledge, keyed by the original proposition. */
 export class KnowledgeStore {
   readonly #beliefs = new Map<FactId, Belief>();
@@ -102,18 +115,7 @@ export class KnowledgeStore {
   recall(pattern: PropositionPattern, now: GameMinutes): Belief | undefined {
     const minute = gameMinuteSchema.parse(now);
     const match = this.#matches(pattern).find(({ acquiredAt }) => acquiredAt <= minute);
-    if (!match) return undefined;
-
-    const memory = structuredClone(match);
-    // Subtract in integers even when prehistory and now span more than MAX_SAFE_INTEGER.
-    const elapsed = BigInt(minute) - BigInt(memory.acquiredAt);
-    memory.fuzzMinutes = Math.min(
-      Number.MAX_SAFE_INTEGER,
-      memory.fuzzMinutes + Number(elapsed / MINUTES_PER_FUZZ_MINUTE),
-    );
-    const step = roundingStep(memory.fuzzMinutes);
-    if (step > 1) memory.proposition = roundProposition(memory.proposition, step);
-    return memory;
+    return match && recallBelief(match, minute);
   }
 
   serialize(): string {
