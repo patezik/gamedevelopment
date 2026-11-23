@@ -7,7 +7,7 @@ import {
   evaluateClaims,
   type ClaimContext,
 } from './claims.ts';
-import { PlayerKnowledge } from './player-knowledge.ts';
+import { PlayerKnowledge, type HeardStatement } from './player-knowledge.ts';
 
 const rulesFile = (scenario: string): unknown =>
   JSON.parse(readFileSync(`content/scenarios/${scenario}/deduction-rules.json`, 'utf8'));
@@ -46,7 +46,7 @@ const said = (
   where: string,
   from: number,
   to: number,
-) => ({
+): HeardStatement => ({
   id,
   speakerId,
   proposition: { kind: 'at', who, where, interval: { from, to } },
