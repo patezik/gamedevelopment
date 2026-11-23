@@ -423,8 +423,13 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   ```ts
   interface PhoneState { contacts; threads; callLog; activeCall?; gallery; files; notes; mapPins; browserPages; notifications; battery: number }
   function reducePhone(s: PhoneState, e: DomainEvent): PhoneState;
-  function projectPhoneView(s: PhoneState, survival: SurvivalState): PhoneView;   // схема из @hs/protocol
+  function projectPhoneView(s: PhoneState, survival: PhoneSurvival, ctx: { minute; calendar }): PhoneView;   // схема из @hs/protocol
+  function initialPhoneState(templates: PhoneTemplate[], opts?): PhoneState;   // пресет → стартовый телефон героя
   ```
+  `PhoneEvent` — события телефона (`MessageReceived`, `CallStarted`, `FileUnlocked`, `PhotoAdded` и т.д.);
+  чужие события редьюсер игнорирует. `PhoneSurvival = { vitals, static }`; ему и времени нужны
+  `signal`, `glitchLevel` и `status.time`. Проекция собирает каждое поле явно: пароли файлов,
+  содержимое заблокированных файлов, скрытые файлы и `hallucination` в `PhoneView` не попадают.
 - **Тесты:** каждое доменное событие отражается в нужном приложении; галлюцинации помечены
   `hallucination: true` только на сервере и не попадают в `CaseFile`.
 

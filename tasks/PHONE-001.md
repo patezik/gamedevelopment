@@ -1,7 +1,7 @@
 ---
 id: PHONE-001
 title: "Домен телефона: PhoneState, редьюсер событий, проекция PhoneView"
-status: in_progress
+status: review
 priority: P0
 complexity: L
 phase: 5
@@ -50,8 +50,8 @@ claimed_at: "2026-11-23T19:20:31Z"
 
 ## Критерии приёмки
 
-- [ ] Проекция проходит схему PhoneView.
-- [ ] Тест утечек как в ENG-002.
+- [x] Проекция проходит схему PhoneView.
+- [x] Тест утечек как в ENG-002.
 - [ ] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
