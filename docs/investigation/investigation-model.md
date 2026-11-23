@@ -122,6 +122,21 @@ interface AccusationOutcome {
 
 Сервер отклоняет улики-галлюцинации и улики, которых нет в `PlayerKnowledge`.
 
+Реализация (`packages/core/src/investigation/accusation.ts`, INV-005): единственный файл
+Investigation Engine, который импортирует `truth`, и из истины он читает только `culpritIds`.
+`evaluateAccusation(caseFile, incident, pk, context)`; `context` — `ClaimContext` плюс скомпилированные
+`rules` и необязательный набор `hallucinatedClueIds`.
+
+- `ClaimRef` — установленное утверждение в виде `evaluateClaims`, например `means(ch_bursar)`.
+- Ошибки (`AccusationError`): `CASEFILE_INCOMPLETE` — никто не обвинён; `CASEFILE_UNKNOWN_EVIDENCE` —
+  приложена улика, которой нет в `PlayerKnowledge`, или улика-галлюцинация (`evidenceIds`).
+- `proven.X` истинно, если правила из **приложенных** улик (и всех услышанных показаний) устанавливают
+  именно заявленное утверждение вида X для обвиняемого. Незаявленная часть не доказана.
+- Исход: `solved` — обвинены ровно виновные и доказаны все три части; `partial` — обвинены верно,
+  но доказано не всё; иначе `wrong_accusation`. Порядок и повторы в `accusedIds` и `evidence` не важны.
+- `consequences`: при ложном обвинении — `refuses_to_talk` для каждого обвиняемого, `trust_falls`,
+  `culprit_freed`; при `partial` — `culprit_destroys_evidence`; при `solved` пусто. Исполняет их SIM-006.
+
 ## 6. Реакции мира
 
 - Вопросы игрока о теме → `wariness` у персонажей, для которых тема чувствительна.
