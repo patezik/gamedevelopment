@@ -249,8 +249,8 @@ export function applyDelta(
 export function tickAwake(state: VitalsState, minutes: number, at: GameMinutes): VitalsStep {
   wholeMinutes(minutes, 'minutes');
   if (endingFor(state.vitals) || minutes === 0) return unchanged(state);
-  const total = state.awakeMinutes + minutes;
-  const gain = Math.floor(total / AWAKE_FATIGUE_MINUTES);
+  const total = state.awakeMinutes + (minutes % AWAKE_FATIGUE_MINUTES);
+  const gain = Math.floor(minutes / AWAKE_FATIGUE_MINUTES) + Math.floor(total / AWAKE_FATIGUE_MINUTES);
   const next: VitalsState = {
     ...state,
     vitals: { ...state.vitals, fatigue: clamp(state.vitals.fatigue + gain, VITALS_LIMITS.fatigue) },
@@ -268,8 +268,9 @@ export function rest(state: VitalsState, minutes: number, at: GameMinutes): Vita
   wholeMinutes(minutes, 'minutes');
   if (endingFor(state.vitals) || minutes === 0) return unchanged(state);
   const before = state.restedMinutes;
-  const after = before + minutes;
+  const after = before + (minutes % REST_CYCLE);
   const gained = (period: number): number =>
+    Math.floor(minutes / REST_CYCLE) * (REST_CYCLE / period) +
     Math.floor(after / period) - Math.floor(before / period);
   const { vitals } = state;
   const next: VitalsState = {

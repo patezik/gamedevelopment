@@ -238,6 +238,12 @@ describe('tickAwake: +10 fatigue per hour', () => {
 });
 
 describe('rest: -30 fatigue/h, +1 sanity/2h, +1 health/4h', () => {
+  it('preserves exact carried minutes for the largest supported duration', () => {
+    const duration = Number.MAX_SAFE_INTEGER;
+    const initial = state({}, { awakeMinutes: 2, restedMinutes: 4 });
+    expect(tickAwake(initial, duration, duration).state.awakeMinutes).toBe(3);
+    expect(rest(initial, duration, duration).state.restedMinutes).toBe(35);
+  });
   it.each<[number, Partial<Vitals>, Vitals]>([
     [60, { fatigue: 80 }, { health: 10, sanity: 10, fatigue: 50 }],
     [120, { fatigue: 80, sanity: 5 }, { health: 10, sanity: 6, fatigue: 20 }],
