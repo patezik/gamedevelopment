@@ -34,7 +34,10 @@ export class ViewCache {
     const view = this.#source(session, role);
     if (!view) return undefined;
     let roles = this.#entries.get(session);
-    if (!roles) this.#entries.set(session, (roles = new Map()));
+    if (!roles) {
+      roles = new Map<SessionRole, { version: number; view: RoleView }>();
+      this.#entries.set(session, roles);
+    }
     roles.set(role, { version, view });
     return view;
   }

@@ -255,7 +255,7 @@ export class SessionGateway {
             },
           });
         }
-        if (result.ok) this.#afterDispatch(session, result);
+        if (result.ok) this.#afterDispatch(session, 'events' in result ? result : {});
         return;
       }
       case 'qr.scan':
@@ -270,7 +270,7 @@ export class SessionGateway {
    */
   #afterDispatch(
     session: Session,
-    result: { events?: readonly unknown[]; outcome?: string },
+    result: { readonly events?: readonly unknown[]; readonly outcome?: string | undefined },
   ): void {
     const batch = {
       events: result.events ?? [],
