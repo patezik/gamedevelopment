@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 86 · in_progress: 4 · review: 0 · done: 48 · blocked: 2
+Всего задач: **140** · todo: 86 · in_progress: 3 · review: 1 · done: 48 · blocked: 2
 
 ## Готовы к взятию сейчас
 
@@ -150,7 +150,7 @@
 | [SRV-006](SRV-006.md) | QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan | P0 | M | done | claude-qr-1 | [SRV-003](SRV-003.md), [EVD-003](EVD-003.md) |
 | [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | todo | — | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
 | [SRV-008](SRV-008.md) | Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам | P0 | S | done | claude-server-1 | [FND-005](FND-005.md) |
-| [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | in_progress | claude-diag-1 | [SRV-001](SRV-001.md) |
+| [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | review | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | todo | — | [SRV-004](SRV-004.md) |
 
 ## Фаза 6 · M6 — Vertical slice (21)

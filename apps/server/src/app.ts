@@ -5,6 +5,12 @@ import serverPackage from '../package.json' with { type: 'json' };
 import type { ServerConfig } from './config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from './config/network.ts';
 
+import {
+  loggerOptions,
+  registerDebugRoutes,
+  registerRequestLogging,
+  type DebugRouteDependencies,
+} from './diagnostics/index.ts';
 import { registerPairingRoutes, type PairingService } from './pairing/index.ts';
 import { registerGateway, SessionGateway } from './gateway/index.ts';
 import { registerQrRoutes, type QrRouteDependencies } from './qr/index.ts';
@@ -15,6 +21,10 @@ export interface AppDependencies {
   pairing?: PairingService;
   gateway?: SessionGateway;
   qr?: QrRouteDependencies;
+  /** Debug endpoints; registered only when `HS_DEBUG_TRUTH=1`, otherwise they do not exist. */
+  diagnostics?: DebugRouteDependencies;
+  /** Where log lines go; defaults to stdout, replaced in tests. */
+  logStream?: { write(line: string): void };
 }
 
 export function buildApp(
@@ -24,26 +34,17 @@ export function buildApp(
     pairing,
     qr,
     gateway = new SessionGateway({ serverVersion: serverPackage.version }),
+    diagnostics,
+    logStream,
   }: AppDependencies = {},
 ) {
   const app = Fastify({
-    logger: { level: config.logLevel },
+    logger: loggerOptions(config.logLevel, logStream),
     logController: new Fastify.LogController({ disableRequestLogging: true }),
     requestIdHeader: false,
   });
 
-  app.addHook('onResponse', (request, reply, done) => {
-    request.log.info(
-      {
-        method: request.method,
-        route: request.routeOptions.url,
-        statusCode: reply.statusCode,
-        durationMs: reply.elapsedTime,
-      },
-      'request completed',
-    );
-    done();
-  });
+  registerRequestLogging(app);
 
   registerGateway(app, gateway, qr && ((session, raw) => qr.qr.scan(session, raw)));
   if (pairing) {
@@ -66,6 +67,7 @@ export function buildApp(
 
   if (pairing) registerPairingRoutes(app, pairing);
   if (qr) registerQrRoutes(app, qr);
+  if (config.debugTruth && diagnostics) registerDebugRoutes(app, diagnostics);
 
   return app;
 }
