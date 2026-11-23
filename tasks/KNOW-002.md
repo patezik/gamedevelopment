@@ -1,7 +1,7 @@
 ---
 id: KNOW-002
 title: "LiePolicy и показания: answer(question) → правда, ошибка или ложь"
-status: todo
+status: in_progress
 priority: P0
 complexity: L
 phase: 4
@@ -9,8 +9,8 @@ milestone: M4
 area: knowledge
 depends_on: [KNOW-001, CHAR-002]
 modules: ["packages/core/src/knowledge/testimony.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-prototype-27
+claimed_at: "2026-11-23T09:37:33Z"
 ---
 
 # KNOW-002 — LiePolicy и показания: answer(question) → правда, ошибка или ложь
