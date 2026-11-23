@@ -1,7 +1,7 @@
 ---
 id: PHONE-001
 title: "Домен телефона: PhoneState, редьюсер событий, проекция PhoneView"
-status: todo
+status: done
 priority: P0
 complexity: L
 phase: 5
@@ -9,8 +9,8 @@ milestone: M5
 area: phone
 depends_on: [INV-001, PROTO-002]
 modules: ["packages/core/src/phone"]
-assignee: null
-claimed_at: null
+assignee: claude-w3
+claimed_at: "2026-11-23T19:20:31Z"
 ---
 
 # PHONE-001 — Домен телефона: PhoneState, редьюсер событий, проекция PhoneView
@@ -50,8 +50,8 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Проекция проходит схему PhoneView.
-- [ ] Тест утечек как в ENG-002.
+- [x] Проекция проходит схему PhoneView.
+- [x] Тест утечек как в ENG-002.
 - [ ] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию

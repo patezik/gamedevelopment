@@ -14,6 +14,7 @@ import {
 import { registerPairingRoutes, type PairingService } from './pairing/index.ts';
 import { registerGateway, SessionGateway } from './gateway/index.ts';
 import { registerQrRoutes, type QrRouteDependencies } from './qr/index.ts';
+import { registerSaveRoutes, type SaveRouteDependencies } from './saves/index.ts';
 
 export interface AppDependencies {
   /** Defaults to `os.networkInterfaces`; replaced in tests. */
@@ -21,6 +22,8 @@ export interface AppDependencies {
   pairing?: PairingService;
   gateway?: SessionGateway;
   qr?: QrRouteDependencies;
+  /** `GET /saves` and `POST /saves/:saveId/load`. */
+  saves?: SaveRouteDependencies;
   /** Debug endpoints; registered only when `HS_DEBUG_TRUTH=1`, otherwise they do not exist. */
   diagnostics?: DebugRouteDependencies;
   /** Where log lines go; defaults to stdout, replaced in tests. */
@@ -33,6 +36,7 @@ export function buildApp(
     networkInterfaces = os.networkInterfaces,
     pairing,
     qr,
+    saves,
     gateway = new SessionGateway({ serverVersion: serverPackage.version }),
     diagnostics,
     logStream,
@@ -67,6 +71,7 @@ export function buildApp(
 
   if (pairing) registerPairingRoutes(app, pairing);
   if (qr) registerQrRoutes(app, qr);
+  if (saves) registerSaveRoutes(app, saves);
   if (config.debugTruth && diagnostics) registerDebugRoutes(app, diagnostics);
 
   return app;
