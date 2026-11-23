@@ -29,6 +29,7 @@ function room(
   description: string,
   connections: Location['connections'],
   access: Location['access'] = [],
+  hotspots: Location['hotspots'] = [],
 ): Location {
   return {
     id,
@@ -37,7 +38,7 @@ function room(
     connections,
     access,
     tags: [],
-    hotspots: [],
+    hotspots,
     lighting: { morning: 'bright', day: 'bright', evening: 'dim', night: 'dark' },
   };
 }
@@ -90,10 +91,17 @@ export function tinyManor(seed = 'tiny-manor-fixture'): Investigation {
       { to: study, minutes: 3 },
       { to: pantry, minutes: 2 },
     ]),
-    room(study, 'Study', 'The ledger is normally kept on the desk.', [
-      { to: hall, minutes: 3 },
-      { to: archive, minutes: ARCHIVE_TRAVEL_MINUTES, locked: { itemId: key } },
-    ]),
+    room(
+      study,
+      'Study',
+      'The ledger is normally kept on the desk.',
+      [
+        { to: hall, minutes: 3 },
+        { to: archive, minutes: ARCHIVE_TRAVEL_MINUTES, locked: { itemId: key } },
+      ],
+      [],
+      [{ id: 'hs_desk', name: 'Desk', description: 'A writing desk with muddy footprints.' }],
+    ),
     room(
       archive,
       'Archive',

@@ -483,6 +483,20 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `move` и `wait` используют `TimeSystem.advance`; отклонённое действие сохраняет состояние.
   `GameSnapshot` содержит серверное расследование, игровую минуту, локацию игрока и хеш
   исходного расследования. Снимок остаётся на сервере.
+- **ENG-003** (`game/actions`): остальные действия desktop — правила в
+  [game-design.md §2](../game-design/game-design.md). Новые необязательные порты `EnginePorts`:
+  ```ts
+  clues?: readonly Clue[];                              // улики дела (EVD-002)
+  testimony?: { witness(id): { knowledge; policy } | undefined };   // память и LiePolicy (KNOW-002)
+  startVitals?: Vitals; inventory?: readonly PackItem[];            // SURV-001, SURV-004
+  simulation?: { onPlayerAction(e: PlayerActionObserved): void };   // SIM-006
+  attachTime?: (time: TimeSystem) => void;              // обработчики фаз; прерывание отдыха
+  ```
+  `DispatchResult.events` — `GameEvent[]`: события часов, показателей, `PlayerKnowledge`,
+  действий и `PlayerActionObserved`. `GameSnapshot.desktop` хранит `PlayerKnowledge`, серверные
+  показания с `veracity`, осмотренные локации и точки, открытые двери, диалог, показатели и
+  рюкзак; снимок без него восстанавливается в начальное состояние. `PlayerView` заполняет
+  точки интереса, доску дела (улики, показания, противоречия), `interaction`, показатели и рюкзак.
 - **Блокировка взаимодействия:** во время диалога или звонка (`activeInteraction`) действия,
   несовместимые с ним, отклоняются `ACTION_BLOCKED` (ENG-005).
 - **Ошибки:** `ACTION_INVALID`, `ACTION_NOT_AVAILABLE`, `ACTION_BLOCKED`, `GAME_OVER`.

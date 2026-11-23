@@ -1,7 +1,7 @@
 import { PlayerAction, PROTOCOL_VERSION } from '@hs/protocol';
 import { z } from 'zod';
 import { stateHash } from '../common/index.ts';
-import { GameEngine, type DispatchResult, type EnginePorts } from './engine.ts';
+import { GameEngine, type DispatchResult, type EnginePorts, type GameSnapshot } from './engine.ts';
 import type { Investigation } from './investigation.ts';
 
 export const CHECKPOINT_INTERVAL = 50;
@@ -200,6 +200,8 @@ const gameSnapshot = z.strictObject({
       expiresAt: z.int(),
     })
     .optional(),
+  /** Validated by `DesktopState.restore`. */
+  desktop: z.json().optional(),
 });
 
 export function gameReplayRuntime(
@@ -210,9 +212,15 @@ export function gameReplayRuntime(
     generatorVersion: investigation.generatorVersion,
     engine: GameEngine.create(investigation, ports),
     restore: (snapshot) => {
-      const { pendingCapture, ...state } = gameSnapshot.parse(snapshot);
+      const { pendingCapture, desktop, ...state } = gameSnapshot.parse(snapshot);
       return GameEngine.restore(
-        { ...state, ...(pendingCapture && { pendingCapture }) },
+        {
+          ...state,
+          ...(pendingCapture && { pendingCapture }),
+          ...(desktop !== undefined && {
+            desktop: desktop as NonNullable<GameSnapshot['desktop']>,
+          }),
+        },
         investigation,
         ports,
       );
