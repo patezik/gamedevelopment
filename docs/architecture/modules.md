@@ -364,7 +364,15 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 - **Интерфейс:**
   ```ts
-  class PlayerKnowledge { clues: Map<ClueId, DiscoveredClue>; statements: Statement[] /* без veracity */; contacts: Set<CharacterId>; journal: JournalEntry[] }
+  class PlayerKnowledge {                       // packages/core/src/investigation/player-knowledge.ts (INV-001)
+    readonly clues: ReadonlyMap<ClueId, DiscoveredClue>; readonly statements: readonly HeardStatement[] /* Statement без veracity */;
+    readonly contacts: ReadonlySet<CharacterId>; readonly journal: readonly JournalEntry[];   // журнал по игровому времени
+    addClue(c: { clueId; discoveredAt; location; captured? }): boolean;   // false: уже известно
+    markCaptured(clueId: ClueId, at: GameMinutes): boolean;               // PlayerKnowledgeError INVESTIGATION_UNKNOWN_CLUE
+    addStatement(s: Statement | HeardStatement): boolean;                 // veracity вырезается в рантайме
+    addContact(id: CharacterId, at: GameMinutes): boolean;
+    serialize(): PlayerKnowledgeSnapshot;  static restore(saved: unknown): PlayerKnowledge;   // INVESTIGATION_INVALID_STATE
+  }
   type Claim = { kind: "motive" | "means" | "opportunity" | "presence" | "alibi" | "contradiction"; subject: CharacterId; detail: unknown }
   function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules): EstablishedClaim[];
   function personsOfInterest(pk: PlayerKnowledge): PersonOfInterest[];   // Suspect — производное от знаний игрока
