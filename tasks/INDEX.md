@@ -2,11 +2,10 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 79 · in_progress: 8 · review: 0 · done: 52 · blocked: 1
+Всего задач: **140** · todo: 78 · in_progress: 9 · review: 0 · done: 52 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [GDT-002](GDT-002.md) — Autoload GameStore и SceneRouter (P0, S)
 - [INT-005](INT-005.md) — Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot (P0, L)
 - [INT-008](INT-008.md) — Спайк: TLS с pinning через QR и облачный ретранслятор → ADR (P2, M)
 
@@ -128,7 +127,7 @@
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [GDT-001](GDT-001.md) | Autoload Backend: REST и WebSocketPeer, переподключение | P0 | M | done | codex-engine-27 | [FND-007](FND-007.md), [PROTO-003](PROTO-003.md) |
-| [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | todo | — | [GDT-001](GDT-001.md) |
+| [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | in_progress | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | todo | — | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | todo | — | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
