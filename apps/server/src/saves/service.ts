@@ -1,0 +1,214 @@
+import {
+  GameEngine,
+  type DispatchResult,
+  type EnginePorts,
+  type Investigation,
+} from '@hs/core/game';
+import {
+  createSave,
+  gameReplayRuntime,
+  loadSave,
+  recordAction,
+  SaveDesyncError,
+  SaveFile,
+} from '@hs/core/save';
+import type { ErrorCode, PlayerAction } from '@hs/protocol';
+import { z } from 'zod';
+import type { InvestigationProvider, SessionEngine, SessionRole } from '../sessions/index.ts';
+import { isSaveId, type SaveStore } from './store.ts';
+
+/** An error that already carries a protocol code and an HTTP status. */
+export class SaveError extends Error {
+  readonly code: ErrorCode;
+  readonly status: number;
+  /** For `SAVE_DESYNC`: the first journal entry that does not check out; 0 is the initial state. */
+  readonly atAction?: number;
+
+  constructor(code: ErrorCode, status: number, message: string, atAction?: number) {
+    super(message);
+    this.name = 'SaveError';
+    this.code = code;
+    this.status = status;
+    if (atAction !== undefined) this.atAction = atAction;
+  }
+}
+
+export interface SaveSummary {
+  readonly saveId: string;
+  readonly scenarioId: string;
+  readonly seed: string;
+  /** ISO time of the last write. */
+  readonly updatedAt: string;
+  /** Game minutes elapsed; `null` if the metadata next to the save was lost. */
+  readonly gameTime: number | null;
+}
+
+const identity = z.looseObject({ scenarioId: z.string().min(1), seed: z.string() });
+const meta = z.object({ gameTime: z.int().nonnegative() });
+
+export interface SaveServiceOptions {
+  readonly store: SaveStore;
+  /** The provider the session manager uses: a save is regenerated from `(scenarioId, seed)`. */
+  readonly provider: InvestigationProvider;
+  /** Wall clock in milliseconds; only for the `createdAt` metadata. */
+  readonly now?: () => number;
+}
+
+/** The engine of a session whose every action is journaled to disk before it is acknowledged. */
+export class RecordingEngine implements SessionEngine {
+  readonly #service: SaveService;
+  readonly #saveId: string;
+  readonly #engine: GameEngine;
+  readonly #save: SaveFile;
+  #gameTime: number;
+
+  constructor(service: SaveService, saveId: string, engine: GameEngine, save: SaveFile) {
+    this.#service = service;
+    this.#saveId = saveId;
+    this.#engine = engine;
+    this.#save = save;
+    this.#gameTime = engine.snapshot().minute;
+  }
+
+  /** Makes this engine the only writer of its save. The one it replaces can no longer write. */
+  claim(): void {
+    this.#service.claim(this.#saveId, this);
+  }
+
+  async dispatch(role: SessionRole, action: PlayerAction): Promise<DispatchResult> {
+    // `recordAction` dispatches and journals as one step; the file is written before the caller
+    // sees the result, so an acknowledged action is never missing from the save.
+    const result = recordAction(this.#save, this.#engine, role, action);
+    this.#gameTime += result.minutesSpent;
+    await this.#service.persist(this.#saveId, this, this.#save, this.#gameTime);
+    return result;
+  }
+
+  snapshot(): ReturnType<GameEngine['snapshot']> {
+    return this.#engine.snapshot();
+  }
+
+  stateHash(): string {
+    return this.#engine.stateHash();
+  }
+}
+
+export class SaveService {
+  readonly #store: SaveStore;
+  readonly #provider: InvestigationProvider;
+  readonly #now: () => number;
+  readonly #owners = new Map<string, RecordingEngine>();
+
+  constructor({ store, provider, now = Date.now }: SaveServiceOptions) {
+    this.#store = store;
+    this.#provider = provider;
+    this.#now = now;
+  }
+
+  /**
+   * For `SessionManager`'s `createEngine`: the new session's engine journals itself under the
+   * session's ID. Nothing is written until the first action; a game with no actions is not worth
+   * continuing.
+   */
+  createEngine = (
+    investigation: Investigation,
+    ports: EnginePorts,
+    sessionId: string,
+  ): RecordingEngine => {
+    const engine = GameEngine.create(investigation, ports);
+    const { scenarioId, seed, generatorVersion } = investigation;
+    const save = createSave(
+      { scenarioId, seed, generatorVersion, createdAt: new Date(this.#now()).toISOString() },
+      engine,
+    );
+    const recording = new RecordingEngine(this, sessionId, engine, save);
+    recording.claim();
+    return recording;
+  };
+
+  claim(saveId: string, engine: RecordingEngine): void {
+    this.#owners.set(saveId, engine);
+  }
+
+  async persist(
+    saveId: string,
+    writer: RecordingEngine,
+    save: SaveFile,
+    gameTime: number,
+  ): Promise<void> {
+    if (this.#owners.get(saveId) !== writer) {
+      throw new Error('The save now belongs to another session');
+    }
+    await this.#store.write(saveId, JSON.stringify(save));
+    // Derived data for the list: if the process dies between the two writes it is one action late.
+    await this.#store.writeMeta(saveId, { gameTime });
+  }
+
+  async list(): Promise<SaveSummary[]> {
+    const summaries: SaveSummary[] = [];
+    for (const { saveId, updatedAt } of await this.#store.files()) {
+      let head: z.infer<typeof identity>;
+      try {
+        head = identity.parse(JSON.parse((await this.#store.read(saveId)) ?? ''));
+      } catch {
+        continue; // not a save (a stray or damaged file): it cannot be loaded either
+      }
+      const stored = meta.safeParse(await this.#store.readMeta(saveId));
+      summaries.push({
+        saveId,
+        scenarioId: head.scenarioId,
+        seed: head.seed,
+        updatedAt: updatedAt.toISOString(),
+        gameTime: stored.success ? stored.data.gameTime : null,
+      });
+    }
+    return summaries.sort(
+      (a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.saveId.localeCompare(b.saveId),
+    );
+  }
+
+  /**
+   * Rebuilds the game by replaying the save and checking every hash. The result is not yet the
+   * writer of the save: call `claim()` once a session hosts it.
+   */
+  async restore(saveId: string): Promise<RecordingEngine> {
+    const text = isSaveId(saveId) ? await this.#store.read(saveId) : undefined;
+    if (text === undefined) throw new SaveError('SAVE_NOT_FOUND', 404, 'Save not found');
+
+    let raw: unknown;
+    try {
+      raw = JSON.parse(text);
+    } catch {
+      throw new SaveError('SAVE_DESYNC', 422, 'The save file is damaged', 0);
+    }
+    const head = identity.safeParse(raw);
+    if (!head.success) throw new SaveError('SAVE_DESYNC', 422, 'The save file is damaged', 0);
+
+    const { investigation, ports } = await this.#provider.create(
+      head.data.scenarioId,
+      head.data.seed,
+    );
+    let engine: GameEngine;
+    try {
+      engine = loadSave(raw, (saved) => {
+        if (investigation.generatorVersion !== saved.generatorVersion) {
+          throw new SaveDesyncError(0, 'The save was made by another generator version');
+        }
+        return gameReplayRuntime(investigation, ports);
+      });
+    } catch (error) {
+      if (error instanceof SaveDesyncError) {
+        throw new SaveError(
+          'SAVE_DESYNC',
+          422,
+          'The save does not replay to its recorded state',
+          error.atAction,
+        );
+      }
+      throw error;
+    }
+    // `loadSave` accepted it, so this parse cannot fail.
+    const save = SaveFile.parse(raw);
+    return new RecordingEngine(this, saveId, engine, save);
+  }
+}
