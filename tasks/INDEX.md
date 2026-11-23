@@ -2,11 +2,10 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 61 · in_progress: 12 · review: 1 · done: 65 · blocked: 1
+Всего задач: **140** · todo: 60 · in_progress: 13 · review: 1 · done: 65 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [INV-003](INV-003.md) — Персоны интереса и отметки подозрений игрока (P1, S)
 - [QA-004](QA-004.md) — Совместимость сохранений между версиями генератора и политика миграций (P1, M)
 
 ## Критический путь
@@ -107,7 +106,7 @@
 | [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | todo | — | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
 | [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | done | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
 | [INV-002](INV-002.md) | Утверждения (Claims) и правила дедукции | P0 | L | done | claude-w1 | [INV-001](INV-001.md) |
-| [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | todo | — | [INV-002](INV-002.md) |
+| [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | in_progress | egor-claude-inv-003 | [INV-002](INV-002.md) |
 | [INV-004](INV-004.md) | Обнаружение противоречий между показаниями и фактами | P0 | M | done | claude-w1 | [INV-002](INV-002.md) |
 | [INV-005](INV-005.md) | CaseFile и evaluateAccusation | P0 | M | in_progress | claude-w1 | [INV-002](INV-002.md), [TRUTH-002](TRUTH-002.md) |
 | [KNOW-002](KNOW-002.md) | LiePolicy и показания: answer(question) → правда, ошибка или ложь | P0 | L | done | codex-prototype-27 | [KNOW-001](KNOW-001.md), [CHAR-002](CHAR-002.md) |
