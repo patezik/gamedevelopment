@@ -16,6 +16,7 @@ import { randomUUID } from 'node:crypto';
 import type { RawData, WebSocket } from 'ws';
 import { hashSessionToken } from '../pairing/index.ts';
 import type { Session, SessionManager, SessionRole } from '../sessions/index.ts';
+import { ROLES, ViewCache, type EventSource } from '../views/index.ts';
 
 type Message<T extends ServerMessage['type']> = Extract<ServerMessage, { type: T }>;
 type Hello = Extract<ClientMessage, { type: 'hello' }>;
@@ -46,7 +47,10 @@ interface Stream {
 export interface GatewayOptions {
   sessions?: Pick<SessionManager, 'findByTokenHash'>;
   serverVersion: string;
+  /** Projection for a role: the source of `view.update` after each dispatch and on resync. */
   snapshot?: (session: Session, role: SessionRole) => View | undefined;
+  /** Role-visible events for a successful dispatch; `gameOver` is added by the gateway. */
+  events?: EventSource;
   qrScan?: (session: Session, raw: string) => QrResult | Promise<QrResult>;
   helloMs?: number;
   heartbeatMs?: number;
@@ -58,9 +62,11 @@ const limit = 256 * 1024;
 export class SessionGateway {
   readonly #streams = new WeakMap<Session, Stream>();
   readonly #options: GatewayOptions;
+  readonly #views: ViewCache | undefined;
 
   constructor(options: GatewayOptions) {
     this.#options = options;
+    this.#views = options.snapshot && new ViewCache(options.snapshot);
     for (const value of [options.helloMs, options.heartbeatMs, options.replayLimit]) {
       if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) {
         throw new RangeError('Gateway limits must be positive integers');
@@ -138,12 +144,17 @@ export class SessionGateway {
     this.#publish(session, role, { type: 'event', payload: { event: ClientEvent.parse(event) } });
   }
 
-  publishView(session: Session, role: SessionRole, view: View): void {
+  publishView(
+    session: Session,
+    role: SessionRole,
+    view: View,
+    stateVersion = session.stateVersion,
+  ): void {
     const schema = role === 'desktop' ? PlayerView : PhoneView;
     this.#publish(session, role, {
       type: 'view.update',
       payload: {
-        stateVersion: session.stateVersion,
+        stateVersion,
         view: schema.parse(view),
       },
     });
@@ -217,7 +228,7 @@ export class SessionGateway {
         payload: { reason: 'resume_unavailable' },
       });
     }
-    const view = this.#options.snapshot?.(session, role);
+    const view = this.#views?.get(session, role);
     if (view) this.publishView(session, role, view);
   }
 
@@ -249,16 +260,42 @@ export class SessionGateway {
             },
           });
         }
-        if ('outcome' in result && result.outcome) {
-          for (const target of ['desktop', 'phone'] as const) {
-            this.publishEvent(session, target, { type: 'gameOver' });
-          }
+        if (result.ok) {
+          this.#afterDispatch(
+            session,
+            'events' in result ? result : {},
+            'stateVersion' in result ? result.stateVersion : undefined,
+          );
         }
         return;
       }
       case 'qr.scan':
       case 'phone.ui':
         await this.#phoneMessage(peer, message, qrScan);
+    }
+  }
+
+  /**
+   * One successful dispatch changes `stateVersion` once; every role then gets the new view and
+   * its own events, whoever sent the action. The view carries the version this dispatch produced;
+   * if a later dispatch has already moved the state on, its own broadcast carries the newer view.
+   */
+  #afterDispatch(
+    session: Session,
+    result: { readonly events?: readonly unknown[]; readonly outcome?: string | undefined },
+    version: number | undefined,
+  ): void {
+    const batch = {
+      events: result.events ?? [],
+      ...(result.outcome && { outcome: result.outcome }),
+    };
+    for (const role of ROLES) {
+      const view = this.#views?.get(session, role, version);
+      if (view) this.publishView(session, role, view, version);
+      for (const event of this.#options.events?.(session, role, batch) ?? []) {
+        this.publishEvent(session, role, event);
+      }
+      if (result.outcome) this.publishEvent(session, role, { type: 'gameOver' });
     }
   }
 

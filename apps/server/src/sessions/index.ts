@@ -28,6 +28,9 @@ export interface SessionEngine {
   dispatch(role: SessionRole, action: PlayerAction): DispatchResult | Promise<DispatchResult>;
 }
 
+/** A dispatch result; a successful one carries the `stateVersion` that this dispatch produced. */
+export type SessionDispatchResult = DispatchResult & { readonly stateVersion?: number };
+
 export interface SessionEvent {
   readonly seq: number;
   readonly event: DispatchResult['events'][number];
@@ -119,7 +122,7 @@ export class Session {
     role: SessionRole,
     action: PlayerAction,
     precondition?: () => ErrorCode | undefined,
-  ): Promise<DispatchResult> {
+  ): Promise<SessionDispatchResult> {
     return this.#enqueue(async () => {
       this.#refreshLifetime();
       if (this.#status === 'faulted') return failed('INTERNAL');
@@ -140,7 +143,7 @@ export class Session {
           this.#status = 'finished';
           if (this.#connected.size === 0) this.#finishedIdleSince = this.#now();
         }
-        return result;
+        return { ...result, stateVersion: this.#stateVersion };
       } catch {
         this.#status = 'faulted';
         return failed('INTERNAL');
