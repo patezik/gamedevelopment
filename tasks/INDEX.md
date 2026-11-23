@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 89 · in_progress: 9 · review: 0 · done: 40 · blocked: 2
+Всего задач: **140** · todo: 89 · in_progress: 8 · review: 1 · done: 40 · blocked: 2
 
 ## Готовы к взятию сейчас
 
@@ -92,7 +92,7 @@
 | [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | todo | — | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
 | [GEN-008](GEN-008.md) | Стадия HistorySimulation: симуляция предыстории с исполнением плана | P0 | L | todo | — | [GEN-007](GEN-007.md), [SIM-002](SIM-002.md), [SIM-003](SIM-003.md), [SIM-004](SIM-004.md) |
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | todo | — | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
-| [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | in_progress | codex-prototype-27 | [SIM-001](SIM-001.md) |
+| [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | review | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
 ## Фаза 4 · M4 — Solvable investigations (24)
 
