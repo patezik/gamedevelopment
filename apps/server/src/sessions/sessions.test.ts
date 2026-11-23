@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { describe, expect, test } from 'vitest';
 import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
 import { SessionManager } from './index.ts';
@@ -138,4 +139,16 @@ describe('SessionManager', () => {
     expect(session.eventsAfter(1)).toHaveLength(200);
     expect(session.eventsAfter(200)?.[0]?.seq).toBe(201);
   });
+});
+
+test('session manager loads under the server native Node runtime', () => {
+  const moduleUrl = new URL('./index.ts', import.meta.url).href;
+  const probe = spawnSync(
+    process.execPath,
+    ['--input-type=module', '-e', 'await import(process.argv[1]);', moduleUrl],
+    { encoding: 'utf8' },
+  );
+
+  expect(probe.error).toBeUndefined();
+  expect(probe.status, probe.stderr).toBe(0);
 });

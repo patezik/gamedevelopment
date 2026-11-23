@@ -52,13 +52,17 @@ function rejected(error: ErrorCode): DispatchResult {
 
 export class GameEngine {
   readonly #time: TimeSystem;
+  private readonly investigation: Investigation;
+  private readonly initialInvestigationHash: string;
+  private readonly ports: EnginePorts;
+  private locationId: string;
   #pendingCapture: PendingCapture | undefined;
 
   private constructor(
-    private readonly investigation: Investigation,
-    private readonly initialInvestigationHash: string,
-    private readonly ports: EnginePorts,
-    private locationId: string,
+    investigation: Investigation,
+    initialInvestigationHash: string,
+    ports: EnginePorts,
+    locationId: string,
     minute: number,
   ) {
     const { locations, durationMinutes } = investigation.world;
@@ -67,6 +71,10 @@ export class GameEngine {
     if (!Number.isSafeInteger(minute) || minute < 0 || minute > durationMinutes) {
       throw new RangeError('Snapshot minute is outside the scenario');
     }
+    this.investigation = investigation;
+    this.initialInvestigationHash = initialInvestigationHash;
+    this.ports = ports;
+    this.locationId = locationId;
     this.#time = new TimeSystem(new Calendar(startDateTime), durationMinutes, minute);
   }
 

@@ -26,11 +26,14 @@ export type AccessCheck = { ok: true } | { ok: false; reason: AccessDenial };
 type WorldErrorCode = 'WORLD_UNKNOWN_LOCATION' | 'WORLD_NO_PATH';
 
 export class WorldError extends Error {
+  readonly code: WorldErrorCode;
+
   constructor(
-    readonly code: WorldErrorCode,
+    code: WorldErrorCode,
     message: string,
   ) {
     super(message);
+    this.code = code;
     this.name = 'WorldError';
   }
 }

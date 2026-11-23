@@ -37,11 +37,14 @@ type ItemErrorCode =
   | 'WORLD_INVALID_ITEM_TIME';
 
 export class ItemError extends Error {
+  readonly code: ItemErrorCode;
+
   constructor(
-    readonly code: ItemErrorCode,
+    code: ItemErrorCode,
     message: string,
   ) {
     super(message);
+    this.code = code;
     this.name = 'ItemError';
   }
 }
@@ -56,14 +59,16 @@ export class ItemRegistry {
   private readonly records = new Map<string, ItemRecord>();
   private readonly moves: (ItemMove & { readonly itemId: string })[] = [];
   private readonly locationIds: ReadonlySet<string>;
+  private readonly initialMinute: GameMinutes;
   private latestMinute: GameMinutes;
 
   constructor(
     content: Pick<ScenarioContent, 'items' | 'locations'>,
     ownerByArchetype: ReadonlyMap<string, string> = new Map(),
-    private readonly initialMinute: GameMinutes = 0,
+    initialMinute: GameMinutes = 0,
   ) {
     requireMinute(initialMinute);
+    this.initialMinute = initialMinute;
     this.latestMinute = initialMinute;
     this.locationIds = new Set(content.locations.map(({ id }) => id));
 
