@@ -11,6 +11,7 @@ import type { Rng, RngState } from '../rng/index.ts';
 import { TickPhase, type Calendar, type TickContext, type TimeSystem } from '../time/index.ts';
 import type { EntityRef, Fact, TruthModel } from '../truth/index.ts';
 import type { Actor, ItemRegistry, LocationGraph } from '../world/index.ts';
+import { FOCUS_STEP_MINUTES, type SimulationLod } from './lod.ts';
 import { recordObservations, type Observer, type PerceptibleEvent } from './perception.ts';
 
 const MINUTES_PER_DAY = 1440;
@@ -67,6 +68,8 @@ export interface SimulationRunnerOptions {
   readonly stressAt?: (id: string, minute: GameMinutes) => number;
   /** Known minutes of item updates that will be written before the Simulation phase. */
   readonly itemChangeMinutes?: readonly GameMinutes[];
+  /** Detail levels: `focus` agents stay in steps of at most 5 minutes (ADR 0013). */
+  readonly lod?: Pick<SimulationLod, 'level'>;
   /** Exclusive end of the interval owned by this runner. Use the same calendar as TimeSystem. */
   readonly endAt: GameMinutes;
 }
@@ -80,6 +83,7 @@ export class SimulationRunner {
   readonly #truth: TruthModel;
   readonly #endAt: GameMinutes;
   readonly #stressAt: NonNullable<SimulationRunnerOptions['stressAt']>;
+  readonly #lod: SimulationRunnerOptions['lod'];
 
   constructor({
     time,
@@ -94,6 +98,7 @@ export class SimulationRunner {
     knowledge,
     stressAt = () => 0,
     itemChangeMinutes = [],
+    lod,
     endAt,
   }: SimulationRunnerOptions) {
     const start = time.now();
@@ -110,6 +115,7 @@ export class SimulationRunner {
     this.#truth = truth;
     this.#endAt = endAt;
     this.#stressAt = stressAt;
+    this.#lod = lod;
 
     const agentRng = rng.fork('sim').fork('agent');
     const sorted = characters.toSorted((a, b) => (a.id < b.id ? -1 : Number(a.id > b.id)));
@@ -268,7 +274,7 @@ export class SimulationRunner {
     if (previousStep?.kind === 'move') agent.location = previousStep.destination;
     const { character, priority, nextBoundary, block } = agent;
     const { now } = context;
-    const step = this.#planStep(agent, now);
+    const step = this.#limitDetail(agent, this.#planStep(agent, now), now);
     const event = this.#recordStep(character.id, step);
     agent.activity = { block, step };
     context.schedule({ at: now, kind: OBSERVATION_EVENT, priority, payload: event });
@@ -278,6 +284,14 @@ export class SimulationRunner {
       priority,
       payload: character.id,
     });
+  }
+
+  /** A `focus` agent's stay is cut into short steps; the presence it records is unchanged. */
+  #limitDetail(agent: AgentState, step: ActivityStep, now: GameMinutes): ActivityStep {
+    if (step.kind !== 'stay' || step.to - now <= FOCUS_STEP_MINUTES) return step;
+    return this.#lod?.level(agent.character.id, agent.location, now) === 'focus'
+      ? { ...step, to: now + FOCUS_STEP_MINUTES }
+      : step;
   }
 
   #planStep(agent: AgentState, now: GameMinutes): ActivityStep {
