@@ -1,7 +1,7 @@
 ---
 id: SURV-001
 title: "Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости"
-status: in_progress
+status: done
 priority: P0
 complexity: M
 phase: 7
@@ -49,9 +49,9 @@ Survival-основа (survival-horror.md §1).
 
 ## Критерии приёмки
 
-- [ ] Табличный тест порогов survival-horror.md §1.
-- [ ] Отдых восстанавливает по формулам.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Табличный тест порогов survival-horror.md §1.
+- [x] Отдых восстанавливает по формулам.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 
