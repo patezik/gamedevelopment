@@ -157,6 +157,38 @@ test('derivation is deterministic and independent of the order events are suppli
 });
 
 test('every trace has a unique id, comes from a matching event and starts when that event ends', () => {
+  const base = {
+    t: 0,
+    duration: 0,
+    actorIds: ['ch_anna'],
+    location: 'loc_hall',
+    causes: [],
+    facts: [],
+    traceIds: [],
+    visibility: 'public',
+  } satisfies Omit<TruthEventInput, 'verb' | 'targets'>;
+  const example: { rules: TraceRule[]; events: TruthEventInput[] } = {
+    rules: [
+      ...conserved,
+      {
+        verb: 'take',
+        produces: [
+          {
+            kind: 'physical',
+            at: '$location',
+            template: 'mark',
+            supports: [],
+            requires: { itemId: 'it_a' },
+          },
+        ],
+      },
+    ],
+    events: [
+      { ...base, verb: 'take', targets: [] },
+      { ...base, verb: 'talk', targets: [] },
+      { ...base, t: 10, verb: 'destroy', targets: [{ kind: 'item', id: 'it_a' }] },
+    ],
+  };
   let produced = 0;
   let unmatchedEvents = 0;
   let destroyedTraces = 0;
@@ -208,6 +240,7 @@ test('every trace has a unique id, comes from a matching event and starts when t
       }
       expect(log.events().every(({ traceIds }) => traceIds.length === 0)).toBe(true);
     }),
+    { examples: [[example]] },
   );
   // Guards against a generator that only ever exercises one branch.
   expect(produced).toBeGreaterThan(0);
