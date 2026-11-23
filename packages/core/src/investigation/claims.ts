@@ -87,6 +87,14 @@ function varsOf(term: Term, into = new Set<string>()): Set<string> {
   return into;
 }
 
+function pathsOf(term: Term, into: string[] = []): string[] {
+  if (term.k === 'path') into.push(term.name);
+  else if (term.k === 'call') term.args.forEach((arg) => pathsOf(arg, into));
+  return into;
+}
+
+const KNOWN_PATHS = ['incident.location', 'incident.window'];
+
 function isGround(term: Term): boolean {
   return term.k === 'lit' || (term.k === 'call' && term.args.every(isGround));
 }
@@ -160,6 +168,17 @@ export function compileDeductionRules(input: unknown): DeductionRules {
       );
     const requires = raw.requires.map((text, i) => atom(text, `requires[${i}]`));
     const excludes = (raw.excludes ?? []).map((text, i) => atom(text, `excludes[${i}]`));
+    for (const [where, atoms] of [
+      ['establishes', [establishes]],
+      ['requires', requires],
+      ['excludes', excludes],
+    ] as const)
+      for (const path of atoms.flatMap((a) => pathsOf(a)))
+        if (!KNOWN_PATHS.includes(path))
+          throw new DeductionRulesError(
+            `${at}.${where}`,
+            `Unknown path $${path}; expected one of ${KNOWN_PATHS.map((p) => `$${p}`).join(', ')}`,
+          );
     const premises = requires.filter(({ fn }) => fn !== NEQ);
     if (premises.length === 0)
       throw new DeductionRulesError(`${at}.requires`, 'A rule needs a non-builtin premise');

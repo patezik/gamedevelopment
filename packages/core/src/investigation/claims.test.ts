@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { deriveClues } from '../evidence/index.ts';
 import { tinyManorWithClues } from '../../test/fixtures/tiny-manor.ts';
 import {
   compileDeductionRules,
@@ -56,28 +57,53 @@ const said = (
 });
 
 describe('evaluateClaims', () => {
-  it('establishes motive, means and opportunity of the culprit from the full set of clues', () => {
-    // The culprit comes from the tiny-manor scenario; the evaluation below never sees the truth.
-    const { truth } = tinyManorWithClues();
-    const culprit = truth.incident.culpritIds[0];
-    expect(culprit).toBe(bursar);
-
-    const claims = evaluateClaims(
-      knowledgeWith('cl_ledger', 'cl_debt_note', 'cl_log'),
-      minimal,
-      context,
+  it('establishes motive, means and opportunity of the culprit from the scenario clues', () => {
+    // Clues are derived from the tiny-manor scenario's own events and ids (evidence module); the
+    // evaluation sees only their `supports`, never the truth.
+    const manor = tinyManorWithClues();
+    const culprit = manor.truth.incident.culpritIds[0]!;
+    const victim = manor.truth.incident.victimIds[0]!;
+    const [taken] = manor.truth.incident.keyEventIds;
+    const { window } = manor.truth.incident;
+    const trace = (id: string, supports: string[]) => ({
+      id: `trace_${id}`,
+      kind: 'document' as const,
+      sourceEventId: taken!,
+      template: id,
+      supports,
+      captureMode: 'qr' as const,
+      location: 'loc_study',
+      availableFrom: 0,
+    });
+    const found = deriveClues(
+      [
+        trace('ledger', [`presence(${culprit},loc_study,${window.from})`]),
+        trace('debt', [`knows(${culprit},sec_manor_debt)`, `about(sec_manor_debt,${victim})`]),
+        trace('log', [`access_to_record(${culprit})`]),
+      ],
+      new Map(
+        ['ledger', 'debt', 'log'].map((t) => [
+          t,
+          { action: { type: 'read' as const, documentId: t } },
+        ]),
+      ),
     );
+    const knowledge = new PlayerKnowledge();
+    for (const clue of found)
+      knowledge.addClue({ clueId: clue.id, discoveredAt: 0, location: 'loc_study' });
+    const claims = evaluateClaims(knowledge, minimal, {
+      clues: new Map(found.map((clue) => [clue.id, clue])),
+      incident: { location: 'loc_study', window },
+    });
+
     const byKind = Object.fromEntries(claims.map((c) => [c.kind, c]));
     expect(Object.keys(byKind).sort()).toEqual(['means', 'motive', 'opportunity']);
-    expect(byKind.opportunity).toMatchObject({
-      subject: culprit,
-      claim: `opportunity(${bursar})`,
-      support: { clueIds: ['cl_ledger'], statementIds: [] },
-    });
-    expect(byKind.motive?.support.clueIds).toEqual(['cl_debt_note']);
-    expect(byKind.means?.support.clueIds).toEqual(['cl_log']);
+    expect(claims.every((c) => c.subject === culprit)).toBe(true);
+    expect(byKind.opportunity?.claim).toBe(`opportunity(${culprit})`);
+    expect(byKind.motive?.claim).toBe(`motive(${culprit},${victim})`);
     // Every established claim says what it stands on.
     for (const claim of claims) expect(claim.support.clueIds.length).toBeGreaterThan(0);
+    expect(byKind.opportunity?.support.clueIds).toEqual([found[0]?.id]);
   });
 
   it('establishes nothing from a partial set, or without a known incident window', () => {
@@ -164,6 +190,29 @@ describe('compileDeductionRules', () => {
     expect(stratum('opportunity_from_presence')).toBeGreaterThan(stratum('alibi_from_witness')!);
   });
 
+  it('applies an exclusion regardless of rule order in the file', () => {
+    const opportunity = {
+      id: 'o',
+      establishes: 'opportunity($c)',
+      requires: ['presence($c,$incident.location,$incident.window)'],
+      excludes: ['alibi($c,$incident.window)'],
+    };
+    const alibi = {
+      id: 'a',
+      establishes: 'alibi($c,$i)',
+      requires: ['testimony($w,presence($c,$l,$i))'],
+    };
+    const knowledge = knowledgeWith('cl_cook');
+    knowledge.addStatement(said('st_1', 'ch_porter', cook, 'loc_pantry', -20, -8));
+    for (const order of [
+      [opportunity, alibi],
+      [alibi, opportunity],
+    ])
+      expect(
+        evaluateClaims(knowledge, compileDeductionRules(order), context).map((c) => c.kind),
+      ).toEqual(['alibi']);
+  });
+
   it.each([
     ['unknown claim kind', [{ id: 'x', establishes: 'guilt($c)', requires: ['a($c)'] }]],
     ['unbound variable', [{ id: 'x', establishes: 'means($d)', requires: ['a($c)'] }]],
@@ -181,6 +230,31 @@ describe('compileDeductionRules', () => {
       [{ id: 'x', establishes: 'means($c)', requires: ['a($c)'], excludes: ['means($c)'] }],
     ],
     ['not rules', { id: 'x' }],
+    ['bad syntax in requires', [{ id: 'x', establishes: 'means($c)', requires: ['a($c))'] }]],
+    ['empty argument', [{ id: 'x', establishes: 'means($c)', requires: ['a($c,)'] }]],
+    [
+      'bad syntax in excludes',
+      [{ id: 'x', establishes: 'means($c)', requires: ['a($c)'], excludes: ['alibi($c'] }],
+    ],
+    [
+      'unbound variable in neq',
+      [{ id: 'x', establishes: 'means($c)', requires: ['a($c)', 'neq($c,$d)'] }],
+    ],
+    [
+      'unknown incident path',
+      [{ id: 'x', establishes: 'means($c)', requires: ['a($c,$incident.foo)'] }],
+    ],
+    [
+      'unknown path in excludes',
+      [
+        {
+          id: 'x',
+          establishes: 'means($c)',
+          requires: ['a($c)'],
+          excludes: ['b($incident.place)'],
+        },
+      ],
+    ],
   ])('rejects %s', (_name, input) => {
     expect(() => compileDeductionRules(input)).toThrow(DeductionRulesError);
   });
