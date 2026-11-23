@@ -10,6 +10,8 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 [autoload]
 
 Backend="*res://src/autoload/backend.gd"
+GameStore="*res://src/autoload/game_store.gd"
+SceneRouter="*res://src/autoload/scene_router.gd"
 
 [display]
 

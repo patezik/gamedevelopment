@@ -1,7 +1,7 @@
 ---
 id: SURV-004
 title: "Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона"
-status: todo
+status: done
 priority: P1
 complexity: S
 phase: 7
@@ -9,8 +9,8 @@ milestone: M7
 area: survival
 depends_on: [SURV-001, WORLD-002, PHONE-001]
 modules: ["packages/core/src/survival/inventory.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-w3
+claimed_at: "2026-11-23T19:49:14Z"
 ---
 
 # SURV-004 — Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона
@@ -48,8 +48,8 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Табличные тесты расхода/восстановления.
-- [ ] При 0 % PhoneView.apps.enabled=false (кроме экрана зарядки).
+- [x] Табличные тесты расхода/восстановления.
+- [x] При 0 % PhoneView.apps.enabled=false (кроме экрана зарядки).
 - [ ] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
