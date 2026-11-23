@@ -20,6 +20,18 @@ export const BROWSER_STATIC_LIMIT = 90;
 
 const clamp = (n: number) => Math.min(100, Math.max(0, Math.round(n)));
 
+/**
+ * A phone at 0 % is off (survival-horror.md section 2): every app is disabled except the
+ * charging screen, which appears only then.
+ */
+function appsFor(apps: PhoneView['apps'], battery: number): PhoneView['apps'] {
+  if (battery > 0) return apps;
+  return [
+    ...apps.map((app) => ({ ...app, enabled: false })),
+    { id: 'charging', badge: 0, enabled: true },
+  ];
+}
+
 /** Glitch grows with lost sanity below the interference threshold and with static. */
 export function glitchLevel({ vitals, static: staticLevel }: PhoneSurvival): number {
   const limit = VITALS_THRESHOLDS.phoneInterferenceSanity;
@@ -53,24 +65,28 @@ export function projectPhoneView(
   const missed = s.callLog.filter((c) => c.direction === 'missed').length;
   const unreadMessages = threads.reduce((sum, t) => sum + t.unread, 0);
   const call = s.activeCall;
+  const battery = clamp(s.battery);
   return {
     status: {
       time: `${pad(hh)}:${pad(mm)}`,
-      battery: clamp(s.battery),
+      battery,
       signal: clamp(100 - staticLevel),
     },
-    apps: [
-      { id: 'camera', badge: 0, enabled: true },
-      { id: 'contacts', badge: 0, enabled: true },
-      { id: 'calls', badge: missed, enabled: true },
-      { id: 'messages', badge: unreadMessages, enabled: true },
-      { id: 'gallery', badge: 0, enabled: true },
-      { id: 'files', badge: 0, enabled: true },
-      { id: 'notes', badge: 0, enabled: true },
-      { id: 'maps', badge: 0, enabled: true },
-      { id: 'browser', badge: 0, enabled: staticLevel < BROWSER_STATIC_LIMIT },
-      { id: 'settings', badge: 0, enabled: true },
-    ],
+    apps: appsFor(
+      [
+        { id: 'camera', badge: 0, enabled: true },
+        { id: 'contacts', badge: 0, enabled: true },
+        { id: 'calls', badge: missed, enabled: true },
+        { id: 'messages', badge: unreadMessages, enabled: true },
+        { id: 'gallery', badge: 0, enabled: true },
+        { id: 'files', badge: 0, enabled: true },
+        { id: 'notes', badge: 0, enabled: true },
+        { id: 'maps', badge: 0, enabled: true },
+        { id: 'browser', badge: 0, enabled: staticLevel < BROWSER_STATIC_LIMIT },
+        { id: 'settings', badge: 0, enabled: true },
+      ],
+      battery,
+    ),
     contacts: s.contacts.map(({ id, name, number, portraitRef }) => ({
       id,
       name,
