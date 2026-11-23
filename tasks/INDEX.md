@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 76 · in_progress: 11 · review: 0 · done: 52 · blocked: 1
+Всего задач: **140** · todo: 76 · in_progress: 10 · review: 1 · done: 52 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -104,7 +104,7 @@ _Нет задач, у которых выполнены все зависимо
 | [GEN-009](GEN-009.md) | Стадия EvidenceGen: следы и улики сгенерированного расследования | P0 | M | todo | — | [GEN-008](GEN-008.md), [EVD-002](EVD-002.md), [EVD-003](EVD-003.md) |
 | [GEN-010](GEN-010.md) | Стадии TestimonyGen и RedHerrings | P0 | M | todo | — | [GEN-009](GEN-009.md), [KNOW-002](KNOW-002.md) |
 | [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | todo | — | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
-| [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | in_progress | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
+| [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | review | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
 | [INV-002](INV-002.md) | Утверждения (Claims) и правила дедукции | P0 | L | todo | — | [INV-001](INV-001.md) |
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | todo | — | [INV-002](INV-002.md) |
 | [INV-004](INV-004.md) | Обнаружение противоречий между показаниями и фактами | P0 | M | todo | — | [INV-002](INV-002.md) |
