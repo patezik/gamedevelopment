@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 101 · in_progress: 0 · review: 1 · done: 36 · blocked: 2
+Всего задач: **140** · todo: 101 · in_progress: 0 · review: 0 · done: 37 · blocked: 2
 
 ## Готовы к взятию сейчас
 
@@ -36,10 +36,10 @@
 | [INV-002](INV-002.md) Утверждения (Claims) и правила дедукции | 5 |
 | [KNOW-002](KNOW-002.md) LiePolicy и показания: answer(question) → правда, ошибка или ложь | 5 |
 | [PHONE-001](PHONE-001.md) Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | 5 |
-| [EVD-003](EVD-003.md) Режим фиксации улик телефоном и порт EvidenceTokenPort | 4 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
 | [SRV-001](SRV-001.md) SessionManager: сессии, очередь действий, жизненный цикл | 4 |
 | [SURV-001](SURV-001.md) Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | 4 |
+| [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -110,7 +110,7 @@
 | [CNT-007](CNT-007.md) | Тюнинг MVP-пресета до порогов seed sweep | P0 | M | todo | — | [VAL-007](VAL-007.md), [VAL-004](VAL-004.md), [VAL-005](VAL-005.md), [VAL-006](VAL-006.md), [CNT-004](CNT-004.md), [SIM-005](SIM-005.md) |
 | [EVD-001](EVD-001.md) | Движок правил следов: TraceRule → Trace, закон сохранения улик | P0 | M | done | egor-claude-evd-001 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md), [CNT-001](CNT-001.md) |
 | [EVD-002](EVD-002.md) | Улики (Clue): поддерживаемые утверждения, условия обнаружения, точки интереса | P0 | M | done | codex-engine-27 | [EVD-001](EVD-001.md) |
-| [EVD-003](EVD-003.md) | Режим фиксации улик телефоном и порт EvidenceTokenPort | P0 | S | review | codex-engine-27 | [EVD-002](EVD-002.md) |
+| [EVD-003](EVD-003.md) | Режим фиксации улик телефоном и порт EvidenceTokenPort | P0 | S | done | codex-engine-27 | [EVD-002](EVD-002.md) |
 | [GEN-009](GEN-009.md) | Стадия EvidenceGen: следы и улики сгенерированного расследования | P0 | M | todo | — | [GEN-008](GEN-008.md), [EVD-002](EVD-002.md), [EVD-003](EVD-003.md) |
 | [GEN-010](GEN-010.md) | Стадии TestimonyGen и RedHerrings | P0 | M | todo | — | [GEN-009](GEN-009.md), [KNOW-002](KNOW-002.md) |
 | [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | todo | — | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
