@@ -47,6 +47,8 @@ export interface ReplayEngine {
 }
 
 export interface ReplayRuntime<Engine extends ReplayEngine> {
+  /** Version used to generate this engine, independent of the save header. */
+  readonly generatorVersion: string;
   readonly engine: Engine;
   restore(snapshot: unknown): Engine;
 }
@@ -144,6 +146,12 @@ export function loadSave<Engine extends ReplayEngine>(
     previous = entry.journalHash;
   }
   const runtime = regenerate({ scenarioId, seed, generatorVersion });
+  if (runtime.generatorVersion !== generatorVersion) {
+    throw new SaveDesyncError(
+      0,
+      `Unsupported generator version "${generatorVersion}". This runtime supports "${runtime.generatorVersion}".`,
+    );
+  }
   let engine = runtime.engine;
   if (engine.stateHash() !== initialStateHash) {
     throw new SaveDesyncError(0, 'Regenerated state does not match');
@@ -199,6 +207,7 @@ export function gameReplayRuntime(
   ports: EnginePorts,
 ): ReplayRuntime<GameEngine> {
   return {
+    generatorVersion: investigation.generatorVersion,
     engine: GameEngine.create(investigation, ports),
     restore: (snapshot) => {
       const { pendingCapture, ...state } = gameSnapshot.parse(snapshot);
