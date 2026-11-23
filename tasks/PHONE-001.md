@@ -1,7 +1,7 @@
 ---
 id: PHONE-001
 title: "Домен телефона: PhoneState, редьюсер событий, проекция PhoneView"
-status: in_progress
+status: review
 priority: P0
 complexity: L
 phase: 5

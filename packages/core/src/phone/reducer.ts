@@ -54,6 +54,8 @@ export type PhoneEvent =
   | { readonly type: 'BatteryChanged'; readonly battery: number }
   | { readonly type: 'WallpaperChanged'; readonly variant: string | undefined };
 
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
+
 function upsert<T extends { readonly id: string }>(list: readonly T[], item: T): readonly T[] {
   return list.some(({ id }) => id === item.id)
     ? list.map((x) => (x.id === item.id ? item : x))
@@ -111,10 +113,12 @@ export function reducePhone(s: PhoneState, e: { readonly type: string }): PhoneS
         messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
       }));
     case 'TypingChanged':
-      return mapThread(s, event.threadId, ({ typing: _, ...t }) => ({
-        ...t,
-        ...(event.typing && { typing: true }),
-      }));
+      return mapThread(s, event.threadId, (t) => {
+        const next: Mutable<PhoneThread> = { ...t };
+        if (event.typing) next.typing = true;
+        else delete next.typing;
+        return next;
+      });
     case 'CallStarted':
       return { ...s, activeCall: event.call };
     case 'CallAnswered':
@@ -136,7 +140,8 @@ export function reducePhone(s: PhoneState, e: { readonly type: string }): PhoneS
     case 'CallEnded': {
       const call = s.activeCall;
       if (call?.callId !== event.callId) return s;
-      const { activeCall: _, ...rest } = s;
+      const rest: Mutable<PhoneState> = { ...s };
+      delete rest.activeCall;
       const answered = call.state === 'active';
       const outgoing = call.lines[0]?.speaker === 'player';
       const entry: PhoneCallLogEntry = {
@@ -176,7 +181,8 @@ export function reducePhone(s: PhoneState, e: { readonly type: string }): PhoneS
     case 'BatteryChanged':
       return { ...s, battery: Math.min(100, Math.max(0, Math.round(event.battery))) };
     case 'WallpaperChanged': {
-      const { wallpaperVariant: _, ...rest } = s;
+      const rest: Mutable<PhoneState> = { ...s };
+      delete rest.wallpaperVariant;
       return event.variant === undefined ? rest : { ...rest, wallpaperVariant: event.variant };
     }
     default:
