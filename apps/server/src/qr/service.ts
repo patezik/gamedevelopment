@@ -53,6 +53,8 @@ function failureOf(result: DispatchResult): ErrorCode {
       return 'QR_PRECONDITION_FAILED';
     case 'GAME_OVER':
     case 'SESSION_CLOSED':
+    case 'QR_INVALID':
+    case 'QR_EXPIRED':
       return result.error;
     default:
       return 'INTERNAL';
@@ -104,12 +106,17 @@ export class QrService {
 
     // Two scans of the same QR at once must capture the clue once: the second waits for the first.
     while (record.capturing) await record.capturing.catch(() => undefined);
+    if (store.get(parsed.tokenId) !== record) return rejected('QR_INVALID');
     if (record.usedAt !== undefined) return rejected('QR_ALREADY_USED', record.clueId);
     if (this.#options.gameMinute(session) >= record.expiresAt) return rejected('QR_EXPIRED');
 
     const capture =
       this.#options.capture ??
-      ((s, tokenId) => s.dispatch('phone', { type: 'captureEvidence', tokenId }));
+      ((s, tokenId) => s.dispatch('phone', { type: 'captureEvidence', tokenId }, () => {
+        if (store.get(tokenId) !== record) return 'QR_INVALID';
+        if (this.#options.gameMinute(s) >= record.expiresAt) return 'QR_EXPIRED';
+        return undefined;
+      }));
     const attempt = (async (): Promise<QrResult> => {
       let result: DispatchResult;
       try {

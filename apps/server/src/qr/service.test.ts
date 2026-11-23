@@ -44,6 +44,17 @@ async function setup(
 }
 
 describe('a valid scan', () => {
+  it('rechecks expiry after an earlier desktop action finishes', async () => {
+    const pending = Promise.withResolvers<DispatchResult>();
+    const fixture = await setup(() => pending.promise);
+    const desktop = fixture.session.dispatch('desktop', { type: 'wait', minutes: 15 });
+    const scan = fixture.scan(fixture.raw);
+    fixture.setMinute(100);
+    pending.resolve(ok);
+    await desktop;
+    expect(await scan).toEqual({ ok: false, error: 'QR_EXPIRED' });
+    expect(fixture.dispatch).toHaveBeenCalledTimes(1);
+  });
   it('captures the clue once through the session and answers with the clue', async () => {
     const { scan, raw, dispatch, tokenId } = await setup();
     expect(await scan(raw)).toEqual({ ok: true, clueRef: 'clue_ledger' });
