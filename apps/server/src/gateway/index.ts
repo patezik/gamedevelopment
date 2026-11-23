@@ -144,12 +144,17 @@ export class SessionGateway {
     this.#publish(session, role, { type: 'event', payload: { event: ClientEvent.parse(event) } });
   }
 
-  publishView(session: Session, role: SessionRole, view: View): void {
+  publishView(
+    session: Session,
+    role: SessionRole,
+    view: View,
+    stateVersion = session.stateVersion,
+  ): void {
     const schema = role === 'desktop' ? PlayerView : PhoneView;
     this.#publish(session, role, {
       type: 'view.update',
       payload: {
-        stateVersion: session.stateVersion,
+        stateVersion,
         view: schema.parse(view),
       },
     });
@@ -255,7 +260,13 @@ export class SessionGateway {
             },
           });
         }
-        if (result.ok) this.#afterDispatch(session, 'events' in result ? result : {});
+        if (result.ok) {
+          this.#afterDispatch(
+            session,
+            'events' in result ? result : {},
+            'stateVersion' in result ? result.stateVersion : undefined,
+          );
+        }
         return;
       }
       case 'qr.scan':
@@ -266,19 +277,21 @@ export class SessionGateway {
 
   /**
    * One successful dispatch changes `stateVersion` once; every role then gets the new view and
-   * its own events, whoever sent the action.
+   * its own events, whoever sent the action. The view carries the version this dispatch produced;
+   * if a later dispatch has already moved the state on, its own broadcast carries the newer view.
    */
   #afterDispatch(
     session: Session,
     result: { readonly events?: readonly unknown[]; readonly outcome?: string | undefined },
+    version: number | undefined,
   ): void {
     const batch = {
       events: result.events ?? [],
       ...(result.outcome && { outcome: result.outcome }),
     };
     for (const role of ROLES) {
-      const view = this.#views?.get(session, role);
-      if (view) this.publishView(session, role, view);
+      const view = this.#views?.get(session, role, version);
+      if (view) this.publishView(session, role, view, version);
       for (const event of this.#options.events?.(session, role, batch) ?? []) {
         this.publishEvent(session, role, event);
       }

@@ -27,12 +27,17 @@ export class ViewCache {
     this.#source = source;
   }
 
-  get(session: Session, role: SessionRole): RoleView | undefined {
-    const version = session.stateVersion;
+  /**
+   * The view of `version` (default: current). A version the session has moved past yields
+   * `undefined`, and a view computed while the state changed is not cached, so a half-updated
+   * state never sits under a version.
+   */
+  get(session: Session, role: SessionRole, version = session.stateVersion): RoleView | undefined {
+    if (version !== session.stateVersion) return undefined;
     const cached = this.#entries.get(session)?.get(role);
     if (cached?.version === version) return cached.view;
     const view = this.#source(session, role);
-    if (!view) return undefined;
+    if (!view || version !== session.stateVersion) return undefined;
     let roles = this.#entries.get(session);
     if (!roles) {
       roles = new Map<SessionRole, { version: number; view: RoleView }>();
