@@ -1,7 +1,7 @@
 ---
 id: TOOL-001
 title: "Фейковые клиенты desktop/phone (CLI и библиотека) для тестов"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 5
