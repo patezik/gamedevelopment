@@ -190,20 +190,10 @@ export class SaveService {
     );
     let engine: GameEngine;
     try {
-      engine = loadSave(raw, (saved) => {
-        if (investigation.generatorVersion !== saved.generatorVersion) {
-          throw new SaveDesyncError(0, 'The save was made by another generator version');
-        }
-        return gameReplayRuntime(investigation, ports);
-      });
+      engine = loadSave(raw, () => gameReplayRuntime(investigation, ports));
     } catch (error) {
       if (error instanceof SaveDesyncError) {
-        throw new SaveError(
-          'SAVE_DESYNC',
-          422,
-          'The save does not replay to its recorded state',
-          error.atAction,
-        );
+        throw new SaveError(error.code, 422, error.message, error.atAction);
       }
       throw error;
     }
