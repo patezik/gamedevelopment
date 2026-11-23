@@ -17,3 +17,13 @@ export {
   type SocialSecret,
   type SocialWorld,
 } from './stages/social-gen.ts';
+export {
+  conflictGen,
+  MOTIVE_EVENT_VERB,
+  MOTIVE_HISTOGRAM_BINS,
+  motiveFact,
+  type ConflictWorld,
+  type MotiveCandidate,
+  type MotiveReport,
+  type MotiveTypeStats,
+} from './stages/conflict-gen.ts';
