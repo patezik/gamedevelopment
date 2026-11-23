@@ -108,6 +108,18 @@ export class PairingService {
     };
   }
 
+  /** The session's latest pairing code (it may have expired), without issuing a new one. */
+  activeCode(session: Session): { code: string; expiresAt: number; qrPayload: string } | undefined {
+    const code = this.#sessionCodes.get(session.id);
+    const entry = code === undefined ? undefined : this.#codes.get(code);
+    if (code === undefined || !entry) return undefined;
+    return {
+      code,
+      expiresAt: entry.expiresAt,
+      qrPayload: ['hs1', 'pair', this.#options.host(), this.#options.port, code].join(':'),
+    };
+  }
+
   authorizeDesktop(id: string, authorization: string | undefined): Session {
     const session = this.#sessions.get(id);
     if (!session || session.status === 'disposed') {
