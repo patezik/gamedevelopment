@@ -2,15 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 91 · in_progress: 6 · review: 1 · done: 40 · blocked: 2
+Всего задач: **140** · todo: 86 · in_progress: 10 · review: 1 · done: 41 · blocked: 2
 
 ## Готовы к взятию сейчас
 
-- [CNT-003](CNT-003.md) — MVP-сценарий: шаблоны преступлений и правила мотивов (P0, M)
-- [SIM-004](SIM-004.md) — Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot (P0, M)
-- [SRV-006](SRV-006.md) — QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan (P0, M)
-- [SAVE-001](SAVE-001.md) — Формат сохранения и replay с проверкой хеша (P1, M)
-- [SRV-009](SRV-009.md) — Диагностика: структурированные логи, debug-истина по флагу (P1, S)
+_Нет задач, у которых выполнены все зависимости._
 
 ## Критический путь
 
@@ -66,7 +62,7 @@
 | [KNOW-001](KNOW-001.md) | KnowledgeStore: убеждения, источники, память с размытием | P0 | M | done | egor-codex-1 | [TRUTH-001](TRUTH-001.md) |
 | [PROTO-001](PROTO-001.md) | Каталог сообщений протокола (hello, welcome, action, event, qr, error) | P0 | M | done | codex-core | [FND-004](FND-004.md) |
 | [PROTO-002](PROTO-002.md) | Схемы PlayerView и PhoneView с фикстурами | P0 | M | done | claude-proto-1 | [PROTO-001](PROTO-001.md) |
-| [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | todo | — | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
+| [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | in_progress | codex-prototype-27 | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
 | [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | done | egor-codex-sim-001 | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
 | [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | in_progress | codex-prototype-27 | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
 | [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | done | claude-time-1 | [FND-009](FND-009.md) |
@@ -84,7 +80,7 @@
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [CNT-002](CNT-002.md) | MVP-сценарий: локации, предметы, архетипы, отношения (данные) | P0 | L | done | egor-claude-cnt-002 | [CNT-001](CNT-001.md) |
-| [CNT-003](CNT-003.md) | MVP-сценарий: шаблоны преступлений и правила мотивов | P0 | M | todo | — | [CNT-002](CNT-002.md) |
+| [CNT-003](CNT-003.md) | MVP-сценарий: шаблоны преступлений и правила мотивов | P0 | M | in_progress | egor-claude-cnt-003 | [CNT-002](CNT-002.md) |
 | [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | done | codex-engine-27 | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
 | [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | review | codex-prototype-27 | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
 | [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | in_progress | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
@@ -94,7 +90,7 @@
 | [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | todo | — | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
 | [GEN-008](GEN-008.md) | Стадия HistorySimulation: симуляция предыстории с исполнением плана | P0 | L | todo | — | [GEN-007](GEN-007.md), [SIM-002](SIM-002.md), [SIM-003](SIM-003.md), [SIM-004](SIM-004.md) |
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | todo | — | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
-| [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | todo | — | [SIM-001](SIM-001.md) |
+| [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | in_progress | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
 ## Фаза 4 · M4 — Solvable investigations (24)
 
@@ -145,10 +141,10 @@
 | [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | done | codex-prototype-27 | [SRV-001](SRV-001.md) |
 | [SRV-004](SRV-004.md) | WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume | P0 | L | in_progress | codex-prototype-27 | [SRV-003](SRV-003.md), [PROTO-001](PROTO-001.md) |
 | [SRV-005](SRV-005.md) | Рассылка представлений и событий с фильтром по роли | P0 | M | todo | — | [SRV-004](SRV-004.md), [ENG-002](ENG-002.md), [PHONE-001](PHONE-001.md) |
-| [SRV-006](SRV-006.md) | QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan | P0 | M | todo | — | [SRV-003](SRV-003.md), [EVD-003](EVD-003.md) |
+| [SRV-006](SRV-006.md) | QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan | P0 | M | done | claude-qr-1 | [SRV-003](SRV-003.md), [EVD-003](EVD-003.md) |
 | [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | todo | — | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
 | [SRV-008](SRV-008.md) | Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам | P0 | S | done | claude-server-1 | [FND-005](FND-005.md) |
-| [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | todo | — | [SRV-001](SRV-001.md) |
+| [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | in_progress | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | todo | — | [SRV-004](SRV-004.md) |
 
 ## Фаза 6 · M6 — Vertical slice (21)

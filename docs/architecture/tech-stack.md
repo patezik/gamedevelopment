@@ -24,6 +24,7 @@
 | ws | 8.22.x | MIT | server, tools | WebSocket (сервер и тестовые клиенты) |
 | zod | 4.6.x | MIT | protocol, core, server, mobile | Схемы, вывод типов, JSON Schema |
 | qrcode | 1.5.4 | MIT | server | Матрица QR ([ADR 0010](adr/0010-qr-rendering-on-server.md)) |
+| @types/qrcode | 1.5.x (dev) | MIT | server | Типы для `qrcode` (в самом пакете их нет) |
 | pino | 10.x (через Fastify) | MIT | server | Структурированные логи |
 | vitest | 5.0.x | MIT | все TS-пакеты кроме mobile | Unit/integration тесты |
 | @vitest/coverage-v8 | 5.0.x | MIT | все TS-пакеты кроме mobile | Покрытие и пороги в CI |
@@ -33,6 +34,9 @@
 | typescript-eslint | 8.72.x | MIT | все | TS-правила |
 | prettier | 3.9.x | MIT | все | Форматирование |
 | @types/node | 24.x | MIT | все TS-пакеты кроме mobile | Типы Node.js (TS 6 не подключает `@types/*` автоматически; см. `types` в `tsconfig.base.json`) |
+
+`qrcode` тянет ≈ 25 транзитивных пакетов (в основном `yargs` ради его консольной утилиты, `pngjs`,
+`dijkstrajs`); все под MIT или ISC.
 
 Ядро (`@hs/core`) не имеет runtime-зависимостей, кроме `zod`. Хеширование SHA-256 — через
 `node:crypto` за интерфейсом `Hasher` (ядро исполняется только в Node.js).

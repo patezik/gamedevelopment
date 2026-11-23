@@ -5,7 +5,7 @@ import {
   type EnginePorts,
   type Investigation,
 } from '@hs/core/game';
-import type { PlayerAction } from '@hs/protocol';
+import type { ErrorCode, PlayerAction } from '@hs/protocol';
 
 const EVENT_LIMIT = 200;
 const DESKTOP_GRACE_MS = 60_000;
@@ -33,7 +33,7 @@ export interface SessionEvent {
   readonly event: DispatchResult['events'][number];
 }
 
-function failed(error: 'INTERNAL' | 'SESSION_CLOSED'): DispatchResult {
+function failed(error: ErrorCode): DispatchResult {
   return { ok: false, error, minutesSpent: 0, events: [] };
 }
 
@@ -115,13 +115,19 @@ export class Session {
     });
   }
 
-  dispatch(role: SessionRole, action: PlayerAction): Promise<DispatchResult> {
+  dispatch(
+    role: SessionRole,
+    action: PlayerAction,
+    precondition?: () => ErrorCode | undefined,
+  ): Promise<DispatchResult> {
     return this.#enqueue(async () => {
       this.#refreshLifetime();
       if (this.#status === 'faulted') return failed('INTERNAL');
       if (this.#status !== 'active') return failed('SESSION_CLOSED');
 
       try {
+        const rejection = precondition?.();
+        if (rejection) return failed(rejection);
         const result = await this.engine.dispatch(role, action);
         if (!result.ok) return result;
         const events = structuredClone(result.events);
