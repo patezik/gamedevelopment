@@ -63,6 +63,31 @@ npm.cmd run test:godot
 GODOT_BIN=/path/to/godot npm run test:godot
 ```
 
+### Встроенный сервер (Node SEA)
+
+В релизе сервер лежит рядом с игрой как `server/hollow-signal-server[.exe]`, и автозагрузка
+`ServerLauncher` запускает его сама. В редакторе и при разработке бинарника нет, сервер запускают
+вручную (`npm run dev -w @hs/server`).
+
+```bash
+npm run build -w @hs/server        # dist/server/hollow-signal-server[.exe]
+node apps/server/build/smoke.mjs   # /health и завершение при гибели родителя
+```
+
+- Сборку делайте на целевой ОС: Windows, Linux и macOS по очереди (кросс-сборки нет).
+- Нужен официальный Node.js с nodejs.org (nvm, fnm, `actions/setup-node`). Пакетный Node дистрибутива
+  (например, `/usr/bin/node` в Fedora) связан с `libnode.so` и не подходит: сборка остановится с
+  подсказкой. Другой бинарник можно указать в `HS_NODE_BIN`.
+- Лаунчер берёт 7420 или первый свободный порт из 7420–7439, передаёт его серверу в `HS_PORT`,
+  ждёт `GET /api/v1/health` до 20 с и завершает процесс при выходе из игры. Если игра упала,
+  сервер сам завершается за пару секунд (`HS_PARENT_PID`).
+- Адрес для телефона берётся из `ServerLauncher.base_url()` и `/api/v1/network`; номер порта
+  попадает в QR как обычно.
+- Подпись и нотаризация отложены (OQ-09): Windows SmartScreen и macOS Gatekeeper предупредят о
+  неподписанном приложении. На macOS сборка ставит ad-hoc подпись: без неё Apple Silicon не
+  запустит бинарник.
+- GUT-тест с реальным сервером включается переменной `HS_SERVER_BIN=<путь к бинарнику>`.
+
 ## 5. Мобильное приложение
 
 ```bash
@@ -121,4 +146,4 @@ npm run dev:mobile           # покажет QR Expo Go — это QR разр�
 | Телефон не подключается к серверу | разные сети, гостевой Wi-Fi, брандмауэр | одна сеть, разрешить Node в брандмауэре, проверить адрес |
 | Expo Go: «project is incompatible» | версия Expo Go не совпадает с SDK | обновить Expo Go; см. ADR 0007 о версиях |
 | Expo Go просит войти | требование Expo Go 2026 | `npx expo login` и вход в приложении |
-| Порт 7420 занят | другой процесс | задайте `HS_PORT=7421` и запустите `npm run dev -w @hs/server` |
+| Порт 7420 занят | другой процесс | задайте `HS_PORT=7421` и запустите `npm run dev -w @hs/server`; встроенный сервер сам выберет свободный порт |
