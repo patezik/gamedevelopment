@@ -6,16 +6,20 @@ import {
   type ScheduleOverride,
 } from '../characters/index.ts';
 import type { GameMinutes, Interval } from '../common/index.ts';
+import { KnowledgeStore } from '../knowledge/index.ts';
 import type { Rng, RngState } from '../rng/index.ts';
 import { TickPhase, type Calendar, type TickContext, type TimeSystem } from '../time/index.ts';
 import type { EntityRef, Fact, TruthModel } from '../truth/index.ts';
 import type { Actor, ItemRegistry, LocationGraph } from '../world/index.ts';
+import { recordObservations, type Observer, type PerceptibleEvent } from './perception.ts';
 
 const MINUTES_PER_DAY = 1440;
 const SCHEDULE_EVENT = 'simulation.routine';
 const STEP_EVENT = 'simulation.step';
+const OBSERVATION_EVENT = 'simulation.observe';
 
-type RoutineCharacter = Pick<Character, 'id' | 'routine' | 'archetypeId'>;
+type RoutineCharacter = Pick<Character, 'id' | 'routine' | 'archetypeId'> &
+  Partial<Pick<Character, 'personality'>>;
 
 type Move = {
   readonly kind: 'move';
@@ -40,6 +44,7 @@ export interface Agent {
 interface AgentState {
   readonly character: RoutineCharacter;
   readonly rng: Rng;
+  readonly knowledge: KnowledgeStore;
   readonly priority: number;
   readonly overrides: readonly ScheduleOverride[];
   location: string;
@@ -58,6 +63,8 @@ export interface SimulationRunnerOptions {
   readonly characters: readonly RoutineCharacter[];
   readonly overrides?: readonly ScheduleOverride[];
   readonly initialLocations?: ReadonlyMap<string, string>;
+  readonly knowledge?: ReadonlyMap<string, KnowledgeStore>;
+  readonly stressAt?: (id: string, minute: GameMinutes) => number;
   /** Known minutes of item updates that will be written before the Simulation phase. */
   readonly itemChangeMinutes?: readonly GameMinutes[];
   /** Exclusive end of the interval owned by this runner. Use the same calendar as TimeSystem. */
@@ -72,6 +79,7 @@ export class SimulationRunner {
   readonly #itemChangeMinutes: readonly GameMinutes[];
   readonly #truth: TruthModel;
   readonly #endAt: GameMinutes;
+  readonly #stressAt: NonNullable<SimulationRunnerOptions['stressAt']>;
 
   constructor({
     time,
@@ -83,6 +91,8 @@ export class SimulationRunner {
     characters,
     overrides = [],
     initialLocations,
+    knowledge,
+    stressAt = () => 0,
     itemChangeMinutes = [],
     endAt,
   }: SimulationRunnerOptions) {
@@ -99,6 +109,7 @@ export class SimulationRunner {
     this.#itemChangeMinutes = itemChangeMinutes.toSorted((a, b) => a - b);
     this.#truth = truth;
     this.#endAt = endAt;
+    this.#stressAt = stressAt;
 
     const agentRng = rng.fork('sim').fork('agent');
     const sorted = characters.toSorted((a, b) => (a.id < b.id ? -1 : Number(a.id > b.id)));
@@ -144,6 +155,7 @@ export class SimulationRunner {
         block,
         overrides: ownOverrides,
         rng: agentRng.fork(id),
+        knowledge: knowledge?.get(id) ?? new KnowledgeStore(),
         nextBoundary: start,
       });
     }
@@ -155,6 +167,10 @@ export class SimulationRunner {
     time.registerHandler(STEP_EVENT, {
       phase: TickPhase.Simulation,
       handle: ({ payload }, context) => this.#startStep(this.#agentFor(payload), context),
+    });
+    time.registerHandler(OBSERVATION_EVENT, {
+      phase: TickPhase.WorldEvents,
+      handle: ({ payload }) => this.observe(payload as PerceptibleEvent),
     });
     for (const [payload, { priority }] of this.#agents) {
       time.schedule({ at: start, kind: SCHEDULE_EVENT, priority, payload });
@@ -170,6 +186,36 @@ export class SimulationRunner {
       rngState: rng.state,
       ...(activity && { activity: structuredClone(activity) }),
     };
+  }
+
+  knowledgeOf(characterId: string): KnowledgeStore | undefined {
+    return this.#agents.get(characterId)?.knowledge;
+  }
+
+  /** Call after the Simulation phase has established presence for the event minute. */
+  observe(event: PerceptibleEvent): void {
+    if (event.visibility === 'private') return;
+    const { t, location } = event;
+    const present = new Set(this.#truth.whoWasAt(location, { from: t, to: t + 1 }));
+    const observers: Observer[] = [];
+    for (const id of present) {
+      const agent = this.#agents.get(id);
+      if (!agent) continue;
+      const { character, knowledge, rng } = agent;
+      observers.push({
+        id,
+        knowledge,
+        rng,
+        personality: character.personality ?? { conscientiousness: 0.5 },
+        stress: event.visibility === 'covert' ? this.#stressAt(id, t) : 0,
+      });
+    }
+    recordObservations(
+      event,
+      present,
+      observers,
+      this.#world.lightingAt(location, this.#calendar.toDisplay(t).period),
+    );
   }
 
   #agentFor(payload: unknown): AgentState {
@@ -223,8 +269,9 @@ export class SimulationRunner {
     const { character, priority, nextBoundary, block } = agent;
     const { now } = context;
     const step = this.#planStep(agent, now);
-    this.#recordStep(character.id, step);
+    const event = this.#recordStep(character.id, step);
     agent.activity = { block, step };
+    context.schedule({ at: now, kind: OBSERVATION_EVENT, priority, payload: event });
     context.schedule({
       at: Math.min(step.to, nextBoundary),
       kind: SCHEDULE_EVENT,
@@ -272,7 +319,7 @@ export class SimulationRunner {
     return { actor: { archetypeId: character.archetypeId, itemIds }, nextChange };
   }
 
-  #recordStep(who: string, step: ActivityStep): void {
+  #recordStep(who: string, step: ActivityStep): PerceptibleEvent {
     const { from, to, kind } = step;
     const moving = step.kind === 'move';
     const location = moving ? step.origin : step.location;
@@ -284,17 +331,21 @@ export class SimulationRunner {
     if (step.kind === 'move' && step.keyItemId !== undefined) {
       targets.push({ kind: 'item', id: step.keyItemId });
     }
-    this.#truth.append({
+    const event = {
       t: from,
-      duration: to - from,
       verb: kind,
       actorIds: [who],
       location,
+      visibility: 'public' as const,
+    };
+    const id = this.#truth.append({
+      ...event,
+      duration: to - from,
       targets,
       causes: [],
       facts: [fact],
       traceIds: [],
-      visibility: 'public',
     });
+    return { ...event, id };
   }
 }
