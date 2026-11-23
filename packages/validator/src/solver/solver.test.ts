@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { tinyManor } from '../../../core/test/fixtures/tiny-manor.ts';
 import type { ValidationContext } from '../check.ts';
 import { validateInvestigation } from '../validate.ts';
-import { SOLVER_CHECKS, discover, solve } from './index.ts';
+import { SOLVER_CHECKS, discover, solveDeduction } from './index.ts';
 
 const file = (scenario: string): object[] =>
   JSON.parse(
@@ -165,9 +165,10 @@ describe('solver on tiny-manor', () => {
     expect(reasons({ template: 'far', supports: [], location: 'loc_nowhere' })).toEqual([
       ['CLUE_UNREACHABLE', 'location'],
     ]);
+    // A password is carried by a clue; one nobody carries cannot be found.
     expect(
       reasons({ template: 'locked', supports: [], requires: [{ kind: 'password', id: 'x' }] }),
-    ).toEqual([]); // a password nobody carries is a free-form secret, not a clue edge
+    ).toEqual([['CLUE_UNREACHABLE', 'requirement']]);
     expect(
       reasons({ template: 'ghost', supports: [], requires: [{ kind: 'item', id: 'it_none' }] }),
     ).toEqual([['CLUE_UNREACHABLE', 'requirement']]);
@@ -210,6 +211,23 @@ describe('solver on tiny-manor', () => {
     expect([...result.unreachable.values()]).toEqual([{ kind: 'cycle' }, { kind: 'cycle' }]);
   });
 
+  it('tells a cycle from a dependency on an unreachable clue', () => {
+    const { investigation } = base();
+    const [far, dependent] = clues(investigation, [
+      { template: 'far', supports: [], location: 'loc_nowhere' },
+      { template: 'dependent', supports: [] },
+    ]) as [Clue, Clue];
+    const result = discover({
+      investigation,
+      clues: [far, requiring(dependent, { kind: 'clue', id: far.id })],
+    });
+    expect(result.unreachable.get(far.id)).toEqual({ kind: 'location', locationId: 'loc_nowhere' });
+    expect(result.unreachable.get(dependent.id)).toEqual({
+      kind: 'requirement',
+      requirement: `clue:${far.id}`,
+    });
+  });
+
   it('fails instead of passing when its input is missing', () => {
     const { investigation } = base();
     expect(codes(investigation, {})).toEqual([
@@ -222,11 +240,11 @@ describe('solver on tiny-manor', () => {
   it('is deterministic and fast (MVP investigation under 50 ms)', () => {
     const { investigation, specs } = base();
     const all = clues(investigation, specs);
-    const first = solve({ investigation, clues: all, rules: deductionRules });
+    const first = solveDeduction({ investigation, clues: all, rules: deductionRules });
     const started = Number(process.hrtime.bigint()) / 1e6;
     const runs = 20;
     for (let i = 0; i < runs; i++) {
-      expect(solve({ investigation, clues: all, rules: deductionRules }).claims).toEqual(
+      expect(solveDeduction({ investigation, clues: all, rules: deductionRules }).claims).toEqual(
         first.claims,
       );
     }

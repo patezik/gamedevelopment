@@ -3,7 +3,7 @@ export {
   GUILT_KINDS,
   discover,
   reachableLocations,
-  solve,
+  solveDeduction,
   type DiscoveryInput,
   type DiscoveryResult,
   type Solution,

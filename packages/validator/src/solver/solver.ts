@@ -54,7 +54,7 @@ export function reachableLocations(
  * Discovery graph: a clue is a node, its prerequisites are edges. Search runs to a fixed point
  * from nothing found: a clue is reachable when its location is reachable and every requirement
  * holds. `clue` and `password` requirements name a clue that must be reachable first (a password
- * is carried by a clue); `item` needs an item of the scenario; `contact` needs a character.
+ * is carried by a clue; one nobody carries is unreachable); `item` needs an item of the scenario; `contact` needs a character.
  */
 export function discover({
   investigation,
@@ -73,7 +73,7 @@ export function discover({
     for (const { kind, id } of requires) {
       const met =
         kind === 'clue' || kind === 'password'
-          ? found.has(id) || (kind === 'password' && !byId.has(id))
+          ? found.has(id)
           : kind === 'item'
             ? itemIds.has(id)
             : characters.has(id);
@@ -91,13 +91,28 @@ export function discover({
       }
     }
   }
+  // A clue that waits for itself through other clues is a cycle; one that waits for a clue that
+  // is merely unreachable or unknown reports the blocking requirement.
+  const waitsFor = (clue: Clue) =>
+    clue.discovery.requires
+      .filter(({ kind, id }) => (kind === 'clue' || kind === 'password') && !found.has(id))
+      .flatMap(({ id }) => byId.get(id) ?? []);
+  const inCycle = (clue: Clue): boolean => {
+    const seen = new Set<string>();
+    const stack = [...waitsFor(clue)];
+    for (let next = stack.pop(); next; next = stack.pop()) {
+      if (next.id === clue.id) return true;
+      if (seen.has(next.id)) continue;
+      seen.add(next.id);
+      stack.push(...waitsFor(next));
+    }
+    return false;
+  };
   const unreachable = new Map<string, UnreachableReason>();
   for (const clue of clues) {
     if (found.has(clue.id)) continue;
-    const reason = blocker(clue) ?? { kind: 'cycle' as const };
-    const cyclic =
-      reason.kind === 'requirement' && byId.has(reason.requirement.split(':')[1] ?? '');
-    unreachable.set(clue.id, cyclic ? { kind: 'cycle' } : reason);
+    const reason = blocker(clue);
+    unreachable.set(clue.id, inCycle(clue) || !reason ? { kind: 'cycle' } : reason);
   }
   return { reachable: order, unreachable };
 }
@@ -128,7 +143,7 @@ function knownIncident(investigation: Investigation) {
 }
 
 /** Runs discovery, then the deduction rules over everything reachable. */
-export function solve(input: SolveInput): Solution {
+export function solveDeduction(input: SolveInput): Solution {
   const discovery = discover(input);
   const byId = new Map(input.clues.map((clue) => [clue.id, clue]));
   const knowledge = new PlayerKnowledge();

@@ -24,7 +24,7 @@ export {
   discover,
   reachableCheck,
   reachableLocations,
-  solve,
+  solveDeduction,
   uniqueCheck,
   type Solution,
 } from './solver/index.ts';

@@ -1,5 +1,5 @@
 import type { Check, FindingInput, ValidationContext } from '../check.ts';
-import { GUILT_KINDS, discover, solve } from './solver.ts';
+import { GUILT_KINDS, discover, solveDeduction } from './solver.ts';
 
 const missing = (check: string, what: string): FindingInput[] => [
   {
@@ -13,7 +13,7 @@ const missing = (check: string, what: string): FindingInput[] => [
 function solveFrom(investigation: Parameters<Check['run']>[0], context: ValidationContext) {
   const { clues, deductionRules, statements, startLocationId } = context;
   if (clues === undefined || deductionRules === undefined) return undefined;
-  return solve({
+  return solveDeduction({
     investigation,
     clues,
     rules: deductionRules,
