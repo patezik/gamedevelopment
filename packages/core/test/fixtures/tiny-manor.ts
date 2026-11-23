@@ -2,6 +2,7 @@ import { deriveClues, type Clue } from '../../src/evidence/index.ts';
 import { RelationshipGraph, type Character } from '@hs/core/characters';
 import type { ScenarioContent } from '@hs/core/content';
 import { InvestigationBuilder, type Investigation } from '@hs/core/game';
+import { buildLiePolicy, KnowledgeStore, type SpeakerContext } from '@hs/core/knowledge';
 import { factId, TruthLog, TruthModel, type Fact, type TruthEventInput } from '@hs/core/truth';
 import { ItemRegistry, LocationGraph } from '@hs/core/world';
 
@@ -266,4 +267,32 @@ export function tinyManorWithClues(
     new Map([['missing_ledger', { action: { type: 'read', documentId: 'ledger_note' } }]]),
   );
   return { ...investigation, clues };
+}
+
+export function tinyManorWitness(): SpeakerContext {
+  const witness = tinyManor().characters.find(({ id }) => id === bursar)!;
+  const speaker = { ...witness, personality: { ...witness.personality, honesty: 0.4 } };
+  const knowledge = new KnowledgeStore();
+  const observed = at(bursar, study, -21, -15);
+  knowledge.add({
+    proposition: observed,
+    source: 'observed',
+    confidence: 1,
+    acquiredAt: -15,
+    fuzzMinutes: 0,
+  });
+  const replaces = { kind: 'at', who: bursar, where: study } as const;
+  const guilt = {
+    protect: [replaces],
+    alternatives: [
+      { replaces, proposition: at(bursar, archive, -21, -15) },
+      { replaces, proposition: at(bursar, hall, -21, -15) },
+    ],
+  };
+  return {
+    character: speaker,
+    knowledge,
+    policy: buildLiePolicy(speaker, knowledge, [], guilt),
+    now: 0,
+  };
 }
