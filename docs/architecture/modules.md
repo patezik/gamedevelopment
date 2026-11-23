@@ -437,6 +437,10 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 ## 12. `@hs/core/game` — GameEngine, действия, представления, сохранения
 
+- **Загрузка сохранения.** `Regenerate` возвращает `ReplayRuntime` с обязательным полем
+  `readonly generatorVersion: string` из фактически сгенерированного расследования. Перед
+  восстановлением чекпойнта и replay `loadSave` сверяет его с версией файла по
+  [ADR 0019](adr/0019-save-generator-compatibility.md).
 - **Расследование (CORE-003):**
   ```ts
   interface WorldState { locations: LocationGraph; items: ItemRegistry; durationMinutes: number }
