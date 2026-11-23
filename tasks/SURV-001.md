@@ -1,7 +1,7 @@
 ---
 id: SURV-001
 title: "Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 7
@@ -9,8 +9,8 @@ milestone: M7
 area: survival
 depends_on: [ENG-001, TIME-004]
 modules: ["packages/core/src/survival/vitals.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-surv-1
+claimed_at: "2026-11-23T09:24:36Z"
 ---
 
 # SURV-001 — Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости
@@ -49,9 +49,9 @@ Survival-основа (survival-horror.md §1).
 
 ## Критерии приёмки
 
-- [ ] Табличный тест порогов survival-horror.md §1.
-- [ ] Отдых восстанавливает по формулам.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Табличный тест порогов survival-horror.md §1.
+- [x] Отдых восстанавливает по формулам.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

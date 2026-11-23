@@ -384,12 +384,26 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **Интерфейс:**
   ```ts
   interface Vitals { health: number /*0..10*/; sanity: number /*0..10*/; fatigue: number /*0..100*/ }
-  interface SurvivalState { vitals: Vitals; static: number /*0..100*/; inventory: InventorySlot[]; phoneBattery: number }
-  function applyActionStrain(s: SurvivalState, a: ActionKind, ctx): SurvivalDelta;
-  function costModifiers(s: SurvivalState): CostModifier[];   // для TimeSystem
+  interface VitalsState { vitals: Vitals; awakeMinutes: number; restedMinutes: number; trustedTalkDay: number | null }   // остатки минут: частичное время не теряется; день последнего разговора с доверенным
+  interface VitalsStep { state: VitalsState; events: SurvivalEvent[]; forcedSleepMinutes?: number }
+  function createVitalsState(start: Vitals): VitalsState;            // из preset.survival.startVitals
+  function restoreVitalsState(saved: unknown): VitalsState;          // SURVIVAL_INVALID_STATE при повреждении
+  function applyDelta(s: VitalsState, d: Partial<Vitals>, at: GameMinutes, cause: string): VitalsStep;
+  function tickAwake(s: VitalsState, minutes: number, at: GameMinutes): VitalsStep;   // любое действие, кроме отдыха
+  function rest(s: VitalsState, minutes: number, at: GameMinutes): VitalsStep;
+  function trustedTalk(s: VitalsState, at: GameMinutes, calendar: Calendar): VitalsStep;   // рассудок +1, не чаще раза в игровой день
+  function statusOf(v: Vitals): VitalsStatus;  function endingFor(v: Vitals): "death" | "madness" | undefined;
+  function costModifiers(v: Vitals, opts?: { darkWithoutLight?: boolean }): CostModifier[];   // для resolveActionCost (TIME-004)
+  // планируется (SURV-002/003/004):
+  interface SurvivalState { vitals: VitalsState; static: number /*0..100*/; inventory: InventorySlot[]; phoneBattery: number }
   function resolveThreat(t: ThreatEncounter, s: SurvivalState, rng: Rng): ThreatOutcome;
   ```
-- **События:** `VitalsChanged`, `StaticThresholdReached`, `ThreatEncountered`, `PlayerIncapacitated`.
+  Вместо `applyActionStrain` показатели меняет `applyDelta`: урон и стоимость исходов (травма при
+  неудачном вскрытии, нападение) решают ENG-003 и SURV-003 (с RNG) и передают готовое изменение.
+- **События:** `VitalsChanged { at, before, after, cause }`, `PlayerIncapacitated { at, cause }` (реализованы в
+  SURV-001), `StaticThresholdReached`, `ThreatEncountered` (SURV-002, SURV-003).
+- **Ошибки:** `SURVIVAL_INVALID_STATE` (неверное стартовое или сохранённое состояние).
+- Подробности формул и порядка модификаторов — [survival-horror.md](../game-design/survival-horror.md).
 - **Тесты:** границы значений; отдых восстанавливает; пороги Static; исходы угроз детерминированы.
 
 ## 11. `@hs/core/phone` — домен виртуального телефона
@@ -444,6 +458,10 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   }
   interface DispatchResult { ok: boolean; error?: ErrorCode; minutesSpent: number; events: DomainEvent[]; outcome?: GameOutcome }
   ```
+- ENG-001 принимает стартовую локацию, таблицу затрат и данные доступа игрока через `EnginePorts`.
+  `move` и `wait` используют `TimeSystem.advance`; отклонённое действие сохраняет состояние.
+  `GameSnapshot` содержит серверное расследование, игровую минуту, локацию игрока и хеш
+  исходного расследования. Снимок остаётся на сервере.
 - **Блокировка взаимодействия:** во время диалога или звонка (`activeInteraction`) действия,
   несовместимые с ним, отклоняются `ACTION_BLOCKED` (ENG-005).
 - **Ошибки:** `ACTION_INVALID`, `ACTION_NOT_AVAILABLE`, `ACTION_BLOCKED`, `GAME_OVER`.

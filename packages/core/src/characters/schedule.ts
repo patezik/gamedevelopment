@@ -13,12 +13,19 @@ export interface ScheduleOverride {
 type ScheduleErrorCode = 'CHAR_SCHEDULE_GAP' | 'CHAR_SCHEDULE_OVERLAP' | 'CHAR_INVALID_SCHEDULE';
 
 export class ScheduleError extends Error {
+  readonly code: ScheduleErrorCode;
+  readonly characterId: string;
+  readonly minute: number;
+
   constructor(
-    readonly code: ScheduleErrorCode,
-    readonly characterId: string,
-    readonly minute: number,
+    code: ScheduleErrorCode,
+    characterId: string,
+    minute: number,
   ) {
     super(`${code} for ${characterId} at minute ${minute}`);
+    this.code = code;
+    this.characterId = characterId;
+    this.minute = minute;
     this.name = 'ScheduleError';
   }
 }

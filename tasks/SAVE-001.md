@@ -1,7 +1,7 @@
 ---
 id: SAVE-001
 title: "Формат сохранения и replay с проверкой хеша"
-status: todo
+status: in_progress
 priority: P1
 complexity: M
 phase: 2
@@ -9,8 +9,8 @@ milestone: M2
 area: engine
 depends_on: [ENG-001, CORE-001]
 modules: ["packages/core/src/game/save.ts"]
-assignee: null
-claimed_at: null
+assignee: codex-prototype-27
+claimed_at: "2026-11-23T10:01:29Z"
 ---
 
 # SAVE-001 — Формат сохранения и replay с проверкой хеша
