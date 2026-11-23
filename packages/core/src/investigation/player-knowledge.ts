@@ -2,6 +2,7 @@ import { FORBIDDEN_VIEW_KEYS } from '@hs/protocol';
 import { z } from 'zod';
 import type { GameMinutes } from '../common/index.ts';
 import type { Statement } from '../knowledge/index.ts';
+import { SUSPICION_LEVELS, type Suspicion, type SuspicionLevel } from './suspicion.ts';
 
 type PlayerKnowledgeErrorCode =
   'INVESTIGATION_INVALID_INPUT' | 'INVESTIGATION_UNKNOWN_CLUE' | 'INVESTIGATION_INVALID_STATE';
@@ -46,6 +47,8 @@ export interface PlayerKnowledgeSnapshot {
   readonly contacts: readonly string[];
   readonly journal: readonly JournalEntry[];
   readonly nextSeq: number;
+  /** The player's marks. Saves made before INV-003 have none and restore with no marks. */
+  readonly suspicions: readonly Suspicion[];
 }
 
 const id = z.string().min(1);
@@ -74,12 +77,18 @@ const journalSchema = z.discriminatedUnion('kind', [
   z.strictObject({ ...base, kind: z.literal('statement'), statementId: id, speakerId: id }),
   z.strictObject({ ...base, kind: z.literal('contact'), characterId: id }),
 ]);
+const suspicionSchema = z.strictObject({
+  characterId: id,
+  level: z.enum(SUSPICION_LEVELS),
+  note: z.string().min(1).optional(),
+});
 const snapshotSchema = z.strictObject({
   clues: z.array(clueSchema),
   statements: z.array(statementSchema),
   contacts: z.array(id),
   journal: z.array(journalSchema),
   nextSeq: z.int().nonnegative(),
+  suspicions: z.array(suspicionSchema).optional(),
 });
 
 /** `Omit` applied to each member of a union, not to the union as a whole. */
@@ -125,8 +134,9 @@ function freeze<T>(value: T): T {
 
 /**
  * Everything the player knows, and only that: clues found, statements heard (without their
- * veracity), known contacts, and an automatic journal in game-time order. The boards, the phone
- * and the accusation are built from this and never from the truth.
+ * veracity), known contacts, an automatic journal in game-time order, and the player's own
+ * suspicion marks. The boards, the phone and the accusation are built from this and never from
+ * the truth.
  *
  * Adding is idempotent: what is already known is ignored and the method returns `false`.
  */
@@ -136,6 +146,7 @@ export class PlayerKnowledge {
   readonly #contacts = new Set<string>();
   #journal: JournalEntry[] = [];
   #nextSeq = 0;
+  readonly #suspicions = new Map<string, Suspicion>();
 
   get clues(): ReadonlyMap<string, DiscoveredClue> {
     return this.#clues;
@@ -153,6 +164,11 @@ export class PlayerKnowledge {
   /** Ordered by game minute; entries of the same minute keep the order they were added in. */
   get journal(): readonly JournalEntry[] {
     return this.#journal;
+  }
+
+  /** The player's marks, in the order first made. A mark of `none` without a note is not kept. */
+  get suspicions(): readonly Suspicion[] {
+    return [...this.#suspicions.values()];
   }
 
   #record(entry: EntryBody<JournalEntry>): void {
@@ -242,6 +258,36 @@ export class PlayerKnowledge {
     return true;
   }
 
+  /**
+   * The player marks how much they suspect a character (`markSuspicion`, which costs no game
+   * time: nothing here reads or moves the clock, and the journal is left alone). Any character
+   * can be marked, linked to the evidence or not; the game never marks anyone itself.
+   *
+   * The level replaces the previous one. `note` replaces the note, an empty note removes it, and
+   * leaving it out keeps the note there is. Marking `none` without a note removes the mark.
+   * Returns `false` when nothing changes.
+   */
+  markSuspicion(characterId: string, level: SuspicionLevel, note?: string): boolean {
+    nonEmpty(characterId, 'characterId');
+    if (!(SUSPICION_LEVELS as readonly unknown[]).includes(level))
+      throw invalid(`level must be one of ${SUSPICION_LEVELS.join(', ')}`);
+    if (note !== undefined && typeof note !== 'string') throw invalid('note must be a string');
+
+    const previous = this.#suspicions.get(characterId);
+    const kept = note === undefined ? previous?.note : note === '' ? undefined : note;
+    if (previous?.level === level && previous.note === kept) return false;
+    if (level === 'none' && kept === undefined) {
+      if (!previous) return false;
+      this.#suspicions.delete(characterId);
+      return true;
+    }
+    const mark: Suspicion =
+      kept === undefined ? { characterId, level } : { characterId, level, note: kept };
+    // An existing mark keeps its place in the order; a new one goes last.
+    this.#suspicions.set(characterId, freeze(mark));
+    return true;
+  }
+
   /** A detached, JSON-pure copy that `restore` accepts. */
   serialize(): PlayerKnowledgeSnapshot {
     return structuredClone({
@@ -250,6 +296,7 @@ export class PlayerKnowledge {
       contacts: [...this.#contacts],
       journal: this.#journal,
       nextSeq: this.#nextSeq,
+      suspicions: [...this.#suspicions.values()],
     });
   }
 
@@ -325,6 +372,14 @@ export class PlayerKnowledge {
       ...[...knowledge.#contacts].map((id) => `contact:${id}`),
     ].find((key) => !noted.has(key));
     if (unnoted) throw fail(`The journal has no entry for ${unnoted}`);
+
+    for (const mark of snapshot.suspicions ?? []) {
+      if (knowledge.#suspicions.has(mark.characterId))
+        throw fail(`Duplicate suspicion of ${mark.characterId}`);
+      if (mark.level === 'none' && mark.note === undefined)
+        throw fail(`An empty suspicion of ${mark.characterId}`);
+      knowledge.#suspicions.set(mark.characterId, freeze(mark) as Suspicion);
+    }
 
     knowledge.#journal = snapshot.journal.map((entry) => freeze(entry) as JournalEntry);
     knowledge.#nextSeq = snapshot.nextSeq;

@@ -60,7 +60,6 @@ interface SaveJson {
   actions: unknown[];
   checkpoint?: { atAction: number };
   finalStateHash: string;
-  generatorVersion: string;
 }
 interface LoadBody {
   sessionId: string;
@@ -73,7 +72,7 @@ interface SummaryBody {
   gameTime: number | null;
 }
 interface ErrorBody {
-  error: { code: string; atAction?: number };
+  error: { code: string; message: string; atAction?: number };
 }
 const readSave = async (path: string) => JSON.parse(await readFile(path, 'utf8')) as SaveJson;
 const saveDir = () => join(dir, 'saves');
@@ -178,6 +177,21 @@ describe('interrupted writes', () => {
 });
 
 describe('restart and load', () => {
+  test('a supported save without a checkpoint loads its full journal without rewriting the file', async () => {
+    const first = boot();
+    const session = await first.sessions.create('tiny-manor', 'winter');
+    await play(session, 2);
+    const before = await first.store.read(session.id);
+    const expectedHash = hashOf(session);
+    await first.app.close();
+
+    const { app, sessions, store } = boot();
+    const response = await app.inject({ method: 'POST', url: `/api/v1/saves/${session.id}/load` });
+    expect(response.statusCode).toBe(200);
+    expect(hashOf(sessions.get(session.id)!)).toBe(expectedHash);
+    expect(await store.read(session.id)).toBe(before);
+  });
+
   test('a new server process loads the save to the same stateHash and keeps journaling', async () => {
     const first = boot();
     const session = await first.sessions.create('tiny-manor', 'winter');
@@ -238,7 +252,7 @@ describe('restart and load', () => {
   test('a tampered journal is SAVE_DESYNC and reports the first bad action', async () => {
     const first = boot();
     const session = await first.sessions.create('tiny-manor', 'winter');
-    await play(session, 4);
+    await play(session, 51); // the damaged entry precedes a valid checkpoint
     const path = join(saveDir(), `${session.id}.json`);
     const file = await readSave(path);
     file.actions[2] = { ...(file.actions[2] as object), action: { type: 'wait', minutes: 60 } };
@@ -265,21 +279,38 @@ describe('restart and load', () => {
     }
   });
 
-  test('a save from another generator version is SAVE_DESYNC, never replayed', async () => {
-    const first = boot();
-    const session = await first.sessions.create('tiny-manor', 'winter');
-    await play(session, 1);
-    const path = join(saveDir(), `${session.id}.json`);
-    const file = await readSave(path);
-    file.generatorVersion = '9.9.9';
-    await writeFile(path, JSON.stringify(file));
-
-    const { saves } = boot();
-    await expect(saves.restore(session.id)).rejects.toMatchObject({
-      code: 'SAVE_DESYNC',
-      atAction: 0,
-    });
-  });
+  test.each(['0.0.9', '9.9.9', 'preview'])(
+    'loading a save written by generator %s explains the refusal',
+    async (version) => {
+      const first = boot(
+        {},
+        {
+          provider: {
+            create(scenarioId, seed) {
+              const { investigation, ports } = provider.create(scenarioId, seed);
+              return { investigation: { ...investigation, generatorVersion: version }, ports };
+            },
+          },
+        },
+      );
+      const session = await first.sessions.create('tiny-manor', 'winter');
+      await play(session, 1);
+      const before = await first.store.read(session.id);
+      await first.app.close();
+      const { app, sessions, store } = boot();
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/saves/${session.id}/load`,
+      });
+      expect(response.statusCode).toBe(422);
+      const { error } = response.json<ErrorBody>();
+      expect(error).toMatchObject({ code: 'SAVE_DESYNC', atAction: 0 });
+      expect(error.message).toContain(`Unsupported generator version "${version}"`);
+      expect(error.message).toContain('0.1.0');
+      expect(sessions.get(session.id)).toBeUndefined();
+      expect(await store.read(session.id)).toBe(before);
+    },
+  );
 
   test('a running session blocks a load; a suspended one is replaced and its engine can no longer write', async () => {
     let now = 0;
