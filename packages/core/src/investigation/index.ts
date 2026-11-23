@@ -3,12 +3,20 @@ export {
   DeductionRulesError,
   compileDeductionRules,
   evaluateClaims,
+  parsePresence,
   type ClaimContext,
   type ClaimKind,
   type ClaimSupport,
   type DeductionRules,
   type EstablishedClaim,
 } from './claims.ts';
+export {
+  DEFAULT_TOLERANCE_MINUTES,
+  contradictionEvents,
+  detectContradictions,
+  type Contradiction,
+  type ContradictionFound,
+} from './contradictions.ts';
 export {
   PlayerKnowledge,
   PlayerKnowledgeError,

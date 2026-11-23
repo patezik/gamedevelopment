@@ -465,3 +465,20 @@ export function evaluateClaims(
   }
   return established;
 }
+
+/** A `presence(who,where,when)` reference as plain data; `undefined` for any other reference. */
+export function parsePresence(
+  reference: string,
+): { who: string; where: string; from: number; to: number } | undefined {
+  let atom: Call;
+  try {
+    atom = parseAtom(reference);
+  } catch {
+    return undefined;
+  }
+  const [who, where, when] = atom.args;
+  if (atom.fn !== 'presence' || atom.args.length !== 3) return undefined;
+  if (who?.k !== 'lit' || where?.k !== 'lit' || when?.k !== 'lit') return undefined;
+  const interval = asInterval(when.value);
+  return interval && { who: who.value, where: where.value, ...interval };
+}
