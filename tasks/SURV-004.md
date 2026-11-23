@@ -1,7 +1,7 @@
 ---
 id: SURV-004
 title: "Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона"
-status: review
+status: done
 priority: P1
 complexity: S
 phase: 7
