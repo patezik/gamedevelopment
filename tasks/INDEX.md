@@ -2,10 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 86 · in_progress: 9 · review: 0 · done: 43 · blocked: 2
+Всего задач: **140** · todo: 86 · in_progress: 8 · review: 0 · done: 44 · blocked: 2
 
 ## Готовы к взятию сейчас
 
+- [SIM-003](SIM-003.md) — Встречи NPC и обмен знаниями, дрейф отношений (P0, M)
 - [TOOL-001](TOOL-001.md) — Фейковые клиенты desktop/phone (CLI и библиотека) для тестов (P0, M)
 - [INT-008](INT-008.md) — Спайк: TLS с pinning через QR и облачный ретранслятор → ADR (P2, M)
 
@@ -65,7 +66,7 @@
 | [PROTO-002](PROTO-002.md) | Схемы PlayerView и PhoneView с фикстурами | P0 | M | done | claude-proto-1 | [PROTO-001](PROTO-001.md) |
 | [SAVE-001](SAVE-001.md) | Формат сохранения и replay с проверкой хеша | P1 | M | in_progress | codex-prototype-27 | [ENG-001](ENG-001.md), [CORE-001](CORE-001.md) |
 | [SIM-001](SIM-001.md) | SimulationRunner: исполнение рутин NPC через Scheduler | P0 | M | done | egor-codex-sim-001 | [CHAR-003](CHAR-003.md), [TIME-003](TIME-003.md), [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md) |
-| [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | in_progress | codex-prototype-27 | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
+| [SIM-002](SIM-002.md) | Восприятие: наблюдения присутствующих → убеждения | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md), [KNOW-001](KNOW-001.md) |
 | [TIME-001](TIME-001.md) | GameMinutes и Calendar: дни, часы, периоды суток | P0 | S | done | claude-time-1 | [FND-009](FND-009.md) |
 | [TIME-002](TIME-002.md) | Scheduler: детерминированная очередь событий | P0 | M | done | claude-time-1 | [TIME-001](TIME-001.md), [CORE-002](CORE-002.md) |
 | [TIME-003](TIME-003.md) | TimeSystem.advance: фазы обработки, прерывания, события часов | P0 | M | done | codex-time-1 | [TIME-002](TIME-002.md) |
