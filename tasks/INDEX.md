@@ -2,11 +2,10 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 85 · in_progress: 2 · review: 0 · done: 52 · blocked: 1
+Всего задач: **140** · todo: 84 · in_progress: 3 · review: 0 · done: 52 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [GEN-004](GEN-004.md) — Стадия SocialGen: отношения и секреты (P0, M)
 - [SIM-003](SIM-003.md) — Встречи NPC и обмен знаниями, дрейф отношений (P0, M)
 - [VAL-006](VAL-006.md) — Проверки V-PHONE-REQUIRED и V-DETERMINISM (P0, S)
 - [GDT-002](GDT-002.md) — Autoload GameStore и SceneRouter (P0, S)
@@ -92,7 +91,7 @@
 | [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | done | codex-engine-27 | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
 | [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | done | codex-prototype-27 | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
 | [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | done | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
-| [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | todo | — | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
+| [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | in_progress | egor-claude-gen-004 | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
 | [GEN-005](GEN-005.md) | Стадия ConflictGen: правила мотивов для всех пар персонажей | P0 | M | todo | — | [GEN-004](GEN-004.md) |
 | [GEN-006](GEN-006.md) | Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых | P0 | L | todo | — | [GEN-005](GEN-005.md), [GEN-002](GEN-002.md) |
 | [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | todo | — | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
