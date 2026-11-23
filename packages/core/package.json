@@ -15,6 +15,7 @@
     "./rng": "./src/rng/index.ts",
     "./survival": "./src/survival/index.ts",
     "./simulation": "./src/simulation/index.ts",
+    "./simulation/goals": "./src/simulation/goals/index.ts",
     "./time": "./src/time/index.ts",
     "./truth": "./src/truth/index.ts",
     "./truth/facts": "./src/truth/facts.ts",
