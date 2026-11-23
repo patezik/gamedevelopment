@@ -2,13 +2,14 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 86 · in_progress: 3 · review: 0 · done: 50 · blocked: 1
+Всего задач: **140** · todo: 86 · in_progress: 2 · review: 0 · done: 51 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [GEN-004](GEN-004.md) — Стадия SocialGen: отношения и секреты (P0, M)
 - [SIM-003](SIM-003.md) — Встречи NPC и обмен знаниями, дрейф отношений (P0, M)
 - [INV-001](INV-001.md) — PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал (P0, S)
+- [VAL-006](VAL-006.md) — Проверки V-PHONE-REQUIRED и V-DETERMINISM (P0, S)
 - [GDT-002](GDT-002.md) — Autoload GameStore и SceneRouter (P0, S)
 - [TOOL-001](TOOL-001.md) — Фейковые клиенты desktop/phone (CLI и библиотека) для тестов (P0, M)
 - [CNT-005](CNT-005.md) — Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы (P0, L)
@@ -120,7 +121,7 @@
 | [KNOW-002](KNOW-002.md) | LiePolicy и показания: answer(question) → правда, ошибка или ложь | P0 | L | done | codex-prototype-27 | [KNOW-001](KNOW-001.md), [CHAR-002](CHAR-002.md) |
 | [SIM-005](SIM-005.md) | Цели ConcealEvidence, SpreadRumor, ProtectSelf, MeetCharacter, SeekInformation | P0 | L | todo | — | [SIM-004](SIM-004.md), [SIM-003](SIM-003.md), [EVD-001](EVD-001.md) |
 | [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | todo | — | [SIM-003](SIM-003.md) |
-| [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | in_progress | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
+| [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | done | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
 | [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | todo | — | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
 | [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | todo | — | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | todo | — | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
