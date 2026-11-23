@@ -372,6 +372,22 @@ describe('serialize and restore', () => {
       'a journal entry about an unknown contact',
       (s) => (entry(s, 'contact').characterId = 'ghost'),
     ],
+    [
+      'a clue the journal never noted',
+      (s) => (s.journal = s.journal.filter((e) => !(e.kind === 'clue' && e.clueId === 'clue_a'))),
+    ],
+    [
+      'a statement the journal never noted',
+      (s) => (s.journal = s.journal.filter((e) => e.kind !== 'statement')),
+    ],
+    [
+      'a contact the journal never noted',
+      (s) => (s.journal = s.journal.filter((e) => e.kind !== 'contact')),
+    ],
+    [
+      'a capture entry for a clue that is not captured',
+      (s) => (s.clues.find((c) => c.clueId === 'clue_a')!.captured = false),
+    ],
     ['an unknown journal kind', (s) => (s.journal[0]!.kind = 'rumour')],
     ['a fractional minute', (s) => (s.clues[0]!.discoveredAt = 1.5)],
     ['a missing part', (s) => delete (s as Partial<SavedShape>).contacts],

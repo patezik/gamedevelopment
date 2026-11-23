@@ -303,7 +303,29 @@ export class PlayerKnowledge {
             ? knowledge.#contacts.has(entry.characterId)
             : knowledge.#clues.has(entry.clueId);
       if (!known) throw fail(`The journal mentions something unknown: entry ${entry.seq}`);
+      if (entry.kind === 'capture' && !knowledge.#clues.get(entry.clueId)?.captured) {
+        throw fail(`Journal entry ${entry.seq} captures a clue that is not captured`);
+      }
     }
+    // And the other way round: everything the player knows was noted in the journal when learned.
+    const noted = new Set(
+      snapshot.journal.flatMap((entry) =>
+        entry.kind === 'statement'
+          ? [`statement:${entry.statementId}`]
+          : entry.kind === 'contact'
+            ? [`contact:${entry.characterId}`]
+            : entry.kind === 'clue'
+              ? [`clue:${entry.clueId}`]
+              : [],
+      ),
+    );
+    const unnoted = [
+      ...[...knowledge.#clues.keys()].map((id) => `clue:${id}`),
+      ...[...knowledge.#statements.keys()].map((id) => `statement:${id}`),
+      ...[...knowledge.#contacts].map((id) => `contact:${id}`),
+    ].find((key) => !noted.has(key));
+    if (unnoted) throw fail(`The journal has no entry for ${unnoted}`);
+
     knowledge.#journal = snapshot.journal.map((entry) => freeze(entry) as JournalEntry);
     knowledge.#nextSeq = snapshot.nextSeq;
     return knowledge;
