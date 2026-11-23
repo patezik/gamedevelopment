@@ -36,11 +36,12 @@ apps/desktop/
 │   │   ├── bootstrap.tscn        — стартовая сцена каркаса, показывает версию клиента
 │   │   ├── main_menu/  new_game/  pairing/  exploration/  dialogue/
 │   │   ├── case_board/  accusation/  ending/  hud/  overlays/ (evidence_capture, horror_fx, phone_status)
+│   │   │   └── overlays/debug/   — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
 │   └── ui/                       — общие компоненты (кнопка действия со стоимостью, карточка улики)
 ├── assets/                       — арт, шрифты, звук (стиль — CNT-008)
 └── tests/
-    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, qr_texture
-    │   └── support/              — тестовые двойники (FakeBackend, экран-заглушка)
+    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture
+    │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, экран-заглушка)
     └── contract/
         ├── contract_support.gd         — пути к packages/protocol, чтение JSON, проверка формы по JSON Schema
         ├── test_protocol_constants.gd  — ProtocolConstants против схем и фикстур
@@ -133,6 +134,34 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   (тот же экран и те же параметры) → `ERR_BUSY`.
 - Сигналы: `transition_started(screen)`, `screen_changed(screen, params)`, `transition_failed(screen, reason)`.
 
+### 3.3. Debug-панель (`scenes/overlays/debug`)
+
+`DebugOverlay` (`CanvasLayer`, слой 128) — панель разработчика по F12: seed, сценарий и версия
+генератора, игровое время (`clock` из `GameStore`), `stateVersion`, копирование seed, просмотр истины
+и экспорт репро-пакета. Клавиша обрабатывается в `_input`, без записи в `InputMap` и без изменений
+`project.godot`; `bootstrap.gd` вызывает `DebugOverlay.install(get_tree().root)`, оверлей живёт в
+корне дерева и переживает смену экранов `SceneRouter`.
+
+- **Только debug-сборка.** Проверка — feature-тег `debug` (`OS.has_feature("debug")`): запуск из
+  редактора и debug-шаблоны экспорта. В релизной сборке `install()` ничего не добавляет, а экземпляр,
+  созданный иначе, освобождает себя в `_ready`, не строит интерфейс и не отправляет запросов.
+  `force_release_mode()` (необратимо) включает то же поведение в тестах.
+- **Истина — только с сервера.** Запросы идут через `Backend.request_rest` на существующие маршруты
+  SRV-009 — `GET /api/v1/sessions/:id/debug/truth` и `GET /api/v1/sessions/:id/debug/export` — с
+  `desktopToken` сессии в `Authorization` ([backend.md §6](../backend/backend.md)). Сервер отвечает
+  на них только при `HS_DEBUG_TRUTH=1`; 404 панель показывает как «debug API недоступен», 401/403 —
+  как ошибку доступа, сетевую ошибку и ответ неожиданной формы — отдельно.
+- **Изоляция.** Истина хранится только в панели: не попадает в `GameStore`, `PlayerView` и сигналы
+  экранов, скрыта до кнопки «Показать истину» и забывается при закрытии панели, ошибке запроса,
+  смене сессии и `OFFLINE`. Токен хранится в памяти и уходит только заголовком debug-маршрутов.
+  Предупреждения об ошибках содержат вид маршрута и HTTP-статус — без URL, тела ответа и токена.
+- **Сессия.** Клиент пока не создаёт сессию сам (GDT-003), поэтому адрес сервера, id сессии и
+  `desktopToken` из ответа `POST /sessions` передаёт тот, кто создал сессию:
+  `attach_session(base_url, session_id, desktop_token) -> Error`. Без сессии запросы не
+  отправляются (`ERR_UNCONFIGURED`). Seed приходит в ответах debug-маршрутов.
+- **Экспорт.** Репро-пакет из `debug/export` записывается в `user://debug_repro/repro-<sessionId>-v<stateVersion>.json`
+  (`export_directory`); путь показывается в панели. Пакет содержит решение — это файл разработчика.
+
 ## 4. Экраны
 
 | Экран | Содержимое |
@@ -146,6 +175,7 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | Accusation | выбор обвиняемого, мотив/средство/возможность, улики, двойное подтверждение |
 | Ending | концовка, разбор истины (`TruthRecap`), seed, статистика |
 | HUD (оверлей) | часы/день/период, остаток времени, здоровье/рассудок/усталость, Static, статус телефона |
+| Debug (оверлей, только debug-сборка) | seed, время, `stateVersion`, истина и экспорт репро через debug-маршруты (§3.3) |
 
 ## 5. Стиль кода
 
