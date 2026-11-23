@@ -1,7 +1,7 @@
 ---
 id: KNOW-002
 title: "LiePolicy и показания: answer(question) → правда, ошибка или ложь"
-status: review
+status: done
 priority: P0
 complexity: L
 phase: 4
