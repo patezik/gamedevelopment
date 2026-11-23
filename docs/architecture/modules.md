@@ -293,7 +293,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     static deserialize(json: string): KnowledgeStore;
   }
   interface LiePolicy { conceal: PropositionPattern[]; fabricate: Fabrication[] }   // что скрывать, что выдумывать
-  function buildLiePolicy(c: Character, truth: TruthModel, kb: KnowledgeStore): LiePolicy;
+  function buildLiePolicy(c: Character, kb: KnowledgeStore, secrets: readonly LieMotive[], guilt?: LieMotive): LiePolicy;
   interface Statement { id: string; speakerId: CharacterId; proposition: Proposition; veracity: "true" | "mistaken" | "lie" /* скрыто от клиента */; topic: TopicId; at: GameMinutes }
   function answer(q: Question, speaker: SpeakerContext): Statement[];
   ```
