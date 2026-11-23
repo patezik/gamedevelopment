@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 99 · in_progress: 1 · review: 0 · done: 38 · blocked: 2
+Всего задач: **140** · todo: 99 · in_progress: 0 · review: 0 · done: 39 · blocked: 2
 
 ## Готовы к взятию сейчас
 
@@ -14,6 +14,8 @@
 - [SIM-004](SIM-004.md) — Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot (P0, M)
 - [KNOW-002](KNOW-002.md) — LiePolicy и показания: answer(question) → правда, ошибка или ложь (P0, L)
 - [VAL-001](VAL-001.md) — Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE (P0, S)
+- [SRV-004](SRV-004.md) — WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume (P0, L)
+- [SRV-006](SRV-006.md) — QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan (P0, M)
 - [SURV-001](SURV-001.md) — Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости (P0, M)
 - [SAVE-001](SAVE-001.md) — Формат сохранения и replay с проверкой хеша (P1, M)
 - [SRV-009](SRV-009.md) — Диагностика: структурированные логи, debug-истина по флагу (P1, S)
@@ -148,7 +150,7 @@
 | [PROTO-003](PROTO-003.md) | Генерация GDScript-констант протокола и контрактные тесты Godot | P0 | S | done | egor-claude-proto-003 | [PROTO-002](PROTO-002.md), [FND-008](FND-008.md) |
 | [SRV-001](SRV-001.md) | SessionManager: сессии, очередь действий, жизненный цикл | P0 | M | done | codex-engine-27 | [FND-005](FND-005.md), [ENG-001](ENG-001.md) |
 | [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | todo | — | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
-| [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | in_progress | codex-prototype-27 | [SRV-001](SRV-001.md) |
+| [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | done | codex-prototype-27 | [SRV-001](SRV-001.md) |
 | [SRV-004](SRV-004.md) | WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume | P0 | L | todo | — | [SRV-003](SRV-003.md), [PROTO-001](PROTO-001.md) |
 | [SRV-005](SRV-005.md) | Рассылка представлений и событий с фильтром по роли | P0 | M | todo | — | [SRV-004](SRV-004.md), [ENG-002](ENG-002.md), [PHONE-001](PHONE-001.md) |
 | [SRV-006](SRV-006.md) | QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan | P0 | M | todo | — | [SRV-003](SRV-003.md), [EVD-003](EVD-003.md) |
