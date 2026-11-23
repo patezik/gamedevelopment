@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node src/server.ts",
+    "export-repro": "node src/diagnostics/export-cli.ts",
     "test": "vitest run"
   },
   "dependencies": {
