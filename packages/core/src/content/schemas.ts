@@ -161,7 +161,7 @@ export const archetypesSchema = z
         }),
       ),
       access: z.array(z.strictObject({ locationId: id.optional(), itemId: id.optional() })),
-      biography: z.array(z.strictObject({ text, tags: ids })),
+      biography: z.array(z.strictObject({ text, tags: ids, excludes: ids.optional() })),
     }),
   )
   .min(1);

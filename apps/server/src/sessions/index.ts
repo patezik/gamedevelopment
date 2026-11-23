@@ -219,6 +219,15 @@ export class SessionManager {
     return this.#sessions.get(id);
   }
 
+  findByTokenHash(hash: string): { session: Session; role: SessionRole } | undefined {
+    for (const session of this.#sessions.values()) {
+      for (const role of ['desktop', 'phone'] as const) {
+        if (session.tokenHash(role) === hash) return { session, role };
+      }
+    }
+    return undefined;
+  }
+
   async sweep(): Promise<void> {
     await Promise.all(
       [...this.#sessions].map(async ([id, session]) => {
