@@ -378,7 +378,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules, ctx?: ClaimContext): EstablishedClaim[];
   // ClaimContext = { clues: Map<ClueId, { supports }>; incident?: { location; window } } — известное игроку, не истина
   function personsOfInterest(pk: PlayerKnowledge): PersonOfInterest[];   // Suspect — производное от знаний игрока
-  function detectContradictions(pk: PlayerKnowledge): Contradiction[];
+  function detectContradictions(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">, toleranceMinutes?: number): Contradiction[];   // INV-004; событие ContradictionFound — contradictionEvents()
   interface CaseFile { accusedIds: CharacterId[]; motive?: ClaimRef; means?: ClaimRef; opportunity?: ClaimRef; evidence: ClueId[] }
   function evaluateAccusation(cf: CaseFile, truth: IncidentRecord, pk: PlayerKnowledge): AccusationOutcome;
   ```
