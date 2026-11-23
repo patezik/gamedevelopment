@@ -309,8 +309,12 @@ function plan(action: Desktop, state: DesktopState, env: ActionEnv): ActionPlan 
     for (const clue of env.clues) {
       if (state.knowledge.clues.has(clue.id)) continue;
       if (!discoverable(clue, { locationId, action: discovery, minute: at, has })) continue;
-      state.knowledge.addClue({ clueId: clue.id, discoveredAt: at, location: locationId });
-      const captureRequested = clue.captureMode === 'qr' && env.requestCapture(clue, has);
+      const captureRequested = clue.captureMode === 'qr';
+      if (captureRequested) {
+        if (!env.requestCapture(clue, has)) continue;
+      } else {
+        state.knowledge.addClue({ clueId: clue.id, discoveredAt: at, location: locationId });
+      }
       events.push({ type: 'ClueDiscovered', clueId: clue.id, locationId, at, captureRequested });
     }
     return [...events, ...announceContradictions(state, env.clues, at)];

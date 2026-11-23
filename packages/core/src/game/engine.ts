@@ -221,8 +221,11 @@ export class GameEngine {
         actor: this.ports.player ?? {},
         costs: this.ports.actionCosts ?? DEFAULT_ACTION_COSTS,
         ...(this.ports.testimony && { testimony: this.ports.testimony }),
-        requestCapture: (clue, has) =>
-          this.requestEvidenceCapture(clue, { action: clue.discovery.action, has }) !== undefined,
+        requestCapture: (clue, has) => {
+          const previous = this.pendingEvidenceCapture();
+          const pending = this.requestEvidenceCapture(clue, { action: clue.discovery.action, has });
+          return pending !== undefined && pending.tokenId !== previous?.tokenId;
+        },
       },
     );
     if (typeof plan === 'string') return rejected(plan);

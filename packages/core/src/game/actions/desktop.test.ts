@@ -239,11 +239,20 @@ describe('read', () => {
     expect(issued).toEqual([note.id]);
     expect(engine.pendingEvidenceCapture()).toMatchObject({ tokenId: 'tok_1', clueId: note.id });
     expect(engine.playerView().pendingCapture).toMatchObject({ tokenId: 'tok_1' });
-    expect(engine.playerView().caseBoard.clues).toMatchObject([{ id: note.id, kind: 'document' }]);
+    expect(engine.playerView().caseBoard.clues).toEqual([]);
 
-    // Already found: reading again costs time but finds nothing new.
+    // Reading again while the token is active does not replace it.
     const again = engine.dispatch('desktop', { type: 'read', documentId: 'ledger_note' });
     expect(ofType(again, 'ClueDiscovered')).toEqual([]);
+    expect(issued).toEqual([note.id]);
+
+    for (let i = 0; i < 8; i++) {
+      expect(engine.dispatch('desktop', { type: 'wait', minutes: 15 }).ok).toBe(true);
+    }
+    expect(engine.pendingEvidenceCapture()).toBeUndefined();
+    const retry = engine.dispatch('desktop', { type: 'read', documentId: 'ledger_note' });
+    expect(ofType(retry, 'ClueDiscovered')).toMatchObject([{ captureRequested: true }]);
+    expect(engine.pendingEvidenceCapture()).toMatchObject({ tokenId: 'tok_2', clueId: note.id });
   });
 
   test('a document cannot be read from another room', () => {
@@ -372,22 +381,23 @@ describe('talk and interrogate', () => {
   test('interrogation needs a held clue or contradiction of this witness', () => {
     const { engine, clues } = setup();
     engine.dispatch('desktop', { type: 'wait', minutes: 15 });
-    const note = clues.find(({ captureMode }) => captureMode === 'qr')!;
+    const mud = clues.find(({ captureMode }) => captureMode === 'auto')!;
     const ask = (subject: Extract<PlayerAction, { type: 'interrogate' }>['subject']) =>
       ({ type: 'interrogate', characterId: bursar, subject }) as const;
-    expectRejected(engine, ask({ type: 'evidence', clueId: note.id }), 'ACTION_NOT_AVAILABLE');
+    expectRejected(engine, ask({ type: 'evidence', clueId: mud.id }), 'ACTION_NOT_AVAILABLE');
     expectRejected(
       engine,
       ask({ type: 'contradiction', contradictionId: 'ctr_x' }),
       'ACTION_NOT_AVAILABLE',
     );
 
-    engine.dispatch('desktop', { type: 'read', documentId: 'ledger_note' });
-    const result = engine.dispatch('desktop', ask({ type: 'evidence', clueId: note.id }));
+    engine.dispatch('desktop', { type: 'examineLocation' });
+    engine.dispatch('desktop', { type: 'examineHotspot', hotspotId: 'hs_desk' });
+    const result = engine.dispatch('desktop', ask({ type: 'evidence', clueId: mud.id }));
     expect(result).toMatchObject({ ok: true, minutesSpent: 20 });
     expect(engine.playerView().interaction?.history.at(-1)).toMatchObject({
       speaker: 'other',
-      text: 'testimony_none',
+      text: 'testimony_whatIsThis_at',
     });
   });
 
