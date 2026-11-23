@@ -21,8 +21,8 @@ apps/desktop/
 ├── src/
 │   ├── autoload/
 │   │   ├── backend.gd            — Backend: REST (HTTPRequest) + WS (WebSocketPeer), очередь запросов, reconnect
-│   │   ├── game_store.gd         — GameStore: текущий PlayerView, сигналы view_changed, event_received, peer_status_changed
-│   │   ├── scene_router.gd       — SceneRouter: переходы между экранами
+│   │   ├── game_store.gd         — GameStore: текущий PlayerView, сигналы view_changed, event_received, peer_status_changed, action_failed
+│   │   ├── scene_router.gd       — SceneRouter: переходы между экранами через затемнение
 │   │   ├── settings.gd           — Settings: адрес сервера, громкость, доступность (ConfigFile user://)
 │   │   ├── audio_director.gd     — AudioDirector: эмбиент по локации/периоду, стингеры
 │   │   └── server_launcher.gd    — ServerLauncher: запуск встроенного сервера в релизе (INT-005)
@@ -30,6 +30,8 @@ apps/desktop/
 │   │   ├── protocol_constants.gd — ProtocolConstants, СГЕНЕРИРОВАНО из @hs/protocol (не редактировать)
 │   │   ├── envelope.gd           — сборка/разбор конверта
 │   │   └── reconnect_policy.gd   — экспоненциальная задержка
+│   ├── util/
+│   │   └── read_only.gd          — глубокие read-only копии данных для экранов
 │   ├── scenes/
 │   │   ├── bootstrap.tscn        — стартовая сцена каркаса, показывает версию клиента
 │   │   ├── main_menu/  new_game/  pairing/  exploration/  dialogue/
@@ -37,11 +39,13 @@ apps/desktop/
 │   └── ui/                       — общие компоненты (кнопка действия со стоимостью, карточка улики)
 ├── assets/                       — арт, шрифты, звук (стиль — CNT-008)
 └── tests/
-    ├── unit/                     — GUT: reconnect_policy, envelope, qr_texture
+    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, qr_texture
+    │   └── support/              — тестовые двойники (FakeBackend, экран-заглушка)
     └── contract/
         ├── contract_support.gd         — пути к packages/protocol, чтение JSON, проверка формы по JSON Schema
         ├── test_protocol_constants.gd  — ProtocolConstants против схем и фикстур
-        └── test_protocol_fixtures.gd   — все фикстуры, включая fixtures/views
+        ├── test_protocol_fixtures.gd   — все фикстуры, включая fixtures/views
+        └── test_game_store_contract.gd — FORBIDDEN_VIEW_KEYS и фикстуры PlayerView против GameStore
 ```
 
 ### 2.1. Константы протокола
@@ -74,8 +78,8 @@ apps/desktop/
 ## 3. Потоки данных
 
 ```
-Backend (WS) ──view.update──▶ GameStore.set_view(view) ──signal view_changed──▶ сцены перерисовываются
-Сцена (кнопка действия) ──▶ Backend.send_action(action) ──action.result──▶ GameStore (ошибки → тост)
+Backend (WS) ──view.update──▶ GameStore.set_view(view, stateVersion) ──signal view_changed──▶ сцены перерисовываются
+Сцена (кнопка действия) ──▶ GameStore.request_action(action) ──▶ Backend.send_action ──action.result──▶ GameStore.action_failed (ошибки → тост)
 Backend ──event──▶ GameStore.event_received ──▶ HUD/оверлеи/аудио
 ```
 
@@ -91,6 +95,43 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 `connection_state_changed` сообщает этап подключения. После обрыва клиент повторяет
 `hello` с последним обработанным `seq` и версией представления. Таймеры подключения
 и heartbeat используют время работы клиента в процессе, отдельно от игровых часов.
+
+### 3.1. GameStore
+
+`GameStore` — единственная клиентская копия `PlayerView`. Все словари, которые он отдаёт
+(`get_view()`, параметры `view_changed` и `event_received`), — глубокие read-only копии: экран
+не может изменить общее состояние.
+
+| API | Поведение |
+|-----|-----------|
+| `set_view(view, state_version) -> bool` | Принимает представление, только если `state_version` больше текущей; устаревшая и совпадающая версии игнорируются без сигнала. Первое представление после `resync` принимается при любой версии. Представление с ключом из `FORBIDDEN_VIEW_KEYS` (`veracity`, `culpritIds`, `truth`, `hallucination` — зеркало `@hs/protocol`) отвергается с `push_error` |
+| `view_changed(view, state_version)` | новое принятое представление |
+| `event_received(event)` | `ClientEvent` из сообщения `event` известного типа |
+| `peer_status_changed(desktop, phone)` | изменение `peer.status`; до первого сообщения сессии — `unknown` |
+| `action_failed(code, message)` | действие отвергнуто: локально (`ACTION_INVALID` — не действие desktop; `NOT_CONNECTED` — нет живого соединения), `action.result` с `ok: false` или `error` с `requestId` |
+| `error_received(code, message)` | `error` без `requestId` (например, `UNAUTHORIZED` при рукопожатии) |
+| `connection_state_changed(state)` | этап подключения `Backend`; `OFFLINE` (только после `disconnect_session`) очищает представление, версию и статус пиров |
+| `request_action(action) -> Error` | отправляет копию действия через `Backend.send_action`; исход решает сервер |
+
+Повторная доставка `view.update` после переподключения безопасна: версия не растёт — сигнала нет.
+
+### 3.2. SceneRouter
+
+`SceneRouter.goto(screen, params = {}) -> Error` ищет экран в реестре `SCREENS` (id → путь сцены;
+задачи экранов добавляют туда свои записи), закрывает экран чёрной шторкой (`fade_seconds`,
+по умолчанию 0,25 с реального времени; во время перехода шторка блокирует ввод), заменяет
+текущую сцену и открывает шторку. Экран получает read-only копию `params` через необязательный
+метод `set_params(params: Dictionary)` до своего `_ready`; текущие значения — `get_current_screen()`
+и `get_current_params()`.
+
+- Неизвестный экран → `ERR_DOES_NOT_EXIST`, `push_error`, `transition_failed(screen, "unknown_screen")`.
+- `params` должны быть простыми данными: объект на любой глубине → `ERR_INVALID_PARAMETER`,
+  `transition_failed(screen, "invalid_params")`.
+- Ошибка загрузки сцены → `transition_failed(screen, "load_failed")`, текущий экран остаётся.
+- Во время перехода новый запрос ставится в очередь и выполняется сразу после текущего;
+  из нескольких запросов в очереди выполняется последний. Повтор уже ожидаемого перехода
+  (тот же экран и те же параметры) → `ERR_BUSY`.
+- Сигналы: `transition_started(screen)`, `screen_changed(screen, params)`, `transition_failed(screen, reason)`.
 
 ## 4. Экраны
 

@@ -3,21 +3,27 @@ import { canonicalJson } from '@hs/core/common';
 import { serializeInvestigation } from '@hs/core/game';
 import { LocationGraph } from '@hs/core/world';
 import {
+  CLEAN_CLUES,
   MUTATIONS,
-  TINY_MANOR_HISTORY_START,
   addLoneEvent,
+  cleanContext,
   cleanInvestigation,
+  clue,
   replaceBursar,
   roundTripped,
   withCast,
 } from '../../test/mutations.ts';
 import type { ValidationContext } from '../check.ts';
 import { validateInvestigation } from '../validate.ts';
-import { DEFAULT_CHECKS } from './index.ts';
+import { DEFAULT_CHECKS, investigationHash } from './index.ts';
 
-const context: ValidationContext = { historyStartMinutes: TINY_MANOR_HISTORY_START };
+const context: ValidationContext = cleanContext();
+/** By default the "second generation" is the very investigation under test. */
 const validate = (investigation = cleanInvestigation(), ctx: ValidationContext = context) =>
-  validateInvestigation(investigation, { checks: DEFAULT_CHECKS, context: ctx });
+  validateInvestigation(investigation, {
+    checks: DEFAULT_CHECKS,
+    context: { regenerate: () => investigation, ...ctx },
+  });
 
 describe('an unbroken investigation', () => {
   it('passes every check', () => {
@@ -27,6 +33,8 @@ describe('an unbroken investigation', () => {
     expect(report.checks.map(({ id, passed }) => [id, passed])).toEqual([
       ['V-TRUTH-INV', true],
       ['V-TIMELINE', true],
+      ['V-PHONE-REQUIRED', true],
+      ['V-DETERMINISM', true],
     ]);
   });
 
@@ -50,9 +58,9 @@ describe('mutations are caught', () => {
   it.each(MUTATIONS.map((mutation) => [mutation.name, mutation] as const))(
     '%s',
     (_name, mutation) => {
-      const report = validateInvestigation(mutation.make(cleanInvestigation()), {
-        checks: DEFAULT_CHECKS,
-        context: mutation.context ?? {},
+      const report = validate(mutation.make(cleanInvestigation()), {
+        ...context,
+        ...mutation.context,
       });
 
       expect(report.ok).toBe(false);
@@ -72,16 +80,16 @@ describe('mutations are caught', () => {
 
   it('each mutation breaks only the check it is meant for', () => {
     for (const mutation of MUTATIONS) {
-      const report = validateInvestigation(mutation.make(cleanInvestigation()), {
-        checks: DEFAULT_CHECKS,
-        context: mutation.context ?? {},
+      const report = validate(mutation.make(cleanInvestigation()), {
+        ...context,
+        ...mutation.context,
       });
       const others = report.findings.filter(({ checkId }) => checkId !== mutation.check);
       expect(others, mutation.name).toEqual([]);
     }
   });
 
-  it('covers every code the two checks can report', () => {
+  it('covers every code the checks can report', () => {
     const covered = new Set(MUTATIONS.map(({ code }) => code));
     for (const code of [
       'PRESENCE_OVERLAP',
@@ -99,6 +107,12 @@ describe('mutations are caught', () => {
       'CHAR_INVALID_SCHEDULE',
       'TIMELINE_ROUTINE_UNREACHABLE',
       'TIMELINE_ROUTINE_UNKNOWN_LOCATION',
+      'PHONE_QR_SHARE_TOO_LOW',
+      'PHONE_UNKNOWN_REQUIRED_CLUE',
+      'PHONE_NO_REQUIRED_CLUES',
+      'PHONE_INVALID_MIN_SHARE',
+      'DETERMINISM_HASH_MISMATCH',
+      'DETERMINISM_REGENERATION_FAILED',
     ]) {
       expect(covered.has(code), code).toBe(true);
     }
@@ -124,7 +138,10 @@ describe('V-TIMELINE', () => {
   it('skips the prehistory bound when the caller does not say where the prehistory starts', () => {
     const mutation = MUTATIONS.find(({ code }) => code === 'TIMELINE_EVENT_BEFORE_HISTORY');
     const broken = mutation?.make(cleanInvestigation()) ?? cleanInvestigation();
-    expect(validate(broken, {}).ok).toBe(true);
+    const noHistory: ValidationContext = Object.fromEntries(
+      Object.entries(context).filter(([key]) => key !== 'historyStartMinutes'),
+    );
+    expect(validate(broken, noHistory).ok).toBe(true);
     expect(validate(broken, context).ok).toBe(false);
   });
 
@@ -248,5 +265,149 @@ describe('V-TIMELINE', () => {
     const gap = MUTATIONS.find(({ code }) => code === 'CHAR_SCHEDULE_GAP');
     const report = validate(gap?.make(cleanInvestigation()));
     expect(report.findings.filter(({ checkId }) => checkId === 'V-TIMELINE')).toHaveLength(1);
+  });
+});
+
+describe('V-PHONE-REQUIRED', () => {
+  const phone = (ctx: ValidationContext) =>
+    validate(cleanInvestigation(), { ...context, ...ctx }).findings.map(({ code }) => code);
+  const withQr = (total: number, qr: number) =>
+    Array.from({ length: total }, (_, i) => clue(`c${i}`, i < qr ? 'qr' : 'auto'));
+  const share = (total: number, qr: number, minQrShare = 0.3) => {
+    const clues = withQr(total, qr);
+    return phone({ clues, requiredClueIds: clues.map(({ id }) => id), minQrShare });
+  };
+
+  it.each<[string, number, number, string[]]>([
+    ['exactly 30 %: 3 of 10', 10, 3, []],
+    ['just below 30 %: 2 of 7', 7, 2, ['PHONE_QR_SHARE_TOO_LOW']],
+    ['just above 30 %: 3 of 9', 9, 3, []],
+    ['none by QR', 4, 0, ['PHONE_QR_SHARE_TOO_LOW']],
+    ['all by QR', 4, 4, []],
+    ['one clue by QR', 1, 1, []],
+    ['one clue not by QR', 1, 0, ['PHONE_QR_SHARE_TOO_LOW']],
+  ])('%s', (_name, total, qr, codes) => {
+    expect(share(total, qr)).toEqual(codes);
+  });
+
+  it('counts only mandatory clues: QR clues that are optional do not help', () => {
+    const clues = [...withQr(5, 0), clue('optional', 'qr')];
+    expect(phone({ clues, requiredClueIds: ['c0', 'c1', 'c2', 'c3', 'c4'] })).toEqual([
+      'PHONE_QR_SHARE_TOO_LOW',
+    ]);
+  });
+
+  it('counts a repeated id once', () => {
+    const clues = withQr(2, 1);
+    const requiredClueIds = ['c0', 'c0', 'c0', 'c1'];
+    expect(phone({ clues, requiredClueIds, minQrShare: 0.5 })).toEqual([]);
+    expect(phone({ clues, requiredClueIds, minQrShare: 0.6 })).toEqual(['PHONE_QR_SHARE_TOO_LOW']);
+  });
+
+  it('with no mandatory clues passes only when no share is demanded', () => {
+    expect(phone({ requiredClueIds: [], minQrShare: 0 })).toEqual([]);
+    expect(phone({ requiredClueIds: [], minQrShare: 0.3 })).toEqual(['PHONE_NO_REQUIRED_CLUES']);
+    expect(phone({ clues: [], requiredClueIds: [], minQrShare: 0.3 })).toEqual([
+      'PHONE_NO_REQUIRED_CLUES',
+    ]);
+  });
+
+  it('accepts the limits of minQrShare and rejects values outside them', () => {
+    expect(share(4, 0, 0)).toEqual([]);
+    expect(share(4, 4, 1)).toEqual([]);
+    expect(share(4, 3, 1)).toEqual(['PHONE_QR_SHARE_TOO_LOW']);
+    for (const bad of [-0.1, 1.01, Number.NaN, Infinity]) {
+      expect(share(4, 4, bad), String(bad)).toEqual(['PHONE_INVALID_MIN_SHARE']);
+    }
+  });
+
+  it('reports every unknown mandatory clue', () => {
+    expect(phone({ requiredClueIds: ['x', 'y', 'cl_1'] })).toEqual([
+      'PHONE_UNKNOWN_REQUIRED_CLUE',
+      'PHONE_UNKNOWN_REQUIRED_CLUE',
+    ]);
+  });
+
+  it('fails, rather than passes, when the context lacks its inputs', () => {
+    for (const missing of ['clues', 'requiredClueIds', 'minQrShare'] as const) {
+      const report = validate(cleanInvestigation(), { ...context, [missing]: undefined });
+      expect(
+        report.findings.map(({ code }) => code),
+        missing,
+      ).toEqual(['PHONE_INPUT_MISSING']);
+    }
+  });
+
+  it('reports the numbers and links the event of a mandatory clue', () => {
+    const clues = withQr(5, 1);
+    const report = validate(cleanInvestigation(), {
+      ...context,
+      clues,
+      requiredClueIds: clues.map(({ id }) => id),
+    });
+    expect(report.findings).toHaveLength(1);
+    expect(report.findings[0]).toMatchObject({
+      severity: 'error',
+      code: 'PHONE_QR_SHARE_TOO_LOW',
+      eventIds: ['ev_1'],
+      data: { qr: 1, required: 5, minQrShare: 0.3 },
+    });
+  });
+
+  it('does not depend on the order of the mandatory ids', () => {
+    const ids = CLEAN_CLUES.map(({ id }) => id).reverse();
+    expect(phone({ requiredClueIds: ids })).toEqual([]);
+  });
+});
+
+describe('V-DETERMINISM', () => {
+  const determinism = (regenerate?: () => ReturnType<typeof cleanInvestigation>) =>
+    validateInvestigation(cleanInvestigation(), {
+      checks: DEFAULT_CHECKS,
+      context: regenerate ? { ...context, regenerate } : context,
+    });
+
+  it('passes when the second generation is a save/restore copy', () => {
+    expect(determinism(() => roundTripped(cleanInvestigation())).findings).toEqual([]);
+  });
+
+  it('fails on the smallest difference, and names both hashes', () => {
+    const report = determinism(() => addLoneEvent(cleanInvestigation(), 100, 0));
+    expect(report.findings).toHaveLength(1);
+    const [finding] = report.findings;
+    expect(finding).toMatchObject({ code: 'DETERMINISM_HASH_MISMATCH', severity: 'error' });
+    expect(finding?.data?.first).toBe(investigationHash(cleanInvestigation()));
+    expect(finding?.data?.second).not.toBe(finding?.data?.first);
+  });
+
+  it('fails when the second generation throws, with the reason', () => {
+    const report = determinism(() => {
+      throw new Error('boom');
+    });
+    expect(report.findings.map(({ code }) => code)).toEqual(['DETERMINISM_REGENERATION_FAILED']);
+    expect(report.findings[0]?.message).toContain('boom');
+  });
+
+  it('fails, rather than passes, without regenerate', () => {
+    expect(determinism(undefined).findings.map(({ code }) => code)).toEqual([
+      'DETERMINISM_INPUT_MISSING',
+    ]);
+  });
+
+  it('calls regenerate once and does not modify the investigation', () => {
+    let calls = 0;
+    const investigation = cleanInvestigation();
+    const before = serializeInvestigation(investigation);
+    validate(investigation, {
+      ...context,
+      regenerate: () => (calls++, cleanInvestigation()),
+    });
+    expect(calls).toBe(1);
+    expect(serializeInvestigation(investigation)).toBe(before);
+  });
+
+  it('hashes equal investigations equally, as 64 hex characters', () => {
+    expect(investigationHash(cleanInvestigation())).toMatch(/^[0-9a-f]{64}$/);
+    expect(investigationHash(cleanInvestigation())).toBe(investigationHash(cleanInvestigation()));
   });
 });

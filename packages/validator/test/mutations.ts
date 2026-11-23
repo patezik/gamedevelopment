@@ -1,4 +1,5 @@
 import { canonicalJson } from '@hs/core/common';
+import type { Clue } from '@hs/core/evidence';
 import {
   deserializeInvestigation,
   snapshotInvestigation,
@@ -7,6 +8,7 @@ import {
 } from '@hs/core/game';
 import { LocationGraph } from '@hs/core/world';
 import { tinyManor } from '../../core/test/fixtures/tiny-manor.ts';
+import type { ValidationContext } from '../src/check.ts';
 
 /** First minute of tiny-manor's prehistory (the fixture's HISTORY_START). */
 export const TINY_MANOR_HISTORY_START = -60;
@@ -43,7 +45,8 @@ export interface Mutation {
   readonly code: string;
   /** What the mutation breaks, in words. */
   readonly why: string;
-  readonly context?: { historyStartMinutes?: number };
+  /** Replaces matching fields of `cleanContext()`; everything else stays valid. */
+  readonly context?: ValidationContext;
   /** True when the finding must link to the log events involved. */
   readonly linksEvents: boolean;
   make(base: Investigation): Investigation;
@@ -91,6 +94,39 @@ export function withCast(
 ): Investigation {
   return { ...base, characters, world };
 }
+
+/** A mandatory clue for the phone tests: only its id and capture mode matter. */
+export const clue = (id: string, captureMode: Clue['captureMode']): Clue => ({
+  id,
+  traceId: `trace_${id}`,
+  sourceEventId: 'ev_1',
+  supports: [],
+  discovery: {
+    locationId: 'loc_hall',
+    action: { type: 'examineHotspot', hotspotId: 'hs_desk' },
+    requires: [],
+    availableFrom: 0,
+  },
+  captureMode,
+  presentation: id,
+});
+
+/** Five mandatory clues, two of them by QR (40 %), against a minimum of 30 %. */
+export const CLEAN_CLUES: readonly Clue[] = [
+  clue('cl_1', 'qr'),
+  clue('cl_2', 'qr'),
+  clue('cl_3', 'auto'),
+  clue('cl_4', 'auto'),
+  clue('cl_5', 'auto'),
+];
+
+/** A context in which an unbroken case passes; `regenerate` is up to the test (repeat the case under test). */
+export const cleanContext = (): ValidationContext => ({
+  historyStartMinutes: TINY_MANOR_HISTORY_START,
+  clues: CLEAN_CLUES,
+  requiredClueIds: CLEAN_CLUES.map(({ id }) => id),
+  minQrShare: 0.3,
+});
 
 const bursarRoutine = (base: Investigation) => {
   const bursar = base.characters.find(({ id }) => id === 'ch_bursar');
@@ -337,6 +373,68 @@ export const MUTATIONS: readonly Mutation[] = [
           { from: 720, to: 1440, location: 'loc_nowhere', activity: 'bursar', flexibility: 0.4 },
         ]),
       ),
+  },
+
+  // ---- V-PHONE-REQUIRED: the broken part is the clue set, so the investigation is left as is ----
+  {
+    name: 'only one mandatory clue in five is captured by QR',
+    check: 'V-PHONE-REQUIRED',
+    code: 'PHONE_QR_SHARE_TOO_LOW',
+    why: '1 of 5 is 20 %, below the 30 % the preset demands',
+    context: { clues: CLEAN_CLUES.map((c) => (c.id === 'cl_2' ? clue(c.id, 'auto') : c)) },
+    linksEvents: true,
+    make: (base) => base,
+  },
+  {
+    name: 'a mandatory clue is missing from the clues of the case',
+    check: 'V-PHONE-REQUIRED',
+    code: 'PHONE_UNKNOWN_REQUIRED_CLUE',
+    why: 'cl_9 is mandatory but no such clue exists',
+    context: { requiredClueIds: [...CLEAN_CLUES.map(({ id }) => id), 'cl_9'] },
+    linksEvents: false,
+    make: (base) => base,
+  },
+  {
+    name: 'the case has no mandatory clues at all',
+    check: 'V-PHONE-REQUIRED',
+    code: 'PHONE_NO_REQUIRED_CLUES',
+    why: 'nothing is mandatory, so no mandatory clue uses the phone',
+    context: { requiredClueIds: [] },
+    linksEvents: false,
+    make: (base) => base,
+  },
+  {
+    name: 'the preset asks for a share above 100 %',
+    check: 'V-PHONE-REQUIRED',
+    code: 'PHONE_INVALID_MIN_SHARE',
+    why: 'minQrShare 1.2 is not a share',
+    context: { minQrShare: 1.2 },
+    linksEvents: false,
+    make: (base) => base,
+  },
+
+  // ---- V-DETERMINISM ----
+  {
+    name: 'a second generation produces a different case',
+    check: 'V-DETERMINISM',
+    code: 'DETERMINISM_HASH_MISMATCH',
+    why: 'the repeat has one more event than the first generation',
+    context: { regenerate: () => addLoneEvent(cleanInvestigation(), 1000, 1) },
+    linksEvents: false,
+    make: (base) => base,
+  },
+  {
+    name: 'a second generation fails outright',
+    check: 'V-DETERMINISM',
+    code: 'DETERMINISM_REGENERATION_FAILED',
+    why: 'the repeat throws instead of returning a case',
+    context: {
+      regenerate: () => {
+        throw new Error('generator exploded');
+      },
+    },
+    linksEvents: false,
+    make: (base) => base,
   },
 ];
 

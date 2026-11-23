@@ -73,7 +73,7 @@ npm run sweep -- --scenario sanatorium_winter --count 1000 --from 0
 ## 7. Каркас валидатора (`packages/validator`)
 
 Проверки независимы и подключаются в общий реестр; запуск — `validateInvestigation(investigation,
-{ checks, context? })`. Готовый набор — `DEFAULT_CHECKS` (`V-TRUTH-INV`, `V-TIMELINE`); новые проверки
+{ checks, context? })`. Готовый набор — `DEFAULT_CHECKS` (`V-TRUTH-INV`, `V-TIMELINE`, `V-PHONE-REQUIRED`, `V-DETERMINISM`); новые проверки
 (VAL-002 и далее) добавляются в этот массив и не меняют работу существующих.
 
 **Проверка** (`Check`): `id` вида `V-<СЛОВА>` (уникальный в запуске, иначе `RangeError`), `description`
@@ -95,7 +95,9 @@ npm run sweep -- --scenario sanatorium_winter --count 1000 --from 0
 **Контекст** (`ValidationContext`): сведения о сценарии, которых нет в `Investigation`.
 Сейчас это `historyStartMinutes` (пресет `time.historyStartMinutes`, не больше 0): расследование
 хранит конец сценария, но не начало предыстории. Если контекст не задан, проверки, которым нужна
-эта граница, её пропускают.
+эта граница, её пропускают. Остальные поля нужны `V-PHONE-REQUIRED` и `V-DETERMINISM` (см. ниже):
+`clues`, `requiredClueIds`, `minQrShare`, `regenerate`. Без них эти проверки **не** пропускаются, а
+дают `error` (`PHONE_INPUT_MISSING`, `DETERMINISM_INPUT_MISSING`): непроверенное нельзя считать пройденным.
 
 ### `V-TRUTH-INV`
 
@@ -122,10 +124,42 @@ npm run sweep -- --scenario sanatorium_winter --count 1000 --from 0
 Проверки по фактам (`at`, `possessed`) на границы не распространяются: факты о прошлом (`since`,
 давние владения) могут законно выходить за предысторию.
 
+### `V-PHONE-REQUIRED`
+
+Берёт из контекста все улики дела (`clues`), id обязательных улик (`requiredClueIds`: минимальное
+покрывающее множество солвера, повторы считаются один раз) и порог пресета `minQrShare`.
+Условие: `qr / обязательных ≥ minQrShare`, где `qr` — число обязательных улик с `captureMode: qr`.
+Деление, а не `обязательных × minQrShare` (`10 × 0,3 = 3,0000000000000004`), поэтому ровно 30 %
+проходит. Считаются только обязательные улики: необязательные QR-улики не помогают.
+
+| Код | Что нарушено |
+|-----|--------------|
+| `PHONE_QR_SHARE_TOO_LOW` | доля QR ниже порога (`data`: `qr`, `required`, `minQrShare`; ссылка на событие первой обязательной улики) |
+| `PHONE_UNKNOWN_REQUIRED_CLUE` | обязательный id отсутствует среди улик дела |
+| `PHONE_NO_REQUIRED_CLUES` | обязательных улик нет, а `minQrShare > 0` (при `0` проходит) |
+| `PHONE_INVALID_MIN_SHARE` | `minQrShare` не число из `[0, 1]` |
+| `PHONE_INPUT_MISSING` | в контексте нет `clues`, `requiredClueIds` или `minQrShare` |
+
+### `V-DETERMINISM`
+
+Вызывает `context.regenerate()` (повторная генерация с теми же seed, пресетом и версией генератора)
+и сравнивает `investigationHash` обоих расследований. `investigationHash` — SHA-256 от canonical JSON
+снимка расследования (`stateHash(snapshotInvestigation(...))`), экспортируется как
+`investigationHash`.
+
+| Код | Что нарушено |
+|-----|--------------|
+| `DETERMINISM_HASH_MISMATCH` | хеши различаются (`data.first`, `data.second`) |
+| `DETERMINISM_REGENERATION_FAILED` | повторная генерация бросила исключение |
+| `DETERMINISM_INPUT_MISSING` | в контексте нет `regenerate` |
+
 ### Мутационные фикстуры
 
 `packages/validator/test/mutations.ts` хранит заведомо сломанные варианты тестового расследования
-`tinyManor()`: по одной мутации на каждый инвариант (1–5, 7) и на каждый код `V-TIMELINE`. Для
+`tinyManor()`: по одной мутации на каждый инвариант (1–5, 7) и на каждый код `V-TIMELINE`, `V-PHONE-REQUIRED`
+(кроме `PHONE_INPUT_MISSING`) и `V-DETERMINISM` (кроме `DETERMINISM_INPUT_MISSING`); поля контекста,
+которые ломает мутация, задаются в её `context` поверх `cleanContext()`. Коды `*_INPUT_MISSING`
+покрыты отдельными тестами. Для
 каждой указаны проверка, код находки и нужны ли ссылки на события. Тесты требуют, чтобы мутация
 ловилась именно своей проверкой и **не** вызывала находок у остальных, а нетронутое расследование
 проходило без находок. Новая проверка добавляет свои мутации в этот список.

@@ -364,11 +364,21 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 - **Интерфейс:**
   ```ts
-  class PlayerKnowledge { clues: Map<ClueId, DiscoveredClue>; statements: Statement[] /* без veracity */; contacts: Set<CharacterId>; journal: JournalEntry[] }
+  class PlayerKnowledge {                       // packages/core/src/investigation/player-knowledge.ts (INV-001)
+    readonly clues: ReadonlyMap<ClueId, DiscoveredClue>; readonly statements: readonly HeardStatement[] /* Statement без veracity */;
+    readonly contacts: ReadonlySet<CharacterId>; readonly journal: readonly JournalEntry[];   // журнал по игровому времени
+    addClue(c: { clueId; discoveredAt; location; captured? }): boolean;   // false: уже известно
+    markCaptured(clueId: ClueId, at: GameMinutes): boolean;               // PlayerKnowledgeError INVESTIGATION_UNKNOWN_CLUE
+    addStatement(s: Statement | HeardStatement): boolean;                 // veracity вырезается в рантайме
+    addContact(id: CharacterId, at: GameMinutes): boolean;
+    serialize(): PlayerKnowledgeSnapshot;  static restore(saved: unknown): PlayerKnowledge;   // INVESTIGATION_INVALID_STATE
+  }
   type Claim = { kind: "motive" | "means" | "opportunity" | "presence" | "alibi" | "contradiction"; subject: CharacterId; detail: unknown }
-  function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules): EstablishedClaim[];
+  function compileDeductionRules(input: unknown): DeductionRules;       // DeductionRulesError DEDUCTION_RULES_INVALID (INV-002)
+  function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules, ctx?: ClaimContext): EstablishedClaim[];
+  // ClaimContext = { clues: Map<ClueId, { supports }>; incident?: { location; window } } — известное игроку, не истина
   function personsOfInterest(pk: PlayerKnowledge): PersonOfInterest[];   // Suspect — производное от знаний игрока
-  function detectContradictions(pk: PlayerKnowledge): Contradiction[];
+  function detectContradictions(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">, toleranceMinutes?: number): Contradiction[];   // INV-004; событие ContradictionFound — contradictionEvents()
   interface CaseFile { accusedIds: CharacterId[]; motive?: ClaimRef; means?: ClaimRef; opportunity?: ClaimRef; evidence: ClueId[] }
   function evaluateAccusation(cf: CaseFile, truth: IncidentRecord, pk: PlayerKnowledge): AccusationOutcome;
   ```
@@ -415,8 +425,13 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   ```ts
   interface PhoneState { contacts; threads; callLog; activeCall?; gallery; files; notes; mapPins; browserPages; notifications; battery: number }
   function reducePhone(s: PhoneState, e: DomainEvent): PhoneState;
-  function projectPhoneView(s: PhoneState, survival: SurvivalState): PhoneView;   // схема из @hs/protocol
+  function projectPhoneView(s: PhoneState, survival: PhoneSurvival, ctx: { minute; calendar }): PhoneView;   // схема из @hs/protocol
+  function initialPhoneState(templates: PhoneTemplate[], opts?): PhoneState;   // пресет → стартовый телефон героя
   ```
+  `PhoneEvent` — события телефона (`MessageReceived`, `CallStarted`, `FileUnlocked`, `PhotoAdded` и т.д.);
+  чужие события редьюсер игнорирует. `PhoneSurvival = { vitals, static }`; ему и времени нужны
+  `signal`, `glitchLevel` и `status.time`. Проекция собирает каждое поле явно: пароли файлов,
+  содержимое заблокированных файлов, скрытые файлы и `hallucination` в `PhoneView` не попадают.
 - **Тесты:** каждое доменное событие отражается в нужном приложении; галлюцинации помечены
   `hallucination: true` только на сервере и не попадают в `CaseFile`.
 

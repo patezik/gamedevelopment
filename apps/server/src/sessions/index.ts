@@ -28,6 +28,9 @@ export interface SessionEngine {
   dispatch(role: SessionRole, action: PlayerAction): DispatchResult | Promise<DispatchResult>;
 }
 
+/** A dispatch result; a successful one carries the `stateVersion` that this dispatch produced. */
+export type SessionDispatchResult = DispatchResult & { readonly stateVersion?: number };
+
 export interface SessionEvent {
   readonly seq: number;
   readonly event: DispatchResult['events'][number];
@@ -119,7 +122,7 @@ export class Session {
     role: SessionRole,
     action: PlayerAction,
     precondition?: () => ErrorCode | undefined,
-  ): Promise<DispatchResult> {
+  ): Promise<SessionDispatchResult> {
     return this.#enqueue(async () => {
       this.#refreshLifetime();
       if (this.#status === 'faulted') return failed('INTERNAL');
@@ -140,7 +143,7 @@ export class Session {
           this.#status = 'finished';
           if (this.#connected.size === 0) this.#finishedIdleSince = this.#now();
         }
-        return result;
+        return { ...result, stateVersion: this.#stateVersion };
       } catch {
         this.#status = 'faulted';
         return failed('INTERNAL');
@@ -188,8 +191,29 @@ export class Session {
 interface SessionManagerOptions {
   readonly now?: () => number;
   readonly createId?: () => string;
-  readonly createEngine?: (investigation: Investigation, ports: EnginePorts) => SessionEngine;
+  /** `sessionId` is the ID the new session will get (saves are named after it). */
+  readonly createEngine?: (
+    investigation: Investigation,
+    ports: EnginePorts,
+    sessionId: string,
+  ) => SessionEngine;
 }
+
+/** A session that cannot be replaced (still running) already holds the ID. */
+export class SessionIdInUseError extends Error {
+  constructor() {
+    super('A session with this ID is running');
+    this.name = 'SessionIdInUseError';
+  }
+}
+
+/** Sessions whose clients are gone or whose game is over: a loaded save may take their ID. */
+const REPLACEABLE: ReadonlySet<SessionStatus> = new Set([
+  'suspended',
+  'finished',
+  'faulted',
+  'disposed',
+]);
 
 export class SessionManager {
   readonly #sessions = new Map<string, Session>();
@@ -210,7 +234,26 @@ export class SessionManager {
     const { investigation, ports } = await this.#provider.create(scenarioId, seed);
     const id = this.#createId();
     if (this.#sessions.has(id)) throw new Error('Duplicate session ID');
-    const session = new Session(id, this.#createEngine(investigation, ports), this.#now);
+    const session = new Session(id, this.#createEngine(investigation, ports, id), this.#now);
+    this.#sessions.set(id, session);
+    return session;
+  }
+
+  /**
+   * Hosts an already built engine (a loaded save) under `id`. A session that is still running under
+   * this ID is not replaced; one that is suspended, finished, faulted or disposed is.
+   */
+  async adopt(id: string, engine: SessionEngine): Promise<Session> {
+    const existing = this.#sessions.get(id);
+    if (existing && !REPLACEABLE.has(await existing.refreshLifetime())) {
+      throw new SessionIdInUseError();
+    }
+    // The wait above may have let another adopt in: check again, synchronously with the insert.
+    const current = this.#sessions.get(id);
+    if (current !== existing && current && !REPLACEABLE.has(current.status)) {
+      throw new SessionIdInUseError();
+    }
+    const session = new Session(id, engine, this.#now);
     this.#sessions.set(id, session);
     return session;
   }
