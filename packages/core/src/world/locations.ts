@@ -26,11 +26,14 @@ export type AccessCheck = { ok: true } | { ok: false; reason: AccessDenial };
 type WorldErrorCode = 'WORLD_UNKNOWN_LOCATION' | 'WORLD_NO_PATH';
 
 export class WorldError extends Error {
+  readonly code: WorldErrorCode;
+
   constructor(
-    readonly code: WorldErrorCode,
+    code: WorldErrorCode,
     message: string,
   ) {
     super(message);
+    this.code = code;
     this.name = 'WorldError';
   }
 }
@@ -82,6 +85,18 @@ export class LocationGraph {
       startDateTime: this.startDateTime,
       locations: structuredClone([...this.locations.values()]),
     };
+  }
+
+  describe(id: string): Location {
+    return structuredClone(this.getLocation(id));
+  }
+
+  directConnection(from: string, to: string, actor: Actor = {}): Location['connections'][number] | undefined {
+    const connection = this.getLocation(from).connections.find((edge) => edge.to === to);
+    if (!connection || (connection.locked && !actor.itemIds?.has(connection.locked.itemId ?? ''))) {
+      return undefined;
+    }
+    return structuredClone(connection);
   }
 
   travelTime(from: string, to: string, actor: Actor = {}): number | null {

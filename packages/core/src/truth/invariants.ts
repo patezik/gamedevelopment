@@ -66,14 +66,18 @@ export interface InvariantCheckOptions {
 
 export class TruthInvariantError extends Error {
   readonly code = 'TRUTH_INVARIANT_VIOLATION';
+  readonly violations: readonly InvariantViolation[];
+  readonly eventId: EventId | undefined;
 
   constructor(
-    readonly violations: readonly InvariantViolation[],
-    readonly eventId?: EventId,
+    violations: readonly InvariantViolation[],
+    eventId?: EventId,
   ) {
     const after = eventId === undefined ? '' : ` after ${eventId}`;
     const list = violations.map(({ code, message }) => `${code}: ${message}`).join('; ');
     super(`TRUTH_INVARIANT_VIOLATION${after}: ${list}`);
+    this.violations = violations;
+    this.eventId = eventId;
     this.name = 'TruthInvariantError';
   }
 }
