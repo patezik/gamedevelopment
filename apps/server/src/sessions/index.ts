@@ -78,6 +78,10 @@ export class Session {
     return this.#tokenHashes.get(role);
   }
 
+  clearTokenHash(role: SessionRole): boolean {
+    return this.#tokenHashes.delete(role);
+  }
+
   /** Null indicates a gap and the gateway must send a full snapshot. */
   eventsAfter(seq: number): SessionEvent[] | null {
     const oldest = this.#events[0]?.seq ?? this.#eventSeq + 1;

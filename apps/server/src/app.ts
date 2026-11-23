@@ -5,14 +5,17 @@ import serverPackage from '../package.json' with { type: 'json' };
 import type { ServerConfig } from './config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from './config/network.ts';
 
+import { registerPairingRoutes, type PairingService } from './pairing/index.ts';
+
 export interface AppDependencies {
   /** Defaults to `os.networkInterfaces`; replaced in tests. */
   networkInterfaces?: () => NetworkInterfaces;
+  pairing?: PairingService;
 }
 
 export function buildApp(
   config: ServerConfig,
-  { networkInterfaces = os.networkInterfaces }: AppDependencies = {},
+  { networkInterfaces = os.networkInterfaces, pairing }: AppDependencies = {},
 ) {
   const app = Fastify({
     logger: { level: config.logLevel },
@@ -42,6 +45,8 @@ export function buildApp(
   app.get('/api/v1/network', () => ({
     candidates: listNetworkCandidates(networkInterfaces(), config.publicHost),
   }));
+
+  if (pairing) registerPairingRoutes(app, pairing);
 
   return app;
 }
