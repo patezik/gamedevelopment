@@ -32,3 +32,4 @@ ADR фиксирует значимое архитектурное решени�
 | [0015](0015-time-aware-location-routing.md) | Маршруты NPC с учётом часов доступа | Proposed |
 | [0016](0016-physical-keys.md) | Физические ключи для запертых переходов (OQ-18) | Accepted |
 | [0017](0017-trace-conservation-and-payload.md) | Следы: закон сохранения улик, полезная нагрузка и уничтожение | Accepted |
+| [0018](0018-tls-pinning-and-relay.md) | TLS с pinning отпечатка через QR привязки и облачный ретранслятор (спайк INT-008) | Proposed |
