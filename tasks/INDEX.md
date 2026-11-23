@@ -2,13 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 86 · in_progress: 1 · review: 0 · done: 52 · blocked: 1
+Всего задач: **140** · todo: 85 · in_progress: 2 · review: 0 · done: 52 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [GEN-004](GEN-004.md) — Стадия SocialGen: отношения и секреты (P0, M)
 - [SIM-003](SIM-003.md) — Встречи NPC и обмен знаниями, дрейф отношений (P0, M)
-- [INV-001](INV-001.md) — PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал (P0, S)
 - [VAL-006](VAL-006.md) — Проверки V-PHONE-REQUIRED и V-DETERMINISM (P0, S)
 - [GDT-002](GDT-002.md) — Autoload GameStore и SceneRouter (P0, S)
 - [TOOL-001](TOOL-001.md) — Фейковые клиенты desktop/phone (CLI и библиотека) для тестов (P0, M)
@@ -113,7 +112,7 @@
 | [GEN-009](GEN-009.md) | Стадия EvidenceGen: следы и улики сгенерированного расследования | P0 | M | todo | — | [GEN-008](GEN-008.md), [EVD-002](EVD-002.md), [EVD-003](EVD-003.md) |
 | [GEN-010](GEN-010.md) | Стадии TestimonyGen и RedHerrings | P0 | M | todo | — | [GEN-009](GEN-009.md), [KNOW-002](KNOW-002.md) |
 | [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | todo | — | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
-| [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | todo | — | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
+| [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | in_progress | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
 | [INV-002](INV-002.md) | Утверждения (Claims) и правила дедукции | P0 | L | todo | — | [INV-001](INV-001.md) |
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | todo | — | [INV-002](INV-002.md) |
 | [INV-004](INV-004.md) | Обнаружение противоречий между показаниями и фактами | P0 | M | todo | — | [INV-002](INV-002.md) |
