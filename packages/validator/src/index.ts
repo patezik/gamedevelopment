@@ -18,3 +18,13 @@ export {
   truthInvariantsCheck,
 } from './checks/index.ts';
 export { validateInvestigation, type ValidateOptions } from './validate.ts';
+export {
+  SOLVER_CHECKS,
+  culpritProvableCheck,
+  discover,
+  reachableCheck,
+  reachableLocations,
+  solve,
+  uniqueCheck,
+  type Solution,
+} from './solver/index.ts';
