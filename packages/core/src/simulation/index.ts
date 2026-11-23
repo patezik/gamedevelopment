@@ -11,3 +11,18 @@ export {
   type Observer,
   type PerceptibleEvent,
 } from './perception.ts';
+export {
+  converse,
+  defaultSensitivity,
+  detectEncounters,
+  runEncounters,
+  MAX_SHARES_PER_SPEAKER,
+  MIN_ENCOUNTER_MINUTES,
+  TOLD_CONFIDENCE_FACTOR,
+  type Encounter,
+  type EncounterOptions,
+  type EncounterResult,
+  type Stay,
+  type Talker,
+  type Transfer,
+} from './encounters.ts';
