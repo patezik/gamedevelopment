@@ -28,6 +28,25 @@ const regenerate = (identity: Omit<SaveMetadata, 'createdAt'>) =>
   runtime({ ...metadata, ...identity });
 const wait = { type: 'wait', minutes: 15 } as const;
 
+test('matching state hashes cannot make an unsupported generator version replayable', () => {
+  const current = runtime();
+  const save = createSave(metadata, current.engine);
+  recordAction(save, current.engine, 'desktop', wait);
+  createCheckpoint(save, current.engine);
+  const restored = runtime();
+  const restore = vi.spyOn(restored, 'restore');
+  const dispatch = vi.spyOn(restored.engine, 'dispatch');
+  const input = { ...save, generatorVersion: '0.0.9' };
+  expect(() => loadSave(input, () => restored)).toThrow(
+    expect.objectContaining({
+      code: 'SAVE_DESYNC',
+      atAction: 0,
+    }),
+  );
+  expect(restore).not.toHaveBeenCalled();
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
 test('property: checkpoint and full replay agree for random move/wait histories', () => {
   const destinations = ['loc_hall', 'loc_pantry', 'loc_study'];
   for (let seed = 0; seed < 25; seed++) {
@@ -117,6 +136,7 @@ test('restores a checkpoint in the middle of a real Scheduler queue and only rep
   const initial = createRuntime();
   const untouched = vi.spyOn(initial, 'dispatch');
   const restored = loadSave(save, () => ({
+    generatorVersion: metadata.generatorVersion,
     engine: initial,
     restore: (snapshot) => new ScheduledRuntime(Scheduler.restore(snapshot)),
   }));
