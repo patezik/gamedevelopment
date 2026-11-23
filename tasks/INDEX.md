@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 91 · in_progress: 7 · review: 1 · done: 39 · blocked: 2
+Всего задач: **140** · todo: 91 · in_progress: 7 · review: 0 · done: 40 · blocked: 2
 
 ## Готовы к взятию сейчас
 
@@ -31,9 +31,9 @@
 | [KNOW-002](KNOW-002.md) LiePolicy и показания: answer(question) → правда, ошибка или ложь | 5 |
 | [PHONE-001](PHONE-001.md) Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | 5 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
-| [SURV-001](SURV-001.md) Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | 4 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
+| [GDT-010](GDT-010.md) Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | 3 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -185,7 +185,7 @@
 | [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [MOB-011](MOB-011.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
 | [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | todo | — | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
-| [SURV-001](SURV-001.md) | Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | P0 | M | review | claude-surv-1 | [ENG-001](ENG-001.md), [TIME-004](TIME-004.md) |
+| [SURV-001](SURV-001.md) | Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | P0 | M | done | claude-surv-1 | [ENG-001](ENG-001.md), [TIME-004](TIME-004.md) |
 | [SURV-002](SURV-002.md) | Static: глобальная эскалация, пороги, влияние на события сценария | P0 | M | todo | — | [SURV-001](SURV-001.md), [TIME-005](TIME-005.md) |
 | [SURV-003](SURV-003.md) | Угрозы: нападение виновника, опасные локации, исход столкновения | P1 | M | todo | — | [SURV-001](SURV-001.md), [SIM-006](SIM-006.md) |
 | [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | todo | — | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |

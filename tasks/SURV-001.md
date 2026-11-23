@@ -1,7 +1,7 @@
 ---
 id: SURV-001
 title: "Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 7
