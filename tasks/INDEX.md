@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 65 · in_progress: 9 · review: 3 · done: 62 · blocked: 1
+Всего задач: **140** · todo: 65 · in_progress: 9 · review: 0 · done: 65 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -112,7 +112,7 @@
 | [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | done | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
 | [INV-002](INV-002.md) | Утверждения (Claims) и правила дедукции | P0 | L | done | claude-w1 | [INV-001](INV-001.md) |
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | todo | — | [INV-002](INV-002.md) |
-| [INV-004](INV-004.md) | Обнаружение противоречий между показаниями и фактами | P0 | M | review | claude-w1 | [INV-002](INV-002.md) |
+| [INV-004](INV-004.md) | Обнаружение противоречий между показаниями и фактами | P0 | M | done | claude-w1 | [INV-002](INV-002.md) |
 | [INV-005](INV-005.md) | CaseFile и evaluateAccusation | P0 | M | in_progress | claude-w1 | [INV-002](INV-002.md), [TRUTH-002](TRUTH-002.md) |
 | [KNOW-002](KNOW-002.md) | LiePolicy и показания: answer(question) → правда, ошибка или ложь | P0 | L | done | codex-prototype-27 | [KNOW-001](KNOW-001.md), [CHAR-002](CHAR-002.md) |
 | [SIM-005](SIM-005.md) | Цели ConcealEvidence, SpreadRumor, ProtectSelf, MeetCharacter, SeekInformation | P0 | L | done | claude-w5 | [SIM-004](SIM-004.md), [SIM-003](SIM-003.md), [EVD-001](EVD-001.md) |
@@ -145,7 +145,7 @@
 | [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | todo | — | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
 | [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | done | codex-prototype-27 | [SRV-001](SRV-001.md) |
 | [SRV-004](SRV-004.md) | WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume | P0 | L | done | codex-prototype-27 | [SRV-003](SRV-003.md), [PROTO-001](PROTO-001.md) |
-| [SRV-005](SRV-005.md) | Рассылка представлений и событий с фильтром по роли | P0 | M | review | claude-w5 | [SRV-004](SRV-004.md), [ENG-002](ENG-002.md), [PHONE-001](PHONE-001.md) |
+| [SRV-005](SRV-005.md) | Рассылка представлений и событий с фильтром по роли | P0 | M | done | claude-w5 | [SRV-004](SRV-004.md), [ENG-002](ENG-002.md), [PHONE-001](PHONE-001.md) |
 | [SRV-006](SRV-006.md) | QR-сервис: матрицы QR, токены улик с HMAC, обработка qr.scan | P0 | M | done | claude-qr-1 | [SRV-003](SRV-003.md), [EVD-003](EVD-003.md) |
 | [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | done | claude-w2 | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
 | [SRV-008](SRV-008.md) | Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам | P0 | S | done | claude-server-1 | [FND-005](FND-005.md) |
@@ -189,7 +189,7 @@
 | [SURV-001](SURV-001.md) | Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | P0 | M | done | claude-surv-1 | [ENG-001](ENG-001.md), [TIME-004](TIME-004.md) |
 | [SURV-002](SURV-002.md) | Static: глобальная эскалация, пороги, влияние на события сценария | P0 | M | todo | — | [SURV-001](SURV-001.md), [TIME-005](TIME-005.md) |
 | [SURV-003](SURV-003.md) | Угрозы: нападение виновника, опасные локации, исход столкновения | P1 | M | todo | — | [SURV-001](SURV-001.md), [SIM-006](SIM-006.md) |
-| [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | review | claude-w3 | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |
+| [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | done | claude-w3 | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |
 | [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | todo | — | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
 
 ## Фаза 8 · M8 — Content expansion (6)
