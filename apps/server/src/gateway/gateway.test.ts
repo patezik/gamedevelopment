@@ -6,6 +6,7 @@ import WebSocket from 'ws';
 import { buildApp } from '../app.ts';
 import { readConfig } from '../config/index.ts';
 import { issueToken, PairingService } from '../pairing/index.ts';
+import { QrService } from '../qr/index.ts';
 import { SessionManager } from '../sessions/index.ts';
 import { SessionGateway, type GatewayOptions } from './index.ts';
 import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
@@ -13,7 +14,10 @@ import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts
 const view = PlayerView.parse(
   JSON.parse(
     readFileSync(
-      new URL('../../../../packages/protocol/fixtures/views/player-view.start.json', import.meta.url),
+      new URL(
+        '../../../../packages/protocol/fixtures/views/player-view.start.json',
+        import.meta.url,
+      ),
       'utf8',
     ),
   ),
@@ -41,10 +45,21 @@ async function setup(options: Partial<GatewayOptions> = {}) {
   const desktopToken = issueToken(session, 'desktop');
   const pairing = new PairingService(sessions, { host: () => 'localhost', port: 7420 });
   const gateway = new SessionGateway({ serverVersion: '0.0.0', sessions, ...options });
-  const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), { pairing, gateway });
+  const qr = new QrService({ gameMinute: () => 0 });
+  const store = qr.createStore();
+  qr.attach(session, store);
+  const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), {
+    pairing,
+    gateway,
+    qr: {
+      qr,
+      authorizeDesktop: pairing.authorizeDesktop.bind(pairing),
+      activePairingCode: pairing.activeCode.bind(pairing),
+    },
+  });
   apps.push(app);
   const address = (await app.listen({ host: '127.0.0.1', port: 0 })).replace(/^http:/, 'ws:');
-  return { app, address, dispatch, gateway, session, desktopToken, pairing };
+  return { app, address, dispatch, gateway, session, desktopToken, pairing, store };
 }
 
 async function client(address: string) {
@@ -126,6 +141,20 @@ test('real pairing notifies both clients and authenticates action roles', async 
   expect((await phone.receive('error')).payload.code).toBe('DEVICE_REVOKED');
   await phoneClosed;
   expect((await desktop.receive('peer.status')).payload.phone).toBe('unpaired');
+});
+
+test('routes a phone scan through the configured QR service', async () => {
+  const { address, session, store, dispatch } = await setup();
+  await session.activate();
+  const token = issueToken(session, 'phone');
+  const phone = await client(address);
+  phone.send({ type: 'hello', payload: { role: 'phone', token, appVersion: '1' } });
+  await phone.receive('welcome');
+  await phone.receive('peer.status');
+  const tokenId = store.issue('clue', 120);
+  phone.send({ type: 'qr.scan', payload: { raw: store.payload(tokenId) } });
+  expect((await phone.receive('qr.result')).payload).toEqual({ ok: true, clueRef: 'clue' });
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith('phone', { type: 'captureEvidence', tokenId });
 });
 
 test('resume replays only role messages, a truncated buffer triggers resync and a fresh view', async () => {

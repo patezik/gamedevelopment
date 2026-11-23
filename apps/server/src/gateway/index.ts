@@ -221,7 +221,11 @@ export class SessionGateway {
     if (view) this.publishView(session, role, view);
   }
 
-  async #message(peer: Peer, message: Exclude<ClientMessage, Hello>): Promise<void> {
+  async #message(
+    peer: Peer,
+    message: Exclude<ClientMessage, Hello>,
+    qrScan: GatewayOptions['qrScan'],
+  ): Promise<void> {
     const { session, role, socket } = peer;
     switch (message.type) {
       case 'ping':
@@ -254,15 +258,19 @@ export class SessionGateway {
       }
       case 'qr.scan':
       case 'phone.ui':
-        await this.#phoneMessage(peer, message);
+        await this.#phoneMessage(peer, message, qrScan);
     }
   }
 
-  async #phoneMessage(peer: Peer, message: GatewayInput): Promise<void> {
+  async #phoneMessage(
+    peer: Peer,
+    message: GatewayInput,
+    qrScan: GatewayOptions['qrScan'],
+  ): Promise<void> {
     if (peer.role !== 'phone') {
       this.#error(peer.socket, 'ACTION_INVALID', message.id);
     } else if (message.type === 'qr.scan') {
-      const payload = await this.#options.qrScan?.(peer.session, message.payload.raw);
+      const payload = await qrScan?.(peer.session, message.payload.raw);
       if (!this.#authorized(peer)) return;
       this.#send(peer.socket, {
         v: PROTOCOL_VERSION,
@@ -272,7 +280,7 @@ export class SessionGateway {
     }
   }
 
-  connect(socket: WebSocket): void {
+  connect(socket: WebSocket, qrScan = this.#options.qrScan): void {
     let peer: Peer | undefined;
     let closed = false;
     let pending = 0;
@@ -380,7 +388,7 @@ export class SessionGateway {
           }
           peer.ack = Math.max(peer.ack, ack);
           heartbeat();
-          await this.#message(peer, message);
+          await this.#message(peer, message, qrScan);
         })
         .catch(() => {
           this.#error(socket, 'INTERNAL');
@@ -393,7 +401,11 @@ export class SessionGateway {
   }
 }
 
-export function registerGateway(app: FastifyInstance, gateway: SessionGateway): void {
+export function registerGateway(
+  app: FastifyInstance,
+  gateway: SessionGateway,
+  qrScan?: GatewayOptions['qrScan'],
+): void {
   void app.register(websocket, { options: { maxPayload: limit, perMessageDeflate: false } });
   void app.register((routes, _options, done) => {
     routes.get(
@@ -408,7 +420,7 @@ export function registerGateway(app: FastifyInstance, gateway: SessionGateway): 
           next();
         },
       },
-      (socket) => gateway.connect(socket),
+      (socket) => gateway.connect(socket, qrScan),
     );
     done();
   });

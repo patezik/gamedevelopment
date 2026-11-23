@@ -7,12 +7,14 @@ import { listNetworkCandidates, type NetworkInterfaces } from './config/network.
 
 import { registerPairingRoutes, type PairingService } from './pairing/index.ts';
 import { registerGateway, SessionGateway } from './gateway/index.ts';
+import { registerQrRoutes, type QrRouteDependencies } from './qr/index.ts';
 
 export interface AppDependencies {
   /** Defaults to `os.networkInterfaces`; replaced in tests. */
   networkInterfaces?: () => NetworkInterfaces;
   pairing?: PairingService;
   gateway?: SessionGateway;
+  qr?: QrRouteDependencies;
 }
 
 export function buildApp(
@@ -20,6 +22,7 @@ export function buildApp(
   {
     networkInterfaces = os.networkInterfaces,
     pairing,
+    qr,
     gateway = new SessionGateway({ serverVersion: serverPackage.version }),
   }: AppDependencies = {},
 ) {
@@ -42,7 +45,7 @@ export function buildApp(
     done();
   });
 
-  registerGateway(app, gateway);
+  registerGateway(app, gateway, qr && ((session, raw) => qr.qr.scan(session, raw)));
   if (pairing) {
     const unsubscribe = pairing.onDeviceRevoked((session) => gateway.revokePhone(session));
     app.addHook('onClose', (_instance, done) => {
@@ -62,6 +65,7 @@ export function buildApp(
   }));
 
   if (pairing) registerPairingRoutes(app, pairing);
+  if (qr) registerQrRoutes(app, qr);
 
   return app;
 }
