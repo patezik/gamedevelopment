@@ -6,16 +6,18 @@ import type { ServerConfig } from './config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from './config/network.ts';
 
 import { registerPairingRoutes, type PairingService } from './pairing/index.ts';
+import { registerQrRoutes, type QrRouteDependencies } from './qr/index.ts';
 
 export interface AppDependencies {
   /** Defaults to `os.networkInterfaces`; replaced in tests. */
   networkInterfaces?: () => NetworkInterfaces;
   pairing?: PairingService;
+  qr?: QrRouteDependencies;
 }
 
 export function buildApp(
   config: ServerConfig,
-  { networkInterfaces = os.networkInterfaces, pairing }: AppDependencies = {},
+  { networkInterfaces = os.networkInterfaces, pairing, qr }: AppDependencies = {},
 ) {
   const app = Fastify({
     logger: { level: config.logLevel },
@@ -47,6 +49,7 @@ export function buildApp(
   }));
 
   if (pairing) registerPairingRoutes(app, pairing);
+  if (qr) registerQrRoutes(app, qr);
 
   return app;
 }
