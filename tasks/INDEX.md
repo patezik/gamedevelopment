@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 76 · in_progress: 11 · review: 0 · done: 52 · blocked: 1
+Всего задач: **140** · todo: 76 · in_progress: 10 · review: 1 · done: 52 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -145,7 +145,7 @@ _Нет задач, у которых выполнены все зависимо
 | [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | in_progress | claude-w2 | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
 | [SRV-008](SRV-008.md) | Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам | P0 | S | done | claude-server-1 | [FND-005](FND-005.md) |
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
-| [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | in_progress | claude-w3 | [SRV-004](SRV-004.md) |
+| [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | review | claude-w3 | [SRV-004](SRV-004.md) |
 
 ## Фаза 6 · M6 — Vertical slice (21)
 
