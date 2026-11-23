@@ -36,11 +36,13 @@ apps/desktop/
 │   │   ├── bootstrap.tscn        — стартовая сцена каркаса, показывает версию клиента
 │   │   ├── main_menu/  new_game/  pairing/  exploration/  dialogue/
 │   │   ├── case_board/  accusation/  ending/  hud/  overlays/ (evidence_capture, horror_fx, phone_status)
-│   └── ui/                       — общие компоненты (кнопка действия со стоимостью, карточка улики)
+│   │   ├── exploration/          — экран Exploration и загрузчик фикстур для предпросмотра (§4.1)
+│   │   └── overlays/debug/       — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
+│   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта)
 ├── assets/                       — арт, шрифты, звук (стиль — CNT-008)
 └── tests/
-    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, qr_texture
-    │   └── support/              — тестовые двойники (FakeBackend, экран-заглушка)
+    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture, экраны и smoke сцен
+    │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, экран-заглушка)
     └── contract/
         ├── contract_support.gd         — пути к packages/protocol, чтение JSON, проверка формы по JSON Schema
         ├── test_protocol_constants.gd  — ProtocolConstants против схем и фикстур
@@ -133,6 +135,34 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   (тот же экран и те же параметры) → `ERR_BUSY`.
 - Сигналы: `transition_started(screen)`, `screen_changed(screen, params)`, `transition_failed(screen, reason)`.
 
+### 3.3. Debug-панель (`scenes/overlays/debug`)
+
+`DebugOverlay` (`CanvasLayer`, слой 128) — панель разработчика по F12: seed, сценарий и версия
+генератора, игровое время (`clock` из `GameStore`), `stateVersion`, копирование seed, просмотр истины
+и экспорт репро-пакета. Клавиша обрабатывается в `_input`, без записи в `InputMap` и без изменений
+`project.godot`; `bootstrap.gd` вызывает `DebugOverlay.install(get_tree().root)`, оверлей живёт в
+корне дерева и переживает смену экранов `SceneRouter`.
+
+- **Только debug-сборка.** Проверка — feature-тег `debug` (`OS.has_feature("debug")`): запуск из
+  редактора и debug-шаблоны экспорта. В релизной сборке `install()` ничего не добавляет, а экземпляр,
+  созданный иначе, освобождает себя в `_ready`, не строит интерфейс и не отправляет запросов.
+  `force_release_mode()` (необратимо) включает то же поведение в тестах.
+- **Истина — только с сервера.** Запросы идут через `Backend.request_rest` на существующие маршруты
+  SRV-009 — `GET /api/v1/sessions/:id/debug/truth` и `GET /api/v1/sessions/:id/debug/export` — с
+  `desktopToken` сессии в `Authorization` ([backend.md §6](../backend/backend.md)). Сервер отвечает
+  на них только при `HS_DEBUG_TRUTH=1`; 404 панель показывает как «debug API недоступен», 401/403 —
+  как ошибку доступа, сетевую ошибку и ответ неожиданной формы — отдельно.
+- **Изоляция.** Истина хранится только в панели: не попадает в `GameStore`, `PlayerView` и сигналы
+  экранов, скрыта до кнопки «Показать истину» и забывается при закрытии панели, ошибке запроса,
+  смене сессии и `OFFLINE`. Токен хранится в памяти и уходит только заголовком debug-маршрутов.
+  Предупреждения об ошибках содержат вид маршрута и HTTP-статус — без URL, тела ответа и токена.
+- **Сессия.** Клиент пока не создаёт сессию сам (GDT-003), поэтому адрес сервера, id сессии и
+  `desktopToken` из ответа `POST /sessions` передаёт тот, кто создал сессию:
+  `attach_session(base_url, session_id, desktop_token) -> Error`. Без сессии запросы не
+  отправляются (`ERR_UNCONFIGURED`). Seed приходит в ответах debug-маршрутов.
+- **Экспорт.** Репро-пакет из `debug/export` записывается в `user://debug_repro/repro-<sessionId>-v<stateVersion>.json`
+  (`export_directory`); путь показывается в панели. Пакет содержит решение — это файл разработчика.
+
 ## 4. Экраны
 
 | Экран | Содержимое |
@@ -146,6 +176,46 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | Accusation | выбор обвиняемого, мотив/средство/возможность, улики, двойное подтверждение |
 | Ending | концовка, разбор истины (`TruthRecap`), seed, статистика |
 | HUD (оверлей) | часы/день/период, остаток времени, здоровье/рассудок/усталость, Static, статус телефона |
+| Debug (оверлей, только debug-сборка) | seed, время, `stateVersion`, истина и экспорт репро через debug-маршруты (§3.3) |
+
+### 4.1. Exploration
+
+`src/scenes/exploration/exploration.tscn` (экран `exploration` в `SceneRouter`) показывает только
+данные текущего `PlayerView` из `GameStore`:
+
+| Элемент | Поля `PlayerView` |
+|---------|-------------------|
+| Заголовок, описание, освещение | `location.name`, `location.description`, `location.lighting` |
+| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (арт — CNT-010) |
+| Точки интереса | `location.hotspots[]` (`name`, отметка `examined`) |
+| Персонажи | `presentCharacters[]` (`name`, `demeanor`) |
+| Выходы | `location.exits[]` (`name`, `minutes`, `blockedReason`) |
+| Действия | `availableActions[]` (`label`, `costPreview`, `blockedReason`) |
+| Карта | локации и связи из полученных экраном видов (см. ниже) |
+
+- **Действия.** Кнопка — это запись `availableActions`, отправляемая через
+  `GameStore.request_action` без изменений; клиент не строит действия сам и не считает стоимость.
+  Запись показывается один раз: `move` — в строке своего выхода, `examineHotspot` — у точки
+  интереса, `talk`/`interrogate` — у присутствующего персонажа, остальное — в общем списке. Выход
+  без действия `move` помечается «недоступно» или причиной `blockedReason`.
+- **Стоимость** — `costPreview` как есть: «15 мин» или «20–30 мин» (`src/ui/cost_format.gd`).
+  Действие с `max` ≥ 60 мин или с некорректной оценкой требует подтверждения
+  (`ConfirmationDialog`); порог — константа интерфейса `LONG_ACTION_MINUTES`, не правило игры.
+- **Повторная отправка.** После отправки кнопки заблокированы до `view_changed`, `action_failed`
+  или потери соединения. Ошибка `action_failed` показывается текстом над экраном.
+- **Карта.** `PlayerView` не содержит графа известных локаций — только текущую локацию и её
+  выходы. Поэтому карта (`known_map.gd`) накапливает локации и связи из видов, полученных
+  экраном, пока он открыт: текущая подсвечена, посещённые и только увиденные как выход
+  различаются. Ничего сверх полученных видов карта не показывает; при выходе с экрана или
+  завершении сессии она очищается.
+- **Скрытые данные.** Вид с ключом из `FORBIDDEN_VIEW_KEYS` не отображается (вдобавок к проверке
+  в `GameStore`); доска дела, диалог, инвентарь и внутренние id на экран не выводятся.
+- **Предпросмотр без сервера.** Сцена, запущенная отдельно (без параметров `SceneRouter`), или
+  переход с параметром `{"preview": "start|mid|capture|end"}` показывает фикстуру
+  `packages/protocol/fixtures/views/player-view.<имя>.json`. Первый живой `view_changed` заменяет
+  предпросмотр. Действия в предпросмотре уходят в `GameStore` и честно получают
+  `NOT_CONNECTED`. Фикстуры читаются из монорепозитория, поэтому режим работает только из
+  исходников.
 
 ## 5. Стиль кода
 
@@ -168,4 +238,5 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   фикстуры-коллекции (`client-messages.json`, `server-messages.json`); остальные, в том числе
   `PlayerView` и `PhoneView`, проверяются как один JSON-объект. `ProtocolConstants` сверяются со схемами
   (типы сообщений, событий, действий, коды ошибок, роли) и фикстурами (`v`, покрытие типов).
-- Smoke: все сцены из `src/scenes` загружаются и инстанцируются без ошибок.
+- Smoke (`tests/unit/test_scene_smoke.gd`): все сцены из `src/scenes`, включая подкаталоги,
+  загружаются, инстанцируются и входят в дерево без ошибок.
