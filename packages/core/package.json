@@ -9,6 +9,7 @@
     "./common": "./src/common/index.ts",
     "./content": "./src/content/index.ts",
     "./knowledge": "./src/knowledge/index.ts",
+    "./phone": "./src/phone/index.ts",
     "./evidence": "./src/evidence/index.ts",
     "./game": "./src/game/index.ts",
     "./investigation": "./src/investigation/index.ts",
