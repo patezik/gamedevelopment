@@ -156,6 +156,15 @@ describe('V-TIMELINE', () => {
     const bursarRoutines = (routine: Parameters<typeof replaceBursar>[1]) =>
       validate(withCast(cleanInvestigation(), replaceBursar(cleanInvestigation(), routine)));
 
+    it('rejects an unknown location even when the character stays there all day', () => {
+      const report = bursarRoutines([
+        { from: 0, to: 1440, location: 'loc_missing', activity: 'wait', flexibility: 0 },
+      ]);
+      expect(report.findings).toContainEqual(
+        expect.objectContaining({ code: 'TIMELINE_ROUTINE_UNKNOWN_LOCATION' }),
+      );
+    });
+
     it('accepts an overnight block that wraps around midnight', () => {
       const report = bursarRoutines([
         { from: 1380, to: 300, location: home, activity: 'rest', flexibility: 0.2 },

@@ -106,7 +106,7 @@ function transitions(
 
   blocks.forEach((block, i) => {
     const next = blocks[(i + 1) % blocks.length];
-    if (!next || next.location === block.location) return;
+    if (!next) return;
     const pair = `${block.location}>${next.location}`;
     if (seen.has(pair)) return;
     seen.add(pair);
