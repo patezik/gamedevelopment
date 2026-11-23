@@ -14,6 +14,7 @@ const COOKIE_SECRET = 'COOKIESECRETVALUE';
 const RAW_SECRET = 'hs1:ev:deadbeef:RAWQRTOKENID12345:RAWQRSIGNATURE1234567';
 const BODY_CODE = 'BODYCODE-IN-A-CRASHING-POST';
 const BODY_PASSWORD = 'BODY-PASSWORD-VALUE';
+const SESSION_ID = '00000000-0000-4000-8000-000000000001';
 
 /** Walks every key of every logged object. */
 function allKeys(value: unknown): string[] {
@@ -25,13 +26,18 @@ function allKeys(value: unknown): string[] {
 /** A session, an app that logs everything it can, and a route that crashes with secrets around. */
 async function run(options: { debugTruth?: boolean } = {}) {
   const logs = captureLogs();
-  const h = await createHarness({ ...options, logStream: logs.stream, logLevel: 'trace' });
+  const h = await createHarness({
+    ...options,
+    sessionId: SESSION_ID,
+    logStream: logs.stream,
+    logLevel: 'trace',
+  });
   open.push(h);
   h.app.get('/api/v1/sessions/:id/evidence-qr/:tokenId', () => {
-    throw new Error('boom');
+    throw new Error(h.desktopToken);
   });
   h.app.post('/api/v1/sessions/:id/crashing-post', () => {
-    throw new Error('boom from a post');
+    throw new Error(BODY_PASSWORD);
   });
 
   const issued = (
@@ -79,6 +85,11 @@ async function run(options: { debugTruth?: boolean } = {}) {
   await h.app.inject({
     method: 'POST',
     url: '/api/v1/sessions/bad%20id/pairing-code',
+    headers: h.desktop,
+  });
+  await h.app.inject({
+    method: 'POST',
+    url: `/api/v1/sessions/${h.desktopToken}/pairing-code`,
     headers: h.desktop,
   });
   await h.app.inject({ method: 'GET', url: '/api/v1/health' });
@@ -166,7 +177,7 @@ describe('what is logged', () => {
       (e) => String(e.route).includes(':id') && e.sessionId !== undefined,
     );
     expect(session.length).toBeGreaterThanOrEqual(4);
-    expect(session.every((e) => e.sessionId === 'session-a')).toBe(true);
+    expect(session.every((e) => e.sessionId === SESSION_ID)).toBe(true);
     const health = done.find((e) => e.route === '/api/v1/health');
     expect(health).toBeDefined();
     expect(health?.sessionId).toBeUndefined();
@@ -189,20 +200,19 @@ describe('what is logged', () => {
     expect(logs.text()).not.toContain('bad id');
   });
 
-  it('logs a crash of the server with its error, and nothing from the request', async () => {
+  it('logs a server crash without arbitrary exception text', async () => {
     const { logs } = await run();
     const failed = logs.entries().filter((entry) => entry.msg === 'request failed');
     expect(failed).toHaveLength(2); // the GET and the POST that crash
-    expect(failed.map((entry) => (entry.err as { message: string }).message)).toEqual([
-      'boom',
-      'boom from a post',
-    ]);
+    expect(failed.every((entry) => entry.err === undefined && entry.errorCode === 'INTERNAL')).toBe(
+      true,
+    );
     expect(failed[0]).toMatchObject({
       level: 50,
       method: 'GET',
       route: '/api/v1/sessions/:id/evidence-qr/:tokenId',
-      sessionId: 'session-a',
-      err: { message: 'boom' },
+      sessionId: SESSION_ID,
+      errorCode: 'INTERNAL',
     });
   });
 
@@ -218,7 +228,7 @@ describe('what is logged', () => {
     const { logs } = await run({ debugTruth: true });
     const warned = logs.entries().filter((e) => e.level === 40);
     expect(warned.map((e) => e.msg)).toEqual(['debug truth requested']);
-    expect(warned[0]).toMatchObject({ sessionId: 'session-a' });
+    expect(warned[0]).toMatchObject({ sessionId: SESSION_ID });
   });
 
   it('logs nothing at all when the level is silent', async () => {

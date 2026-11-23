@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { GameEngine } from '@hs/core/game';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ExportError, exportRepro, parseExportArguments, USAGE } from './export.ts';
@@ -10,7 +11,7 @@ import { createHarness } from './harness.ts';
 import { REPRO_FORMAT, type ReproBundle } from './repro.ts';
 
 const run = promisify(execFile);
-const CLI = new URL('./export-cli.ts', import.meta.url).pathname;
+const CLI = fileURLToPath(new URL('./export-cli.ts', import.meta.url));
 const TOKEN = 'T'.repeat(43);
 
 const reply = (status: number, body: unknown, asText = false) =>
@@ -171,7 +172,7 @@ describe('the export-repro command against a running server', () => {
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('Wrote');
     expect(result.stderr).not.toContain(h.desktopToken);
-    expect(statSync(out).mode & 0o777).toBe(0o600); // it holds the solution
+    if (process.platform !== 'win32') expect(statSync(out).mode & 0o777).toBe(0o600);
 
     const saved = JSON.parse(readFileSync(out, 'utf8')) as ReproBundle;
     expect(saved).toMatchObject({

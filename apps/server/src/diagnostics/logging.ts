@@ -26,7 +26,7 @@ export const REDACTED_FIELDS = [
 const redactPaths = REDACTED_FIELDS.flatMap((field) => [field, `*.${field}`, `*.*.${field}`]);
 
 /** Session ids are UUIDs, never credentials; anything else in `:id` is not worth logging. */
-const SESSION_ID = /^[A-Za-z0-9_-]{1,64}$/;
+const SESSION_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
 export interface LoggerOptions {
   level: string;
@@ -75,7 +75,7 @@ export function registerRequestLogging(app: FastifyInstance): void {
   // print the full URL), so without this a crashing handler would leave no trace at all.
   app.addHook('onError', (request, _reply, error, done) => {
     // A refused request (401, 404, validation) is the client's doing and already shows as a status
-    // in the line above; an error line with a stack is for failures of the server itself.
+    // in the line above. Exception text and stacks may contain credentials or request data.
     const { status, statusCode } = error as { status?: unknown; statusCode?: unknown };
     const code = [status, statusCode].find((value) => typeof value === 'number');
     if (typeof code === 'number' && code < 500) {
@@ -87,7 +87,7 @@ export function registerRequestLogging(app: FastifyInstance): void {
         method: request.method,
         route: request.routeOptions.url,
         ...sessionIdOf(request.params),
-        err: error,
+        errorCode: 'INTERNAL',
       },
       'request failed',
     );

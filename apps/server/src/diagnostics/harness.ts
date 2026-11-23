@@ -16,6 +16,7 @@ export interface HarnessOptions {
   readonly logLevel?: string;
   /** Use an engine that cannot be inspected instead of the real one. */
   readonly opaqueEngine?: boolean;
+  readonly sessionId?: string;
 }
 
 /** One real session on tiny-manor, a pairing service, and an app wired the way the server is. */
@@ -24,7 +25,7 @@ export async function createHarness(options: HarnessOptions = {}) {
   const ports = { startLocationId: 'loc_hall' };
   const engine = GameEngine.create(investigation, ports);
   const session = new Session(
-    'session-a',
+    options.sessionId ?? 'session-a',
     options.opaqueEngine
       ? { dispatch: () => ({ ok: false, error: 'INTERNAL', minutesSpent: 0, events: [] }) }
       : engine,
