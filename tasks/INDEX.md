@@ -2,10 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 86 · in_progress: 8 · review: 0 · done: 44 · blocked: 2
+Всего задач: **140** · todo: 86 · in_progress: 7 · review: 0 · done: 45 · blocked: 2
 
 ## Готовы к взятию сейчас
 
+- [GEN-004](GEN-004.md) — Стадия SocialGen: отношения и секреты (P0, M)
 - [SIM-003](SIM-003.md) — Встречи NPC и обмен знаниями, дрейф отношений (P0, M)
 - [TOOL-001](TOOL-001.md) — Фейковые клиенты desktop/phone (CLI и библиотека) для тестов (P0, M)
 - [INT-008](INT-008.md) — Спайк: TLS с pinning через QR и облачный ретранслятор → ADR (P2, M)
@@ -14,7 +15,7 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[GEN-003](GEN-003.md) → [GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[GEN-004](GEN-004.md) → [GEN-005](GEN-005.md) → [GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -85,7 +86,7 @@
 | [CNT-003](CNT-003.md) | MVP-сценарий: шаблоны преступлений и правила мотивов | P0 | M | in_progress | egor-claude-cnt-003 | [CNT-002](CNT-002.md) |
 | [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | done | codex-engine-27 | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
 | [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | in_progress | codex-prototype-27 | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
-| [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | in_progress | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
+| [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | done | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
 | [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | todo | — | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
 | [GEN-005](GEN-005.md) | Стадия ConflictGen: правила мотивов для всех пар персонажей | P0 | M | todo | — | [GEN-004](GEN-004.md) |
 | [GEN-006](GEN-006.md) | Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых | P0 | L | todo | — | [GEN-005](GEN-005.md), [GEN-002](GEN-002.md) |
