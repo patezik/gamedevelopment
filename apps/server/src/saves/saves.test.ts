@@ -177,6 +177,26 @@ describe('interrupted writes', () => {
 });
 
 describe('restart and load', () => {
+  test('resumes a file from main over HTTP and persists a replayable desktop action', async () => {
+    const { app, sessions, store } = boot();
+    const id = randomUUID();
+    const original = await readFile(
+      new URL('../../../../packages/core/test/fixtures/save-before-desktop.json', import.meta.url),
+      'utf8',
+    );
+    await store.write(id, original);
+    const response = await app.inject({ method: 'POST', url: `/api/v1/saves/${id}/load` });
+    expect(response.statusCode).toBe(200);
+    expect(await store.read(id)).toBe(original);
+
+    const session = sessions.get(id)!;
+    await session.activate();
+    expect((await session.dispatch('desktop', { type: 'examineLocation' })).ok).toBe(true);
+    const restored = await boot().saves.restore(id);
+    expect(restored.stateHash()).toBe(hashOf(session));
+    expect(restored.snapshot().desktop?.examinedLocations).toEqual(['loc_hall']);
+  });
+
   test('a supported save without a checkpoint loads its full journal without rewriting the file', async () => {
     const first = boot();
     const session = await first.sessions.create('tiny-manor', 'winter');

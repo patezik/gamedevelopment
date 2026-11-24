@@ -2,20 +2,26 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **141** · todo: 58 · in_progress: 7 · review: 1 · done: 74 · blocked: 1
+Всего задач: **142** · todo: 54 · in_progress: 5 · review: 0 · done: 82 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [GDT-007](GDT-007.md) — Оверлей фиксации улики: показ QR, ожидание скана, результат (P0, S)
-- [GDT-008](GDT-008.md) — Доска дела: улики, показания, противоречия, персоны интереса, хронология (P0, L)
-- [GDT-010](GDT-010.md) — Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры (P1, M)
-- [CNT-010](CNT-010.md) — Арт-направление и пайплайн ассетов локаций и портретов (P1, M)
+- [GEN-008](GEN-008.md) — Стадия HistorySimulation: симуляция предыстории с исполнением плана (P0, L)
+- [VAL-003](VAL-003.md) — Планировщик по времени: V-TIME-FEASIBLE и SolutionPath (P0, L)
+- [VAL-004](VAL-004.md) — Проверки V-LIES-BREAKABLE и V-TESTIMONY (P0, M)
+- [ENG-004](ENG-004.md) — Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик (P0, L)
+- [ENG-006](ENG-006.md) — Действие accuse, концовки и TruthRecap (P0, M)
+- [ENG-007](ENG-007.md) — Действие markSuspicion и проекция персон интереса и отметок в caseBoard (P0, S)
+- [GDT-005](GDT-005.md) — Диалог и допрос: темы, ответы, предъявление улик и противоречий (P0, M)
+- [SIM-006](SIM-006.md) — Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение (P0, M)
+- [ENG-005](ENG-005.md) — Блокировка взаимодействий и арбитраж действий desktop/phone (P1, S)
+- [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 
 ## Критический путь
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[GEN-006](GEN-006.md) → [GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -23,16 +29,16 @@
 |---|---|
 | [ENG-004](ENG-004.md) Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | 6 |
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
-| [ENG-003](ENG-003.md) Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | 5 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
-| [GDT-010](GDT-010.md) Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
-| [VAL-002](VAL-002.md) Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [CNT-005](CNT-005.md) Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | 2 |
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 2 |
+| [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
+| [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 2 |
+| [MOB-001](MOB-001.md) Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -89,8 +95,8 @@
 | [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | done | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
 | [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | done | egor-claude-gen-004 | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
 | [GEN-005](GEN-005.md) | Стадия ConflictGen: правила мотивов для всех пар персонажей | P0 | M | done | egor-claude-gen-005 | [GEN-004](GEN-004.md) |
-| [GEN-006](GEN-006.md) | Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых | P0 | L | in_progress | egor-claude-gen-006 | [GEN-005](GEN-005.md), [GEN-002](GEN-002.md) |
-| [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | todo | — | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
+| [GEN-006](GEN-006.md) | Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых | P0 | L | done | egor-claude-gen-006 | [GEN-005](GEN-005.md), [GEN-002](GEN-002.md) |
+| [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | done | claude-q4 | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
 | [GEN-008](GEN-008.md) | Стадия HistorySimulation: симуляция предыстории с исполнением плана | P0 | L | todo | — | [GEN-007](GEN-007.md), [SIM-002](SIM-002.md), [SIM-003](SIM-003.md), [SIM-004](SIM-004.md) |
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | done | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
@@ -116,7 +122,7 @@
 | [SIM-005](SIM-005.md) | Цели ConcealEvidence, SpreadRumor, ProtectSelf, MeetCharacter, SeekInformation | P0 | L | done | claude-w5 | [SIM-004](SIM-004.md), [SIM-003](SIM-003.md), [EVD-001](EVD-001.md) |
 | [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | done | claude-w5 | [SIM-003](SIM-003.md) |
 | [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | done | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
-| [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | in_progress | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
+| [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | done | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
 | [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | todo | — | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | todo | — | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | todo | — | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
@@ -150,21 +156,22 @@
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (22)
+## Фаза 6 · M6 — Vertical slice (23)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [CNT-005](CNT-005.md) | Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | P0 | L | in_progress | claude-w1 | [KNOW-002](KNOW-002.md), [CNT-002](CNT-002.md) |
 | [CNT-006](CNT-006.md) | Контент телефона: сообщения NPC, страницы браузера, файлы, обои | P0 | M | done | egor-claude-cnt-006 | [PHONE-001](PHONE-001.md), [CNT-002](CNT-002.md) |
-| [ENG-003](ENG-003.md) | Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | P0 | L | in_progress | egor-claude-eng-003 | [ENG-001](ENG-001.md), [EVD-002](EVD-002.md), [INV-001](INV-001.md), [KNOW-002](KNOW-002.md), [WORLD-002](WORLD-002.md) |
+| [ENG-003](ENG-003.md) | Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | P0 | L | done | egor-claude-eng-003 | [ENG-001](ENG-001.md), [EVD-002](EVD-002.md), [INV-001](INV-001.md), [KNOW-002](KNOW-002.md), [WORLD-002](WORLD-002.md) |
 | [ENG-004](ENG-004.md) | Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | P0 | L | todo | — | [ENG-003](ENG-003.md), [PHONE-001](PHONE-001.md), [EVD-003](EVD-003.md) |
 | [ENG-005](ENG-005.md) | Блокировка взаимодействий и арбитраж действий desktop/phone | P1 | S | todo | — | [ENG-003](ENG-003.md) |
 | [ENG-006](ENG-006.md) | Действие accuse, концовки и TruthRecap | P0 | M | todo | — | [INV-005](INV-005.md), [ENG-003](ENG-003.md) |
+| [ENG-007](ENG-007.md) | Действие markSuspicion и проекция персон интереса и отметок в caseBoard | P0 | S | todo | — | [ENG-003](ENG-003.md), [INV-003](INV-003.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
 | [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | todo | — | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | done | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
-| [GDT-007](GDT-007.md) | Оверлей фиксации улики: показ QR, ожидание скана, результат | P0 | S | todo | — | [GDT-004](GDT-004.md), [SRV-006](SRV-006.md) |
-| [GDT-008](GDT-008.md) | Доска дела: улики, показания, противоречия, персоны интереса, хронология | P0 | L | todo | — | [GDT-002](GDT-002.md), [INV-003](INV-003.md), [INV-004](INV-004.md) |
+| [GDT-007](GDT-007.md) | Оверлей фиксации улики: показ QR, ожидание скана, результат | P0 | S | done | egor-codex-gdt-007 | [GDT-004](GDT-004.md), [SRV-006](SRV-006.md) |
+| [GDT-008](GDT-008.md) | Доска дела: улики, показания, противоречия, персоны интереса, хронология | P0 | L | done | egor-claude-gdt-008 | [GDT-002](GDT-002.md), [INV-003](INV-003.md), [INV-004](INV-004.md) |
 | [GDT-009](GDT-009.md) | Экран обвинения и экраны концовок с разбором истины | P0 | M | todo | — | [GDT-008](GDT-008.md), [ENG-006](ENG-006.md) |
 | [GDT-011](GDT-011.md) | Debug-панель: seed, время, просмотр истины в debug-режиме | P2 | S | done | egor-claude-gdt-011 | [GDT-002](GDT-002.md), [SRV-009](SRV-009.md) |
 | [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | todo | — | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md) |
@@ -173,7 +180,7 @@
 | [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | todo | — | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
-| [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | review | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
+| [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | todo | — | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
 | [TIME-005](TIME-005.md) | Дедлайны, критические события, пропущенные события, условия завершения | P0 | M | todo | — | [TIME-003](TIME-003.md), [ENG-006](ENG-006.md) |
 
@@ -181,7 +188,7 @@
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | todo | — | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
+| [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | done | egor-claude-gdt-010 | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
 | [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [MOB-011](MOB-011.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
 | [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | todo | — | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
@@ -197,7 +204,7 @@
 |---|---|---|---|---|---|---|
 | [CNT-008](CNT-008.md) | Второй сценарий-пресет только данными (проверка расширяемости) | P1 | L | todo | — | [INT-004](INT-004.md), [PLAN-001](PLAN-001.md) |
 | [CNT-009](CNT-009.md) | Расширение библиотеки архетипов, мотивов и шаблонов преступлений | P2 | M | todo | — | [CNT-007](CNT-007.md) |
-| [CNT-010](CNT-010.md) | Арт-направление и пайплайн ассетов локаций и портретов | P1 | M | todo | — | [GDT-004](GDT-004.md) |
+| [CNT-010](CNT-010.md) | Арт-направление и пайплайн ассетов локаций и портретов | P1 | M | in_progress | egor-claude-cnt-010 | [GDT-004](GDT-004.md) |
 | [CNT-011](CNT-011.md) | Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона | P2 | M | todo | — | [GDT-010](GDT-010.md) |
 | [GEN-012](GEN-012.md) | Соучастники: инциденты с несколькими виновниками | P2 | L | todo | — | [GEN-011](GEN-011.md), [INV-005](INV-005.md) |
 | [PLAN-001](PLAN-001.md) | Декомпозиция бэклога фаз 8–11 по итогам MVP | P1 | M | todo | — | [INT-003](INT-003.md) |

@@ -1,0 +1,80 @@
+{
+  "scenarioId": "tiny-manor",
+  "seed": "save-seed",
+  "generatorVersion": "0.1.0",
+  "createdAt": "2026-11-23T00:00:00Z",
+  "formatVersion": 1,
+  "protocolVersion": 1,
+  "initialStateHash": "9787d1171b55b0ae618bd3f8fd9b5d05f57c8ee188482445b0ad1dc3c801b228",
+  "finalStateHash": "ba9337c344ec9632a778f6d03e0cec3d4680e26f389b4ab7bae05385d99fa596",
+  "actions": [
+    {
+      "seq": 1,
+      "source": "desktop",
+      "action": {
+        "type": "move",
+        "locationId": "loc_study"
+      },
+      "stateHash": "20e33f0e537c7242317e2e50b9e0afa9e1137291bb178cdd590da6de02b846df",
+      "journalHash": "3235d926386c62f0103b2306e357333a8751700e8d0962afc2707935d5feffe7"
+    },
+    {
+      "seq": 2,
+      "source": "desktop",
+      "action": {
+        "type": "wait",
+        "minutes": 120
+      },
+      "stateHash": "086b45333bdfb53850cec451cd0d92db57e3b2288c737c6b728b99352ef9c81b",
+      "journalHash": "021e96c8a7afea3565be4886e806e229922650f5c2b0059f5508036593467513"
+    },
+    {
+      "seq": 3,
+      "source": "desktop",
+      "action": {
+        "type": "examineLocation"
+      },
+      "stateHash": "086b45333bdfb53850cec451cd0d92db57e3b2288c737c6b728b99352ef9c81b",
+      "journalHash": "0b0e2830cfe6cd41fda6c3d32ade697939a51d4d33a53b8cea38c316a5476806"
+    },
+    {
+      "seq": 4,
+      "source": "desktop",
+      "action": {
+        "type": "examineLocation"
+      },
+      "stateHash": "086b45333bdfb53850cec451cd0d92db57e3b2288c737c6b728b99352ef9c81b",
+      "journalHash": "41b1d43dc748fa7e7cdb2c66cb168e0f0164b15035402bc7b4ecac5997ad4c36"
+    },
+    {
+      "seq": 5,
+      "source": "desktop",
+      "action": {
+        "type": "wait",
+        "minutes": 15
+      },
+      "stateHash": "28106e869467f47b48a359593610201a97e6ba15f908934fd603dc35c2e14cca",
+      "journalHash": "d74b402914ee99d4827acfb8d01b0bae840a660c65a58719ec746a0a774b4d86"
+    },
+    {
+      "seq": 6,
+      "source": "desktop",
+      "action": {
+        "type": "move",
+        "locationId": "loc_hall"
+      },
+      "stateHash": "ba9337c344ec9632a778f6d03e0cec3d4680e26f389b4ab7bae05385d99fa596",
+      "journalHash": "c3bece3068bd54b376269b5ea381788a2124fc1c9c9bc3eb094c68ad651e0036"
+    }
+  ],
+  "checkpoint": {
+    "atAction": 3,
+    "stateHash": "086b45333bdfb53850cec451cd0d92db57e3b2288c737c6b728b99352ef9c81b",
+    "snapshot": {
+      "investigation": "{\"characters\":[{\"access\":[],\"age\":40,\"archetypeId\":\"owner\",\"biography\":[],\"desires\":[],\"fears\":[],\"goals\":[],\"habits\":[],\"id\":\"ch_owner\",\"name\":\"Ada Vale\",\"personality\":{\"agreeableness\":0.5,\"conscientiousness\":0.5,\"courage\":0.5,\"extraversion\":0.5,\"honesty\":0.5,\"impulsivity\":0.5,\"neuroticism\":0.5,\"openness\":0.5},\"routine\":[{\"activity\":\"rest\",\"flexibility\":0.2,\"from\":0,\"location\":\"loc_hall\",\"to\":420},{\"activity\":\"owner\",\"flexibility\":0.4,\"from\":420,\"location\":\"loc_hall\",\"to\":1440}],\"secrets\":[\"sec_manor_debt\"],\"socialStatus\":\"resident\"},{\"access\":[{\"itemId\":\"it_study_key\",\"locationId\":\"loc_archive\"}],\"age\":40,\"archetypeId\":\"bursar\",\"biography\":[],\"desires\":[],\"fears\":[],\"goals\":[],\"habits\":[],\"id\":\"ch_bursar\",\"name\":\"Morgan Pike\",\"personality\":{\"agreeableness\":0.5,\"conscientiousness\":0.5,\"courage\":0.5,\"extraversion\":0.5,\"honesty\":0.5,\"impulsivity\":0.5,\"neuroticism\":0.5,\"openness\":0.5},\"routine\":[{\"activity\":\"rest\",\"flexibility\":0.2,\"from\":0,\"location\":\"loc_archive\",\"to\":420},{\"activity\":\"bursar\",\"flexibility\":0.4,\"from\":420,\"location\":\"loc_archive\",\"to\":1440}],\"secrets\":[\"sec_manor_debt\"],\"socialStatus\":\"resident\"},{\"access\":[],\"age\":40,\"archetypeId\":\"cook\",\"biography\":[],\"desires\":[],\"fears\":[],\"goals\":[],\"habits\":[],\"id\":\"ch_cook\",\"name\":\"Ellis Ward\",\"personality\":{\"agreeableness\":0.5,\"conscientiousness\":0.5,\"courage\":0.5,\"extraversion\":0.5,\"honesty\":0.5,\"impulsivity\":0.5,\"neuroticism\":0.5,\"openness\":0.5},\"routine\":[{\"activity\":\"rest\",\"flexibility\":0.2,\"from\":0,\"location\":\"loc_pantry\",\"to\":420},{\"activity\":\"cook\",\"flexibility\":0.4,\"from\":420,\"location\":\"loc_pantry\",\"to\":1440}],\"secrets\":[],\"socialStatus\":\"resident\"},{\"access\":[],\"age\":40,\"archetypeId\":\"porter\",\"biography\":[],\"desires\":[],\"fears\":[],\"goals\":[],\"habits\":[],\"id\":\"ch_porter\",\"name\":\"Robin Shaw\",\"personality\":{\"agreeableness\":0.5,\"conscientiousness\":0.5,\"courage\":0.5,\"extraversion\":0.5,\"honesty\":0.5,\"impulsivity\":0.5,\"neuroticism\":0.5,\"openness\":0.5},\"routine\":[{\"activity\":\"rest\",\"flexibility\":0.2,\"from\":0,\"location\":\"loc_hall\",\"to\":420},{\"activity\":\"porter\",\"flexibility\":0.4,\"from\":420,\"location\":\"loc_hall\",\"to\":1440}],\"secrets\":[],\"socialStatus\":\"resident\"}],\"generatorVersion\":\"0.1.0\",\"relationships\":[{\"a\":\"ch_owner\",\"b\":\"ch_bursar\",\"history\":[\"ev_1\"],\"intensity\":0.8,\"trust\":-0.5,\"type\":\"debt\",\"valence\":0.2},{\"a\":\"ch_cook\",\"b\":\"ch_porter\",\"history\":[],\"intensity\":0.4,\"trust\":0.5,\"type\":\"friendship\",\"valence\":0.7}],\"scenarioId\":\"tiny-manor\",\"secrets\":[{\"fact\":{\"a\":\"ch_owner\",\"b\":\"ch_bursar\",\"kind\":\"relation\",\"relType\":\"debt\",\"since\":-60},\"id\":\"sec_manor_debt\",\"knownBy\":[\"ch_owner\",\"ch_bursar\"]}],\"seed\":\"save-seed\",\"truth\":{\"events\":[{\"actorIds\":[\"ch_bursar\"],\"causes\":[],\"duration\":5,\"facts\":[{\"interval\":{\"from\":-60,\"to\":-25},\"kind\":\"at\",\"where\":\"loc_archive\",\"who\":\"ch_bursar\"},{\"a\":\"ch_owner\",\"b\":\"ch_bursar\",\"kind\":\"relation\",\"relType\":\"debt\",\"since\":-60},{\"against\":\"ch_owner\",\"basis\":[\"f_2d08381f88751489\"],\"kind\":\"motive\",\"motiveType\":\"conceal_debt\",\"who\":\"ch_bursar\"},{\"interval\":{\"from\":-60,\"to\":1},\"item\":\"it_study_key\",\"kind\":\"possessed\",\"who\":\"ch_bursar\"}],\"id\":\"ev_1\",\"location\":\"loc_archive\",\"t\":-60,\"targets\":[],\"traceIds\":[],\"verb\":\"write\",\"visibility\":\"covert\"},{\"actorIds\":[\"ch_cook\"],\"causes\":[],\"duration\":45,\"facts\":[{\"interval\":{\"from\":-50,\"to\":1},\"kind\":\"at\",\"where\":\"loc_pantry\",\"who\":\"ch_cook\"}],\"id\":\"ev_2\",\"location\":\"loc_pantry\",\"t\":-50,\"targets\":[],\"traceIds\":[],\"verb\":\"work\",\"visibility\":\"covert\"},{\"actorIds\":[\"ch_porter\"],\"causes\":[],\"duration\":40,\"facts\":[{\"interval\":{\"from\":-48,\"to\":1},\"kind\":\"at\",\"where\":\"loc_hall\",\"who\":\"ch_porter\"}],\"id\":\"ev_3\",\"location\":\"loc_hall\",\"t\":-48,\"targets\":[],\"traceIds\":[],\"verb\":\"work\",\"visibility\":\"covert\"},{\"actorIds\":[\"ch_owner\"],\"causes\":[],\"duration\":30,\"facts\":[{\"interval\":{\"from\":-40,\"to\":1},\"kind\":\"at\",\"where\":\"loc_hall\",\"who\":\"ch_owner\"}],\"id\":\"ev_4\",\"location\":\"loc_hall\",\"t\":-40,\"targets\":[],\"traceIds\":[],\"verb\":\"read\",\"visibility\":\"covert\"},{\"actorIds\":[\"ch_bursar\"],\"causes\":[\"ev_1\"],\"duration\":4,\"facts\":[{\"interval\":{\"from\":-21,\"to\":-15},\"kind\":\"at\",\"where\":\"loc_study\",\"who\":\"ch_bursar\"}],\"id\":\"ev_5\",\"location\":\"loc_archive\",\"t\":-25,\"targets\":[{\"id\":\"loc_study\",\"kind\":\"location\"}],\"traceIds\":[],\"verb\":\"move\",\"visibility\":\"covert\"},{\"actorIds\":[\"ch_bursar\"],\"causes\":[\"ev_5\"],\"duration\":2,\"facts\":[{\"interval\":{\"from\":-20,\"to\":-10},\"item\":\"it_ledger\",\"kind\":\"possessed\",\"who\":\"ch_bursar\"}],\"id\":\"ev_6\",\"location\":\"loc_study\",\"t\":-20,\"targets\":[{\"id\":\"it_ledger\",\"kind\":\"item\"}],\"traceIds\":[],\"verb\":\"take\",\"visibility\":\"covert\"},{\"actorIds\":[\"ch_bursar\"],\"causes\":[\"ev_6\"],\"duration\":4,\"facts\":[{\"interval\":{\"from\":-11,\"to\":1},\"kind\":\"at\",\"where\":\"loc_archive\",\"who\":\"ch_bursar\"}],\"id\":\"ev_7\",\"location\":\"loc_study\",\"t\":-15,\"targets\":[{\"id\":\"loc_archive\",\"kind\":\"location\"}],\"traceIds\":[],\"verb\":\"move\",\"visibility\":\"covert\"},{\"actorIds\":[\"ch_bursar\"],\"causes\":[\"ev_7\"],\"duration\":2,\"facts\":[],\"id\":\"ev_8\",\"location\":\"loc_archive\",\"t\":-10,\"targets\":[{\"id\":\"it_ledger\",\"kind\":\"item\"},{\"id\":\"it_trunk\",\"kind\":\"item\"}],\"traceIds\":[],\"verb\":\"hide\",\"visibility\":\"covert\"},{\"actorIds\":[\"player\"],\"causes\":[],\"duration\":3,\"facts\":[],\"id\":\"ev_9\",\"location\":\"loc_hall\",\"t\":0,\"targets\":[{\"id\":\"loc_study\",\"kind\":\"location\"}],\"traceIds\":[],\"verb\":\"move\",\"visibility\":\"public\"},{\"actorIds\":[\"player\"],\"causes\":[],\"duration\":120,\"facts\":[],\"id\":\"ev_10\",\"location\":\"loc_study\",\"t\":3,\"targets\":[],\"traceIds\":[],\"verb\":\"wait\",\"visibility\":\"public\"}],\"incident\":{\"culpritIds\":[\"ch_bursar\"],\"keyEventIds\":[\"ev_6\",\"ev_8\"],\"means\":\"it_study_key\",\"motive\":\"f_b080c073a65acec8\",\"type\":\"theft\",\"victimIds\":[\"ch_owner\"],\"window\":{\"from\":-20,\"to\":-8}}},\"world\":{\"durationMinutes\":1440,\"items\":{\"initial\":[{\"item\":{\"id\":\"it_study_key\",\"kind\":\"key\",\"tags\":[]},\"placement\":{\"id\":\"ch_bursar\",\"kind\":\"character\"}},{\"item\":{\"id\":\"it_ledger\",\"kind\":\"book\",\"tags\":[]},\"placement\":{\"id\":\"loc_study\",\"kind\":\"location\"}},{\"item\":{\"id\":\"it_trunk\",\"kind\":\"container\",\"tags\":[]},\"placement\":{\"id\":\"loc_archive\",\"kind\":\"location\"}}],\"initialMinute\":-60,\"moves\":[{\"cause\":\"ev_6\",\"itemId\":\"it_ledger\",\"t\":-20,\"to\":{\"id\":\"ch_bursar\",\"kind\":\"character\"}},{\"cause\":\"ev_8\",\"itemId\":\"it_ledger\",\"t\":-10,\"to\":{\"id\":\"it_trunk\",\"kind\":\"container\"}}]},\"locations\":[{\"access\":[],\"connections\":[{\"minutes\":3,\"to\":\"loc_study\"},{\"minutes\":2,\"to\":\"loc_pantry\"}],\"description\":\"The entrance connects the study and pantry.\",\"hotspots\":[],\"id\":\"loc_hall\",\"lighting\":{\"day\":\"bright\",\"evening\":\"dim\",\"morning\":\"bright\",\"night\":\"dark\"},\"name\":\"Hall\",\"tags\":[]},{\"access\":[],\"connections\":[{\"minutes\":3,\"to\":\"loc_hall\"},{\"locked\":{\"itemId\":\"it_study_key\"},\"minutes\":4,\"to\":\"loc_archive\"}],\"description\":\"The ledger is normally kept on the desk.\",\"hotspots\":[],\"id\":\"loc_study\",\"lighting\":{\"day\":\"bright\",\"evening\":\"dim\",\"morning\":\"bright\",\"night\":\"dark\"},\"name\":\"Study\",\"tags\":[]},{\"access\":[{\"itemId\":\"it_study_key\"}],\"connections\":[{\"locked\":{\"itemId\":\"it_study_key\"},\"minutes\":4,\"to\":\"loc_study\"}],\"description\":\"Records and an old trunk are kept behind a locked door.\",\"hotspots\":[],\"id\":\"loc_archive\",\"lighting\":{\"day\":\"bright\",\"evening\":\"dim\",\"morning\":\"bright\",\"night\":\"dark\"},\"name\":\"Archive\",\"tags\":[]},{\"access\":[],\"connections\":[{\"minutes\":2,\"to\":\"loc_hall\"}],\"description\":\"The cook can hear visitors entering the hall.\",\"hotspots\":[],\"id\":\"loc_pantry\",\"lighting\":{\"day\":\"bright\",\"evening\":\"dim\",\"morning\":\"bright\",\"night\":\"dark\"},\"name\":\"Pantry\",\"tags\":[]}],\"startDateTime\":\"2026-01-14T08:00:00\"}}",
+      "initialInvestigationHash": "4baef4095d24b65a9cd59e0c7fcb3efc2d7be0e73cfe2d9b0be4882603fbfd2f",
+      "minute": 123,
+      "locationId": "loc_study"
+    }
+  }
+}

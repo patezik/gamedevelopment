@@ -1,7 +1,7 @@
 ---
 id: PROTO-004
 title: "Известные игроку локации и связи в PlayerView для карты Exploration"
-status: review
+status: done
 priority: P2
 complexity: M
 phase: 6

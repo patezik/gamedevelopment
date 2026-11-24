@@ -20,6 +20,7 @@ signal transition_failed(screen: StringName, reason: String)
 const SCREENS: Dictionary = {
 	&"bootstrap": "res://src/scenes/bootstrap.tscn",
 	&"exploration": "res://src/scenes/exploration/exploration.tscn",
+	&"case_board": "res://src/scenes/case_board/case_board.tscn",
 }
 const DEFAULT_FADE_SECONDS: float = 0.25
 ## Optional method of a screen's root node, called with the params before the node enters the

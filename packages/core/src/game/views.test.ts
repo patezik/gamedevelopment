@@ -82,6 +82,8 @@ test('clock and action previews reflect the engine, including locked exits and e
   });
   expect(study.availableActions.map(({ action }) => action)).toEqual([
     { type: 'move', locationId: 'loc_hall' },
+    { type: 'examineLocation' },
+    { type: 'rest', minutes: 60 },
     { type: 'wait', minutes: 20 },
   ]);
   expect(engine.dispatch('desktop', { type: 'wait', minutes: 20 }).outcome).toBe('time_expired');
