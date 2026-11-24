@@ -2,8 +2,9 @@ extends RefCounted
 ## The locations the player was shown while the Exploration screen is open: every location they
 ## stood in and every exit their views listed, with the links between them.
 ##
-## PlayerView carries no map of the world (only the current location and its exits), so this
-## model is built solely from views the client received: it never holds a place, link or name the
+## PlayerView carries the player's known map in [code]knownMap[/code] (visited locations, shown
+## exits and their links); it is merged as is. For a view without that field the model falls back
+## to accumulating the current location and its exits. It never holds a place, link or name the
 ## server did not show the player. It lives as long as the screen and is cleared when the session
 ## ends.
 
@@ -38,6 +39,7 @@ func observe(view: Dictionary) -> void:
 	_add(location_id, _text(location.get("name")))
 	_visited[location_id] = true
 	_current = location_id
+	_merge_known_map(view.get("knownMap"))
 	var raw_exits: Variant = location.get("exits")
 	if not raw_exits is Array:
 		return
@@ -51,6 +53,38 @@ func observe(view: Dictionary) -> void:
 			continue
 		_add(target, _text(exit.get("name")))
 		_links[_link_key(location_id, target)] = true
+
+
+func _merge_known_map(raw_map: Variant) -> void:
+	if not raw_map is Dictionary:
+		return
+	var known: Dictionary = raw_map
+	var raw_locations: Variant = known.get("locations")
+	if raw_locations is Array:
+		var locations: Array = raw_locations
+		for raw_entry: Variant in locations:
+			if not raw_entry is Dictionary:
+				continue
+			var entry: Dictionary = raw_entry
+			var entry_id: String = _text(entry.get("id"))
+			if entry_id.is_empty():
+				continue
+			_add(entry_id, _text(entry.get("name")))
+			if entry.get("visited") == true:
+				_visited[entry_id] = true
+	var raw_links: Variant = known.get("links")
+	if raw_links is Array:
+		var links_list: Array = raw_links
+		for raw_link: Variant in links_list:
+			if not raw_link is Dictionary:
+				continue
+			var link: Dictionary = raw_link
+			var first: String = _text(link.get("from"))
+			var second: String = _text(link.get("to"))
+			if first.is_empty() or second.is_empty() or first == second:
+				continue
+			if _names.has(first) and _names.has(second):
+				_links[_link_key(first, second)] = true
 
 
 func is_empty() -> bool:
