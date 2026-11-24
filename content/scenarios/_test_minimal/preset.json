@@ -10,13 +10,13 @@
     "historyStartMinutes": -60
   },
   "cast": {
-    "min": 2,
-    "max": 2,
+    "min": 3,
+    "max": 3,
     "quotas": [
       {
         "archetype": "visitor",
-        "min": 2,
-        "max": 2
+        "min": 3,
+        "max": 3
       }
     ]
   },
