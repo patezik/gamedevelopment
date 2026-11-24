@@ -246,7 +246,9 @@ export function sweep(
     add(chosen.culprit, archetype.get(incident.culpritId)!);
   }
 
-  const required = Math.ceil(threshold * count);
+  // Compare the boundary share directly: 0.07 * 100 rounds to 7.000000000000001.
+  const belowOrAt = Math.floor(threshold * count);
+  const required = belowOrAt / count >= threshold ? belowOrAt : belowOrAt + 1;
   return {
     scenario: content.preset.id,
     seeds: { from, to: from + count - 1, count },

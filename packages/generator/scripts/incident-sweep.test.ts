@@ -160,6 +160,18 @@ describe('sweep', () => {
     for (const { feasibleWorlds } of report.results) expect(feasibleWorlds).toBeLessThanOrEqual(2);
   });
 
+  test('counts an exact threshold without floating-point over-rounding', () => {
+    const world = spy<undefined, GeneratedWorld>(worldGen, () => {
+      throw new GenerationRejection('TEST_WORLD', 'rejected on purpose');
+    });
+    const report = sweep(
+      minimal,
+      { from: 0, count: 100, threshold: 0.07 },
+      { ...DEFAULT_STAGES, world: world.stage },
+    );
+    expect(report.required).toBe(7);
+  });
+
   test('stops at the first unexpected exception', () => {
     const conflict = spy<SocialWorld, ConflictWorld>(conflictGen, (call) => {
       if (call === 3) throw new RangeError('defect');
