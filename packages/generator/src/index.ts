@@ -49,3 +49,17 @@ export {
   type IncidentWorld,
   type Opportunity,
 } from './stages/incident-selection.ts';
+export {
+  ACQUIRE_MINUTES,
+  DEVIATION_REASONS,
+  PLOT_INFEASIBLE,
+  plotPlanning,
+  SCHEDULE_DEVIATION_PROPERTY,
+  verifyPlot,
+  type PlannedAlibi,
+  type PlannedIncident,
+  type PlotPlan,
+  type PlotStepPlan,
+  type PlotWorld,
+  type ScheduleDeviation,
+} from './stages/plot-planning.ts';
