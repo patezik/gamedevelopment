@@ -7,7 +7,6 @@ import {
   incidentInput,
   minimal,
   motive,
-  oracle,
   sanatorium,
   select,
   silent,
@@ -17,6 +16,7 @@ import {
   withIncident,
   withRoutine,
 } from '../../test/support/incident.ts';
+import { confirm, search } from '../../test/support/oracle.ts';
 import {
   assessIncidents,
   DEFAULT_CULPRIT_GAMMA,
@@ -57,13 +57,26 @@ describe('IncidentSelection on _test_minimal', () => {
       type: 'theft',
       templateId: 'missing_record',
       meansItemIds: ['it_log'],
-      // History is 07:00–08:00; the archive is 2 minutes from the hall, so the culprit leaves
-      // the hall block at −60 and arrives at −58. The window ends by t = 0.
-      opportunities: [{ locationId: 'loc_archive', from: -58, to: -53, starts: 54 }],
+      // History is 07:00–08:00 and everyone waits in the hall. The culprit changes the hall
+      // block from −60, walks 2 minutes to the archive, takes the record at −58 and starts at
+      // −57; the window ends by t = 0, so 53 starts are usable.
+      opportunities: [
+        {
+          locationId: 'loc_archive',
+          from: -57,
+          to: -52,
+          starts: 53,
+          meansItemId: 'it_log',
+          acquisition: { locationId: 'loc_archive', at: -58 },
+          deviation: { from: -60, to: -52 },
+        },
+      ],
     });
     expect(incident.motive).toEqual(motive(incident.culpritId, incident.victimId));
     expect(incident.score).toBeCloseTo(
-      SCORE_WEIGHTS.motive * 0.5 + SCORE_WEIGHTS.opportunity * 0.9 + SCORE_WEIGHTS.personality,
+      SCORE_WEIGHTS.motive * 0.5 +
+        SCORE_WEIGHTS.opportunity * (53 / 60) +
+        SCORE_WEIGHTS.personality,
     );
     expect(incidentReport).toEqual({
       gamma: DEFAULT_CULPRIT_GAMMA,
@@ -72,6 +85,7 @@ describe('IncidentSelection on _test_minimal', () => {
       feasibleTriples: 6,
       byTemplate: { missing_record: { victimsWithCulprit: 3, pairs: 6, culprits: ids } },
       rejected: { motive: 0, capable: 0, means: 0, opportunity: 0 },
+      windowsRejectedBySimulation: 0,
       chosen: {
         victimArchetype: 'visitor',
         culpritArchetype: 'visitor',
@@ -170,23 +184,33 @@ describe('IncidentSelection on _test_minimal', () => {
     expect(rejections(input, locked).means).toBe(4);
   });
 
-  test('opportunity: an awake witness at the scene blocks the window, a sleeper does not', () => {
-    const [a, b, c] = ids as [string, string, string];
+  test('opportunity: anyone physically at the scene is a witness, asleep or not', () => {
+    const [a, , c] = ids as [string, string, string];
+    for (const activity of ['read', 'sleep']) {
+      const watched = withRoutine(open, { [c]: stay('loc_archive', activity) });
+      // Only the one already alone in the archive can take the record.
+      expect(new Set(feasiblePairs(watched).map((pair) => pair.split('>')[0]))).toEqual(
+        new Set([c]),
+      );
+      expect(rejections(watched).opportunity).toBe(4);
+    }
     const watched = withRoutine(open, { [c]: stay('loc_archive', 'read') });
-    // Only the reader, already alone in the archive, can take the record.
-    expect(new Set(feasiblePairs(watched).map((pair) => pair.split('>')[0]))).toEqual(new Set([c]));
-    expect(rejections(watched).opportunity).toBe(4);
-    const asleep = withRoutine(open, { [c]: stay('loc_archive', 'sleep') });
-    expect(feasiblePairs(asleep)).toHaveLength(6);
     const reader = assessIncidents(watched, minimal)
       .options.find(({ victimId }) => victimId === a)!
       .feasible.find(({ characterId }) => characterId === c)!;
-    // No routine block is bent: the whole history is usable.
+    // No block is changed: the record is taken at −60, the window starts at −59.
     expect(reader.opportunities).toEqual([
-      { locationId: 'loc_archive', from: -60, to: -55, starts: 56 },
+      {
+        locationId: 'loc_archive',
+        from: -59,
+        to: -54,
+        starts: 55,
+        meansItemId: 'it_log',
+        acquisition: { locationId: 'loc_archive', at: -60 },
+        deviation: null,
+      },
     ]);
-    expect(reader.opportunityQuality).toBeCloseTo(56 / 60, 5);
-    expect(b).toBeDefined();
+    expect(reader.opportunityQuality).toBeCloseTo(55 / 60, 5);
   });
 
   test('opportunity: the window must fit into history', () => {
@@ -246,7 +270,7 @@ describe('IncidentSelection on _test_minimal', () => {
     const delayed = withCrime(minimal, (crime) => ({ ...crime, deathDelayMinutes: [10, 20] }));
     expect(rejections(open, delayed).opportunity).toBe(6);
     const [a, b] = ids as [string, string];
-    // The victim walks into the archive at 07:30 (t = −30) and stays.
+    // The victim walks into the archive at 07:30 (t = −30) and is there from −28.
     const later = withRoutine(
       { ...open, motives: [motive(b, a)] },
       {
@@ -257,11 +281,17 @@ describe('IncidentSelection on _test_minimal', () => {
       },
     );
     const [option] = assessIncidents(later, delayed).options.filter((o) => o.feasible.length);
-    // The window ends by −30 (the victim would witness it) and at least −50 (death by −30).
-    expect(option!.feasible[0]!.opportunities).toEqual([
-      { locationId: 'loc_archive', from: -55, to: -50, starts: 21 },
-    ]);
-    expect(oracle(later, delayed, b, a, 'missing_record')).toEqual(new Map([['loc_archive', -55]]));
+    const [window] = option!.feasible[0]!.opportunities;
+    // The window ends by −28 (the victim would witness it) and at least −48 (death by −28).
+    expect(window).toMatchObject({
+      locationId: 'loc_archive',
+      from: -53,
+      to: -48,
+      starts: 21,
+      deathAt: -28,
+    });
+    expect(search(later, delayed, b, a, 'missing_record')).toEqual(new Map([['loc_archive', -53]]));
+    expect(confirm(later, delayed, b, a, 'missing_record', window!)).toEqual([]);
   });
 
   test('scenes carry every required location tag', () => {
@@ -384,33 +414,35 @@ describe('IncidentSelection on _test_minimal', () => {
 });
 
 describe('IncidentSelection on sanatorium_winter', () => {
-  test('poisoning needs both required tags; the plan respects every criterion', () => {
-    const outcomes = Array.from({ length: 40 }, (_, seed) => {
+  // Content-independent invariants: they hold for any correct update of the scenario data.
+  test('every chosen plan is confirmed by simulation and stays within the template', () => {
+    let chosen = 0;
+    for (let seed = 0; seed < 40; seed++) {
       const input = incidentInput(sanatorium, String(seed));
-      return { input, result: trySelect(input, sanatorium, String(seed)) };
-    });
-    const chosen = outcomes.filter(({ result }) => !(result instanceof GenerationRejection));
-    expect(chosen.length).toBeGreaterThan(0);
-    for (const { input, result } of chosen) {
-      if (result instanceof GenerationRejection) continue;
+      const result = trySelect(input, sanatorium, String(seed));
+      if (result instanceof GenerationRejection) {
+        expect(assessIncidents(input, sanatorium).options.every((o) => !o.feasible.length)).toBe(
+          true,
+        );
+        continue;
+      }
+      chosen++;
       const { incident } = result;
-      const windows = oracle(
-        input,
-        sanatorium,
-        incident.culpritId,
-        incident.victimId,
-        incident.templateId,
-      );
-      expect(windows).toBeInstanceOf(Map);
-      expect(
-        new Map(incident.opportunities.map(({ locationId, from }) => [locationId, from])),
-      ).toEqual(windows);
-      if (incident.templateId === 'poisoning') {
-        // locationTags ["private", "medical"]: only the doctor's office has both.
-        expect(incident.opportunities.map(({ locationId }) => locationId)).toEqual([
-          'loc_doctor_office',
-        ]);
+      expect(incident.culpritId).not.toBe(incident.victimId);
+      expect(sanatorium.preset.incident.templates).toContain(incident.templateId);
+      for (const opportunity of incident.opportunities) {
+        expect(
+          confirm(
+            input,
+            sanatorium,
+            incident.culpritId,
+            incident.victimId,
+            incident.templateId,
+            opportunity,
+          ),
+        ).toEqual([]);
       }
     }
-  });
+    expect(chosen).toBeGreaterThan(0);
+  }, 120_000);
 });

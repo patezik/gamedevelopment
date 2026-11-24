@@ -503,6 +503,7 @@ const GENERATOR_VERSION: string;
 class GenerationRejection extends Error { code: string; diagnostics?: Record<string, unknown> }   // стадия отклоняет вход → следующая попытка
 const incidentSelection: Stage<ConflictWorld & { world: GeneratedWorld }, IncidentWorld>;        // IncidentPlan + IncidentReport (GEN-006)
 function assessIncidents(input, content): IncidentAssessment;   // все допустимые виновники по жертвам и шаблонам, без случайности
+function selectIncident(input, assessment, content, rng): IncidentWorld;   // выбор жертвы, шаблона и виновника (score^γ) на готовой оценке
 ```
 **Зависимости:** `@hs/core`, `@hs/validator` (шлюз). **Тесты:** каждая стадия отдельно на фикстурах;
 golden-снимки для 5 seed; распределение виновников.

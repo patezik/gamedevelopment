@@ -1,8 +1,10 @@
-import type { Character } from '@hs/core/characters';
+import { whereShouldBe, type Character, type ScheduleOverride } from '@hs/core/characters';
 import { PERSONALITY_TRAITS } from '@hs/core/common';
 import type { ScenarioContent } from '@hs/core/content';
-import type { Rng } from '@hs/core/rng';
-import { Calendar } from '@hs/core/time';
+import { createRng, type Rng } from '@hs/core/rng';
+import { SimulationRunner } from '@hs/core/simulation';
+import { Calendar, TimeSystem } from '@hs/core/time';
+import { TruthModel } from '@hs/core/truth';
 import type { Actor, ItemPlacement, LocationGraph } from '@hs/core/world';
 import { GenerationRejection, type Stage } from '../pipeline/index.ts';
 import type { ConflictWorld, MotiveCandidate } from './conflict-gen.ts';
@@ -18,15 +20,28 @@ export const DEFAULT_CULPRIT_GAMMA = 0.7;
 export const SCORE_WEIGHTS = Object.freeze({ motive: 0.5, opportunity: 0.3, personality: 0.2 });
 /** Usable window starts (one per minute) at which opportunity quality reaches 1. */
 export const OPPORTUNITY_SATURATION_MINUTES = 60;
-/** Routine activities during which a present character does not witness the crime. */
-export const UNAWARE_ACTIVITIES: readonly string[] = Object.freeze(['sleep']);
+/** Earliest windows per scene checked by re-simulation before the scene is given up. */
+export const VERIFIED_WINDOWS_PER_SCENE = 3;
 /** Plan target that requires the victim at the scene for the whole window. */
 const VICTIM_TARGET = '$victim';
 export const INCIDENT_NO_FEASIBLE_CULPRIT = 'INCIDENT_NO_FEASIBLE_CULPRIT';
+/** An owned item's owner archetype is not in the cast, so the world cannot be instantiated. */
+export const WORLD_OWNER_ABSENT = 'WORLD_OWNER_ABSENT';
 
 const MINUTES_PER_DAY = 1440;
 const SCORE_DECIMALS = 6;
 const TRAITS: readonly string[] = PERSONALITY_TRAITS;
+const PLAN_ACTIVITY = 'incident_plan';
+/** The TruthModel of an assessment run is scratch data; it needs a syntactically valid record. */
+const SCRATCH_INCIDENT = {
+  type: 'assessment',
+  victimIds: [],
+  culpritIds: [],
+  motive: 'f_0000000000000000',
+  means: 'none',
+  keyEventIds: [],
+  window: { from: 0, to: 1 },
+};
 
 /** Feasibility criteria, in the order they are checked. */
 export const FEASIBILITY_CRITERIA = ['motive', 'capable', 'means', 'opportunity'] as const;
@@ -37,13 +52,34 @@ export interface IncidentSelectionInput extends ConflictWorld {
   readonly world: GeneratedWorld;
 }
 
-/** The earliest usable window at one scene: game minutes `[from, to)` before `t = 0`. */
+/** How the culprit gets the means: in a location, or from a character met there. */
+export interface Acquisition {
+  readonly locationId: string;
+  /** The game minute the culprit is physically there and takes it; held from `at + 1`. */
+  readonly at: number;
+  readonly fromCharacterId?: CharacterId;
+}
+
+/**
+ * The earliest verified window at one scene, game minutes `[from, to)` before `t = 0`, with the
+ * means and the schedule change that make it possible.
+ */
 export interface Opportunity {
   readonly locationId: string;
   readonly from: number;
   readonly to: number;
-  /** Usable window starts at this scene, one per minute. */
+  /** Usable window starts at this scene over all means, one per minute (before re-simulation). */
   readonly starts: number;
+  readonly meansItemId: string;
+  /** `null` when the culprit holds the means from the start of history. */
+  readonly acquisition: Acquisition | null;
+  /**
+   * The one changed routine block: the culprit leaves the routine at `from` and keeps the plan
+   * until `to` (the window's end). `null` when the routine itself keeps the culprit at the scene.
+   */
+  readonly deviation: { readonly from: number; readonly to: number } | null;
+  /** The earliest minute of death within `deathDelayMinutes`, before `t = 0`. */
+  readonly deathAt?: number;
 }
 
 /** A character who could commit the crime against the victim. Not an accusation. */
@@ -51,9 +87,9 @@ export interface FeasibleCulprit {
   readonly characterId: CharacterId;
   /** The strongest motive against the victim at or above `preset.incident.minMotive`. */
   readonly motive: MotiveCandidate;
-  /** Means items the character holds or can take, sorted. */
+  /** Means of the opportunities, sorted. */
   readonly meansItemIds: readonly string[];
-  /** One entry per scene with a window, sorted by `from`, then `locationId`. */
+  /** One entry per scene with a verified window, sorted by `from`, then `locationId`. */
   readonly opportunities: readonly Opportunity[];
   readonly opportunityQuality: number;
   readonly personalityFit: number;
@@ -79,6 +115,8 @@ export interface IncidentAssessment {
   readonly templateIds: readonly string[];
   /** Sorted by victim, then template. */
   readonly options: readonly IncidentOption[];
+  /** Windows that passed the routine-level check but not the re-simulation. */
+  readonly windowsRejectedBySimulation: number;
 }
 
 /** The chosen incident. Server truth: keep out of player and phone views. */
@@ -113,6 +151,7 @@ export interface IncidentReport {
   readonly byTemplate: Readonly<Record<string, IncidentTemplateStats>>;
   /** Over all (victim, template, character) triples, by the first failed criterion. */
   readonly rejected: Readonly<Record<FeasibilityCriterion, number>>;
+  readonly windowsRejectedBySimulation: number;
   readonly chosen: {
     readonly victimArchetype: string;
     readonly culpritArchetype: string;
@@ -259,34 +298,118 @@ function personalityFit(character: Character, traits: readonly TraitBound[]): nu
   return Math.min(1, Math.max(0, depths.reduce((sum, depth) => sum + depth, 0) / depths.length));
 }
 
+interface Move {
+  readonly itemId: string;
+  readonly characterId: CharacterId;
+  readonly t: number;
+}
+
+/**
+ * Runs the routines of the whole cast through `SimulationRunner` over history, as
+ * HistorySimulation does: characters walk hop by hop (`nextTimedStep`) and are in transit between
+ * locations. `overrides` and `moves` describe one culprit's plan; without them it is the baseline.
+ */
+function simulate(
+  world: GeneratedWorld,
+  owners: ReadonlyMap<string, CharacterId>,
+  cast: readonly Character[],
+  historyStart: number,
+  overrides: readonly ScheduleOverride[] = [],
+  moves: readonly Move[] = [],
+): TruthModel {
+  const calendar = new Calendar(world.locations.startDateTime);
+  const time = new TimeSystem(calendar, 0, historyStart);
+  const state = world.createWorldState(owners);
+  for (const { itemId, characterId, t } of moves) {
+    state.items.move(itemId, { kind: 'character', id: characterId }, t, PLAN_ACTIVITY);
+  }
+  const truth = new TruthModel(SCRATCH_INCIDENT);
+  new SimulationRunner({
+    time,
+    calendar,
+    world: state.locations,
+    items: state.items,
+    truth,
+    // Movement uses no randomness; perception draws from this stream and is discarded.
+    rng: createRng('IncidentSelection/simulation'),
+    characters: cast,
+    overrides,
+    // Everyone starts where the routine says, even in a location closed at that minute.
+    initialLocations: new Map(
+      cast.map((c) => [c.id, whereShouldBe(c, historyStart, [], calendar).location]),
+    ),
+    itemChangeMinutes: moves.map(({ t }) => t),
+    endAt: 0,
+  });
+  time.advance(-historyStart);
+  return truth;
+}
+
+/** A way for the culprit to be at the scene from `arrival`, holding the means. */
+interface Route {
+  /** End of the routine block occurrence the plan stays within. */
+  readonly until: number;
+  /** Where the changed block starts. */
+  readonly departure: number;
+  readonly arrival: number;
+  readonly acquisition: Acquisition | null;
+}
+
+interface MeansAccess {
+  readonly itemId: string;
+  /** Root placement: a location or a character (containers resolved). */
+  readonly at: ItemPlacement;
+  /** Access items the culprit holds once holding this item (the item and keys inside it). */
+  readonly keys: readonly string[];
+}
+
+interface Candidate {
+  readonly locationId: string;
+  readonly from: number;
+  readonly meansItemId: string;
+  readonly acquisition: Acquisition | null;
+  readonly deviation: { readonly from: number; readonly to: number } | null;
+  readonly deathAt?: number;
+}
+
 /**
  * Feasibility of every character for every victim and template (generation-pipeline.md §3).
- * It uses no randomness: the stage and seed sweeps share it.
+ * Presence comes from a baseline run of `SimulationRunner`; the culprit's plan is routed with
+ * `LocationGraph.nextTimedStep` and every reported window is confirmed by re-simulating the plan.
+ * It uses no randomness that affects the result: the stage and seed sweeps share it.
  */
 class Assessor {
   readonly #input: IncidentSelectionInput;
   readonly #content: ScenarioContent;
   readonly #locations: LocationGraph;
+  readonly #locationIds: readonly string[];
   readonly #cast: readonly Character[];
   readonly #index: ReadonlyMap<CharacterId, number>;
+  readonly #owners: ReadonlyMap<string, CharacterId>;
   readonly #historyStart: number;
   readonly #startMinute: number;
-  /** Per character: routine block index for each minute of the day. */
-  readonly #blocks: readonly Int16Array[];
-  /** Per character: runs of one block over `[historyStart, MINUTES_PER_DAY)`. */
+  /** Per character: runs of one routine block over `[historyStart, 0)`. */
   readonly #segments: readonly (readonly Segment[])[];
   readonly #items: readonly {
     readonly id: string;
     readonly tags: readonly string[];
     readonly at: ItemPlacement;
+    readonly chain: readonly string[];
   }[];
-  readonly #access = new Map<string, Uint8Array>();
-  readonly #travel = new Map<string, number | null>();
+  /** Per character, per history minute: index into `#locationIds`, or −1 in transit. */
+  readonly #position: readonly Int16Array[];
+  readonly #arrivals = new Map<string, number | null>();
+  readonly #routes = new Map<string, readonly Route[]>();
+  #rejectedBySimulation = 0;
 
   constructor(input: IncidentSelectionInput, content: ScenarioContent) {
     this.#input = input;
     this.#content = content;
     this.#locations = input.world.locations;
+    this.#locationIds = this.#locations
+      .snapshot()
+      .locations.map(({ id }) => id)
+      .sort(compare);
     this.#cast = input.characters.toSorted((a, b) => compare(a.id, b.id));
     if (new Set(this.#cast.map(({ id }) => id)).size !== this.#cast.length) {
       throw new RangeError('Character ids must be unique');
@@ -295,7 +418,7 @@ class Assessor {
     this.#historyStart = content.preset.time.historyStartMinutes;
     const { hh, mm } = new Calendar(this.#locations.startDateTime).toDisplay(0);
     this.#startMinute = hh * 60 + mm;
-    this.#blocks = this.#cast.map((character) => {
+    const blocks = this.#cast.map((character) => {
       const day = new Int16Array(MINUTES_PER_DAY).fill(-1);
       character.routine.forEach(({ from, to }, block) => {
         for (let minute = from; minute !== to; minute = (minute + 1) % MINUTES_PER_DAY) {
@@ -307,34 +430,88 @@ class Assessor {
       if (gap >= 0) throw new RangeError(`Routine of ${character.id} has a gap at minute ${gap}`);
       return day;
     });
-    this.#segments = this.#cast.map((_, index) => {
+    const blockAt = (index: number, t: number) =>
+      blocks[index]![mod(this.#startMinute + t, MINUTES_PER_DAY)]!;
+    this.#segments = this.#cast.map((character, index) => {
       const segments: Segment[] = [];
       let start = this.#historyStart;
-      for (let t = this.#historyStart + 1; t <= MINUTES_PER_DAY; t++) {
-        if (t < MINUTES_PER_DAY && this.#block(index, t) === this.#block(index, start)) continue;
-        segments.push({ from: start, to: t, location: this.#where(index, start) });
+      for (let t = this.#historyStart + 1; t <= 0; t++) {
+        if (t < 0 && blockAt(index, t) === blockAt(index, start)) continue;
+        segments.push({
+          from: start,
+          to: t,
+          location: character.routine[blockAt(index, start)]!.location,
+        });
         start = t;
       }
       return segments;
     });
 
-    const owners = new Map<string, CharacterId>();
-    for (const { archetypeId, id } of this.#cast)
-      if (!owners.has(archetypeId)) owners.set(archetypeId, id);
-    const { initial } = input.world.createWorldState(owners).items.snapshot();
+    this.#owners = this.#ownersOf();
+    const { initial } = input.world.createWorldState(this.#owners).items.snapshot();
     const placements = new Map(initial.map(({ item, placement }) => [item.id, placement]));
-    const root = (placement: ItemPlacement): ItemPlacement => {
-      const seen = new Set<string>();
-      let current = placement;
-      while (current.kind === 'container' && !seen.has(current.id)) {
-        seen.add(current.id);
-        current = placements.get(current.id) ?? current;
-      }
-      return current;
-    };
     this.#items = initial
-      .map(({ item, placement }) => ({ id: item.id, tags: item.tags, at: root(placement) }))
+      .map(({ item, placement }) => {
+        const chain: string[] = [];
+        let current = placement;
+        while (current.kind === 'container' && !chain.includes(current.id)) {
+          chain.push(current.id);
+          current = placements.get(current.id) ?? current;
+        }
+        return { id: item.id, tags: item.tags, at: current, chain };
+      })
       .sort((a, b) => compare(a.id, b.id));
+
+    const length = Math.max(0, -this.#historyStart);
+    this.#position = this.#cast.map(() => new Int16Array(length).fill(-1));
+    if (length > 0) {
+      const truth = simulate(input.world, this.#owners, this.#cast, this.#historyStart);
+      const locationIndex = new Map(this.#locationIds.map((id, index) => [id, index]));
+      this.#cast.forEach(({ id }, index) => {
+        const row = this.#position[index]!;
+        for (const { location, interval } of truth.presenceIntervals(id)) {
+          const from = Math.max(interval.from, this.#historyStart);
+          const to = Math.min(interval.to, 0);
+          for (let t = from; t < to; t++)
+            row[t - this.#historyStart] = locationIndex.get(location)!;
+        }
+      });
+    }
+  }
+
+  /**
+   * The owner of each owned item (first cast member of the owner archetype by id). An owner
+   * archetype missing from this cast makes the world impossible to instantiate (the item needs
+   * exactly one initial placement), so the world is rejected for regeneration.
+   */
+  #ownersOf(): Map<string, CharacterId> {
+    const owners = new Map<string, CharacterId>();
+    for (const { archetypeId, id } of this.#cast) {
+      if (!owners.has(archetypeId)) owners.set(archetypeId, id);
+    }
+    const variant = this.#content.preset.world?.variants?.find(
+      ({ id }) => id === this.#input.world.variantId,
+    );
+    const missing: { itemId: string; ownerArchetype: string }[] = [];
+    for (const item of this.#content.items) {
+      const spawn = variant?.spawns?.find(({ itemId }) => itemId === item.id);
+      const owner = spawn
+        ? spawn.placement.kind === 'archetype'
+          ? spawn.placement.id
+          : undefined
+        : item.ownerArchetype;
+      if (owner !== undefined && !owners.has(owner)) {
+        missing.push({ itemId: item.id, ownerArchetype: owner });
+      }
+    }
+    if (missing.length > 0) {
+      throw new GenerationRejection(
+        WORLD_OWNER_ABSENT,
+        `Owners missing from the cast: ${missing.map(({ itemId, ownerArchetype }) => `${itemId} → ${ownerArchetype}`).join(', ')}`,
+        { missing },
+      );
+    }
+    return owners;
   }
 
   assess(): IncidentAssessment {
@@ -388,6 +565,7 @@ class Assessor {
       victimIds: victims.map(({ id }) => id),
       templateIds: templates.map(({ id }) => id),
       options,
+      windowsRejectedBySimulation: this.#rejectedBySimulation,
     };
   }
 
@@ -401,26 +579,37 @@ class Assessor {
     if (!capable(culprit, template.traits)) return 'capable';
     const c = this.#index.get(culprit.id)!;
     const v = this.#index.get(victim.id)!;
-    const owned = new Set(
-      this.#items
-        .filter(({ at }) => at.kind === 'character' && at.id === culprit.id)
-        .map(({ id }) => id),
-    );
-    const keys = new Set([...owned].filter((id) => this.#locations.accessItemIds.includes(id)));
-    const means = this.#means(c, culprit, template, keys);
-    if (means.size === 0) return 'means';
-    const acquireBy = Math.min(...means.values());
-    const meansItemIds = [...means.keys()].sort(compare);
-    const held = new Set([
-      ...keys,
-      ...meansItemIds.filter((id) => this.#locations.accessItemIds.includes(id)),
-    ]);
-    const actor: Actor = { archetypeId: culprit.archetypeId, itemIds: held };
+    const means = this.#meansOf(template).filter((item) => this.#canAcquire(c, item));
+    if (means.length === 0) return 'means';
 
+    // Each candidate is one means with one window; candidates are re-simulated in time order.
     const opportunities: Opportunity[] = [];
     for (const scene of template.scenes) {
-      const found = this.#opportunity(c, v, template, scene, actor, acquireBy);
-      if (found) opportunities.push(found);
+      const starts = new Set<number>();
+      const candidates: Candidate[] = [];
+      for (const item of means) {
+        for (const candidate of this.#windows(c, v, template, item, scene)) {
+          starts.add(candidate.from);
+          candidates.push(candidate);
+        }
+      }
+      candidates.sort((a, b) => a.from - b.from || compare(a.meansItemId, b.meansItemId));
+      for (const candidate of candidates.slice(0, VERIFIED_WINDOWS_PER_SCENE)) {
+        if (this.#confirm(c, v, template, candidate)) {
+          opportunities.push({
+            locationId: scene,
+            from: candidate.from,
+            to: candidate.from + template.window,
+            starts: starts.size,
+            meansItemId: candidate.meansItemId,
+            acquisition: candidate.acquisition,
+            deviation: candidate.deviation,
+            ...(candidate.deathAt !== undefined && { deathAt: candidate.deathAt }),
+          });
+          break;
+        }
+        this.#rejectedBySimulation++;
+      }
     }
     if (opportunities.length === 0) return 'opportunity';
     opportunities.sort((a, b) => a.from - b.from || compare(a.locationId, b.locationId));
@@ -436,7 +625,7 @@ class Assessor {
     return {
       characterId: culprit.id,
       motive,
-      meansItemIds,
+      meansItemIds: [...new Set(opportunities.map(({ meansItemId }) => meansItemId))].sort(compare),
       opportunities,
       opportunityQuality,
       personalityFit: fit,
@@ -444,157 +633,378 @@ class Assessor {
     };
   }
 
+  /** Items with the template's tag (and id): where they start and the keys they carry. */
+  #meansOf(template: Template): MeansAccess[] {
+    return this.#items
+      .filter(
+        ({ id, tags, at }) =>
+          tags.includes(template.itemTag) &&
+          (template.itemId === undefined || id === template.itemId) &&
+          at.kind !== 'container',
+      )
+      .map(({ id, at }) => ({
+        itemId: id,
+        at,
+        keys: this.#locations.accessItemIds.filter(
+          (key) => key === id || this.#items.find((item) => item.id === key)?.chain.includes(id),
+        ),
+      }));
+  }
+
+  /** Access items the culprit holds from the start (carried, also inside carried containers). */
+  #ownKeys(c: number): string[] {
+    const id = this.#cast[c]!.id;
+    return this.#items
+      .filter(
+        ({ id: itemId, at }) =>
+          at.kind === 'character' && at.id === id && this.#locations.accessItemIds.includes(itemId),
+      )
+      .map(({ id: itemId }) => itemId);
+  }
+
+  #actor(c: number, extra: readonly string[] = []): Actor {
+    return {
+      archetypeId: this.#cast[c]!.archetypeId,
+      itemIds: new Set([...this.#ownKeys(c), ...extra]),
+    };
+  }
+
   /**
-   * Means items with the earliest minute the culprit can hold each. Held or carried by another
-   * character: from the start of history (taking it from the bearer is PlotPlanning's work). Lying
-   * in a location (directly or in a container): the first history minute the culprit may enter it
-   * and has a route there from where the routine puts them.
+   * The first history minute the culprit's own routine lets them take the item: physically in
+   * its location, or in the same location as its holder. `null` if the culprit holds it from the
+   * start, `undefined` if the routine never brings them to it.
    */
-  #means(c: number, culprit: Character, template: Template, keys: ReadonlySet<string>) {
-    const actor: Actor = { archetypeId: culprit.archetypeId, itemIds: keys };
-    const result = new Map<string, number>();
-    for (const item of this.#items) {
-      if (!item.tags.includes(template.itemTag)) continue;
-      if (template.itemId !== undefined && item.id !== template.itemId) continue;
-      if (item.at.kind === 'character') {
-        result.set(item.id, this.#historyStart);
-        continue;
+  #naturally(c: number, means: MeansAccess): Acquisition | null | undefined {
+    const { at } = means;
+    if (at.kind === 'character' && at.id === this.#cast[c]!.id) return null;
+    const holderId = at.kind === 'character' ? at.id : undefined;
+    const holder = holderId === undefined ? undefined : this.#position[this.#index.get(holderId)!]!;
+    const place = at.kind === 'location' ? this.#locationIds.indexOf(at.id) : -1;
+    const row = this.#position[c]!;
+    for (let offset = 0; offset < row.length; offset++) {
+      const here = row[offset]!;
+      if (here < 0 || (holder ? holder[offset] !== here : here !== place)) continue;
+      return {
+        locationId: this.#locationIds[here]!,
+        at: this.#historyStart + offset,
+        ...(holderId !== undefined && { fromCharacterId: holderId }),
+      };
+    }
+    return undefined;
+  }
+
+  /**
+   * Where the one changed block may start in each routine block occurrence: at the start of
+   * history, or at any minute the culprit is physically somewhere (not in transit) the minute
+   * before. Only the earliest start per (position, holding the means) matters, since waiting is
+   * always possible.
+   */
+  #sources(c: number, natural: Acquisition | null | undefined) {
+    const row = this.#position[c]!;
+    return this.#segments[c]!.map((segment) => {
+      const seen = new Set<string>();
+      const starts: { readonly from: number; readonly at: string; readonly holding: boolean }[] =
+        [];
+      for (let from = segment.from; from < segment.to; from++) {
+        const before = from === this.#historyStart ? -1 : row[from - 1 - this.#historyStart]!;
+        if (from !== this.#historyStart && before < 0) continue;
+        const at = before < 0 ? segment.location : this.#locationIds[before]!;
+        const holding = natural === null || (natural !== undefined && natural.at < from);
+        if (seen.has(`${at}|${holding}`)) continue;
+        seen.add(`${at}|${holding}`);
+        starts.push({ from, at, holding });
       }
-      if (item.at.kind !== 'location') continue;
-      const access = this.#accessDay(item.at.id, actor);
-      for (let t = this.#historyStart; t < 0; t++) {
-        if (!access[this.#minuteOfDay(t)]) continue;
-        if (this.#travelTime(this.#where(c, t), item.at.id, actor) === null) continue;
-        result.set(item.id, t);
+      return { until: segment.to, starts };
+    });
+  }
+
+  /** Whether the culprit can take this means at all before `t = 0`. */
+  #canAcquire(c: number, means: MeansAccess): boolean {
+    const natural = this.#naturally(c, means);
+    if (natural !== undefined) return true;
+    const without = this.#actor(c);
+    return this.#sources(c, natural).some(({ starts }) =>
+      starts.some(({ from, at }) => this.#meetings(at, from, means, without).length > 0),
+    );
+  }
+
+  /**
+   * Ways to be at `scene` holding the means, at most one per routine block occurrence, all within
+   * one changed block: the culprit starts where they physically are when it begins, walks with
+   * `nextTimedStep`, takes the means (in its location, or from its holder when both are there)
+   * and walks on to the scene. The means' keys count only after it is taken.
+   */
+  #routesTo(c: number, means: MeansAccess, scene: string): readonly Route[] {
+    const key = `${c}|${means.itemId}|${scene}`;
+    const cached = this.#routes.get(key);
+    if (cached) return cached;
+    const without = this.#actor(c);
+    const holding = this.#actor(c, means.keys);
+    const natural = this.#naturally(c, means);
+    const routes: Route[] = [];
+    for (const { until, starts } of this.#sources(c, natural)) {
+      let best: Route | undefined;
+      for (const { from, at, holding: has } of starts) {
+        const found = has
+          ? this.#plan(at, from, scene, holding, natural ?? null)
+          : this.#fetch(at, from, scene, means, without, holding);
+        if (found && found.arrival < until && (!best || found.arrival < best.arrival)) {
+          best = { until, departure: from, ...found };
+        }
+      }
+      if (best) routes.push(best);
+    }
+    this.#routes.set(key, routes);
+    return routes;
+  }
+
+  #plan(from: string, at: number, scene: string, actor: Actor, acquisition: Acquisition | null) {
+    const arrival = this.#arrive(from, scene, actor, at);
+    return arrival === null ? undefined : { arrival, acquisition };
+  }
+
+  /** The earliest meeting with the means per place: its location, or each place of its holder. */
+  #meetings(from: string, at: number, means: MeansAccess, without: Actor): Acquisition[] {
+    if (means.at.kind === 'location') {
+      const taken = this.#arrive(from, means.at.id, without, at);
+      return taken === null ? [] : [{ locationId: means.at.id, at: taken }];
+    }
+    if (means.at.kind !== 'character') return [];
+    const holderId = means.at.id;
+    const holder = this.#position[this.#index.get(holderId)!]!;
+    const meetings: Acquisition[] = [];
+    for (const [place, location] of this.#locationIds.entries()) {
+      const there = this.#arrive(from, location, without, at);
+      if (there === null) continue;
+      let met = there - this.#historyStart;
+      while (met < holder.length && holder[met] !== place) met++;
+      if (met < holder.length) {
+        meetings.push({
+          locationId: location,
+          at: this.#historyStart + met,
+          fromCharacterId: holderId,
+        });
+      }
+    }
+    return meetings;
+  }
+
+  /** Walk to the means, take it, walk to the scene; the earliest arrival over meetings. */
+  #fetch(
+    from: string,
+    at: number,
+    scene: string,
+    means: MeansAccess,
+    without: Actor,
+    holding: Actor,
+  ) {
+    let best: { arrival: number; acquisition: Acquisition } | undefined;
+    for (const acquisition of this.#meetings(from, at, means, without)) {
+      const found = this.#plan(
+        acquisition.locationId,
+        acquisition.at + 1,
+        scene,
+        holding,
+        acquisition,
+      );
+      if (found && (!best || found.arrival < best.arrival)) {
+        best = { arrival: found.arrival, acquisition };
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Earliest arrival walking hop by hop with `LocationGraph.nextTimedStep`, as `SimulationRunner`
+   * does: waiting for locked hours, only through doors the actor can open. `null` when the
+   * target cannot be reached before `t = 0`.
+   */
+  #arrive(from: string, to: string, actor: Actor, at: number): number | null {
+    const key = `${from}|${to}|${[...(actor.itemIds ?? [])].sort().join(',')}|${actor.archetypeId}|${at}`;
+    if (this.#arrivals.has(key)) return this.#arrivals.get(key)!;
+    let location = from;
+    let now = at;
+    let result: number | null = now;
+    for (let hops = 0; location !== to; hops++) {
+      const hop =
+        hops > this.#locationIds.length * 2
+          ? null
+          : this.#locations.nextTimedStep(location, to, actor, now);
+      if (!hop || hop.arriveAt >= 0) {
+        result = null;
         break;
+      }
+      location = hop.destination;
+      now = hop.arriveAt;
+      result = now;
+    }
+    if (result !== null && result >= 0) result = null;
+    this.#arrivals.set(key, result);
+    return result;
+  }
+
+  /** Window candidates at `scene` with `itemId`, by start: routine-level presence checks. */
+  #windows(
+    c: number,
+    v: number,
+    template: Template,
+    means: MeansAccess,
+    scene: string,
+  ): Candidate[] {
+    const { itemId } = means;
+    const { window, victimPresent, deathDelay } = template;
+    const place = this.#locationIds.indexOf(scene);
+    const length = this.#position[c]!.length;
+    const culprit = this.#position[c]!;
+    const victim = this.#position[v]!;
+    // valid[i]: nobody but the culprit (and the victim of a plan on them) is at the scene, and
+    // that victim is there.
+    const valid = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      let ok = !victimPresent || victim[i] === place;
+      for (let other = 0; ok && other < this.#cast.length; other++) {
+        if (other === c || (victimPresent && other === v)) continue;
+        ok = this.#position[other]![i] !== place;
+      }
+      valid[i] = Number(ok);
+    }
+    const prefix = new Int32Array(length + 1);
+    const present = new Int32Array(length + 1);
+    for (let i = 0; i < length; i++) {
+      prefix[i + 1] = prefix[i]! + valid[i]!;
+      present[i + 1] = present[i]! + Number(culprit[i] === place);
+    }
+    const windowOk = (s: number) => {
+      const i = s - this.#historyStart;
+      return prefix[i + window]! - prefix[i]! === window;
+    };
+    const deathAt = (s: number): number | undefined | null => {
+      if (!deathDelay) return undefined;
+      const end = s + window;
+      if (victimPresent) return end + deathDelay[0] <= -1 ? end + deathDelay[0] : null;
+      for (let d = end + deathDelay[0]; d <= Math.min(end + deathDelay[1], -1); d++) {
+        if (victim[d - this.#historyStart] === place) return d;
+      }
+      return null;
+    };
+
+    const result: Candidate[] = [];
+    const add = (
+      s: number,
+      route: Omit<Candidate, 'locationId' | 'from' | 'meansItemId' | 'deathAt'>,
+    ) => {
+      const death = deathAt(s);
+      if (death === null) return false;
+      result.push({
+        locationId: scene,
+        from: s,
+        meansItemId: itemId,
+        ...route,
+        ...(death !== undefined && { deathAt: death }),
+      });
+      return true;
+    };
+
+    // The routine already keeps the culprit at the scene, holding the means.
+    const natural = this.#naturally(c, means);
+    if (natural !== undefined) {
+      const from = natural === null ? this.#historyStart : natural.at + 1;
+      for (let s = from; s + window <= 0; s++) {
+        const i = s - this.#historyStart;
+        if (present[i + window]! - present[i]! !== window || !windowOk(s)) continue;
+        add(s, { acquisition: natural, deviation: null });
+      }
+    }
+    // One changed block. If the culprit is already at the scene when it starts, the window may
+    // begin earlier, while the routine still keeps them there holding the means.
+    for (const route of this.#routesTo(c, means, scene)) {
+      let first = route.arrival;
+      const held = (s: number) =>
+        route.acquisition === null ||
+        (route.acquisition.at < s && route.acquisition.at < route.departure);
+      if (route.arrival === route.departure) {
+        while (
+          first > this.#historyStart &&
+          culprit[first - 1 - this.#historyStart] === place &&
+          held(first - 1)
+        ) {
+          first--;
+        }
+      }
+      for (let s = first; s + window <= route.until; s++) {
+        if (!windowOk(s)) continue;
+        add(s, {
+          acquisition: route.acquisition,
+          deviation: { from: route.departure, to: s + window },
+        });
       }
     }
     return result;
   }
 
   /**
-   * The earliest usable window at `scene`: `[s, s + window)` inside history (`s + window ≤ 0`),
-   * not before the means can be held. The culprit may enter the scene every minute, and nobody
-   * else present there is awake — except the victim when the plan targets them, and then the
-   * victim is there the whole window. At most one routine block of the culprit away from the
-   * scene overlaps the window ("bent"); a bent block at the window's edge leaves room to travel.
-   * A template without a victim step but with `deathDelayMinutes` needs the victim at the scene
-   * at some minute of the delay after the window.
+   * Re-simulates the plan: the culprit's changed block becomes schedule overrides (to the place
+   * of acquisition, then to the scene), the means moves to the culprit when taken. The window
+   * holds when the run puts the culprit (and the victim of a plan on them) at the scene for every
+   * minute, nobody else is there, the acquisition happened in person, and a delayed death finds
+   * the victim at the scene before `t = 0`.
    */
-  #opportunity(
-    c: number,
-    v: number,
-    template: Template,
-    scene: string,
-    actor: Actor,
-    acquireBy: number,
-  ): Opportunity | undefined {
-    const { window } = template;
-    const first = Math.max(this.#historyStart, acquireBy);
-    const last = -window;
-    if (first > last) return undefined;
-    const access = this.#accessDay(scene, actor);
-    const length = -this.#historyStart;
-    const usable = new Uint8Array(length);
-    for (let t = this.#historyStart; t < 0; t++) {
-      const minute = this.#minuteOfDay(t);
-      if (!access[minute]) continue;
-      if (template.victimPresent && this.#where(v, t) !== scene) continue;
-      let witnessed = false;
-      for (let other = 0; other < this.#cast.length && !witnessed; other++) {
-        if (other === c || (template.victimPresent && other === v)) continue;
-        const block = this.#routine(other, t);
-        witnessed = block.location === scene && !UNAWARE_ACTIVITIES.includes(block.activity);
+  #confirm(c: number, v: number, template: Template, candidate: Candidate): boolean {
+    const culprit = this.#cast[c]!;
+    const victim = this.#cast[v]!;
+    const { locationId: scene, from, acquisition, deviation, meansItemId } = candidate;
+    const to = from + template.window;
+    const block = (location: string) => ({
+      from: 0,
+      to: MINUTES_PER_DAY,
+      location,
+      activity: PLAN_ACTIVITY,
+      flexibility: 0,
+    });
+    const overrides: ScheduleOverride[] = [];
+    if (deviation) {
+      let start = deviation.from;
+      if (acquisition && acquisition.at >= deviation.from) {
+        overrides.push({
+          characterId: culprit.id,
+          interval: { from: start, to: acquisition.at + 1 },
+          block: block(acquisition.locationId),
+        });
+        start = acquisition.at + 1;
       }
-      if (!witnessed) usable[t - this.#historyStart] = 1;
+      overrides.push({
+        characterId: culprit.id,
+        interval: { from: start, to },
+        block: block(scene),
+      });
     }
-    const prefix = new Int32Array(length + 1);
-    for (let index = 0; index < length; index++)
-      prefix[index + 1] = prefix[index]! + usable[index]!;
-
-    let earliest: number | undefined;
-    let starts = 0;
-    const segments = this.#segments[c]!;
-    for (let s = first; s <= last; s++) {
-      const offset = s - this.#historyStart;
-      if (prefix[offset + window]! - prefix[offset]! < window) continue;
-      if (!this.#bendable(segments, s, s + window, scene, actor)) continue;
-      if (
-        !template.victimPresent &&
-        template.deathDelay &&
-        !this.#victimLater(v, scene, s + window, template.deathDelay)
-      ) {
-        continue;
-      }
-      earliest ??= s;
-      starts++;
+    const moves = acquisition
+      ? [{ itemId: meansItemId, characterId: culprit.id, t: acquisition.at + 1 }]
+      : [];
+    const truth = simulate(
+      this.#input.world,
+      this.#owners,
+      this.#cast,
+      this.#historyStart,
+      overrides,
+      moves,
+    );
+    if (acquisition) {
+      if (truth.whereWas(culprit.id, acquisition.at) !== acquisition.locationId) return false;
+      const { fromCharacterId: holder } = acquisition;
+      if (holder && truth.whereWas(holder, acquisition.at) !== acquisition.locationId) return false;
     }
-    return earliest === undefined
-      ? undefined
-      : { locationId: scene, from: earliest, to: earliest + window, starts };
-  }
-
-  /** At most one culprit block away from `scene` overlaps `[from, to)`, with travel time. */
-  #bendable(segments: readonly Segment[], from: number, to: number, scene: string, actor: Actor) {
-    const overlapping = segments.filter((segment) => segment.from < to && segment.to > from);
-    const away = overlapping.filter(({ location }) => location !== scene);
-    if (away.length === 0) return true;
-    if (away.length > 1) return false;
-    const bent = away[0]!;
-    if (bent.from <= from) {
-      const there = this.#travelTime(bent.location, scene, actor);
-      if (there === null || from - bent.from < there) return false;
+    for (let t = from; t < to; t++) {
+      if (truth.whereWas(culprit.id, t) !== scene) return false;
+      if (template.victimPresent && truth.whereWas(victim.id, t) !== scene) return false;
     }
-    if (bent.to >= to) {
-      const back = this.#travelTime(scene, bent.location, actor);
-      if (back === null || bent.to - to < back) return false;
+    const allowed = new Set([culprit.id, ...(template.victimPresent ? [victim.id] : [])]);
+    if (truth.whoWasAt(scene, { from, to }).some((id) => !allowed.has(id))) return false;
+    const { deathAt } = candidate;
+    if (deathAt !== undefined && !template.victimPresent) {
+      if (truth.whereWas(victim.id, deathAt) !== scene) return false;
     }
     return true;
-  }
-
-  #victimLater(v: number, scene: string, end: number, [min, max]: readonly [number, number]) {
-    for (let delay = min; delay <= max; delay++) {
-      if (this.#where(v, end + delay) === scene) return true;
-    }
-    return false;
-  }
-
-  #minuteOfDay(t: number): number {
-    return mod(this.#startMinute + t, MINUTES_PER_DAY);
-  }
-
-  #block(index: number, t: number): number {
-    return this.#blocks[index]![this.#minuteOfDay(t)]!;
-  }
-
-  #routine(index: number, t: number): Character['routine'][number] {
-    return this.#cast[index]!.routine[this.#block(index, t)]!;
-  }
-
-  #where(index: number, t: number): string {
-    return this.#routine(index, t).location;
-  }
-
-  /** Entry permission for each minute of the day (hours, archetypes, items). */
-  #accessDay(location: string, actor: Actor): Uint8Array {
-    const key = `${location}|${actor.archetypeId}|${[...(actor.itemIds ?? [])].sort().join(',')}`;
-    let day = this.#access.get(key);
-    if (!day) {
-      day = new Uint8Array(MINUTES_PER_DAY);
-      for (let minute = 0; minute < MINUTES_PER_DAY; minute++) {
-        const t = minute - this.#startMinute;
-        day[minute] = Number(this.#locations.isAccessible(location, actor, t).ok);
-      }
-      this.#access.set(key, day);
-    }
-    return day;
-  }
-
-  /** Travel time through unlocked or openable doors; `null` without a route. */
-  #travelTime(from: string, to: string, actor: Actor): number | null {
-    const key = `${from}|${to}|${[...(actor.itemIds ?? [])].sort().join(',')}`;
-    if (!this.#travel.has(key)) this.#travel.set(key, this.#locations.travelTime(from, to, actor));
-    return this.#travel.get(key)!;
   }
 }
 
@@ -640,6 +1050,7 @@ function reportOf(
     feasibleTriples: assessment.options.reduce((sum, { feasible }) => sum + feasible.length, 0),
     byTemplate,
     rejected,
+    windowsRejectedBySimulation: assessment.windowsRejectedBySimulation,
   };
 }
 
@@ -691,52 +1102,66 @@ function choose(
 }
 
 /**
+ * The selection step of IncidentSelection on a ready assessment: victims in an order weighted by
+ * salience and motives against them, templates in a shuffled order, the culprit drawn from the
+ * feasible characters with weight `score^gamma`. Throws `GenerationRejection` when no victim has
+ * a feasible culprit. `rng` is the stage stream (`gen/IncidentSelection`).
+ */
+export function selectIncident(
+  input: IncidentSelectionInput,
+  assessment: IncidentAssessment,
+  content: ScenarioContent,
+  rng: Rng,
+): IncidentWorld {
+  const report = reportOf(assessment, gammaOf(content));
+  const choice = choose(input, assessment, content, rng);
+  if (!choice) {
+    throw new GenerationRejection(
+      INCIDENT_NO_FEASIBLE_CULPRIT,
+      'No character can commit any allowed crime against any eligible victim',
+      { incidentReport: report },
+    );
+  }
+  const { option, culprit } = choice;
+  const archetype = (id: CharacterId) => input.characters.find((c) => c.id === id)!.archetypeId;
+  const incident: IncidentPlan = {
+    type: option.incidentType,
+    templateId: option.templateId,
+    victimId: option.victimId,
+    culpritId: culprit.characterId,
+    motive: culprit.motive,
+    meansItemIds: culprit.meansItemIds,
+    opportunities: culprit.opportunities,
+    score: culprit.score,
+  };
+  const incidentReport: IncidentReport = {
+    ...report,
+    feasibleCulpritCount: option.feasible.length,
+    chosen: {
+      victimArchetype: archetype(option.victimId),
+      culpritArchetype: archetype(culprit.characterId),
+      template: option.templateId,
+      motiveType: culprit.motive.motiveType,
+    },
+  };
+  return { ...input, incident, incidentReport };
+}
+
+/**
  * IncidentSelection (GEN-006): chooses the victim, crime template and culprit
  * (generation-pipeline.md §3). Every character except the victim is checked for motive, means,
- * opportunity and capability; no list of candidates is fixed in advance. Victims are tried in an
- * order weighted by salience and motives against them, templates in a shuffled order, and the
- * culprit is drawn from the feasible characters with weight `score^gamma`. A world without any
- * feasible culprit is rejected with `GenerationRejection`, so the pipeline regenerates it.
+ * opportunity and capability (`assessIncidents`); no list of candidates is fixed in advance. The
+ * choice is `selectIncident`. A world without any feasible culprit, or whose cast lacks the
+ * owner of an owned item, is rejected with `GenerationRejection`, so the pipeline regenerates it.
  */
 export const incidentSelection: Stage<IncidentSelectionInput, IncidentWorld> = {
   name: 'IncidentSelection',
   generate(input, { rng, content, logger }) {
-    const assessment = assessIncidents(input, content);
-    const report = reportOf(assessment, gammaOf(content));
-    const choice = choose(input, assessment, content, rng);
-    if (!choice) {
-      throw new GenerationRejection(
-        INCIDENT_NO_FEASIBLE_CULPRIT,
-        'No character can commit any allowed crime against any eligible victim',
-        { incidentReport: report },
-      );
-    }
-    const { option, culprit } = choice;
-    const archetype = (id: CharacterId) => input.characters.find((c) => c.id === id)!.archetypeId;
-    const incident: IncidentPlan = {
-      type: option.incidentType,
-      templateId: option.templateId,
-      victimId: option.victimId,
-      culpritId: culprit.characterId,
-      motive: culprit.motive,
-      meansItemIds: culprit.meansItemIds,
-      opportunities: culprit.opportunities,
-      score: culprit.score,
-    };
-    const incidentReport: IncidentReport = {
-      ...report,
-      feasibleCulpritCount: option.feasible.length,
-      chosen: {
-        victimArchetype: archetype(option.victimId),
-        culpritArchetype: archetype(culprit.characterId),
-        template: option.templateId,
-        motiveType: culprit.motive.motiveType,
-      },
-    };
+    const result = selectIncident(input, assessIncidents(input, content), content, rng);
     logger.debug('incident selected', {
-      template: incident.templateId,
-      feasibleCulpritCount: incidentReport.feasibleCulpritCount,
+      template: result.incident.templateId,
+      feasibleCulpritCount: result.incidentReport.feasibleCulpritCount,
     });
-    return { ...input, incident, incidentReport };
+    return result;
   },
 };
