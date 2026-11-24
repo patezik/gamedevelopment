@@ -35,5 +35,7 @@ describe.each([
       expect(verifyPlot(result.world, result.plot)).toEqual([]);
     }
     expect(planned).toBeGreaterThan(0);
-  }, 120_000);
+    // With the CNT-003 sanatorium data most seeds have motives and feasible culprits, so
+    // IncidentSelection assesses many more pairs per world (about 170 s for 1000 seeds locally).
+  }, 600_000);
 });
