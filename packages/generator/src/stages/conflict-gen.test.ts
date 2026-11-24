@@ -454,10 +454,12 @@ describe('ConflictGen on the sanatorium', () => {
         JSON.stringify({ ...world, relationships: world.relationships.snapshot() }),
       ).not.toMatch(/culprit|suspect|victim/i);
     }
-    // CastGen gives everyone age 45, so SocialGen cannot create the parent edge inheritance needs.
+    // Every rule fires. CastGen gives everyone age 45, so SocialGen creates no parent edge;
+    // inheritance rests on the will_changed secret alone, which sibling relationships carry.
     expect([...counts.keys()].sort()).toEqual([
       'blackmail',
       'debt',
+      'inheritance',
       'jealousy',
       'malpractice_coverup',
       'revenge',
