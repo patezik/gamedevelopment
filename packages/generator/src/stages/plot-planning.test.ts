@@ -190,7 +190,7 @@ describe('plotPlanning', () => {
       ],
       'overrides without a bend': [
         /overrides without a schedule bend/,
-        (p) => ({ ...p, deviation: undefined }),
+        (p) => ({ ...p, deviation: null }),
       ],
     };
 
