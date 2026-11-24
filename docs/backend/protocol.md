@@ -145,7 +145,7 @@ interface PlayerView {
   location: { id; name; description; lighting: "bright"|"dim"|"dark";
               hotspots: { id; name; examined }[];                       // examined — история игрока, не «есть ли улика»
               exits: { locationId; name; minutes; blockedReason? }[] };
-  knownMap: { locations: { id; name; visited }[];                        // посещённые и увиденные как выход
+  knownMap?: { locations: { id; name; visited }[];                       // посещённые и увиденные как выход
               links: { from; to }[] };                                  // выходы посещённых локаций; не граф мира
   presentCharacters: { id; name; portraitRef; demeanor }[];
   availableActions: { action: PlayerAction; label; costPreview: { min; max }; blockedReason? }[];

@@ -178,7 +178,7 @@ export const PlayerView = z.strictObject({
     hotspots: z.array(HotspotView),
     exits: z.array(ExitView),
   }),
-  knownMap: KnownMapView,
+  knownMap: KnownMapView.optional(),
   presentCharacters: z.array(CharacterView),
   availableActions: z.array(
     z.strictObject({

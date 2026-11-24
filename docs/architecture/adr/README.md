@@ -33,3 +33,4 @@ ADR фиксирует значимое архитектурное решени�
 | [0016](0016-physical-keys.md) | Физические ключи для запертых переходов (OQ-18) | Accepted |
 | [0017](0017-trace-conservation-and-payload.md) | Следы: закон сохранения улик, полезная нагрузка и уничтожение | Accepted |
 | [0019](0019-save-generator-compatibility.md) | Совместимость сохранений по версии генератора | Proposed |
+| [0020](0020-player-known-map.md) | Известная игроку карта в PlayerView | Proposed |
