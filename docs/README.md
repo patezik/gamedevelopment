@@ -5,7 +5,7 @@
 | Раздел | Документы |
 |--------|-----------|
 | Vision | [vision.md](vision/vision.md) |
-| Game Design | [game-design.md](game-design/game-design.md) · [survival-horror.md](game-design/survival-horror.md) · [mvp-scenario-sanatorium.md](game-design/mvp-scenario-sanatorium.md) |
+| Game Design | [game-design.md](game-design/game-design.md) · [survival-horror.md](game-design/survival-horror.md) · [mvp-scenario-sanatorium.md](game-design/mvp-scenario-sanatorium.md) · [art-direction.md](game-design/art-direction.md) |
 | Investigation | [investigation-model.md](investigation/investigation-model.md) · [truth-model.md](investigation/truth-model.md) · [validation.md](investigation/validation.md) |
 | Procedural Generation | [generation-pipeline.md](procedural-generation/generation-pipeline.md) · [scenario-presets.md](procedural-generation/scenario-presets.md) |
 | Gameplay Systems: симуляция и время | [character-simulation.md](simulation/character-simulation.md) · [time-system.md](simulation/time-system.md) |

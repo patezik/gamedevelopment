@@ -27,7 +27,9 @@
     "docs:check": "node tools/docs/check-links.mjs",
     "protocol:gen": "npm run protocol:gen -w @hs/protocol",
     "protocol:check": "npm run protocol:check -w @hs/protocol",
-    "content:check": "node tools/check-content.mjs"
+    "content:check": "node tools/check-content.mjs",
+    "art:check": "node tools/art/check-art.mjs",
+    "art:reference": "node tools/art/reference/render.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

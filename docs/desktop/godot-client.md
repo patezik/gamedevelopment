@@ -40,8 +40,9 @@ apps/desktop/
 │   │   └── overlays/debug/       — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
 │   │   └── overlays/horror_fx/   — HorrorFx: шейдер искажения и шума по рассудку и Static (§7.2)
 │   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта)
-├── assets/                       — арт, шрифты, звук (стиль — CNT-008)
+├── assets/                       — арт, шрифты, звук; арт: art/ по [art-direction.md](../game-design/art-direction.md)
 └── tests/
+    ├── manual/art_preview.tscn   — ручной предпросмотр арта в масштабе показа (art-direction.md §9)
     ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture, экраны и smoke сцен
     │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, экран-заглушка)
     ├── manual/
@@ -189,7 +190,7 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | Элемент | Поля `PlayerView` |
 |---------|-------------------|
 | Заголовок, описание, освещение | `location.name`, `location.description`, `location.lighting` |
-| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (арт — CNT-010) |
+| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (стиль арта — [art-direction.md](../game-design/art-direction.md); показ пластин — GDT-012) |
 | Точки интереса | `location.hotspots[]` (`name`, отметка `examined`) |
 | Персонажи | `presentCharacters[]` (`name`, `demeanor`) |
 | Выходы | `location.exits[]` (`name`, `minutes`, `blockedReason`) |

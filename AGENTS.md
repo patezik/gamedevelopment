@@ -126,6 +126,7 @@ npm test -w @hs/mobile                          # мобильное прило�
 npm run sweep -- --scenario sanatorium_winter --count 200   # генерация (после VAL-007)
 npm run tasks:check                             # задачи и индекс
 npm run docs:check                              # ссылки документации
+npm run art:check                               # арт-ассеты (art-direction.md §7)
 ```
 
 Перед PR все проверки, относящиеся к затронутым областям, должны быть зелёными локально.

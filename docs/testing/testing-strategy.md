@@ -31,6 +31,9 @@
 - JSON Schema протокола и `protocol_constants.gd` регенерируются и сравниваются с закоммиченными
   (`npm run protocol:check`; в CI — тестами `schemas.test.ts` и `godot.test.ts` пакета `@hs/protocol`).
 - Задачи проверяются `npm run tasks:check`; ссылки документации — `npm run docs:check`.
+- Арт-ассеты (`apps/desktop/assets/art`) проверяются `npm run art:check` (в CI — тестом
+  `tools/art/check-art.test.ts` в `npm test`) и GUT-тестом `test_art_assets.gd`
+  ([art-direction.md §7.6](../game-design/art-direction.md)).
 
 ## 4. Тестирование WebSocket
 

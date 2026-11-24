@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **141** · todo: 53 · in_progress: 10 · review: 1 · done: 76 · blocked: 1
+Всего задач: **144** · todo: 56 · in_progress: 10 · review: 1 · done: 76 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -22,6 +22,7 @@
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
 | [ENG-003](ENG-003.md) Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | 5 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
+| [CNT-010](CNT-010.md) Арт-направление и пайплайн ассетов локаций и портретов | 3 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
@@ -29,7 +30,6 @@
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [CNT-005](CNT-005.md) Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | 2 |
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 2 |
-| [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -188,7 +188,7 @@
 | [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | done | claude-w3 | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |
 | [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | todo | — | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
 
-## Фаза 8 · M8 — Content expansion (6)
+## Фаза 8 · M8 — Content expansion (9)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -196,6 +196,9 @@
 | [CNT-009](CNT-009.md) | Расширение библиотеки архетипов, мотивов и шаблонов преступлений | P2 | M | todo | — | [CNT-007](CNT-007.md) |
 | [CNT-010](CNT-010.md) | Арт-направление и пайплайн ассетов локаций и портретов | P1 | M | in_progress | egor-claude-cnt-010 | [GDT-004](GDT-004.md) |
 | [CNT-011](CNT-011.md) | Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона | P2 | M | todo | — | [GDT-010](GDT-010.md) |
+| [CNT-012](CNT-012.md) | Полный набор арта sanatorium_winter: пластины локаций и портреты | P2 | L | todo | — | [CNT-010](CNT-010.md) |
+| [ENG-008](ENG-008.md) | portraitRef персонажей: вариант портрета по архетипу | P2 | S | todo | — | [CNT-010](CNT-010.md) |
+| [GDT-012](GDT-012.md) | Иллюстрации локаций и портреты на экранах desktop | P1 | M | todo | — | [CNT-010](CNT-010.md) |
 | [GEN-012](GEN-012.md) | Соучастники: инциденты с несколькими виновниками | P2 | L | todo | — | [GEN-011](GEN-011.md), [INV-005](INV-005.md) |
 | [PLAN-001](PLAN-001.md) | Декомпозиция бэклога фаз 8–11 по итогам MVP | P1 | M | todo | — | [INT-003](INT-003.md) |
 

@@ -44,6 +44,7 @@ npm run docs:check          # проверка ссылок документац
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
 | `npm run protocol:gen` / `protocol:check` | регенерация схем и GDScript-констант | после FND-004, PROTO-003 |
 | `npm run content:check` | валидация данных сценариев и ссылок между файлами | сейчас |
+| `npm run art:check` / `art:reference` | правила арт-ассетов; перегенерация эталонов CNT-010 ([art-direction.md §7](../game-design/art-direction.md)) | сейчас |
 
 ## 4. Godot
 
