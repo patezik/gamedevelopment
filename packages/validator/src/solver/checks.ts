@@ -100,24 +100,30 @@ export const culpritProvableCheck: Check = {
 };
 
 /**
- * V-UNIQUE: nobody but the culprit has motive, means and opportunity all established. An alibi,
- * or the lack of a means or a motive in the evidence, is what excludes a character.
+ * V-UNIQUE: every character except the culprits and the victims is excluded by a reachable
+ * exonerating claim. The deduction rules can establish one kind of exoneration, an `alibi` that
+ * covers the incident window; a character without it is reported, whether or not the evidence
+ * also accuses them. "No means" and "no access" cannot be expressed as claims yet (OQ-19).
  */
 export const uniqueCheck: Check = {
   id: 'V-UNIQUE',
-  description: 'Every other character is excluded by reachable evidence',
+  description: 'Every other character is excluded by a reachable exonerating claim',
   run(investigation, context) {
     const solution = solveFrom(investigation, context);
     if (!solution) return missing('V-UNIQUE', 'clues and deductionRules');
-    const culprits = new Set(solution.culpritIds);
-    return solution.provable
-      .filter((id) => !culprits.has(id))
+    const skipped = new Set([...solution.culpritIds, ...investigation.truth.incident.victimIds]);
+    const cleared = new Set(solution.exonerated);
+    return investigation.characters
+      .map(({ id }) => id)
+      .filter((id) => !skipped.has(id) && !cleared.has(id))
+      .sort()
       .map((id): FindingInput => ({
         severity: 'error',
         code: 'NOT_UNIQUE',
-        message: `Character ${id} is not excluded: motive, means and opportunity are all provable for them`,
+        message: `Character ${id} is not excluded: no reachable alibi covers the incident window`,
         eventIds: [...investigation.truth.incident.keyEventIds.slice(0, 1)],
         subject: { kind: 'character', id },
+        data: { accused: solution.provable.includes(id) ? 1 : 0 },
       }));
   },
 };

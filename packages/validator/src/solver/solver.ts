@@ -129,6 +129,8 @@ export interface Solution {
   readonly culpritIds: readonly string[];
   /** Characters with motive, means and opportunity all established, culprit or not. */
   readonly provable: readonly string[];
+  /** Characters with an established `alibi` claim that covers the whole incident window. */
+  readonly exonerated: readonly string[];
   /** Kinds (`motive`, `means`, `opportunity`) established per character. */
   readonly kindsBy: ReadonlyMap<string, ReadonlySet<string>>;
 }
@@ -140,6 +142,16 @@ function knownIncident(investigation: Investigation) {
   const { incident } = investigation.truth;
   const first = investigation.truth.events().find(({ id }) => id === incident.keyEventIds[0]);
   return first ? { location: first.location, window: incident.window } : undefined;
+}
+
+/** `alibi(who,a..b)` (or a single minute) covers the window when `a <= from` and `to <= b`. */
+function coversWindow(claim: string, window?: { from: number; to: number }): boolean {
+  if (!window) return false;
+  const when = /,(-?\d+)(?:\.\.(-?\d+))?\)$/.exec(claim);
+  if (!when) return false;
+  const from = Number(when[1]);
+  const to = when[2] === undefined ? from + 1 : Number(when[2]);
+  return from <= window.from && window.to <= to;
 }
 
 /** Runs discovery, then the deduction rules over everything reachable. */
@@ -165,6 +177,13 @@ export function solveDeduction(input: SolveInput): Solution {
     if (!kindsBy.has(subject)) kindsBy.set(subject, new Set());
     kindsBy.get(subject)?.add(kind);
   }
+  const exonerated = [
+    ...new Set(
+      claims
+        .filter(({ kind, claim }) => kind === 'alibi' && coversWindow(claim, incident?.window))
+        .map(({ subject }) => subject),
+    ),
+  ].sort();
   const provable = [...kindsBy]
     .filter(([, kinds]) => GUILT_KINDS.every((kind) => kinds.has(kind)))
     .map(([id]) => id)
@@ -174,6 +193,7 @@ export function solveDeduction(input: SolveInput): Solution {
     claims,
     culpritIds: input.investigation.truth.incident.culpritIds,
     provable,
+    exonerated,
     kindsBy,
   };
 }

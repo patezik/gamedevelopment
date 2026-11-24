@@ -76,6 +76,32 @@ function evidenceFor(investigation: Investigation, who: string): Spec[] {
   ];
 }
 
+/** A witness saying where `who` was for `[from, to)`: the alibi rule turns it into an `alibi`. */
+const witnessed = (
+  who: string,
+  witness: string,
+  window: { from: number; to: number },
+): HeardStatement => ({
+  id: `st_${who}`,
+  speakerId: witness,
+  proposition: {
+    kind: 'at',
+    who,
+    where: 'loc_pantry',
+    interval: { from: window.from, to: window.to },
+  },
+  topic: 'whereWereYou',
+  at: 1,
+  templateKey: 't',
+});
+const alibis = (investigation: Investigation, only?: string[]) => {
+  const { window } = investigation.truth.incident;
+  return [
+    witnessed('ch_cook', 'ch_porter', window),
+    witnessed('ch_porter', 'ch_cook', window),
+  ].filter(({ proposition }) => !only || only.includes((proposition as { who: string }).who));
+};
+
 const base = () => {
   const investigation = tinyManor();
   const culprit = investigation.truth.incident.culpritIds[0]!;
@@ -92,62 +118,86 @@ const codes = (investigation: Investigation, context: ValidationContext) =>
   );
 
 describe('solver on tiny-manor', () => {
-  it('is solvable: reachable, culprit provable, unique', () => {
+  it('is solvable: reachable, culprit provable, everyone else has an alibi', () => {
     const { investigation, specs } = base();
     const report = validateInvestigation(investigation, {
       checks: SOLVER_CHECKS,
-      context: contextFor(clues(investigation, specs)),
+      context: contextFor(clues(investigation, specs), { statements: alibis(investigation) }),
     });
     expect(report.findings).toEqual([]);
     expect(report.ok).toBe(true);
+  });
+
+  it('rejects a case with neither accusing nor exonerating evidence (V-UNIQUE)', () => {
+    const { investigation } = base();
+    const found = validateInvestigation(investigation, {
+      checks: SOLVER_CHECKS,
+      context: contextFor(clues(investigation, [])),
+    }).findings.map(({ checkId, code, subject }) => [checkId, code, subject?.id]);
+    expect(found).toEqual([
+      ['V-CULPRIT-PROVABLE', 'CULPRIT_NOT_PROVABLE', 'ch_bursar'],
+      ['V-UNIQUE', 'NOT_UNIQUE', 'ch_cook'],
+      ['V-UNIQUE', 'NOT_UNIQUE', 'ch_porter'],
+    ]);
+  });
+
+  it('rejects an innocent the evidence does not clear, even with no evidence against them', () => {
+    const { investigation, specs } = base();
+    const report = validateInvestigation(investigation, {
+      checks: SOLVER_CHECKS,
+      context: contextFor(clues(investigation, specs), {
+        statements: alibis(investigation, ['ch_porter']),
+      }),
+    });
+    expect(report.findings.map(({ code, subject }) => [code, subject?.id])).toEqual([
+      ['NOT_UNIQUE', 'ch_cook'],
+    ]);
+  });
+
+  it('accepts the case once a verifiable alibi covers the window', () => {
+    const { investigation, specs } = base();
+    const context = (statements: HeardStatement[]) =>
+      contextFor(clues(investigation, specs), { statements });
+    expect(codes(investigation, context(alibis(investigation)))).toEqual([]);
+    // An alibi that leaves part of the window uncovered does not clear anyone.
+    const { window } = investigation.truth.incident;
+    const partial = [
+      witnessed('ch_cook', 'ch_porter', { from: window.from, to: window.to - 1 }),
+      witnessed('ch_porter', 'ch_cook', window),
+    ];
+    expect(codes(investigation, context(partial))).toEqual(['V-UNIQUE:NOT_UNIQUE']);
   });
 
   it('catches the removal of a key clue (means, motive or opportunity)', () => {
     const { investigation, culprit, specs } = base();
     for (const [i, kind] of ['opportunity', 'motive', 'means'].entries()) {
       const rest = specs.filter((_, j) => j !== i);
-      const found = codes(investigation, contextFor(clues(investigation, rest)));
-      expect(found, kind).toEqual(['V-CULPRIT-PROVABLE:CULPRIT_NOT_PROVABLE']);
-      const finding = validateInvestigation(investigation, {
+      const context = contextFor(clues(investigation, rest), {
+        statements: alibis(investigation),
+      });
+      const findings = validateInvestigation(investigation, {
         checks: SOLVER_CHECKS,
-        context: contextFor(clues(investigation, rest)),
-      }).findings[0];
-      expect(finding?.data?.missing).toBe(kind);
-      expect(finding?.subject).toEqual({ kind: 'character', id: culprit });
+        context,
+      }).findings;
+      expect(
+        findings.map(({ code }) => code),
+        kind,
+      ).toEqual(['CULPRIT_NOT_PROVABLE']);
+      expect(findings[0]?.data?.missing).toBe(kind);
+      expect(findings[0]?.subject).toEqual({ kind: 'character', id: culprit });
     }
   });
 
-  it('catches an innocent with the same evidence and no alibi (V-UNIQUE)', () => {
-    const { investigation, culprit, specs } = base();
+  it('flags an innocent with the same evidence and no alibi, marking that evidence accuses them', () => {
+    const { investigation, specs } = base();
     const all = clues(investigation, [...specs, ...evidenceFor(investigation, 'ch_cook')]);
     const report = validateInvestigation(investigation, {
       checks: SOLVER_CHECKS,
-      context: contextFor(all),
+      context: contextFor(all, { statements: alibis(investigation, ['ch_porter']) }),
     });
-    expect(report.findings.map(({ code, subject }) => [code, subject?.id])).toEqual([
-      ['NOT_UNIQUE', 'ch_cook'],
-    ]);
-    expect(culprit).not.toBe('ch_cook');
-  });
-
-  it('accepts the same innocent when a witness gives an alibi', () => {
-    const { investigation, specs } = base();
-    const { window } = investigation.truth.incident;
-    const witness: HeardStatement = {
-      id: 'st_alibi',
-      speakerId: 'ch_porter',
-      proposition: {
-        kind: 'at',
-        who: 'ch_cook',
-        where: 'loc_pantry',
-        interval: { from: window.from, to: window.to },
-      },
-      topic: 'whereWereYou',
-      at: 1,
-      templateKey: 't',
-    };
-    const all = clues(investigation, [...specs, ...evidenceFor(investigation, 'ch_cook')]);
-    expect(codes(investigation, contextFor(all, { statements: [witness] }))).toEqual([]);
+    expect(
+      report.findings.map(({ code, subject, data }) => [code, subject?.id, data?.accused]),
+    ).toEqual([['NOT_UNIQUE', 'ch_cook', 1]]);
   });
 
   it('reports unreachable clues with the reason', () => {
