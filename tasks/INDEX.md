@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **141** · todo: 53 · in_progress: 10 · review: 1 · done: 76 · blocked: 1
+Всего задач: **142** · todo: 54 · in_progress: 10 · review: 1 · done: 76 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -18,9 +18,9 @@
 
 | Задача | Блокирует напрямую |
 |---|---|
+| [ENG-003](ENG-003.md) Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | 6 |
 | [ENG-004](ENG-004.md) Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | 6 |
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
-| [ENG-003](ENG-003.md) Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | 5 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
@@ -147,7 +147,7 @@
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (22)
+## Фаза 6 · M6 — Vertical slice (23)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -157,6 +157,7 @@
 | [ENG-004](ENG-004.md) | Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | P0 | L | todo | — | [ENG-003](ENG-003.md), [PHONE-001](PHONE-001.md), [EVD-003](EVD-003.md) |
 | [ENG-005](ENG-005.md) | Блокировка взаимодействий и арбитраж действий desktop/phone | P1 | S | todo | — | [ENG-003](ENG-003.md) |
 | [ENG-006](ENG-006.md) | Действие accuse, концовки и TruthRecap | P0 | M | todo | — | [INV-005](INV-005.md), [ENG-003](ENG-003.md) |
+| [ENG-007](ENG-007.md) | Действие markSuspicion и проекция персон интереса и отметок в caseBoard | P0 | S | todo | — | [ENG-003](ENG-003.md), [INV-003](INV-003.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
 | [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | todo | — | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | done | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
