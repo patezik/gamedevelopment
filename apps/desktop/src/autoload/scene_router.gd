@@ -19,6 +19,7 @@ signal transition_failed(screen: StringName, reason: String)
 ## Screen id -> scene path. Screen tasks add their entries here; tests use register_screen().
 const SCREENS: Dictionary = {
 	&"bootstrap": "res://src/scenes/bootstrap.tscn",
+	&"exploration": "res://src/scenes/exploration/exploration.tscn",
 }
 const DEFAULT_FADE_SECONDS: float = 0.25
 ## Optional method of a screen's root node, called with the params before the node enters the
