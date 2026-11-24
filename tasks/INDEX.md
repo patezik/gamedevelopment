@@ -2,17 +2,18 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **141** · todo: 53 · in_progress: 10 · review: 1 · done: 76 · blocked: 1
+Всего задач: **141** · todo: 53 · in_progress: 10 · review: 0 · done: 77 · blocked: 1
 
 ## Готовы к взятию сейчас
 
+- [GEN-008](GEN-008.md) — Стадия HistorySimulation: симуляция предыстории с исполнением плана (P0, L)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 
 ## Критический путь
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[GEN-007](GEN-007.md) → [GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[GEN-008](GEN-008.md) → [GEN-009](GEN-009.md) → [GEN-010](GEN-010.md) → [GEN-011](GEN-011.md) → [SRV-002](SRV-002.md) → [GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -87,7 +88,7 @@
 | [GEN-004](GEN-004.md) | Стадия SocialGen: отношения и секреты | P0 | M | done | egor-claude-gen-004 | [GEN-003](GEN-003.md), [CHAR-002](CHAR-002.md), [TRUTH-001](TRUTH-001.md) |
 | [GEN-005](GEN-005.md) | Стадия ConflictGen: правила мотивов для всех пар персонажей | P0 | M | done | egor-claude-gen-005 | [GEN-004](GEN-004.md) |
 | [GEN-006](GEN-006.md) | Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых | P0 | L | done | egor-claude-gen-006 | [GEN-005](GEN-005.md), [GEN-002](GEN-002.md) |
-| [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | review | claude-q4 | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
+| [GEN-007](GEN-007.md) | Стадия PlotPlanning: план виновника, окно возможности, изгиб расписания | P0 | L | done | claude-q4 | [GEN-006](GEN-006.md), [TRUTH-002](TRUTH-002.md) |
 | [GEN-008](GEN-008.md) | Стадия HistorySimulation: симуляция предыстории с исполнением плана | P0 | L | todo | — | [GEN-007](GEN-007.md), [SIM-002](SIM-002.md), [SIM-003](SIM-003.md), [SIM-004](SIM-004.md) |
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | done | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
