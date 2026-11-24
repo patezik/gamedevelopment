@@ -2,7 +2,6 @@
   {
     "id": "inheritance",
     "when": {
-      "relation": { "type": "parent", "from": "$v", "to": "$c" },
       "secret": { "kind": "will_changed", "about": "$v", "knownBy": "$c" }
     },
     "strength": {
@@ -17,11 +16,10 @@
   {
     "id": "blackmail",
     "when": {
-      "relation": { "type": "blackmail", "from": "$v", "to": "$c" },
-      "secret": { "kind": "blackmail_material", "about": "$c", "knownBy": "$v" }
+      "relation": { "type": "blackmail", "from": "$v", "to": "$c" }
     },
     "strength": {
-      "base": 0.5,
+      "base": 0.45,
       "plus": [
         { "if": { "trait": "$c.neuroticism", "gt": 0.6 }, "add": 0.15 },
         { "if": { "trait": "$c.courage", "gt": 0.7 }, "add": 0.1 }

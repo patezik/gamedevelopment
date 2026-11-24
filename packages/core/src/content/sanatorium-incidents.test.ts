@@ -6,14 +6,11 @@ import { loadScenarioFromDir } from './index.ts';
 import type { ScenarioContent } from './scenario.ts';
 
 /*
- * Static feasibility of the sanatorium_winter crime templates and motive rules (CNT-003).
- *
- * The generator stages that decide motives and culprits (GEN-004..GEN-006) do not exist yet, so
- * this test works at the archetype level: a relationship template "can" produce a relation and a
- * secret, an archetype "can" have a trait value inside its range, and the daily routine is the
- * only source of presence. A culprit is feasible when a motive rule can fire, the means can be
- * reached, the personality can satisfy the template and a witness-free window exists in which
- * only the culprit leaves their routine. The seed sweep over generated worlds stays with GEN-006.
+ * Structural checks of the sanatorium_winter crime templates and motive rules (CNT-003): means,
+ * scenes and traits exist, plans are ordered and leave traces, and motive rules rest on relations
+ * and secrets that relationships.json can produce. Whether culprits are feasible in generated
+ * worlds is decided by IncidentSelection (GEN-006); the 500-seed acceptance sweep is
+ * packages/generator/scripts/incident-sweep.ts.
  */
 
 const root = fileURLToPath(new URL('../../../../content/scenarios/', import.meta.url));
@@ -24,7 +21,6 @@ type Motive = ScenarioContent['motives'][number];
 type Archetype = ScenarioContent['archetypes'][number];
 type Bound = { gt?: number | undefined; lt?: number | undefined };
 
-const DAY = 1440;
 const PLACEHOLDERS = new Set(['$c', '$v']);
 const PLAN_TARGETS = new Set(['$means', '$victim', '$location']);
 // Verbs that cause the death; the plan has exactly one such step, named "act".
@@ -42,76 +38,6 @@ const SYMMETRIC_RELATIONS = new Set([
 const REVERSE_RELATIONS: Record<string, string> = { parent: 'child', child: 'parent' };
 
 const archetypes = new Map(content.archetypes.map((archetype) => [archetype.id, archetype]));
-const locations = new Map(content.locations.map((location) => [location.id, location]));
-const items = new Map(content.items.map((item) => [item.id, item]));
-
-function inDayWindow(minute: number, from = 0, to = DAY): boolean {
-  return from <= to ? minute >= from && minute < to : minute >= from || minute < to;
-}
-
-function buildSchedule(archetype: Archetype): { location: string; activity: string }[] {
-  const day = Array.from({ length: DAY }, () => ({ location: '', activity: '' }));
-  for (const block of archetype.routine) {
-    for (let minute = 0; minute < DAY; minute++) {
-      if (inDayWindow(minute, block.from, block.to)) {
-        day[minute] = { location: block.locationId, activity: block.activity };
-      }
-    }
-  }
-  return day;
-}
-const schedules = new Map(content.archetypes.map((a) => [a.id, buildSchedule(a)]));
-
-function owned(archetype: string): Set<string> {
-  return new Set(
-    content.items.filter((item) => item.ownerArchetype === archetype).map((item) => item.id),
-  );
-}
-
-function canEnter(archetype: string, locationId: string, minute: number, held: Set<string>) {
-  const rules = locations.get(locationId)?.access ?? [];
-  return (
-    rules.length === 0 ||
-    rules.some(
-      (rule) =>
-        (rule.from === undefined && rule.to === undefined
-          ? true
-          : inDayWindow(minute, rule.from, rule.to)) &&
-        (rule.archetypes?.includes(archetype) ?? true) &&
-        (rule.itemId === undefined || held.has(rule.itemId)),
-    )
-  );
-}
-
-const reachCache = new Map<string, Set<string>[]>();
-
-/** For each minute of the day: locations an archetype can walk to from its routine location. */
-function reachableByMinute(archetype: string, held: Set<string>): Set<string>[] {
-  const key = `${archetype}|${[...held].sort().join(',')}`;
-  let result = reachCache.get(key);
-  if (!result) {
-    result = Array.from({ length: DAY }, (_, minute) => explore(archetype, minute, held));
-    reachCache.set(key, result);
-  }
-  return result;
-}
-
-function explore(archetype: string, minute: number, held: Set<string>): Set<string> {
-  const start = schedules.get(archetype)![minute]!.location;
-  const seen = new Set([start]);
-  const queue = [start];
-  while (queue.length > 0) {
-    const current = locations.get(queue.shift()!)!;
-    for (const { to, locked } of current.connections) {
-      if (seen.has(to)) continue;
-      if (locked && (locked.itemId === undefined || !held.has(locked.itemId))) continue;
-      if (!canEnter(archetype, to, minute, held)) continue;
-      seen.add(to);
-      queue.push(to);
-    }
-  }
-  return seen;
-}
 
 function means(crime: Crime) {
   const { itemTag, itemId } = crime.requires.means;
@@ -126,22 +52,6 @@ function crimeLocations(crime: Crime): string[] {
     .map(({ id }) => id);
 }
 
-function placement(itemId: string): string | undefined {
-  const item = items.get(itemId)!;
-  return item.locationId ?? (item.containerId ? placement(item.containerId) : undefined);
-}
-
-function canAcquireMeans(crime: Crime, culprit: string, cast: readonly string[]): boolean {
-  const held = owned(culprit);
-  return means(crime).some((item) => {
-    if (item.ownerArchetype !== undefined) {
-      return item.ownerArchetype === culprit || cast.includes(item.ownerArchetype);
-    }
-    const at = placement(item.id);
-    return at !== undefined && reachableByMinute(culprit, held).some((places) => places.has(at));
-  });
-}
-
 function traitBounds(crime: Crime): [string, Bound][] {
   return Object.entries(crime.requires.traits) as [string, Bound][];
 }
@@ -150,10 +60,6 @@ function traitPossible(archetype: string, trait: string, bound: Bound): boolean 
   const range = archetypes.get(archetype)!.personality[trait as keyof Archetype['personality']];
   const [min, max] = range ?? [0, 1];
   return (bound.gt === undefined || max > bound.gt) && (bound.lt === undefined || min < bound.lt);
-}
-
-function capable(crime: Crime, culprit: string): boolean {
-  return traitBounds(crime).every(([trait, bound]) => traitPossible(culprit, trait, bound));
 }
 
 /** Relationship templates that can bind `from` → `to` with the given relation type. */
@@ -196,80 +102,6 @@ function motiveCanFire(motive: Motive, culprit: string, victim: string): boolean
       })
       .reduce((sum, { add }) => sum + Math.max(add, 0), 0);
   return strongest >= content.preset.incident.minMotive;
-}
-
-function hasMotive(culprit: string, victim: string): boolean {
-  return content.motives.some((motive) => motiveCanFire(motive, culprit, victim));
-}
-
-function hasOpportunity(crime: Crime, culprit: string, victim: string, cast: readonly string[]) {
-  const act = crime.plan.find(({ step }) => step === 'act')!;
-  const window = crime.requires.minWindowMinutes;
-  const held = owned(culprit);
-  // The template's means is held during the act (a key opens the locked crime scene).
-  for (const item of means(crime)) held.add(item.id);
-  const others = cast.filter(
-    (id) => id !== culprit && (act.target === '$location' || id !== victim),
-  );
-  const at = (archetype: string, minute: number) => schedules.get(archetype)![minute % DAY]!;
-  const reach = reachableByMinute(culprit, held);
-  return crimeLocations(crime).some((location) => {
-    // The culprit is on the scene and nobody awake can see them; for an act on the victim the
-    // victim is there too. Windows may wrap around midnight.
-    const usable = (minute: number) =>
-      reach[minute]!.has(location) &&
-      others.every(
-        (id) => at(id, minute).location !== location || at(id, minute).activity === 'sleep',
-      ) &&
-      (act.target !== '$victim' || at(victim, minute).location === location);
-    const day = Array.from({ length: DAY }, (_, minute) => (usable(minute) ? 1 : 0));
-    const prefix = [0];
-    for (let minute = 0; minute < 2 * DAY; minute++) {
-      prefix.push(prefix[minute]! + day[minute % DAY]!);
-    }
-    const victimThere = (minute: number) => at(victim, minute).location === location;
-    for (let start = 0; start < DAY; start++) {
-      if (prefix[start + window]! - prefix[start]! < window) continue;
-      if (act.target === '$victim') return true;
-      const [minDelay, maxDelay] = crime.deathDelayMinutes!;
-      const end = start + window;
-      for (let delay = minDelay; delay <= maxDelay; delay++) {
-        if (victimThere(end + delay)) return true;
-      }
-    }
-    return false;
-  });
-}
-
-const feasibleCache = new Map<string, string[]>();
-
-function feasibleCulprits(crime: Crime, victim: string, cast: readonly string[]): string[] {
-  const key = `${crime.id}|${victim}|${cast.join(',')}`;
-  const cached = feasibleCache.get(key);
-  if (cached) return cached;
-  const result = cast.filter(
-    (culprit) =>
-      culprit !== victim &&
-      hasMotive(culprit, victim) &&
-      capable(crime, culprit) &&
-      canAcquireMeans(crime, culprit, cast) &&
-      hasOpportunity(crime, culprit, victim, cast),
-  );
-  feasibleCache.set(key, result);
-  return result;
-}
-
-function casts(): string[][] {
-  const { quotas, max } = content.preset.cast;
-  const mandatory = quotas.filter(({ min }) => min >= 1).map(({ archetype }) => archetype);
-  const optional = quotas.filter(({ min }) => min === 0).map(({ archetype }) => archetype);
-  const pick = (from: string[], size: number): string[][] =>
-    size === 0
-      ? [[]]
-      : from.flatMap((first, index) =>
-          pick(from.slice(index + 1), size - 1).map((rest) => [first, ...rest]),
-        );
-  return pick(optional, max - mandatory.length).map((guests) => [...mandatory, ...guests]);
 }
 
 describe('sanatorium_winter crime templates', () => {
@@ -372,32 +204,6 @@ describe('sanatorium_winter crime templates', () => {
     },
   );
 
-  test.each(content.crimes.map((crime) => [crime.id, crime] as const))(
-    '%s: every possible cast has a victim with a feasible culprit',
-    (_, crime) => {
-      for (const cast of casts()) {
-        const victims = cast.filter(
-          (victim) =>
-            !content.preset.incident.victimConstraints.excludeArchetypes.includes(victim) &&
-            feasibleCulprits(crime, victim, cast).length > 0,
-        );
-        expect(victims, cast.join(',')).not.toEqual([]);
-      }
-    },
-  );
-
-  test('no template fixes the culprit: each archetype is a feasible culprit somewhere', () => {
-    const culprits = new Set<string>();
-    for (const crime of content.crimes) {
-      for (const cast of casts()) {
-        for (const victim of cast) {
-          for (const culprit of feasibleCulprits(crime, victim, cast)) culprits.add(culprit);
-        }
-      }
-    }
-    expect([...culprits].sort()).toEqual(content.archetypes.map(({ id }) => id).sort());
-  });
-
   test('templates and motives do not name culprits or suspects', () => {
     const text = JSON.stringify([content.crimes, content.motives]).toLowerCase();
     expect(text).not.toMatch(/culprit|suspect|archetype/);
@@ -425,11 +231,13 @@ describe('sanatorium_winter motive rules', () => {
     '%s: references existing relations and secrets of one template',
     (_, motive) => {
       const { relation, secret } = motive.when;
-      expect(secret, 'every rule rests on a secret fact').toBeDefined();
-      expect(secretKinds).toContain(secret!.kind);
-      expect(PLACEHOLDERS).toContain(secret!.about);
-      expect(PLACEHOLDERS).toContain(secret!.knownBy);
-      expect(secret!.about).not.toBe(secret!.knownBy);
+      expect(relation ?? secret, 'every rule rests on a relation or a secret fact').toBeDefined();
+      if (secret) {
+        expect(secretKinds).toContain(secret.kind);
+        expect(PLACEHOLDERS).toContain(secret.about);
+        expect(PLACEHOLDERS).toContain(secret.knownBy);
+        expect(secret.about).not.toBe(secret.knownBy);
+      }
       if (relation) {
         expect(relationTypes).toContain(relation.type);
         expect([relation.from, relation.to].sort()).toEqual(['$c', '$v']);

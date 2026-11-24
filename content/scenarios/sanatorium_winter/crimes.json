@@ -28,7 +28,7 @@
     "requires": {
       "means": { "itemTag": "heavy" },
       "minWindowMinutes": 20,
-      "locationTags": ["outdoor", "hazard"],
+      "locationTags": ["residential"],
       "traits": { "courage": { "gt": 0.3 } }
     },
     "plan": [
