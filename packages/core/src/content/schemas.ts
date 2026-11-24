@@ -78,6 +78,8 @@ export const presetSchema = z.strictObject({
     types: ids.min(1),
     templates: ids.min(1),
     minMotive: share,
+    /** IncidentSelection weighs feasible culprits by score^gamma; omitted means 0.7. */
+    gamma: z.number().min(0).max(4).optional(),
     victimConstraints: z.strictObject({ excludeArchetypes: ids }),
   }),
   criticalEvents: z.array(

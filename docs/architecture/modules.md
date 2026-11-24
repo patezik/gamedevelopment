@@ -500,6 +500,9 @@ interface Stage<I, O> { name: string; run(input: I, ctx: GenerationContext): O }
 function generateInvestigation(req: { scenarioId: string; seed: string }, content: ContentRepo): GenerationResult;
 interface GenerationResult { ok: true; investigation: Investigation; report: GenerationReport } | { ok: false; error: "GENERATION_UNSOLVABLE"; report: GenerationReport }
 const GENERATOR_VERSION: string;
+class GenerationRejection extends Error { code: string; diagnostics?: Record<string, unknown> }   // стадия отклоняет вход → следующая попытка
+const incidentSelection: Stage<ConflictWorld & { world: GeneratedWorld }, IncidentWorld>;        // IncidentPlan + IncidentReport (GEN-006)
+function assessIncidents(input, content): IncidentAssessment;   // все допустимые виновники по жертвам и шаблонам, без случайности
 ```
 **Зависимости:** `@hs/core`, `@hs/validator` (шлюз). **Тесты:** каждая стадия отдельно на фикстурах;
 golden-снимки для 5 seed; распределение виновников.

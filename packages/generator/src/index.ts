@@ -27,3 +27,23 @@ export {
   type MotiveReport,
   type MotiveTypeStats,
 } from './stages/conflict-gen.ts';
+export {
+  assessIncidents,
+  DEFAULT_CULPRIT_GAMMA,
+  FEASIBILITY_CRITERIA,
+  INCIDENT_NO_FEASIBLE_CULPRIT,
+  incidentSelection,
+  OPPORTUNITY_SATURATION_MINUTES,
+  SCORE_WEIGHTS,
+  UNAWARE_ACTIVITIES,
+  type FeasibilityCriterion,
+  type FeasibleCulprit,
+  type IncidentAssessment,
+  type IncidentOption,
+  type IncidentPlan,
+  type IncidentReport,
+  type IncidentSelectionInput,
+  type IncidentTemplateStats,
+  type IncidentWorld,
+  type Opportunity,
+} from './stages/incident-selection.ts';
