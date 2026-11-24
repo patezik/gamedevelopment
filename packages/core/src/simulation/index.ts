@@ -26,3 +26,9 @@ export {
   type Talker,
   type Transfer,
 } from './encounters.ts';
+export {
+  FOCUS_STEP_MINUTES,
+  SimulationLod,
+  type LodLevel,
+  type SimulationLodOptions,
+} from './lod.ts';

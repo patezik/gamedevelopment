@@ -483,6 +483,27 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `move` и `wait` используют `TimeSystem.advance`; отклонённое действие сохраняет состояние.
   `GameSnapshot` содержит серверное расследование, игровую минуту, локацию игрока и хеш
   исходного расследования. Снимок остаётся на сервере.
+- **ENG-003** (`game/actions`): остальные действия desktop — правила в
+  [game-design.md §2](../game-design/game-design.md). Новые необязательные порты `EnginePorts`:
+  ```ts
+  clues?: readonly Clue[];                              // улики дела (EVD-002)
+  testimony?: { witness(id): { knowledge; policy } | undefined };   // память и LiePolicy (KNOW-002)
+  startVitals?: Vitals; inventory?: readonly PackItem[];            // SURV-001, SURV-004
+  simulation?: { onPlayerAction(e: PlayerActionObserved): void };   // SIM-006
+  attachTime?: (time: TimeSystem) => void;              // обработчики фаз; прерывание отдыха
+  ```
+  `DispatchResult.events` — `GameEvent[]`: события часов, показателей, `PlayerKnowledge`,
+  действий и `PlayerActionObserved`. `GameSnapshot.desktop` хранит `PlayerKnowledge`, серверные
+  показания с `veracity`, осмотренные локации и точки, открытые двери, диалог, показатели и
+  рюкзак. Новые игры включают это поле с первого снимка. Для сохранения той же версии генератора
+  загрузчик также узнаёт начальное состояние до ENG-003 по полному хешу. В старой части журнала
+  только `move` и `wait` меняли состояние, показатели и модификаторы desktop ещё отсутствовали.
+  При продолжении игры первое успешное действие создаёт `desktop` со стартовыми параметрами и
+  применяет текущие правила. При полном replay границу определяет хеш записи: если старый переход
+  не совпал, текущий переход выполняется из того же проверенного состояния. После появления
+  `desktop` все следующие хеши включают его. Цепочка журнала, чекпойнт и итоговый хеш проверяются
+  по ADR 0014 в обоих случаях. `PlayerView` заполняет
+  точки интереса, доску дела (улики, показания, противоречия), `interaction`, показатели и рюкзак.
 - **Блокировка взаимодействия:** во время диалога или звонка (`activeInteraction`) действия,
   несовместимые с ним, отклоняются `ACTION_BLOCKED` (ENG-005).
 - **Ошибки:** `ACTION_INVALID`, `ACTION_NOT_AVAILABLE`, `ACTION_BLOCKED`, `GAME_OVER`.
@@ -500,6 +521,10 @@ interface Stage<I, O> { name: string; run(input: I, ctx: GenerationContext): O }
 function generateInvestigation(req: { scenarioId: string; seed: string }, content: ContentRepo): GenerationResult;
 interface GenerationResult { ok: true; investigation: Investigation; report: GenerationReport } | { ok: false; error: "GENERATION_UNSOLVABLE"; report: GenerationReport }
 const GENERATOR_VERSION: string;
+class GenerationRejection extends Error { code: string; diagnostics?: Record<string, unknown> }   // стадия отклоняет вход → следующая попытка
+const incidentSelection: Stage<ConflictWorld & { world: GeneratedWorld }, IncidentWorld>;        // IncidentPlan + IncidentReport (GEN-006)
+function assessIncidents(input, content): IncidentAssessment;   // все допустимые виновники по жертвам и шаблонам, без случайности
+function selectIncident(input, assessment, content, rng): IncidentWorld;   // выбор жертвы, шаблона и виновника (score^γ) на готовой оценке
 ```
 **Зависимости:** `@hs/core`, `@hs/validator` (шлюз). **Тесты:** каждая стадия отдельно на фикстурах;
 golden-снимки для 5 seed; распределение виновников.

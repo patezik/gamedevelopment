@@ -23,8 +23,8 @@ apps/desktop/
 │   │   ├── backend.gd            — Backend: REST (HTTPRequest) + WS (WebSocketPeer), очередь запросов, reconnect
 │   │   ├── game_store.gd         — GameStore: текущий PlayerView, сигналы view_changed, event_received, peer_status_changed, action_failed
 │   │   ├── scene_router.gd       — SceneRouter: переходы между экранами через затемнение
-│   │   ├── settings.gd           — Settings: адрес сервера, громкость, доступность (ConfigFile user://)
-│   │   ├── audio_director.gd     — AudioDirector: эмбиент по локации/периоду, стингеры
+│   │   ├── settings.gd           — Settings: настройки игрока (ConfigFile user://); пока — «Снизить визуальные эффекты» (§7.1)
+│   │   ├── audio_director.gd     — AudioDirector: эмбиент по локации/периоду, стингеры (§7.3)
 │   │   └── server_launcher.gd    — ServerLauncher: запуск встроенного сервера в релизе (INT-005)
 │   ├── net/
 │   │   ├── protocol_constants.gd — ProtocolConstants, СГЕНЕРИРОВАНО из @hs/protocol (не редактировать)
@@ -36,12 +36,16 @@ apps/desktop/
 │   │   ├── bootstrap.tscn        — стартовая сцена каркаса, показывает версию клиента
 │   │   ├── main_menu/  new_game/  pairing/  exploration/  dialogue/
 │   │   ├── case_board/  accusation/  ending/  hud/  overlays/ (evidence_capture, horror_fx, phone_status)
-│   │   │   └── overlays/debug/   — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
-│   └── ui/                       — общие компоненты (кнопка действия со стоимостью, карточка улики)
+│   │   ├── exploration/          — экран Exploration и загрузчик фикстур для предпросмотра (§4.1)
+│   │   └── overlays/debug/       — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
+│   │   └── overlays/horror_fx/   — HorrorFx: шейдер искажения и шума по рассудку и Static (§7.2)
+│   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта)
 ├── assets/                       — арт, шрифты, звук (стиль — CNT-008)
 └── tests/
-    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture
+    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture, экраны и smoke сцен
     │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, экран-заглушка)
+    ├── manual/
+    │   └── horror_fx_benchmark.gd — ручной замер FPS хоррор-эффектов (§7.4), не входит в GUT
     └── contract/
         ├── contract_support.gd         — пути к packages/protocol, чтение JSON, проверка формы по JSON Schema
         ├── test_protocol_constants.gd  — ProtocolConstants против схем и фикстур
@@ -177,6 +181,45 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | HUD (оверлей) | часы/день/период, остаток времени, здоровье/рассудок/усталость, Static, статус телефона |
 | Debug (оверлей, только debug-сборка) | seed, время, `stateVersion`, истина и экспорт репро через debug-маршруты (§3.3) |
 
+### 4.1. Exploration
+
+`src/scenes/exploration/exploration.tscn` (экран `exploration` в `SceneRouter`) показывает только
+данные текущего `PlayerView` из `GameStore`:
+
+| Элемент | Поля `PlayerView` |
+|---------|-------------------|
+| Заголовок, описание, освещение | `location.name`, `location.description`, `location.lighting` |
+| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (арт — CNT-010) |
+| Точки интереса | `location.hotspots[]` (`name`, отметка `examined`) |
+| Персонажи | `presentCharacters[]` (`name`, `demeanor`) |
+| Выходы | `location.exits[]` (`name`, `minutes`, `blockedReason`) |
+| Действия | `availableActions[]` (`label`, `costPreview`, `blockedReason`) |
+| Карта | локации и связи из полученных экраном видов (см. ниже) |
+
+- **Действия.** Кнопка — это запись `availableActions`, отправляемая через
+  `GameStore.request_action` без изменений; клиент не строит действия сам и не считает стоимость.
+  Запись показывается один раз: `move` — в строке своего выхода, `examineHotspot` — у точки
+  интереса, `talk`/`interrogate` — у присутствующего персонажа, остальное — в общем списке. Выход
+  без действия `move` помечается «недоступно» или причиной `blockedReason`.
+- **Стоимость** — `costPreview` как есть: «15 мин» или «20–30 мин» (`src/ui/cost_format.gd`).
+  Действие с `max` ≥ 60 мин или с некорректной оценкой требует подтверждения
+  (`ConfirmationDialog`); порог — константа интерфейса `LONG_ACTION_MINUTES`, не правило игры.
+- **Повторная отправка.** После отправки кнопки заблокированы до `view_changed`, `action_failed`
+  или потери соединения. Ошибка `action_failed` показывается текстом над экраном.
+- **Карта.** `PlayerView` не содержит графа известных локаций — только текущую локацию и её
+  выходы. Поэтому карта (`known_map.gd`) накапливает локации и связи из видов, полученных
+  экраном, пока он открыт: текущая подсвечена, посещённые и только увиденные как выход
+  различаются. Ничего сверх полученных видов карта не показывает; при выходе с экрана или
+  завершении сессии она очищается.
+- **Скрытые данные.** Вид с ключом из `FORBIDDEN_VIEW_KEYS` не отображается (вдобавок к проверке
+  в `GameStore`); доска дела, диалог, инвентарь и внутренние id на экран не выводятся.
+- **Предпросмотр без сервера.** Сцена, запущенная отдельно (без параметров `SceneRouter`), или
+  переход с параметром `{"preview": "start|mid|capture|end"}` показывает фикстуру
+  `packages/protocol/fixtures/views/player-view.<имя>.json`. Первый живой `view_changed` заменяет
+  предпросмотр. Действия в предпросмотре уходят в `GameStore` и честно получают
+  `NOT_CONNECTED`. Фикстуры читаются из монорепозитория, поэтому режим работает только из
+  исходников.
+
 ## 5. Стиль кода
 
 - Строгая типизация во всех скриптах; `class_name` для переиспользуемых классов.
@@ -198,4 +241,72 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   фикстуры-коллекции (`client-messages.json`, `server-messages.json`); остальные, в том числе
   `PlayerView` и `PhoneView`, проверяются как один JSON-объект. `ProtocolConstants` сверяются со схемами
   (типы сообщений, событий, действий, коды ошибок, роли) и фикстурами (`v`, покрытие типов).
-- Smoke: все сцены из `src/scenes` загружаются и инстанцируются без ошибок.
+- Smoke (`tests/unit/test_scene_smoke.gd`): все сцены из `src/scenes`, включая подкаталоги,
+  загружаются, инстанцируются и входят в дерево без ошибок.
+
+## 7. Хоррор-подача (GDT-010)
+
+Рассудок и Static ощущаются на экране и на слух ([game-design.md §8](../game-design/game-design.md),
+[survival-horror.md](../game-design/survival-horror.md)). Клиент только интерпретирует значения,
+уже пришедшие в `PlayerView` и событиях: `vitals.sanity`, `static`, `location.id`,
+`location.lighting`, `clock.period`, события `incomingCall` и `gameOver`. Правил, игрового времени и
+других полей эффекты не читают; вид с ключом из `FORBIDDEN_VIEW_KEYS` считается отсутствующим.
+
+### 7.1. Settings
+
+`Settings` (autoload, `src/autoload/settings.gd`) хранит настройки игрока в `user://settings.cfg`
+(`ConfigFile`, секция `accessibility`). Сейчас там одна настройка — «Снизить визуальные эффекты»:
+`get_reduce_visual_effects()`, `set_reduce_visual_effects(enabled)` (сохраняет файл при изменении),
+сигнал `reduce_visual_effects_changed(enabled)`. Нет файла — значения по умолчанию (выключено);
+нечитаемый файл или значение не того типа — значение по умолчанию и предупреждение. Экран настроек
+появится вместе с главным меню; до тех пор настройка меняется через API или файл.
+
+### 7.2. HorrorFx
+
+`src/scenes/overlays/horror_fx/` — `CanvasLayer` (слой 100: над экранами и HUD, под DebugOverlay и
+шторкой SceneRouter) с полноэкранным `ColorRect` и CanvasItem-шейдером `horror_fx.gdshader`, который
+читает уже нарисованный кадр (`hint_screen_texture`) и не перехватывает ввод.
+
+| Параметр шейдера | Источник | Вид |
+|------------------|----------|-----|
+| `distortion` | `vitals.sanity` ≤ 5: 0,2 на 5 → 1,0 на 0 | волнение картинки, расхождение цветовых каналов, затемнение краёв |
+| `noise` | `static` ≥ 25: 0,2 на 25 → 1,0 на 100 | зерно, строки развёртки, редкая полоса срыва |
+
+Пороги — презентационные зеркала порогов survival-horror.md (рассудок ≤ 5 — первые помехи,
+Static 25 — первые сбои). Новое значение наплывает за ~1–2 с реального времени (анимация между
+двумя состояниями сервера). Нет вида, значение отсутствует или не целое, сессия закончилась
+(`OFFLINE`) — эффекта нет. При «Снизить визуальные эффекты» оверлей скрыт целиком и не
+обрабатывает кадры. `bootstrap.gd` вызывает `HorrorFx.install(get_tree().root)`: оверлей живёт в
+корне дерева и переживает смену экранов `SceneRouter`.
+
+### 7.3. AudioDirector
+
+`AudioDirector` (autoload) следует за `GameStore`, а не за экранами, поэтому эмбиент не
+прерывается при смене экрана.
+
+- **Эмбиент** — петля по ключу `<location.id>|<lighting>|<period>`; смена ключа — кроссфейд 2 с,
+  нет ни локации, ни периода (или `OFFLINE`) — тишина.
+- **Стингеры** — `sanity_drop` (рассудок упал между двумя видами), `static_threshold` (Static
+  перешёл вверх через 25, 50 или 75), `incoming_call`, `game_over`. Первый вид сессии только задаёт
+  точку отсчёта. Стингеры редки: следующий — не раньше чем через 2 с реального времени, кроме
+  `game_over`.
+- **Звуки-заглушки** синтезируются в коде (детерминированно, без файлов и сторонних лицензий)
+  один раз в `_ready` автозагрузки, до первого кадра; во время игры синтеза нет. Эмбиент — гул с
+  тёмным шумом: уровень шума зависит от освещения, высота тона (`pitch_scale`) — от периода и
+  локации. Финальные ассеты (CNT-011) подставляются через `ambient_stream()`, `ambient_pitch()` и
+  `stinger_stream()`. Громкость и шина —
+  `Master` (настройки громкости — вне GDT-010).
+
+### 7.4. Замер производительности
+
+Критерий GDT-010 — не ниже 60 FPS на интегрированной графике с активными эффектами. Ручной замер:
+
+```bash
+<godot> --path apps/desktop --script res://tests/manual/horror_fx_benchmark.gd --   --seconds=30 --sanity=0 --static=100 [--reduce] [--vsync=off] [--window=exclusive]
+```
+
+Скрипт открывает Exploration на фикстуре `mid` с HUD и оверлеем, задаёт рассудок и Static
+(по умолчанию — максимальный эффект) и печатает адаптер, драйвер, режим окна, VSync, средний FPS,
+FPS по секундам и перцентили времени кадра. Графический адаптер выбирает Windows: для замера на
+интегрированной графике ноутбука с Optimus нужна настройка «Графика → Энергосбережение» для exe
+Godot (сам Godot запрашивает дискретную карту); фактический адаптер — строка `BENCH adapter=`.

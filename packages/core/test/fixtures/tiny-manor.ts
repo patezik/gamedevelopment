@@ -29,6 +29,7 @@ function room(
   description: string,
   connections: Location['connections'],
   access: Location['access'] = [],
+  hotspots: Location['hotspots'] = [],
 ): Location {
   return {
     id,
@@ -37,7 +38,7 @@ function room(
     connections,
     access,
     tags: [],
-    hotspots: [],
+    hotspots,
     lighting: { morning: 'bright', day: 'bright', evening: 'dim', night: 'dark' },
   };
 }
@@ -84,16 +85,26 @@ const at = (who: string, where: string, from: number, to: number): Fact => ({
  * The bursar steals the manor's ledger to conceal a debt while the owner is in the hall.
  * Every call builds a fresh server-side scenario with an hour of prehistory.
  */
-export function tinyManor(seed = 'tiny-manor-fixture'): Investigation {
+export function tinyManor(
+  seed = 'tiny-manor-fixture',
+  studyHotspots: Location['hotspots'] = [],
+): Investigation {
   const locations = [
     room(hall, 'Hall', 'The entrance connects the study and pantry.', [
       { to: study, minutes: 3 },
       { to: pantry, minutes: 2 },
     ]),
-    room(study, 'Study', 'The ledger is normally kept on the desk.', [
-      { to: hall, minutes: 3 },
-      { to: archive, minutes: ARCHIVE_TRAVEL_MINUTES, locked: { itemId: key } },
-    ]),
+    room(
+      study,
+      'Study',
+      'The ledger is normally kept on the desk.',
+      [
+        { to: hall, minutes: 3 },
+        { to: archive, minutes: ARCHIVE_TRAVEL_MINUTES, locked: { itemId: key } },
+      ],
+      [],
+      studyHotspots,
+    ),
     room(
       archive,
       'Archive',
