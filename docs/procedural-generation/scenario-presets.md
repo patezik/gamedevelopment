@@ -43,6 +43,12 @@ content/scenarios/<scenarioId>/
 }
 ```
 
+`incident.minMotive` — порог силы мотива для ConflictGen и IncidentSelection. Необязательное
+`incident.gamma` (от 0 до 4, по умолчанию 0,7) — показатель `score^γ` при выборе виновника
+([generation-pipeline.md §3](generation-pipeline.md#3-выбор-виновника-incidentselection)):
+0 — равновероятно среди допустимых, больше 1 — сильнее в пользу лучшего `score`.
+`victimConstraints.excludeArchetypes` исключает архетипы из жертв, но не из виновников.
+
 ## 3. Правило мотива (`motives.json`)
 
 ```json
@@ -69,6 +75,22 @@ content/scenarios/<scenarioId>/
   "deathDelayMinutes": [60, 180]
 }
 ```
+
+Шаблон участвует в генерации, если его `id` есть в `preset.incident.templates`, а
+`incidentType` — в `preset.incident.types`. IncidentSelection читает поля так:
+
+- `requires.means` — любой предмет с тегом `itemTag`; при `itemId` — только этот предмет с этим тегом;
+- `requires.locationTags` — место преступления несёт **все** перечисленные теги; пустой список —
+  любая локация;
+- `requires.traits` — `{ "<черта личности>": { "gt"?: x, "lt"?: x } }`, границы строгие, от 0
+  до 1, нужна хотя бы одна; другой формат, неизвестная черта или пустой диапазон — `RangeError`;
+- `requires.minWindowMinutes` — длина окна, когда в месте преступления нет никого, кроме
+  виновника (и жертвы, если план направлен на неё); спящий тоже свидетель;
+- `plan` — шаг с `target: "$victim"` требует жертву на месте всё окно; без такого шага, но с
+  `deathDelayMinutes`, жертва должна оказаться на месте через `[min, max]` минут после окна.
+  Смерть должна наступить до начала расследования (`t < 0`), поэтому окно с задержкой
+  заканчивается не позже чем за `min + 1` минуту до `t = 0`.
+  Порядок и длительность шагов использует PlotPlanning (GEN-007).
 
 ## 5. Правило следа (`trace-rules.json`)
 
