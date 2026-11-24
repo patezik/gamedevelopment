@@ -36,11 +36,12 @@ apps/desktop/
 │   │   ├── bootstrap.tscn        — стартовая сцена каркаса, показывает версию клиента
 │   │   ├── main_menu/  new_game/  pairing/  exploration/  dialogue/
 │   │   ├── case_board/  accusation/  ending/  hud/  overlays/ (evidence_capture, horror_fx, phone_status)
-│   │   │   └── overlays/debug/   — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
-│   └── ui/                       — общие компоненты (кнопка действия со стоимостью, карточка улики)
+│   │   ├── exploration/          — экран Exploration и загрузчик фикстур для предпросмотра (§4.1)
+│   │   └── overlays/debug/       — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
+│   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта)
 ├── assets/                       — арт, шрифты, звук (стиль — CNT-008)
 └── tests/
-    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture
+    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture, экраны и smoke сцен
     │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, экран-заглушка)
     └── contract/
         ├── contract_support.gd         — пути к packages/protocol, чтение JSON, проверка формы по JSON Schema
@@ -177,6 +178,45 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | HUD (оверлей) | часы/день/период, остаток времени, здоровье/рассудок/усталость, Static, статус телефона |
 | Debug (оверлей, только debug-сборка) | seed, время, `stateVersion`, истина и экспорт репро через debug-маршруты (§3.3) |
 
+### 4.1. Exploration
+
+`src/scenes/exploration/exploration.tscn` (экран `exploration` в `SceneRouter`) показывает только
+данные текущего `PlayerView` из `GameStore`:
+
+| Элемент | Поля `PlayerView` |
+|---------|-------------------|
+| Заголовок, описание, освещение | `location.name`, `location.description`, `location.lighting` |
+| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (арт — CNT-010) |
+| Точки интереса | `location.hotspots[]` (`name`, отметка `examined`) |
+| Персонажи | `presentCharacters[]` (`name`, `demeanor`) |
+| Выходы | `location.exits[]` (`name`, `minutes`, `blockedReason`) |
+| Действия | `availableActions[]` (`label`, `costPreview`, `blockedReason`) |
+| Карта | локации и связи из полученных экраном видов (см. ниже) |
+
+- **Действия.** Кнопка — это запись `availableActions`, отправляемая через
+  `GameStore.request_action` без изменений; клиент не строит действия сам и не считает стоимость.
+  Запись показывается один раз: `move` — в строке своего выхода, `examineHotspot` — у точки
+  интереса, `talk`/`interrogate` — у присутствующего персонажа, остальное — в общем списке. Выход
+  без действия `move` помечается «недоступно» или причиной `blockedReason`.
+- **Стоимость** — `costPreview` как есть: «15 мин» или «20–30 мин» (`src/ui/cost_format.gd`).
+  Действие с `max` ≥ 60 мин или с некорректной оценкой требует подтверждения
+  (`ConfirmationDialog`); порог — константа интерфейса `LONG_ACTION_MINUTES`, не правило игры.
+- **Повторная отправка.** После отправки кнопки заблокированы до `view_changed`, `action_failed`
+  или потери соединения. Ошибка `action_failed` показывается текстом над экраном.
+- **Карта.** `PlayerView` не содержит графа известных локаций — только текущую локацию и её
+  выходы. Поэтому карта (`known_map.gd`) накапливает локации и связи из видов, полученных
+  экраном, пока он открыт: текущая подсвечена, посещённые и только увиденные как выход
+  различаются. Ничего сверх полученных видов карта не показывает; при выходе с экрана или
+  завершении сессии она очищается.
+- **Скрытые данные.** Вид с ключом из `FORBIDDEN_VIEW_KEYS` не отображается (вдобавок к проверке
+  в `GameStore`); доска дела, диалог, инвентарь и внутренние id на экран не выводятся.
+- **Предпросмотр без сервера.** Сцена, запущенная отдельно (без параметров `SceneRouter`), или
+  переход с параметром `{"preview": "start|mid|capture|end"}` показывает фикстуру
+  `packages/protocol/fixtures/views/player-view.<имя>.json`. Первый живой `view_changed` заменяет
+  предпросмотр. Действия в предпросмотре уходят в `GameStore` и честно получают
+  `NOT_CONNECTED`. Фикстуры читаются из монорепозитория, поэтому режим работает только из
+  исходников.
+
 ## 5. Стиль кода
 
 - Строгая типизация во всех скриптах; `class_name` для переиспользуемых классов.
@@ -198,4 +238,5 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   фикстуры-коллекции (`client-messages.json`, `server-messages.json`); остальные, в том числе
   `PlayerView` и `PhoneView`, проверяются как один JSON-объект. `ProtocolConstants` сверяются со схемами
   (типы сообщений, событий, действий, коды ошибок, роли) и фикстурами (`v`, покрытие типов).
-- Smoke: все сцены из `src/scenes` загружаются и инстанцируются без ошибок.
+- Smoke (`tests/unit/test_scene_smoke.gd`): все сцены из `src/scenes`, включая подкаталоги,
+  загружаются, инстанцируются и входят в дерево без ошибок.

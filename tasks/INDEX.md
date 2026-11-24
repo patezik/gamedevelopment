@@ -2,12 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **140** · todo: 59 · in_progress: 9 · review: 0 · done: 71 · blocked: 1
+Всего задач: **141** · todo: 60 · in_progress: 8 · review: 0 · done: 72 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [GEN-006](GEN-006.md) — Стадия IncidentSelection: жертва, шаблон, виновник из всех допустимых (P0, L)
+- [GDT-007](GDT-007.md) — Оверлей фиксации улики: показ QR, ожидание скана, результат (P0, S)
 - [GDT-008](GDT-008.md) — Доска дела: улики, показания, противоречия, персоны интереса, хронология (P0, L)
+- [GDT-010](GDT-010.md) — Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры (P1, M)
+- [CNT-010](CNT-010.md) — Арт-направление и пайплайн ассетов локаций и портретов (P1, M)
+- [PROTO-004](PROTO-004.md) — Известные игроку локации и связи в PlayerView для карты Exploration (P2, M)
 
 ## Критический путь
 
@@ -22,7 +26,6 @@
 | [ENG-004](ENG-004.md) Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | 6 |
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
 | [ENG-003](ENG-003.md) Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | 5 |
-| [GDT-004](GDT-004.md) Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | 5 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
@@ -31,6 +34,7 @@
 | [VAL-002](VAL-002.md) Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [CNT-005](CNT-005.md) Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | 2 |
+| [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -148,7 +152,7 @@
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (21)
+## Фаза 6 · M6 — Vertical slice (22)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -158,7 +162,7 @@
 | [ENG-004](ENG-004.md) | Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | P0 | L | todo | — | [ENG-003](ENG-003.md), [PHONE-001](PHONE-001.md), [EVD-003](EVD-003.md) |
 | [ENG-005](ENG-005.md) | Блокировка взаимодействий и арбитраж действий desktop/phone | P1 | S | todo | — | [ENG-003](ENG-003.md) |
 | [ENG-006](ENG-006.md) | Действие accuse, концовки и TruthRecap | P0 | M | todo | — | [INV-005](INV-005.md), [ENG-003](ENG-003.md) |
-| [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | in_progress | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
+| [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
 | [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | todo | — | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | in_progress | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
 | [GDT-007](GDT-007.md) | Оверлей фиксации улики: показ QR, ожидание скана, результат | P0 | S | todo | — | [GDT-004](GDT-004.md), [SRV-006](SRV-006.md) |
@@ -171,6 +175,7 @@
 | [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | todo | — | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
+| [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | todo | — | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | todo | — | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
 | [TIME-005](TIME-005.md) | Дедлайны, критические события, пропущенные события, условия завершения | P0 | M | todo | — | [TIME-003](TIME-003.md), [ENG-006](ENG-006.md) |
 
