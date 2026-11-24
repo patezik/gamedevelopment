@@ -22,6 +22,7 @@ var _state: ConnectionState = ConnectionState.OFFLINE
 var _socket: WebSocketPeer
 var _socket_url: String
 var _token: String
+var _session_id: String
 var _retry: int
 var _remaining: float
 var _last_received: float
@@ -62,6 +63,33 @@ func request_rest(
 	return call.id
 
 
+## Drops a REST call that has not started. An active call completes with its original request ID.
+func cancel_queued_rest(request_id: int) -> void:
+	for index: int in range(_rest_queue.size()):
+		if _rest_queue[index].id == request_id:
+			_rest_queue.remove_at(index)
+			return
+
+
+## Requests the server matrix using the authenticated session from welcome. Returns -1 before
+## a session is available. Screens match the returned ID against rest_completed.
+func request_evidence_qr(token_id: String) -> int:
+	if _session_id.is_empty() or token_id.is_empty() or not _socket_url.ends_with("/ws"):
+		return -1
+	var origin: String = _socket_url.trim_suffix("/ws")
+	if origin.begins_with("wss://"):
+		origin = "https://" + origin.substr(6)
+	elif origin.begins_with("ws://"):
+		origin = "http://" + origin.substr(5)
+	else:
+		return -1
+	return request_rest(
+		"%s/api/v1/sessions/%s/evidence-qr/%s" % [
+			origin, _session_id.uri_encode(), token_id.uri_encode(),
+		], HTTPClient.METHOD_GET, "", _token
+	)
+
+
 func connect_session(url: String, token: String) -> void:
 	disconnect_session()
 	_socket_url = url
@@ -75,6 +103,7 @@ func disconnect_session() -> void:
 	_socket = null
 	_socket_url = ""
 	_token = ""
+	_session_id = ""
 	_last_seq = -1
 	_state_version = 0
 	_retry = 0
@@ -165,6 +194,9 @@ func _receive(packet: PackedByteArray) -> void:
 			return
 		if Envelope.counter(payload.get("protocolVersion")) != ProtocolConstants.PROTOCOL_VERSION:
 			return
+		var session_id: Variant = payload.get("sessionId")
+		if session_id is String:
+			_session_id = session_id
 		_retry = 0
 		_set_state(ConnectionState.ONLINE)
 	var sequence: int = Envelope.counter(message.get("seq"))
