@@ -25,3 +25,12 @@ export {
   type JournalEntry,
   type PlayerKnowledgeSnapshot,
 } from './player-knowledge.ts';
+export {
+  SUSPICION_LEVELS,
+  personsOfInterest,
+  type LinkRole,
+  type PersonLink,
+  type PersonOfInterest,
+  type Suspicion,
+  type SuspicionLevel,
+} from './suspicion.ts';
