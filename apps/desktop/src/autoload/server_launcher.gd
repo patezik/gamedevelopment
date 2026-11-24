@@ -35,7 +35,9 @@ static func pick_port(is_free: Callable, preferred: int = DEFAULT_PORT, count: i
 
 static func probe_port(candidate: int) -> bool:
 	var listener: TCPServer = TCPServer.new()
-	if listener.listen(candidate) != OK:
+	# Match the bundled server's default IPv4 bind. On Windows a wildcard
+	# Godot listener can succeed while an IPv4-only server already owns the port.
+	if listener.listen(candidate, "0.0.0.0") != OK:
 		return false
 	listener.stop()
 	return true
