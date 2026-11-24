@@ -88,8 +88,10 @@ Backend (WS) ──view.update──▶ GameStore.set_view(view, stateVersion) �
 Backend ──event──▶ GameStore.event_received ──▶ HUD/оверлеи/аудио
 ```
 
-Сцены подписываются на сигналы `GameStore` и не обращаются к `Backend` напрямую, кроме
-отправки действий через `GameStore.request_action()`.
+Сцены получают `PlayerView` и отправляют игровые действия через `GameStore`. Оверлей фиксации
+запрашивает отдельный REST-ресурс через `Backend.request_evidence_qr(token_id)`. Backend использует
+`sessionId` из `welcome` и desktop-токен текущей сессии. Матрица используется только для показа QR
+в оверлее. Подробнее — [qr-mechanics.md](../mobile/qr-mechanics.md).
 
 `Backend.request_rest` возвращает ID запроса и последовательно выполняет запросы с
 таймаутом в 10 секунд. Результат приходит через `rest_completed`; при наличии токена
