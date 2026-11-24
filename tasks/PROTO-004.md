@@ -1,7 +1,7 @@
 ---
 id: PROTO-004
 title: "Известные игроку локации и связи в PlayerView для карты Exploration"
-status: todo
+status: in_progress
 priority: P2
 complexity: M
 phase: 6
@@ -9,8 +9,8 @@ milestone: M6
 area: protocol
 depends_on: [ENG-002, GDT-004]
 modules: ["packages/protocol/src/views/player.ts", "packages/protocol/fixtures/views", "packages/core/src/game/views.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-q1
+claimed_at: "2026-11-24T06:05:30Z"
 ---
 
 # PROTO-004 — Известные игроку локации и связи в PlayerView для карты Exploration
