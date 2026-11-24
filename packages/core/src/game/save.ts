@@ -51,6 +51,11 @@ export interface ReplayRuntime<Engine extends ReplayEngine> {
   readonly generatorVersion: string;
   readonly engine: Engine;
   restore(snapshot: unknown): Engine;
+  /** Same generator, earlier engine rules. Both initial and replayed states must match exactly. */
+  readonly beforeDesktop?: {
+    initial(): Engine;
+    replay(engine: Engine, entry: Entry): Engine;
+  };
 }
 
 export type Regenerate<Engine extends ReplayEngine> = (
@@ -153,8 +158,13 @@ export function loadSave<Engine extends ReplayEngine>(
     );
   }
   let engine = runtime.engine;
+  let previousRules: ReplayRuntime<Engine>['beforeDesktop'];
   if (engine.stateHash() !== initialStateHash) {
-    throw new SaveDesyncError(0, 'Regenerated state does not match');
+    previousRules = runtime.beforeDesktop;
+    if (previousRules) engine = previousRules.initial();
+    if (!previousRules || engine.stateHash() !== initialStateHash) {
+      throw new SaveDesyncError(0, 'Regenerated state does not match');
+    }
   }
   if (checkpoint) {
     const { atAction } = checkpoint;
@@ -173,7 +183,8 @@ export function loadSave<Engine extends ReplayEngine>(
   }
   for (const entry of actions.slice(checkpoint?.atAction ?? 0)) {
     try {
-      engine.dispatch(entry.source, entry.action);
+      if (previousRules) engine = previousRules.replay(engine, entry);
+      else engine.dispatch(entry.source, entry.action);
     } catch (cause) {
       throw new SaveDesyncError(entry.seq, 'Action replay failed', { cause });
     }
@@ -211,6 +222,11 @@ export function gameReplayRuntime(
   return {
     generatorVersion: investigation.generatorVersion,
     engine: GameEngine.create(investigation, ports),
+    beforeDesktop: {
+      initial: () => GameEngine.create(investigation, ports, 'beforeDesktop'),
+      replay: (current, entry) =>
+        current.replayBeforeDesktop(entry.source, entry.action, entry.stateHash, investigation),
+    },
     restore: (snapshot) => {
       const { pendingCapture, desktop, ...state } = gameSnapshot.parse(snapshot);
       return GameEngine.restore(

@@ -85,7 +85,10 @@ const at = (who: string, where: string, from: number, to: number): Fact => ({
  * The bursar steals the manor's ledger to conceal a debt while the owner is in the hall.
  * Every call builds a fresh server-side scenario with an hour of prehistory.
  */
-export function tinyManor(seed = 'tiny-manor-fixture'): Investigation {
+export function tinyManor(
+  seed = 'tiny-manor-fixture',
+  studyHotspots: Location['hotspots'] = [],
+): Investigation {
   const locations = [
     room(hall, 'Hall', 'The entrance connects the study and pantry.', [
       { to: study, minutes: 3 },
@@ -100,7 +103,7 @@ export function tinyManor(seed = 'tiny-manor-fixture'): Investigation {
         { to: archive, minutes: ARCHIVE_TRAVEL_MINUTES, locked: { itemId: key } },
       ],
       [],
-      [{ id: 'hs_desk', name: 'Desk', description: 'A writing desk with muddy footprints.' }],
+      studyHotspots,
     ),
     room(
       archive,

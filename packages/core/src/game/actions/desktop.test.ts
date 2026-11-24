@@ -24,7 +24,9 @@ const at = (who: string, where: string, from: number, to: number): Fact => ({
 
 /** tiny-manor where the bursar walks into the study at minute 1 and stays there. */
 function manor(honesty = 0.5): Investigation {
-  const base = tinyManor();
+  const base = tinyManor(undefined, [
+    { id: 'hs_desk', name: 'Desk', description: 'A writing desk with muddy footprints.' },
+  ]);
   base.truth.append({
     t: 1,
     verb: 'move',
@@ -240,6 +242,8 @@ describe('read', () => {
     expect(engine.pendingEvidenceCapture()).toMatchObject({ tokenId: 'tok_1', clueId: note.id });
     expect(engine.playerView().pendingCapture).toMatchObject({ tokenId: 'tok_1' });
     expect(engine.playerView().caseBoard.clues).toEqual([]);
+    expect(engine.snapshot().desktop?.knowledge).toMatchObject({ clues: [], journal: [] });
+    expect(JSON.stringify(engine.playerView())).not.toContain(note.supports[0]!);
 
     // Reading again while the token is active does not replace it.
     const again = engine.dispatch('desktop', { type: 'read', documentId: 'ledger_note' });
@@ -253,6 +257,7 @@ describe('read', () => {
     const retry = engine.dispatch('desktop', { type: 'read', documentId: 'ledger_note' });
     expect(ofType(retry, 'ClueDiscovered')).toMatchObject([{ captureRequested: true }]);
     expect(engine.pendingEvidenceCapture()).toMatchObject({ tokenId: 'tok_2', clueId: note.id });
+    expect(engine.snapshot().desktop?.knowledge).toMatchObject({ clues: [], journal: [] });
   });
 
   test('a document cannot be read from another room', () => {

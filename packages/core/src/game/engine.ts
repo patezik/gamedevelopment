@@ -100,7 +100,7 @@ export class GameEngine {
   private readonly ports: EnginePorts;
   private locationId: string;
   #pendingCapture: PendingCapture | undefined;
-  #desktop: DesktopState;
+  #desktop: DesktopState | undefined;
 
   private constructor(
     investigation: Investigation,
@@ -120,22 +120,34 @@ export class GameEngine {
     this.ports = ports;
     this.locationId = locationId;
     this.#time = new TimeSystem(new Calendar(startDateTime), durationMinutes, minute);
-    this.#desktop = new DesktopState({
-      ...(ports.startVitals && { vitals: ports.startVitals }),
-      ...(ports.inventory && { inventory: ports.inventory }),
-    });
-    ports.attachTime?.(this.#time);
   }
 
-  static create(investigation: Investigation, ports: EnginePorts): GameEngine {
+  #startingDesktop(): DesktopState {
+    const { startVitals, inventory } = this.ports;
+    return new DesktopState({
+      ...(startVitals && { vitals: startVitals }),
+      ...(inventory && { inventory }),
+    });
+  }
+
+  static create(
+    investigation: Investigation,
+    ports: EnginePorts,
+    rules: 'desktop' | 'beforeDesktop' = 'desktop',
+  ): GameEngine {
     const serialized = serializeInvestigation(investigation);
-    return new GameEngine(
+    const engine = new GameEngine(
       deserializeInvestigation(serialized),
       stateHash(serialized),
       ports,
       ports.startLocationId,
       0,
     );
+    if (rules === 'desktop') {
+      engine.#desktop = engine.#startingDesktop();
+      ports.attachTime?.(engine.#time);
+    }
+    return engine;
   }
 
   static restore(
@@ -154,7 +166,10 @@ export class GameEngine {
       snapshot.minute,
     );
     engine.#pendingCapture = snapshot.pendingCapture && { ...snapshot.pendingCapture };
-    if (snapshot.desktop) engine.#desktop = DesktopState.restore(snapshot.desktop);
+    if (snapshot.desktop !== undefined) {
+      engine.#desktop = DesktopState.restore(snapshot.desktop);
+      ports.attachTime?.(engine.#time);
+    }
     return engine;
   }
 
@@ -207,12 +222,13 @@ export class GameEngine {
     if (action.type === 'accuse' || action.type === 'markSuspicion') {
       return rejected('ACTION_NOT_AVAILABLE');
     }
-    if (action.type === 'move' || action.type === 'wait') return this.#moveOrWait(action);
+    const desktop = this.#desktop ?? this.#startingDesktop();
+    if (action.type === 'move' || action.type === 'wait') return this.#moveOrWait(action, desktop);
     if (!DESKTOP_ACTIONS.includes(action.type)) return rejected('ACTION_NOT_AVAILABLE');
 
     const plan = planDesktopAction(
       action as Extract<PlayerAction, { type: DesktopActionType }>,
-      this.#desktop,
+      desktop,
       {
         investigation: this.investigation,
         clues: this.ports.clues ?? [],
@@ -229,10 +245,43 @@ export class GameEngine {
       },
     );
     if (typeof plan === 'string') return rejected(plan);
-    return this.#perform(plan);
+    return this.#perform(plan, desktop);
   }
 
-  #moveOrWait(action: Extract<PlayerAction, { type: 'move' | 'wait' }>): DispatchResult {
+  /** Format 1 has no upgrade marker. A resumed journal changes rules at its first new state.
+   * Try the historical transition without ENG-003 effects, then try the live action from the
+   * verified boundary. loadSave checks the resulting digest in either case.
+   */
+  replayBeforeDesktop(
+    source: 'desktop' | 'phone',
+    action: PlayerAction,
+    expectedHash: string,
+    investigation: Investigation,
+  ): GameEngine {
+    if (this.#desktop) {
+      this.dispatch(source, action);
+      return this;
+    }
+
+    const before = this.snapshot();
+    if (
+      source === 'desktop' &&
+      (action.type === 'move' || action.type === 'wait') &&
+      this.#time.now() < this.investigation.world.durationMinutes
+    ) {
+      this.#moveOrWait(action, undefined);
+    }
+    if (this.stateHash() === expectedHash) return this;
+
+    const resumed = GameEngine.restore(before, investigation, this.ports);
+    resumed.dispatch(source, action);
+    return resumed;
+  }
+
+  #moveOrWait(
+    action: Extract<PlayerAction, { type: 'move' | 'wait' }>,
+    desktop: DesktopState | undefined,
+  ): DispatchResult {
     const { locations } = this.investigation.world;
     const now = this.#time.now();
     const from = this.locationId;
@@ -242,13 +291,10 @@ export class GameEngine {
     try {
       if (action.type === 'move') {
         destination = action.locationId;
-        const actor = effectiveActor(
-          this.#desktop,
-          this.ports.player ?? {},
-          this.investigation,
-          from,
-          destination,
-        );
+        const baseActor = this.ports.player ?? {};
+        const actor = desktop
+          ? effectiveActor(desktop, baseActor, this.investigation, from, destination)
+          : baseActor;
         const connection = locations.directConnection(from, destination, actor);
         if (!connection || !locations.isAccessible(destination, actor, now).ok) {
           return rejected('ACTION_NOT_AVAILABLE');
@@ -259,7 +305,7 @@ export class GameEngine {
           destination,
           connection.minutes,
           this.ports.actionCosts,
-          currentModifiers(this.#desktop, this.investigation, from, now),
+          desktop ? currentModifiers(desktop, this.investigation, from, now) : [],
         ).expected;
       } else {
         minutes = resolveActionCost(
@@ -274,34 +320,42 @@ export class GameEngine {
         return rejected('ACTION_INVALID');
       throw error;
     }
-    return this.#perform({
-      type: action.type,
-      minutes,
-      interruptible: false,
-      verb: action.type,
-      targets:
-        action.type === 'move'
-          ? [
-              { kind: 'location', id: destination },
-              ...(movementKey ? [{ kind: 'item' as const, id: movementKey }] : []),
-            ]
-          : [],
-      noisy: false,
-      resolve: ({ completed }) => {
-        if (completed) this.locationId = destination;
-        return [];
+    return this.#perform(
+      {
+        type: action.type,
+        minutes,
+        interruptible: false,
+        verb: action.type,
+        targets:
+          action.type === 'move'
+            ? [
+                { kind: 'location', id: destination },
+                ...(movementKey ? [{ kind: 'item' as const, id: movementKey }] : []),
+              ]
+            : [],
+        noisy: false,
+        resolve: ({ completed }) => {
+          if (completed) this.locationId = destination;
+          return [];
+        },
       },
-    });
+      desktop,
+    );
   }
 
   /** Spends the plan's time through `TimeSystem.advance`, then applies its effect. */
   #perform(
     plan: Omit<ActionPlan, 'type'> & { type: ActionPlan['type'] | 'move' | 'wait' },
+    desktop: DesktopState | undefined,
   ): DispatchResult {
     const now = this.#time.now();
     const from = this.locationId;
     const { durationMinutes, locations } = this.investigation.world;
-    const witnessIds = presentAt(this.investigation, from, now);
+    if (desktop && !this.#desktop) {
+      this.#desktop = desktop;
+      this.ports.attachTime?.(this.#time);
+    }
+    const witnessIds = desktop ? presentAt(this.investigation, from, now) : [];
 
     const elapsed = this.#time.advance(
       plan.minutes,
@@ -326,7 +380,16 @@ export class GameEngine {
       visibility: 'public',
     });
 
-    const desktop = this.#desktop;
+    if (!desktop) {
+      // Before ENG-003 only move/wait spent time and recorded truth.
+      plan.resolve({ at: elapsed.to, completed });
+      return {
+        ok: true,
+        minutesSpent,
+        events: elapsed.events,
+        ...(elapsed.to === durationMinutes && { outcome: 'time_expired' as const }),
+      };
+    }
     const events: GameEvent[] = [...elapsed.events];
     const vitals =
       plan.type === 'rest'
@@ -391,7 +454,7 @@ export class GameEngine {
       ...(this.ports.player && { actor: this.ports.player }),
       ...(this.ports.actionCosts && { actionCosts: this.ports.actionCosts }),
       ...(this.#pendingCapture && { pendingCapture: this.#pendingCapture }),
-      desktop: this.#desktop,
+      desktop: this.#desktop ?? this.#startingDesktop(),
       clues: this.ports.clues ?? [],
     });
   }
@@ -404,7 +467,7 @@ export class GameEngine {
       minute: this.#time.now(),
       locationId: this.locationId,
       ...(pendingCapture ? { pendingCapture: { ...pendingCapture } } : {}),
-      desktop: this.#desktop.serialize(),
+      ...(this.#desktop && { desktop: this.#desktop.serialize() }),
     };
   }
 
