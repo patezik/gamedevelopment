@@ -192,7 +192,6 @@ const gameSnapshot = z.strictObject({
   initialInvestigationHash: hash,
   minute: z.int(),
   locationId: z.string().min(1),
-  visitedLocationIds: z.array(z.string().min(1)).optional(),
   pendingCapture: z
     .strictObject({
       tokenId: z.string().min(1),
@@ -211,13 +210,9 @@ export function gameReplayRuntime(
     generatorVersion: investigation.generatorVersion,
     engine: GameEngine.create(investigation, ports),
     restore: (snapshot) => {
-      const { pendingCapture, visitedLocationIds, ...state } = gameSnapshot.parse(snapshot);
+      const { pendingCapture, ...state } = gameSnapshot.parse(snapshot);
       return GameEngine.restore(
-        {
-          ...state,
-          ...(visitedLocationIds && { visitedLocationIds }),
-          ...(pendingCapture && { pendingCapture }),
-        },
+        { ...state, ...(pendingCapture && { pendingCapture }) },
         investigation,
         ports,
       );

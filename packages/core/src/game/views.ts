@@ -12,8 +12,6 @@ import type { Investigation } from './investigation.ts';
 export interface PlayerViewState {
   readonly investigation: Investigation;
   readonly locationId: string;
-  /** Locations the player has stood in; the current one is always included. */
-  readonly visitedLocationIds?: readonly string[];
   readonly minute: number;
   readonly actor?: Actor;
   readonly actionCosts?: ActionCostTable;
@@ -37,7 +35,6 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     actor = {},
     actionCosts = DEFAULT_ACTION_COSTS,
     pendingCapture,
-    visitedLocationIds = [],
   } = state;
   const { locations, durationMinutes } = investigation.world;
   const room = locations.describe(locationId);
@@ -85,7 +82,15 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     });
   }
 
-  const visited = [...new Set([...visitedLocationIds, locationId])];
+  const visited = new Set<string>();
+  for (const event of investigation.truth.events()) {
+    if (event.verb !== 'move' || !event.actorIds.includes('player')) continue;
+    visited.add(event.location);
+    for (const target of event.targets) {
+      if (target.kind === 'location') visited.add(target.id);
+    }
+  }
+  visited.add(locationId);
   const known = new Map<string, { id: string; name: string; visited: boolean }>();
   const links: { from: string; to: string }[] = [];
   const add = (id: string, visit: boolean) => {
