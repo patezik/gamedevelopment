@@ -194,12 +194,42 @@ export function confirm(
   return [...new Set(failures)];
 }
 
+const arrivals = new WeakMap<IncidentSelectionInput, Map<string, number | null>>();
+const movedRuns = new WeakMap<IncidentSelectionInput, Map<string, TruthModel>>();
+
 /**
  * Earliest arrival by a minute-by-minute search: waiting is allowed anywhere, an edge can be
  * taken if it is not locked or the actor holds its key, and the destination must be accessible
  * at the arrival minute. Arrival must be before `t = 0`.
  */
 function earliest(
+  input: IncidentSelectionInput,
+  from: string,
+  to: string,
+  actor: Actor,
+  at: number,
+): number | null {
+  const memo = arrivals.get(input) ?? new Map<string, number | null>();
+  arrivals.set(input, memo);
+  const key = `${from}|${to}|${[...(actor.itemIds ?? [])].sort().join(',')}|${actor.archetypeId}|${at}`;
+  if (!memo.has(key)) memo.set(key, dijkstra(input, from, to, actor, at));
+  return memo.get(key)!;
+}
+
+/** A full SimulationRunner run of the world with one item moved to the culprit, memoized. */
+function runWithMove(
+  input: IncidentSelectionInput,
+  content: ScenarioContent,
+  move: { itemId: string; characterId: string; t: number },
+): TruthModel {
+  const memo = movedRuns.get(input) ?? new Map<string, TruthModel>();
+  movedRuns.set(input, memo);
+  const key = `${move.itemId}|${move.characterId}|${move.t}`;
+  if (!memo.has(key)) memo.set(key, simulateHistory(input, content, [], [move]));
+  return memo.get(key)!;
+}
+
+function dijkstra(
   input: IncidentSelectionInput,
   from: string,
   to: string,
@@ -231,7 +261,9 @@ function earliest(
  * Independent search for the earliest window per scene (over all means) for one culprit,
  * victim and template, or the first failed criterion. Positions come from a baseline
  * SimulationRunner run; the culprit may change one routine block occurrence, starting where they
- * physically are (not in transit) the minute before.
+ * physically are (not in transit) the minute before. For a key that the culprit does not hold
+ * from the start, every minute it may be taken is tried with a full run of the world where it
+ * moves to the culprit then, so a holder trapped at the scene or locked out of it is accounted for.
  */
 export function search(
   input: IncidentSelectionInput,
@@ -286,12 +318,12 @@ export function search(
     .map(({ id }) => id);
   const allIds = input.world.locations.snapshot().locations.map(({ id }) => id);
 
-  const windowOk = (scene: string, s: number) => {
+  const windowOk = (scene: string, s: number, at = where) => {
     for (let t = s; t < s + window; t++) {
-      if (victimPresent && where(victimId, t) !== scene) return false;
+      if (victimPresent && at(victimId, t) !== scene) return false;
       for (const other of input.characters) {
         if (other.id === culpritId || (victimPresent && other.id === victimId)) continue;
-        if (where(other.id, t) === scene) return false;
+        if (at(other.id, t) === scene) return false;
       }
     }
     if (crime.deathDelayMinutes) {
@@ -299,11 +331,18 @@ export function search(
       const end = s + window;
       if (victimPresent) return end + min <= -1;
       for (let d = end + min; d <= Math.min(end + max, -1); d++) {
-        if (where(victimId, d) === scene) return true;
+        if (at(victimId, d) === scene) return true;
       }
       return false;
     }
     return true;
+  };
+  /** End of the routine block occurrence that contains minute `o0`. */
+  const untilOf = (o0: number) => {
+    const block = blockIndex(culprit, content, o0);
+    let until = o0;
+    while (until < 0 && blockIndex(culprit, content, until) === block) until++;
+    return until;
   };
 
   let anyMeans = false;
@@ -354,6 +393,71 @@ export function search(
       if (p0 !== undefined && places.some((place) => meets(p0, o0, place) !== undefined)) {
         anyMeans = true;
       }
+    }
+    // A key taken from its holder (or picked up) changes routes: the holder may be trapped or
+    // locked out, the culprit's own routine may take other doors. Brute force over every minute
+    // `a` it may be taken, with a full run of the world where it moves to the culprit at `a + 1`.
+    if (keys.length > 0 && !(at.kind === 'character' && at.id === culpritId)) {
+      for (const scene of scenes) {
+        const record = (s: number) => {
+          if (!result.has(scene) || s < result.get(scene)!) result.set(scene, s);
+        };
+        for (let a = start; a < 0; a++) {
+          const place =
+            at.kind === 'location' ? at.id : at.kind === 'character' ? where(at.id, a) : undefined;
+          if (place === undefined || place === 'in_transit') continue;
+          const run = runWithMove(input, content, {
+            itemId: item.id,
+            characterId: culpritId,
+            t: a + 1,
+          });
+          const after = (id: string, t: number) => run.whereWas(id, t);
+          // Taken in the routine; then the routine, or one changed block after it.
+          if (where(culpritId, a) === place) {
+            for (let s = a + 1; s + window <= 0; s++) {
+              let there = true;
+              for (let t = s; there && t < s + window; t++) there = after(culpritId, t) === scene;
+              if (there && windowOk(scene, s, after)) {
+                record(s);
+                break;
+              }
+            }
+            for (let o0 = a + 1; o0 < 0; o0++) {
+              const p0 = after(culpritId, o0 - 1);
+              if (p0 === 'in_transit') continue;
+              const until = untilOf(o0);
+              const reach = earliest(input, p0, scene, actor(keys), o0);
+              if (reach === null) continue;
+              let first = reach;
+              if (reach === o0 && p0 === scene) {
+                while (first - 1 > a && after(culpritId, first - 1) === scene) first--;
+              }
+              for (let s = first; s + window <= until; s++) {
+                if (windowOk(scene, s, after)) {
+                  record(s);
+                  break;
+                }
+              }
+            }
+          }
+          // Taken inside a changed block that starts at `o0 ≤ a` in the block occurrence of `a`.
+          for (let o0 = start; o0 <= a; o0++) {
+            const p0 = sourceAt(o0);
+            const until = untilOf(o0);
+            if (p0 === undefined || a >= until) continue;
+            const met = earliest(input, p0, place, actor([]), o0);
+            if (met === null || met > a) continue;
+            const reach = earliest(input, place, scene, actor(keys), a + 1);
+            for (let s = reach ?? 0; reach !== null && s + window <= until; s++) {
+              if (windowOk(scene, s, after)) {
+                record(s);
+                break;
+              }
+            }
+          }
+        }
+      }
+      continue;
     }
     // Arrival at the scene holding the item, starting a changed block at `o0` from `p0`.
     const arrival = (p0: string, o0: number, scene: string): number | null => {

@@ -36,7 +36,6 @@ export {
   OPPORTUNITY_SATURATION_MINUTES,
   SCORE_WEIGHTS,
   selectIncident,
-  VERIFIED_WINDOWS_PER_SCENE,
   WORLD_OWNER_ABSENT,
   type Acquisition,
   type FeasibilityCriterion,

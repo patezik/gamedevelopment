@@ -20,8 +20,6 @@ export const DEFAULT_CULPRIT_GAMMA = 0.7;
 export const SCORE_WEIGHTS = Object.freeze({ motive: 0.5, opportunity: 0.3, personality: 0.2 });
 /** Usable window starts (one per minute) at which opportunity quality reaches 1. */
 export const OPPORTUNITY_SATURATION_MINUTES = 60;
-/** Earliest windows per scene checked by re-simulation before the scene is given up. */
-export const VERIFIED_WINDOWS_PER_SCENE = 3;
 /** Plan target that requires the victim at the scene for the whole window. */
 const VICTIM_TARGET = '$victim';
 export const INCIDENT_NO_FEASIBLE_CULPRIT = 'INCIDENT_NO_FEASIBLE_CULPRIT';
@@ -383,6 +381,7 @@ class Assessor {
   readonly #content: ScenarioContent;
   readonly #locations: LocationGraph;
   readonly #locationIds: readonly string[];
+  readonly #locationIndex: ReadonlyMap<string, number>;
   readonly #cast: readonly Character[];
   readonly #index: ReadonlyMap<CharacterId, number>;
   readonly #owners: ReadonlyMap<string, CharacterId>;
@@ -398,6 +397,19 @@ class Assessor {
   }[];
   /** Per character, per history minute: index into `#locationIds`, or −1 in transit. */
   readonly #position: readonly Int16Array[];
+  /** Per character, per history minute: index of the routine block occurrence in `#segments`. */
+  readonly #segmentAt: readonly Int32Array[];
+  /**
+   * Per character, per history minute `a`: the earliest `a0 ≤ a` such that the character is
+   * settled (physically at the location of its routine block) at every minute of `(a0, a]`.
+   * Gaining or losing an access item at `a0 + 1` or at `a + 1` then gives the same trajectory:
+   * a settled character plans no hop, so `SimulationRunner` never reads its keys in between.
+   */
+  readonly #settledSince: readonly Int32Array[];
+  /** Single-character runs with one item moved: per character, item, minute and direction. */
+  readonly #moved = new Map<string, Int16Array>();
+  /** Per scene, per history minute: how many characters are there in the baseline run. */
+  readonly #crowds = new Map<number, Int16Array>();
   readonly #arrivals = new Map<string, number | null>();
   readonly #routes = new Map<string, readonly Route[]>();
   #rejectedBySimulation = 0;
@@ -410,6 +422,7 @@ class Assessor {
       .snapshot()
       .locations.map(({ id }) => id)
       .sort(compare);
+    this.#locationIndex = new Map(this.#locationIds.map((id, index) => [id, index]));
     this.#cast = input.characters.toSorted((a, b) => compare(a.id, b.id));
     if (new Set(this.#cast.map(({ id }) => id)).size !== this.#cast.length) {
       throw new RangeError('Character ids must be unique');
@@ -466,16 +479,36 @@ class Assessor {
     this.#position = this.#cast.map(() => new Int16Array(length).fill(-1));
     if (length > 0) {
       const truth = simulate(input.world, this.#owners, this.#cast, this.#historyStart);
-      const locationIndex = new Map(this.#locationIds.map((id, index) => [id, index]));
-      this.#cast.forEach(({ id }, index) => {
-        const row = this.#position[index]!;
-        for (const { location, interval } of truth.presenceIntervals(id)) {
-          const from = Math.max(interval.from, this.#historyStart);
-          const to = Math.min(interval.to, 0);
-          for (let t = from; t < to; t++)
-            row[t - this.#historyStart] = locationIndex.get(location)!;
-        }
-      });
+      this.#cast.forEach(({ id }, index) => this.#fill(this.#position[index]!, truth, id));
+    }
+    this.#segmentAt = this.#segments.map((segments) => {
+      const row = new Int32Array(length);
+      segments.forEach(({ from, to }, index) =>
+        row.fill(index, from - this.#historyStart, to - this.#historyStart),
+      );
+      return row;
+    });
+    this.#settledSince = this.#cast.map((_, index) => {
+      const row = this.#position[index]!;
+      const segments = this.#segments[index]!;
+      const at = this.#segmentAt[index]!;
+      const since = new Int32Array(length);
+      for (let i = 0; i < length; i++) {
+        const scheduled = this.#locationIndex.get(segments[at[i]!]!.location);
+        since[i] = i > 0 && row[i] === scheduled ? since[i - 1]! : this.#historyStart + i;
+      }
+      return since;
+    });
+  }
+
+  /** Writes the presence of `id` in a run into a per-minute row of location indices. */
+  #fill(row: Int16Array, truth: TruthModel, id: CharacterId): void {
+    for (const { location, interval } of truth.presenceIntervals(id)) {
+      const from = Math.max(interval.from, this.#historyStart);
+      const to = Math.min(interval.to, 0);
+      for (let t = from; t < to; t++) {
+        row[t - this.#historyStart] = this.#locationIndex.get(location)!;
+      }
     }
   }
 
@@ -582,19 +615,23 @@ class Assessor {
     const means = this.#meansOf(template).filter((item) => this.#canAcquire(c, item));
     if (means.length === 0) return 'means';
 
-    // Each candidate is one means with one window; candidates are re-simulated in time order.
+    // Each candidate is one means with one window and one plan. Candidates are re-simulated in
+    // time order until one holds: every candidate of the scene may be checked, none is skipped.
     const opportunities: Opportunity[] = [];
     for (const scene of template.scenes) {
       const starts = new Set<number>();
       const candidates: Candidate[] = [];
       for (const item of means) {
-        for (const candidate of this.#windows(c, v, template, item, scene)) {
+        const windows = this.#changesRoutes(c, item)
+          ? this.#keyedWindows(c, v, template, item, scene)
+          : this.#windows(c, v, template, item, scene);
+        for (const candidate of windows) {
           starts.add(candidate.from);
           candidates.push(candidate);
         }
       }
       candidates.sort((a, b) => a.from - b.from || compare(a.meansItemId, b.meansItemId));
-      for (const candidate of candidates.slice(0, VERIFIED_WINDOWS_PER_SCENE)) {
+      for (const candidate of candidates) {
         if (this.#confirm(c, v, template, candidate)) {
           opportunities.push({
             locationId: scene,
@@ -843,7 +880,240 @@ class Assessor {
     return result;
   }
 
-  /** Window candidates at `scene` with `itemId`, by start: routine-level presence checks. */
+  /**
+   * The earliest minute of death after a window starting at `s`: `undefined` without a delayed
+   * death, `null` when no minute before `t = 0` fits (or the victim is not at the scene then).
+   */
+  #deathAt(
+    template: Template,
+    s: number,
+    victim: Int16Array,
+    place: number,
+  ): number | undefined | null {
+    const { window, victimPresent, deathDelay } = template;
+    if (!deathDelay) return undefined;
+    const end = s + window;
+    if (victimPresent) return end + deathDelay[0] <= -1 ? end + deathDelay[0] : null;
+    for (let d = end + deathDelay[0]; d <= Math.min(end + deathDelay[1], -1); d++) {
+      if (victim[d - this.#historyStart] === place) return d;
+    }
+    return null;
+  }
+
+  /**
+   * Whether taking this means can change a trajectory: it is (or carries) an access item that the
+   * culprit does not hold from the start. Otherwise nobody's routes depend on when it is taken,
+   * everyone else moves as in the baseline, and the earliest acquisition and arrival dominate, so
+   * `#windows` is exact.
+   */
+  #changesRoutes(c: number, means: MeansAccess): boolean {
+    const { at, keys } = means;
+    return keys.length > 0 && !(at.kind === 'character' && at.id === this.#cast[c]!.id);
+  }
+
+  /**
+   * The trajectory of one character when `itemId` moves to `recipient` at minute `t`: a holder
+   * loses its keys then, the culprit (`gains`) holds them from then. In `SimulationRunner` a step
+   * depends only on the character's own block, location and keys, so a run of that character
+   * alone is exact. Callers pass `t` as a class start (`#settledSince` + 1).
+   */
+  #movedRow(
+    index: number,
+    itemId: string,
+    recipient: CharacterId,
+    t: number,
+    gains: boolean,
+  ): Int16Array {
+    const key = `${index}|${itemId}|${t}|${gains}`;
+    const cached = this.#moved.get(key);
+    if (cached) return cached;
+    const character = this.#cast[index]!;
+    const truth = simulate(
+      this.#input.world,
+      this.#owners,
+      [character],
+      this.#historyStart,
+      [],
+      [{ itemId, characterId: recipient, t }],
+    );
+    const row = new Int16Array(this.#position[index]!.length).fill(-1);
+    this.#fill(row, truth, character.id);
+    this.#moved.set(key, row);
+    return row;
+  }
+
+  /** Per history minute: how many characters are at `place` in the baseline run. */
+  #crowd(place: number): Int16Array {
+    const cached = this.#crowds.get(place);
+    if (cached) return cached;
+    const crowd = new Int16Array(Math.max(0, -this.#historyStart));
+    for (const row of this.#position) {
+      for (let i = 0; i < crowd.length; i++) crowd[i]! += Number(row[i] === place);
+    }
+    this.#crowds.set(place, crowd);
+    return crowd;
+  }
+
+  /**
+   * Window candidates for a means that changes routes (`#changesRoutes`). The minute it is taken
+   * decides where its holder can still go and where the culprit's own routine leads, so every
+   * minute of acquisition is considered: in the routine (both physically in one place) or inside
+   * the changed block. Positions: the holder and the culprit from their single-character runs
+   * with the item moved, everyone else from the baseline (they move independently and carry no
+   * key of this means). Minutes with the same trajectories (`#settledSince`) and, for a changed
+   * block, the same block occurrence and place yield the same windows, and the earliest of them
+   * allows every window of the later ones (it arrives no later), so only the earliest is expanded.
+   */
+  #keyedWindows(
+    c: number,
+    v: number,
+    template: Template,
+    means: MeansAccess,
+    scene: string,
+  ): Candidate[] {
+    const start = this.#historyStart;
+    const { itemId } = means;
+    const { window, victimPresent } = template;
+    const place = this.#locationIndex.get(scene)!;
+    const length = this.#position[c]!.length;
+    const culprit = this.#position[c]!;
+    const culpritId = this.#cast[c]!.id;
+    const h = means.at.kind === 'character' ? this.#index.get(means.at.id) : undefined;
+    const holder = h === undefined ? undefined : this.#position[h]!;
+    const stored = means.at.kind === 'location' ? this.#locationIndex.get(means.at.id)! : -1;
+    const crowd = this.#crowd(place);
+    const segments = this.#segments[c]!;
+    const segmentAt = this.#segmentAt[c]!;
+    const holding = this.#actor(c, means.keys);
+
+    // Valid minutes (prefix sums) and the victim's row for one trajectory of the holder.
+    const checks = new Map<Int16Array | undefined, { prefix: Int32Array; victim: Int16Array }>();
+    const checksFor = (moved: Int16Array | undefined) => {
+      const cached = checks.get(moved);
+      if (cached) return cached;
+      const victim = moved && v === h ? moved : this.#position[v]!;
+      const prefix = new Int32Array(length + 1);
+      for (let i = 0; i < length; i++) {
+        let others = crowd[i]! - Number(culprit[i] === place);
+        if (moved && holder) others += Number(moved[i] === place) - Number(holder[i] === place);
+        if (victimPresent) others -= Number(victim[i] === place);
+        const ok = others === 0 && (!victimPresent || victim[i] === place);
+        prefix[i + 1] = prefix[i]! + Number(ok);
+      }
+      const checked = { prefix, victim };
+      checks.set(moved, checked);
+      return checked;
+    };
+    const result: Candidate[] = [];
+    const add = (
+      s: number,
+      moved: Int16Array | undefined,
+      acquisition: Acquisition,
+      deviation: Candidate['deviation'],
+    ) => {
+      const { prefix, victim } = checksFor(moved);
+      const i = s - start;
+      if (prefix[i + window]! - prefix[i]! !== window) return;
+      const death = this.#deathAt(template, s, victim, place);
+      if (death === null) return;
+      result.push({
+        locationId: scene,
+        from: s,
+        meansItemId: itemId,
+        acquisition,
+        deviation,
+        ...(death !== undefined && { deathAt: death }),
+      });
+    };
+    const acquisitionAt = (at: number, a: number): Acquisition => ({
+      locationId: this.#locationIds[at]!,
+      at: a,
+      ...(h !== undefined && { fromCharacterId: this.#cast[h]!.id }),
+    });
+    const holderClass = (a: number) => (h === undefined ? 0 : this.#settledSince[h]![a - start]!);
+    const holderAfter = (a: number) =>
+      h === undefined ? undefined : this.#movedRow(h, itemId, culpritId, holderClass(a) + 1, false);
+
+    // Taken in the routine: the culprit and the means (or its holder) in one place at `a`.
+    const natural = new Set<string>();
+    for (let a = start; a < 0; a++) {
+      const here = culprit[a - start]!;
+      if (here < 0 || here !== (holder ? holder[a - start]! : stored)) continue;
+      const culpritClass = this.#settledSince[c]![a - start]!;
+      const key = `${holderClass(a)}|${culpritClass}`;
+      if (natural.has(key)) continue;
+      natural.add(key);
+      const moved = holderAfter(a);
+      const own = this.#movedRow(c, itemId, culpritId, culpritClass + 1, true);
+      const acquisition = acquisitionAt(here, a);
+      // The routine keeps the culprit at the scene, holding the means.
+      let run = 0;
+      for (let t = a + 1; t < 0; t++) {
+        run = own[t - start] === place ? run + 1 : 0;
+        if (run >= window) add(t + 1 - window, moved, acquisition, null);
+      }
+      // One changed block later, from where the culprit (holding the key) physically is.
+      for (let k = segmentAt[a - start]!; k < segments.length; k++) {
+        const { from: b0, to: b1 } = segments[k]!;
+        let best: { first: number; departure: number } | undefined;
+        const tried = new Set<number>();
+        for (let o0 = Math.max(b0, a + 1); o0 < b1; o0++) {
+          const before = own[o0 - 1 - start]!;
+          if (before < 0 || tried.has(before)) continue;
+          tried.add(before);
+          const arrival = this.#arrive(this.#locationIds[before]!, scene, holding, o0);
+          if (arrival === null || arrival >= b1) continue;
+          let first = arrival;
+          if (arrival === o0) while (first - 1 > a && own[first - 1 - start] === place) first--;
+          if (!best || first < best.first) best = { first, departure: o0 };
+        }
+        if (!best) continue;
+        for (let s = best.first; s + window <= b1; s++) {
+          add(s, moved, acquisition, { from: best.departure, to: s + window });
+        }
+      }
+    }
+
+    // Taken inside the changed block: the culprit walks to the means (or its holder), then on.
+    const sources = this.#sources(c, undefined);
+    const without = this.#actor(c);
+    const reach = new Map<string, { readonly at: number; readonly from: number } | null>();
+    const expanded = new Set<string>();
+    for (let a = start; a < 0; a++) {
+      const at = holder ? holder[a - start]! : stored;
+      if (at < 0) continue;
+      const k = segmentAt[a - start]!;
+      const key = `${k}|${holderClass(a)}|${at}`;
+      if (expanded.has(key)) continue;
+      let earliest = reach.get(`${k}|${at}`);
+      if (earliest === undefined) {
+        earliest = null;
+        for (const { from, at: origin } of sources[k]!.starts) {
+          const arrival = this.#arrive(origin, this.#locationIds[at]!, without, from);
+          if (arrival !== null && (!earliest || arrival < earliest.at)) {
+            earliest = { at: arrival, from };
+          }
+        }
+        reach.set(`${k}|${at}`, earliest);
+      }
+      if (!earliest || earliest.at > a) continue;
+      expanded.add(key);
+      const until = sources[k]!.until;
+      const arrival = this.#arrive(this.#locationIds[at]!, scene, holding, a + 1);
+      if (arrival === null || arrival + window > until) continue;
+      const moved = holderAfter(a);
+      const acquisition = acquisitionAt(at, a);
+      for (let s = arrival; s + window <= until; s++) {
+        add(s, moved, acquisition, { from: earliest.from, to: s + window });
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Window candidates at `scene` with `itemId`, by start: routine-level presence checks against
+   * the baseline run, exact for a means that changes nobody's routes (`#changesRoutes`).
+   */
   #windows(
     c: number,
     v: number,
@@ -852,7 +1122,7 @@ class Assessor {
     scene: string,
   ): Candidate[] {
     const { itemId } = means;
-    const { window, victimPresent, deathDelay } = template;
+    const { window, victimPresent } = template;
     const place = this.#locationIds.indexOf(scene);
     const length = this.#position[c]!.length;
     const culprit = this.#position[c]!;
@@ -878,15 +1148,7 @@ class Assessor {
       const i = s - this.#historyStart;
       return prefix[i + window]! - prefix[i]! === window;
     };
-    const deathAt = (s: number): number | undefined | null => {
-      if (!deathDelay) return undefined;
-      const end = s + window;
-      if (victimPresent) return end + deathDelay[0] <= -1 ? end + deathDelay[0] : null;
-      for (let d = end + deathDelay[0]; d <= Math.min(end + deathDelay[1], -1); d++) {
-        if (victim[d - this.#historyStart] === place) return d;
-      }
-      return null;
-    };
+    const deathAt = (s: number) => this.#deathAt(template, s, victim, place);
 
     const result: Candidate[] = [];
     const add = (

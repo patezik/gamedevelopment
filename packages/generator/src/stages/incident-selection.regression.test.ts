@@ -21,6 +21,7 @@ import {
   worldGen,
   type FeasibleCulprit,
   type IncidentSelectionInput,
+  type Opportunity,
   type Stage,
 } from '../index.ts';
 
@@ -329,6 +330,76 @@ describe('defect 6: an owned item whose owner is not in the cast', () => {
         logger: silent,
       }),
     ).toThrow(ItemError);
+  });
+});
+
+describe('defect 8: the search for a window is not cut short', () => {
+  // ch_1 carries it_key (first visitor), the only way out of the archive without it is a bypass
+  // open from 07:20 (t = −40). ch_2 reads in the archive all day; ch_1 leaves it at 07:10.
+  const keyed = (bypassOpens: number) => ({
+    historyStart: -60,
+    locations: [
+      place('loc_hall', ['public'], { loc_archive: 2, loc_bypass: 1 }),
+      place('loc_archive', ['archive'], { loc_hall: 2, loc_bypass: 1 }, [], {
+        loc_hall: 'it_key',
+      }),
+      place('loc_bypass', ['corridor'], { loc_archive: 1, loc_hall: 1 }, [
+        { from: bypassOpens, to: 1440 },
+      ]),
+    ],
+    items: [
+      ...fixture().content.items,
+      { id: 'it_key', name: 'Ключ', kind: 'key', tags: ['key'], ownerArchetype: 'visitor' },
+    ],
+    crime: { requires: { means: { itemTag: 'key', itemId: 'it_key' } } },
+    routines: {
+      ch_1: routine([0, 430, 'loc_archive'], [430, 1440, 'loc_hall']),
+      ch_2: routine([0, 1440, 'loc_archive', 'read']),
+    },
+    motives: [motive('ch_2', 'ch_3')],
+  });
+
+  test('taking the key traps its holder as a witness; the window after it is found', () => {
+    // In the baseline ch_1 leaves at −50. Without the key ch_1 waits for the bypass and leaves
+    // at −41, so the windows from −50 to −42 fail in simulation (formerly the search stopped
+    // after three of them); the first window that holds starts at −41.
+    const found = feasible(verdict(keyed(440), 'ch_2', 'ch_3'));
+    expect(found.opportunities).toHaveLength(1);
+    const [{ starts, ...window }] = found.opportunities as [Opportunity];
+    expect(window).toEqual({
+      locationId: 'loc_archive',
+      from: -41,
+      to: -36,
+      meansItemId: 'it_key',
+      acquisition: { locationId: 'loc_archive', at: -60, fromCharacterId: 'ch_1' },
+      deviation: null,
+    });
+    expect(starts).toBeGreaterThan(0);
+    expect(found.score).toBeGreaterThan(0);
+  });
+
+  test('a key holder locked out of the scene is no witness there', () => {
+    // The archive door is locked both ways. ch_1 waits in the hall until 07:30 (t = −30), then
+    // goes to the archive; in the baseline ch_1 is there from −28, so no 50-minute window fits.
+    // ch_2 takes the key from ch_1 in the hall at −60: ch_1 stays locked out of the archive.
+    const options = keyed(1439);
+    const locked = {
+      ...options,
+      locations: [
+        place('loc_hall', ['public'], { loc_archive: 2 }, [], { loc_archive: 'it_key' }),
+        place('loc_archive', ['archive'], { loc_hall: 2 }, [], { loc_hall: 'it_key' }),
+      ],
+      crime: { requires: { ...options.crime.requires, minWindowMinutes: 50 } },
+      routines: { ch_1: routine([0, 450, 'loc_hall'], [450, 1440, 'loc_archive']) },
+    };
+    const [window] = feasible(verdict(locked, 'ch_2', 'ch_3')).opportunities;
+    expect(window).toMatchObject({
+      locationId: 'loc_archive',
+      from: -57,
+      to: -7,
+      meansItemId: 'it_key',
+      acquisition: { locationId: 'loc_hall', at: -60, fromCharacterId: 'ch_1' },
+    });
   });
 });
 

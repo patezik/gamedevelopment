@@ -16,7 +16,7 @@ import {
   trySelect,
   withIncident,
 } from '../support/incident.ts';
-import { confirm, search } from '../support/oracle.ts';
+import { confirm, search, simulateHistory } from '../support/oracle.ts';
 
 const base = incidentInput(minimal, 'property');
 const ids = base.characters.map(({ id }) => id).sort();
@@ -66,8 +66,9 @@ const scenarioArbitrary = fc.record({
   ),
   gamma: fc.double({ min: 0, max: 2, noNaN: true }),
   // record: the log in the archive. held: a ring carried by ch_1. keyed: the archive door needs
-  // a key lying in the hall, and both the key and the log are means.
-  means: fc.constantFrom('record', 'held', 'keyed'),
+  // a key lying in the hall, and both the key and the log are means. heldKey: ch_1 carries that
+  // key and the door is locked both ways, so taking it traps ch_1 or locks ch_1 out.
+  means: fc.constantFrom('record', 'held', 'keyed', 'heldKey'),
   seed: fc.string({ maxLength: 8 }),
 });
 
@@ -82,6 +83,9 @@ function build(g: Generated) {
     ...(g.means === 'keyed'
       ? [{ id: 'it_key', name: 'Ключ', kind: 'key', tags: ['record'], locationId: 'loc_hall' }]
       : []),
+    ...(g.means === 'heldKey'
+      ? [{ id: 'it_key', name: 'Ключ', kind: 'key', tags: ['record'], ownerArchetype: 'visitor' }]
+      : []),
   ];
   const means = g.means === 'held' ? { itemTag: 'ring', itemId: 'it_ring' } : { itemTag: 'record' };
   const content = withIncident(
@@ -93,8 +97,12 @@ function build(g: Generated) {
         ...(location.id === 'loc_archive' &&
           g.access && { access: [{ from: g.access[0], to: g.access[1] }] }),
         ...(location.id === 'loc_hall' &&
-          g.means === 'keyed' && {
+          (g.means === 'keyed' || g.means === 'heldKey') && {
             connections: [{ to: 'loc_archive', minutes: 2, locked: { itemId: 'it_key' } }],
+          }),
+        ...(location.id === 'loc_archive' &&
+          g.means === 'heldKey' && {
+            connections: [{ to: 'loc_hall', minutes: 2, locked: { itemId: 'it_key' } }],
           }),
       })),
       crimes: minimal.crimes.map((crime) => ({
@@ -133,15 +141,16 @@ describe('IncidentSelection properties', () => {
     let feasibleTriples = 0;
     const byMeans = new Map<string, number>();
     const acquisitions = new Set<string>();
-    let rejectedBySimulation = 0;
+    // Windows that the baseline run alone would reject: the key holder is at the scene there.
+    let keyChangesWitness = 0;
     fc.assert(
       fc.property(scenarioArbitrary, (g) => {
         const { content, input } = build(g);
         const assessment = assessIncidents(input, content);
-        // Routine-level screening is exact unless taking the means changes access: a key taken
-        // on the way may open (or close) routes, which the re-simulation catches.
-        if (g.means !== 'keyed') expect(assessment.windowsRejectedBySimulation).toBe(0);
-        else rejectedBySimulation += assessment.windowsRejectedBySimulation;
+        // Candidates use exact positions, also when a taken key changes routes, so the
+        // re-simulation confirms the first one in time order.
+        expect(assessment.windowsRejectedBySimulation).toBe(0);
+        const baseline = g.means === 'heldKey' ? simulateHistory(input, content) : undefined;
         for (const option of assessment.options) {
           const feasible = new Map(option.feasible.map((f) => [f.characterId, f]));
           const rejected = { motive: 0, capable: 0, means: 0, opportunity: 0 };
@@ -154,6 +163,15 @@ describe('IncidentSelection properties', () => {
               ).toEqual([]);
             }
             if (actual) {
+              for (const { locationId, from, to, acquisition } of actual.opportunities) {
+                let witnessed = false;
+                for (let t = from; baseline && t < to; t++) {
+                  witnessed ||=
+                    acquisition?.fromCharacterId === 'ch_1' &&
+                    baseline.whereWas('ch_1', t) === locationId;
+                }
+                keyChangesWitness += Number(witnessed);
+              }
               feasibleTriples++;
               byMeans.set(g.means, (byMeans.get(g.means) ?? 0) + 1);
               for (const { acquisition, deviation } of actual.opportunities) {
@@ -164,9 +182,8 @@ describe('IncidentSelection properties', () => {
               expect(actual.score).toBeGreaterThan(0);
               expect(actual.score).toBeLessThanOrEqual(1);
             }
-            // Completeness against the baseline search. A key taken as means changes routes,
-            // which the baseline search ignores and the stage re-simulates: soundness only there.
-            if (g.means === 'keyed') continue;
+            // Completeness: the earliest window per scene equals the independent search, which
+            // tries every minute a key may be taken with a full run of the world.
             const expected = search(input, content, culprit, option.victimId, option.templateId);
             if (typeof expected === 'string') {
               expect(actual).toBeUndefined();
@@ -177,15 +194,15 @@ describe('IncidentSelection properties', () => {
               ).toEqual(expected);
             }
           }
-          if (g.means !== 'keyed') expect(option.rejected).toEqual(rejected);
+          expect(option.rejected).toEqual(rejected);
         }
       }),
       { numRuns: 400, seed: 6006 },
     );
     // The property is not vacuous: every means mode and both kinds of window occur.
     expect(feasibleTriples).toBeGreaterThan(80);
-    expect([...byMeans.keys()].sort()).toEqual(['held', 'keyed', 'record']);
-    expect(rejectedBySimulation).toBeGreaterThan(0);
+    expect([...byMeans.keys()].sort()).toEqual(['held', 'heldKey', 'keyed', 'record']);
+    expect(keyChangesWitness).toBeGreaterThan(0);
     for (const kind of ['location/changed', 'location/routine', 'holder/changed']) {
       expect(acquisitions).toContain(kind);
     }
