@@ -12,6 +12,8 @@ import type { Investigation } from './investigation.ts';
 export interface PlayerViewState {
   readonly investigation: Investigation;
   readonly locationId: string;
+  /** Locations the player has stood in; the current one is always included. */
+  readonly visitedLocationIds?: readonly string[];
   readonly minute: number;
   readonly actor?: Actor;
   readonly actionCosts?: ActionCostTable;
@@ -35,6 +37,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     actor = {},
     actionCosts = DEFAULT_ACTION_COSTS,
     pendingCapture,
+    visitedLocationIds = [],
   } = state;
   const { locations, durationMinutes } = investigation.world;
   const room = locations.describe(locationId);
@@ -82,6 +85,23 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     });
   }
 
+  const visited = [...new Set([...visitedLocationIds, locationId])];
+  const known = new Map<string, { id: string; name: string; visited: boolean }>();
+  const links: { from: string; to: string }[] = [];
+  const add = (id: string, visit: boolean) => {
+    const entry = known.get(id);
+    if (entry) entry.visited ||= visit;
+    else known.set(id, { id, name: locations.describe(id).name, visited: visit });
+  };
+  for (const id of visited) add(id, true);
+  for (const from of visited) {
+    for (const { to } of locations.describe(from).connections) {
+      if (to === from) continue;
+      add(to, false);
+      links.push({ from, to });
+    }
+  }
+
   return {
     clock: {
       t: minute,
@@ -98,6 +118,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
       hotspots: room.hotspots.map(({ id, name }) => ({ id, name, examined: false })),
       exits,
     },
+    knownMap: { locations: [...known.values()], links },
     presentCharacters: investigation.characters
       .filter(({ id }) => present.has(id))
       .map(({ id, name }) => ({ id, name, portraitRef: '', demeanor: '' })),

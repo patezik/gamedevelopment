@@ -270,6 +270,61 @@
                       ],
                       "additionalProperties": false
                     },
+                    "knownMap": {
+                      "type": "object",
+                      "properties": {
+                        "locations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "visited": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "visited"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "links": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "from": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "to": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "from",
+                              "to"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "locations",
+                        "links"
+                      ],
+                      "additionalProperties": false
+                    },
                     "presentCharacters": {
                       "type": "array",
                       "items": {
@@ -1349,6 +1404,7 @@
                   "required": [
                     "clock",
                     "location",
+                    "knownMap",
                     "presentCharacters",
                     "availableActions",
                     "vitals",

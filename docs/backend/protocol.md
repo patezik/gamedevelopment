@@ -131,7 +131,7 @@
 используют те же ограничения доступа и расчёт стоимости, что и `dispatch`. Для ожидания
 предлагается минимальная положительная длительность из таблицы стоимостей. При истечении времени
 действия больше не предлагаются. Для активной QR-фиксации передаются токен, подпись и оставшееся
-время. Доска дела, инвентарь, показатели и статус телефона заполняются в соответствующих задачах.
+время. `knownMap` строится из истории перемещений игрока (движок хранит посещённые локации и сохраняет их в снимке) и выходов посещённых локаций. Доска дела, инвентарь, показатели и статус телефона заполняются в соответствующих задачах.
 
 Единицы и диапазоны: время — `GameMinutes` (целые минуты, в предыстории отрицательные), `clock.time`
 и `status.time` — `HH:mm`; `health`, `sanity` — 0–10; `fatigue`, `static`, `battery`, `signal`,
@@ -143,6 +143,8 @@ interface PlayerView {
   location: { id; name; description; lighting: "bright"|"dim"|"dark";
               hotspots: { id; name; examined }[];                       // examined — история игрока, не «есть ли улика»
               exits: { locationId; name; minutes; blockedReason? }[] };
+  knownMap: { locations: { id; name; visited }[];                        // посещённые и увиденные как выход
+              links: { from; to }[] };                                  // выходы посещённых локаций; не граф мира
   presentCharacters: { id; name; portraitRef; demeanor }[];
   availableActions: { action: PlayerAction; label; costPreview: { min; max }; blockedReason? }[];
   vitals: { health; sanity; fatigue }; static; inventory: { id; name; description }[];

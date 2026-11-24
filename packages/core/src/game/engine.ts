@@ -36,6 +36,7 @@ export interface GameSnapshot {
   readonly initialInvestigationHash: string;
   readonly minute: number;
   readonly locationId: string;
+  readonly visitedLocationIds?: readonly string[];
   readonly pendingCapture?: PendingCapture;
 }
 
@@ -57,6 +58,7 @@ export class GameEngine {
   private readonly initialInvestigationHash: string;
   private readonly ports: EnginePorts;
   private locationId: string;
+  readonly #visited = new Set<string>();
   #pendingCapture: PendingCapture | undefined;
 
   private constructor(
@@ -76,6 +78,7 @@ export class GameEngine {
     this.initialInvestigationHash = initialInvestigationHash;
     this.ports = ports;
     this.locationId = locationId;
+    this.#visited.add(locationId);
     this.#time = new TimeSystem(new Calendar(startDateTime), durationMinutes, minute);
   }
 
@@ -105,6 +108,11 @@ export class GameEngine {
       snapshot.locationId,
       snapshot.minute,
     );
+    if (snapshot.visitedLocationIds) {
+      engine.#visited.clear();
+      for (const id of snapshot.visitedLocationIds) engine.#visited.add(id);
+      engine.#visited.add(snapshot.locationId);
+    }
     engine.#pendingCapture = snapshot.pendingCapture && { ...snapshot.pendingCapture };
     return engine;
   }
@@ -210,7 +218,10 @@ export class GameEngine {
       traceIds: [],
       visibility: 'public',
     });
-    if (completed) this.locationId = destination;
+    if (completed) {
+      this.locationId = destination;
+      this.#visited.add(destination);
+    }
     return {
       ok: true,
       minutesSpent,
@@ -223,6 +234,7 @@ export class GameEngine {
     return projectPlayerView({
       investigation: this.investigation,
       locationId: this.locationId,
+      visitedLocationIds: [...this.#visited],
       minute: this.#time.now(),
       ...(this.ports.player && { actor: this.ports.player }),
       ...(this.ports.actionCosts && { actionCosts: this.ports.actionCosts }),
@@ -237,6 +249,7 @@ export class GameEngine {
       initialInvestigationHash: this.initialInvestigationHash,
       minute: this.#time.now(),
       locationId: this.locationId,
+      visitedLocationIds: [...this.#visited],
       ...(pendingCapture ? { pendingCapture: { ...pendingCapture } } : {}),
     };
   }

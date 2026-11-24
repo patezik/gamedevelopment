@@ -31,6 +31,35 @@
       }
     ]
   },
+  "knownMap": {
+    "locations": [
+      {
+        "id": "loc_corridor",
+        "name": "Главный коридор",
+        "visited": true
+      },
+      {
+        "id": "loc_lobby",
+        "name": "Вестибюль",
+        "visited": false
+      },
+      {
+        "id": "loc_infirmary",
+        "name": "Процедурная",
+        "visited": false
+      }
+    ],
+    "links": [
+      {
+        "from": "loc_corridor",
+        "to": "loc_lobby"
+      },
+      {
+        "from": "loc_corridor",
+        "to": "loc_infirmary"
+      }
+    ]
+  },
   "presentCharacters": [],
   "availableActions": [
     {
