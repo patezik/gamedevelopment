@@ -1,4 +1,15 @@
 export {
+  AccusationError,
+  evaluateAccusation,
+  type AccusationContext,
+  type AccusationEndingId,
+  type AccusationErrorCode,
+  type AccusationOutcome,
+  type CaseFile,
+  type ClaimRef,
+  type ConsequenceRef,
+} from './accusation.ts';
+export {
   CLAIM_KINDS,
   DeductionRulesError,
   compileDeductionRules,
