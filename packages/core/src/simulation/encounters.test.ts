@@ -277,6 +277,29 @@ describe('converse', () => {
     expect(result.transfers.map((t) => factId(t.proposition))).toEqual(expected);
   });
 
+  it('recalls a proposition without an optional field as the best belief it matches', () => {
+    const bare: Proposition = { kind: 'did', who: 'ch_z', verb: 'take', at: 40, where: 'loc_x' };
+    const aimed: Proposition = { ...bare, target: { kind: 'item', id: 'it_log' } };
+    const later: Proposition = { ...bare, target: { kind: 'item', id: 'it_pen' } };
+    const result = converse(
+      encounter,
+      [
+        talker('ch_a', [
+          belief(bare, 0.5),
+          belief(aimed, 0.9),
+          // Not known yet at the encounter: recall skips it.
+          belief(later, 1, { acquiredAt: 110 }),
+        ]),
+        talker('ch_b'),
+      ],
+      friends(1),
+      truthModel(),
+    );
+    expect(result.transfers.map((t) => [t.proposition, t.confidence])).toEqual([
+      [aimed, 0.9 * 0.8],
+    ]);
+  });
+
   it('accepts a custom sensitivity and rejects an out-of-range one', () => {
     const run = (sensitivity: number) =>
       converse(

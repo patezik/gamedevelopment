@@ -315,7 +315,8 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **SIM-001:** модуль экспортирует `SimulationRunner`, `SimulationRunnerOptions`, `Agent`,
   `Activity` и `ActivityStep`. Раннер регистрирует обработчики фаз `Schedules` и `Simulation`
   в переданном `TimeSystem`. Порт `items` предоставляет `ItemRegistry.locate` и `history` для
-  проверки физического владения ключами. `getAgent(characterId)` возвращает снимок текущей активности и
+  проверки физического владения ключами. Необязательные `exits` (GEN-008) задают минуту, с которой
+  персонаж больше не действует и не наблюдает. `getAgent(characterId)` возвращает снимок текущей активности и
   состояния RNG. Целевой интерфейс ниже включает возможности следующих задач SIM.
 - **Интерфейс:**
   ```ts
@@ -530,6 +531,7 @@ class GenerationRejection extends Error { code: string; diagnostics?: Record<str
 const incidentSelection: Stage<ConflictWorld & { world: GeneratedWorld }, IncidentWorld>;        // IncidentPlan + IncidentReport (GEN-006)
 function assessIncidents(input, content): IncidentAssessment;   // все допустимые виновники по жертвам и шаблонам, без случайности
 function selectIncident(input, assessment, content, rng): IncidentWorld;   // выбор жертвы, шаблона и виновника (score^γ) на готовой оценке
+const historySimulation: Stage<PlotWorld, HistoryWorld>;   // TruthModel с IncidentRecord, знания, отношения и позиции на t = 0 (GEN-008)
 ```
 **Зависимости:** `@hs/core`, `@hs/validator` (шлюз). **Тесты:** каждая стадия отдельно на фикстурах;
 golden-снимки для 5 seed; распределение виновников.

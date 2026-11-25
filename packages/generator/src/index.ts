@@ -63,3 +63,13 @@ export {
   type PlotWorld,
   type ScheduleDeviation,
 } from './stages/plot-planning.ts';
+export {
+  DEATH_VERB,
+  HISTORY_PLOT_FRUSTRATED,
+  historySimulation,
+  LETHAL_INCIDENT_TYPES,
+  type ExecutedStep,
+  type HistoryAttempt,
+  type HistoryReport,
+  type HistoryWorld,
+} from './stages/history-sim.ts';
