@@ -89,6 +89,14 @@ export const presetSchema = z.strictObject({
       earlierIf: z
         .strictObject({ staticAtLeast: z.number().min(0).max(100), at: minutes })
         .optional(),
+      requiresPresence: z.strictObject({ locationId: id }).optional(),
+      onMissed: z
+        .discriminatedUnion('kind', [
+          z.strictObject({ kind: z.literal('static'), delta: z.number() }),
+          z.strictObject({ kind: z.literal('incident'), incidentId: id }),
+          z.strictObject({ kind: z.literal('closeLocation'), locationId: id }),
+        ])
+        .optional(),
     }),
   ),
   deadlines: z.array(z.strictObject({ id, at: minutes, outcome: id })),

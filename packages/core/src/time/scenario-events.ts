@@ -12,10 +12,10 @@ export interface CriticalEventConfig {
   readonly id: string;
   readonly at: GameMinutes;
   /** At minute `earlierIf.at` the event is pulled forward to that minute if Static is high enough. */
-  readonly earlierIf?: { readonly staticAtLeast: number; readonly at: GameMinutes };
+  readonly earlierIf?: { readonly staticAtLeast: number; readonly at: GameMinutes } | undefined;
   /** The event is missed when the player is not in `locationId` when it happens. */
-  readonly requiresPresence?: { readonly locationId: string };
-  readonly onMissed?: MissedEffect;
+  readonly requiresPresence?: { readonly locationId: string } | undefined;
+  readonly onMissed?: MissedEffect | undefined;
 }
 
 export interface DeadlineConfig {
@@ -34,6 +34,8 @@ export interface ScenarioEventsPorts {
   readonly staticLevel: () => number;
   /** Whether the player is in `locationId` at the moment the event happens. */
   readonly isPlayerPresent: (locationId: string) => boolean;
+  /** Applies an effect at the missed event's minute in the WorldEvents phase. */
+  readonly applyMissedEffect: (effect: MissedEffect, at: GameMinutes) => void;
 }
 
 export type ScenarioEvent =
@@ -64,7 +66,7 @@ const DEADLINE = 'scenario.deadline';
  * what happened. Time moves only through `TimeSystem.advance`; this class only handles events.
  */
 export class ScenarioEvents {
-  readonly #deadlines: readonly DeadlineConfig[];
+  readonly #deadlines = new Map<string, DeadlineConfig>();
   readonly #ports: ScenarioEventsPorts;
   readonly #time: TimeSystem;
   readonly #byId = new Map<string, CriticalEventConfig>();
@@ -75,7 +77,6 @@ export class ScenarioEvents {
 
   constructor(time: TimeSystem, config: ScenarioEventsConfig, ports: ScenarioEventsPorts) {
     this.#time = time;
-    this.#deadlines = config.deadlines;
     this.#ports = ports;
     for (const event of config.criticalEvents) {
       if (this.#byId.has(event.id)) throw new RangeError(`Duplicate critical event: ${event.id}`);
@@ -83,6 +84,12 @@ export class ScenarioEvents {
         throw new RangeError(`earlierIf.at must be before at: ${event.id}`);
       }
       this.#byId.set(event.id, event);
+    }
+    for (const deadline of config.deadlines) {
+      if (this.#deadlines.has(deadline.id)) {
+        throw new RangeError(`Duplicate deadline: ${deadline.id}`);
+      }
+      this.#deadlines.set(deadline.id, deadline);
     }
     time.registerHandler(CRITICAL, {
       phase: TickPhase.WorldEvents,
@@ -137,12 +144,14 @@ export class ScenarioEvents {
     this.#done.add(id);
     const presence = critical.requiresPresence;
     if (presence && !this.#ports.isPlayerPresent(presence.locationId)) {
+      const { onMissed } = critical;
       this.#log.push({
         type: 'ScheduledEventMissed',
         id,
         at: event.at,
-        ...(critical.onMissed && { onMissed: critical.onMissed }),
+        ...(onMissed && { onMissed }),
       });
+      if (onMissed) this.#ports.applyMissedEffect(onMissed, event.at);
       return undefined;
     }
     this.#log.push({ type: 'CriticalEventFired', id, at: event.at });
@@ -151,7 +160,7 @@ export class ScenarioEvents {
 
   #reach(event: ScheduledEvent): void {
     const { id } = event.payload as Payload;
-    const deadline = this.#deadlines.find((candidate) => candidate.id === id)!;
+    const deadline = this.#deadlines.get(id)!;
     this.#outcome ??= deadline.outcome;
     this.#log.push({ type: 'DeadlineReached', id, at: event.at, outcome: deadline.outcome });
   }

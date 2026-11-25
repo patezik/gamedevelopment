@@ -1,16 +1,23 @@
 import fc from 'fast-check';
 import { expect, test } from 'vitest';
+import { presetSchema } from '../content/schemas.ts';
 import { Calendar, ScenarioEvents, TimeSystem, type ScenarioEventsConfig } from './index.ts';
+import type { ScenarioEventsPorts } from './scenario-events.ts';
 
 function setup(
   config: ScenarioEventsConfig,
   end = 4320,
-  ports: { static?: () => number; present?: boolean } = {},
+  ports: {
+    static?: () => number;
+    present?: boolean;
+    applyMissedEffect?: ScenarioEventsPorts['applyMissedEffect'];
+  } = {},
 ) {
   const time = new TimeSystem(new Calendar('2026-01-14T08:00'), end);
   const events = new ScenarioEvents(time, config, {
     staticLevel: ports.static ?? (() => 0),
     isPlayerPresent: () => ports.present ?? false,
+    applyMissedEffect: ports.applyMissedEffect ?? (() => {}),
   });
   return { time, events };
 }
@@ -53,19 +60,29 @@ test('Static is read at the check minute, and the event fires once', () => {
 test('an event the player did not attend is missed and carries its onMissed effect', () => {
   const onMissed = { kind: 'static', delta: 10 } as const;
   const config = {
-    criticalEvents: [
+    criticalEvents: presetSchema.shape.criticalEvents.parse([
       { id: 'meeting', at: 780, requiresPresence: { locationId: 'greenhouse' }, onMissed },
-    ],
+      blackout,
+    ]),
     deadlines: [],
   };
-  const away = setup(config);
-  away.time.advance(780);
+  let level = 40;
+  const applyMissedEffect: ScenarioEventsPorts['applyMissedEffect'] = (effect, at) => {
+    expect(effect).toEqual(onMissed);
+    expect(at).toBe(780);
+    if (effect.kind === 'static') level += effect.delta;
+  };
+  const away = setup(config, 4320, { static: () => level, applyMissedEffect });
+  away.time.advance(2300);
   expect(away.events.drain()).toEqual([
     { type: 'ScheduledEventMissed', id: 'meeting', at: 780, onMissed },
+    { type: 'CriticalEventFired', id: 'blackout', at: 1920 },
   ]);
-  const there = setup(config, 4320, { present: true });
+  expect(level).toBe(50);
+  const there = setup(config, 4320, { present: true, applyMissedEffect });
   there.time.advance(780);
   expect(there.events.drain()).toEqual([{ type: 'CriticalEventFired', id: 'meeting', at: 780 }]);
+  expect(level).toBe(50);
 });
 
 test('a fired critical event interrupts an interruptible action', () => {
@@ -104,6 +121,15 @@ test('a deadline is handled after a critical event of the same minute', () => {
 });
 
 test('invalid configuration is rejected', () => {
+  expect(() =>
+    setup({
+      criticalEvents: [],
+      deadlines: [
+        { id: 'end', at: 5, outcome: 'time_up' },
+        { id: 'end', at: 6, outcome: 'solved' },
+      ],
+    }),
+  ).toThrow('Duplicate deadline: end');
   expect(() =>
     setup({
       criticalEvents: [

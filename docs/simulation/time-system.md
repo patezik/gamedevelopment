@@ -163,9 +163,11 @@ advance(m):
   Static даёт порт `staticLevel` (SURV-002).
 - `requiresPresence { locationId }`: если порт `isPlayerPresent` вернул `false`, вместо
   `CriticalEventFired` записывается `ScheduledEventMissed` с эффектом `onMissed`
-  (`static` / `incident` / `closeLocation`); применять эффект должен потребитель события.
+  (`static` / `incident` / `closeLocation`). Порт `applyMissedEffect` применяет эффект
+  в ту же минуту в фазе `WorldEvents`.
 - Сработавшее критическое событие прерывает прерываемое действие (`critical:<id>`).
-- События забираются `drain()`; схема пресета пока не содержит `requiresPresence` и `onMissed`.
+- События забираются `drain()`. Условие присутствия и эффект пропуска задаются в
+  `preset.criticalEvents`.
 
 ## 6. Сценарии разной длительности
 
