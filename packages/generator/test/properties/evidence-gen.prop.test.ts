@@ -1,6 +1,7 @@
 import type { ScenarioContent } from '@hs/core/content';
 import { createRng } from '@hs/core/rng';
 import { expect, test } from 'vitest';
+import { CONCEALMENT_VERBS } from '@hs/core/evidence';
 import { evidenceGen, GenerationRejection, type HistoryWorld } from '../../src/index.ts';
 import { planned, simulateHistory } from '../support/history.ts';
 import { silent } from '../support/incident.ts';
@@ -19,7 +20,8 @@ function evidence(history: HistoryWorld, content: ScenarioContent, seed: string)
 test(`${COUNT} seeds: every key event yields a clue and the QR share holds`, () => {
   const { minQrShare } = sanatorium.preset.phone;
   let checked = 0;
-  for (let n = 0; n < COUNT; n++) {
+  let concealments = 0;
+  for (let n = 0; checked < COUNT && n < COUNT * 10; n++) {
     const seed = `evidence-prop-${n}`;
     const world = planned(sanatorium, seed);
     if (!world) continue;
@@ -27,6 +29,16 @@ test(`${COUNT} seeds: every key event yields a clue and the QR share holds`, () 
     if (history instanceof GenerationRejection) continue;
     const result = evidence(history, sanatorium, seed);
     checked++;
+
+    // Conservation of evidence (ADR 0017): every concealment event leaves a trace and a clue.
+    for (const event of history.truth.events()) {
+      if (!CONCEALMENT_VERBS.includes(event.verb)) continue;
+      expect(
+        result.clues.some(({ sourceEventId }) => sourceEventId === event.id),
+        `${seed}: concealment ${event.id}`,
+      ).toBe(true);
+      concealments++;
+    }
 
     for (const id of history.truth.incident.keyEventIds) {
       expect(
@@ -55,7 +67,9 @@ test(`${COUNT} seeds: every key event yields a clue and the QR share holds`, () 
     // Deterministic: the same input gives the same clues.
     expect(evidence(history, sanatorium, seed).clues, seed).toEqual(result.clues);
   }
-  expect(checked).toBeGreaterThan(COUNT * 0.2);
+  // Exactly COUNT inputs that reached the stage were checked, not COUNT raw seeds.
+  expect(checked).toBe(COUNT);
+  expect(concealments).toBeGreaterThan(0);
 }, 600_000);
 
 test('a key event without any clue rejects the attempt', () => {
