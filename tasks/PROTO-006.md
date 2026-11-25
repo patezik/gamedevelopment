@@ -1,5 +1,5 @@
 ---
-id: PROTO-005
+id: PROTO-006
 title: "REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot"
 status: todo
 priority: P2
@@ -13,7 +13,7 @@ assignee: null
 claimed_at: null
 ---
 
-# PROTO-005 — REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot
+# PROTO-006 — REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot
 
 ## Описание
 
@@ -42,6 +42,12 @@ claimed_at: null
 ## Зависимости
 
 - [SRV-002](SRV-002.md) — REST: создание сессии и список сценариев
+
+Зависимость предполагает, что SRV-002 принимается со схемами контракта в
+`apps/server/src/routes/sessions.ts`, а эта задача переносит их в пакет. Если владелец требует для
+критерия SRV-002 «Ответ проходит схему протокола» именно схему из `@hs/protocol`, зависимость нужно
+развернуть (эта задача — без зависимости от SRV-002, SRV-002 — от этой), иначе задачи блокируют
+друг друга.
 
 ## Затрагиваемые модули
 

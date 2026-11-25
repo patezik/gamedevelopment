@@ -139,7 +139,7 @@
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | todo | — | [MOB-003](MOB-003.md) |
 | [PHONE-001](PHONE-001.md) | Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | P0 | L | done | claude-w3 | [INV-001](INV-001.md), [PROTO-002](PROTO-002.md) |
 | [PROTO-003](PROTO-003.md) | Генерация GDScript-констант протокола и контрактные тесты Godot | P0 | S | done | egor-claude-proto-003 | [PROTO-002](PROTO-002.md), [FND-008](FND-008.md) |
-| [PROTO-005](PROTO-005.md) | REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot | P2 | S | todo | — | [SRV-002](SRV-002.md) |
+| [PROTO-006](PROTO-006.md) | REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot | P2 | S | todo | — | [SRV-002](SRV-002.md) |
 | [SRV-001](SRV-001.md) | SessionManager: сессии, очередь действий, жизненный цикл | P0 | M | done | codex-engine-27 | [FND-005](FND-005.md), [ENG-001](ENG-001.md) |
 | [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | in_progress | egor-claude-srv-002 | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
 | [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | done | codex-prototype-27 | [SRV-001](SRV-001.md) |
