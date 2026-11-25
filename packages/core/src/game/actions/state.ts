@@ -27,6 +27,16 @@ export interface ActiveInteraction {
   readonly history: readonly DialogueLine[];
 }
 
+/** The player's accusation that ended the game (ENG-006). */
+export interface Verdict {
+  readonly endingId: 'solved' | 'partial' | 'wrong_accusation';
+  readonly proven: {
+    readonly motive: boolean;
+    readonly means: boolean;
+    readonly opportunity: boolean;
+  };
+}
+
 const packItemSchema = z.strictObject({
   id,
   kind: z.enum(['flashlight', 'medkit', 'sedative', 'lockpick', 'key', 'clue']),
@@ -63,6 +73,13 @@ const snapshotSchema = z.strictObject({
       ),
     })
     .optional(),
+  failedAccusations: z.int().positive().optional(),
+  verdict: z
+    .strictObject({
+      endingId: z.enum(['solved', 'partial', 'wrong_accusation']),
+      proven: z.strictObject({ motive: z.boolean(), means: z.boolean(), opportunity: z.boolean() }),
+    })
+    .optional(),
   vitals: z.unknown(),
   inventory: z.strictObject({ items: z.array(packItemSchema), flashlightOn: z.boolean() }),
 });
@@ -88,6 +105,10 @@ export class DesktopState {
   readonly unlockedDoors = new Set<string>();
   readonly announcedContradictions = new Set<string>();
   interaction: ActiveInteraction | undefined;
+  /** Wrong accusations the investigation survived; only one is forgiven. */
+  failedAccusations = 0;
+  /** Set once an accusation ends the game. */
+  verdict: Verdict | undefined;
   vitals: VitalsState;
   inventory: Inventory;
 
@@ -105,6 +126,8 @@ export class DesktopState {
       unlockedDoors: sorted(this.unlockedDoors),
       announcedContradictions: sorted(this.announcedContradictions),
       ...(this.interaction && { interaction: this.interaction }),
+      ...(this.failedAccusations > 0 && { failedAccusations: this.failedAccusations }),
+      ...(this.verdict && { verdict: this.verdict }),
       vitals: this.vitals,
       inventory: this.inventory,
     }) as unknown as DesktopStateSnapshot;
@@ -122,6 +145,8 @@ export class DesktopState {
     data.unlockedDoors.forEach((value) => state.unlockedDoors.add(value));
     data.announcedContradictions.forEach((value) => state.announcedContradictions.add(value));
     state.interaction = data.interaction;
+    state.failedAccusations = data.failedAccusations ?? 0;
+    state.verdict = data.verdict;
     state.vitals = restoreVitalsState(data.vitals);
     state.inventory = {
       items: createInventory(

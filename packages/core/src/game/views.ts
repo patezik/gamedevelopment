@@ -19,6 +19,7 @@ import {
   readableDocuments,
   type DesktopActionType,
 } from './actions/index.ts';
+import { endingOf, endingView } from './ending.ts';
 import type { Investigation } from './investigation.ts';
 
 export interface PlayerViewState {
@@ -65,11 +66,12 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
   const room = locations.describe(locationId);
   const { day, hh, mm, period } = new Calendar(locations.startDateTime).toDisplay(minute);
   const remainingMinutes = durationMinutes - minute;
+  const ending = endingOf(desktop, minute, durationMinutes);
   const present = new Set(presentAt(investigation, locationId, minute));
   const modifiers = currentModifiers(desktop, investigation, locationId, minute);
   const availableActions: PlayerView['availableActions'] = [];
   const offer = (action: Extract<OfferedAction, { type: DesktopActionType }>, label: string) => {
-    if (remainingMinutes <= 0) return;
+    if (remainingMinutes <= 0 || ending) return;
     const context = action.type === 'rest' ? { minutes: action.minutes } : { modifiers };
     const { min, max } = resolveActionCost(action.type, context, actionCosts);
     availableActions.push({ action, label, costPreview: { min, max } });
@@ -87,7 +89,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
       actionCosts,
       modifiers,
     );
-    if (remainingMinutes > 0 && !blockedReason) {
+    if (remainingMinutes > 0 && !ending && !blockedReason) {
       availableActions.push({
         action: { type: 'move', locationId: to },
         label: name,
@@ -140,7 +142,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
       : 'range' in wait
         ? wait.range[0] || (wait.step <= wait.range[1] ? wait.step : undefined)
         : undefined;
-  if (remainingMinutes > 0 && waitMinutes !== undefined) {
+  if (remainingMinutes > 0 && !ending && waitMinutes !== undefined) {
     const { min, max } = resolveActionCost('wait', { minutes: waitMinutes }, actionCosts);
     availableActions.push({
       action: { type: 'wait', minutes: waitMinutes },
@@ -196,6 +198,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     inventory: desktop.inventory.items.map(({ id, kind }) => ({ id, name: kind, description: '' })),
     caseBoard: caseBoard(desktop, clues),
     ...(interaction && { interaction }),
+    ...(ending && { ending: endingView(ending, investigation, desktop.verdict) }),
     phone: { paired: false, online: false, battery: 100 },
     ...(pendingCapture &&
       remainingMinutes > 0 &&

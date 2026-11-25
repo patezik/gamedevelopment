@@ -504,6 +504,20 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `desktop` все следующие хеши включают его. Цепочка журнала, чекпойнт и итоговый хеш проверяются
   по ADR 0014 в обоих случаях. `PlayerView` заполняет
   точки интереса, доску дела (улики, показания, противоречия), `interaction`, показатели и рюкзак.
+- **ENG-006** (`game/actions/accuse.ts`, `game/ending.ts`): `accuse` требует `EnginePorts.accusation
+  { rules, incident?, hallucinatedClueIds? }` (иначе `ACTION_NOT_AVAILABLE`); `incident` — инцидент,
+  как его выяснил игрок, а не истинный. `confirm: false` только возвращает событие
+  `AccusationConfirmationRequired` и ничего не меняет; `confirm: true` вызывает `evaluateAccusation`
+  (`CASEFILE_*`, неизвестный обвиняемый → `ACTION_INVALID`), время не тратится. Верное обвинение
+  (`solved`, `partial`), второе ложное или ложное без оставшегося времени ставят `verdict` и
+  завершают игру (`outcome` результата — id концовки); первое ложное при оставшемся времени
+  прощается один раз (`failedAccusations`), игра идёт дальше. Событие `AccusationMade` несёт
+  `result`, `proven`, `final` и не называет виновных. `AccusationOutcome` с `consequences`
+  (в них есть `characterId` виновных) уходит только в серверный порт
+  `simulation.onAccusation`, не в `events` и не в `PlayerView`. `endingOf` определяет концовку:
+  вердикт, затем `death`/`madness` по показателям, затем `time_up` по часам; после неё любое
+  действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` с `recap` (`TruthRecap`:
+  `responsible` — единственная проекция истины клиенту) появляется только когда игра окончена.
 - **Блокировка взаимодействия:** во время диалога или звонка (`activeInteraction`) действия,
   несовместимые с ним, отклоняются `ACTION_BLOCKED` (ENG-005).
 - **Ошибки:** `ACTION_INVALID`, `ACTION_NOT_AVAILABLE`, `ACTION_BLOCKED`, `GAME_OVER`.

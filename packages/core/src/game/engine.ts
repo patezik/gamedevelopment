@@ -17,6 +17,7 @@ import {
   resolveActionCost,
   type ActionCostTable,
 } from '../time/index.ts';
+import type { AccusationOutcome } from '../investigation/index.ts';
 import { WorldError, type Actor } from '../world/index.ts';
 import {
   DesktopState,
@@ -31,6 +32,8 @@ import {
   type PlayerActionObserved,
   type TestimonyPort,
 } from './actions/index.ts';
+import { accuse, type AccusationPort } from './actions/accuse.ts';
+import { endingOf, type EndingId } from './ending.ts';
 import {
   deserializeInvestigation,
   serializeInvestigation,
@@ -52,7 +55,13 @@ export interface EnginePorts {
   /** Starting pack (SURV-004): flashlight, medkits, lockpick, keys. */
   readonly inventory?: readonly PackItem[];
   /** Receives every `PlayerActionObserved` (SIM-006). */
-  readonly simulation?: { onPlayerAction(event: PlayerActionObserved): void };
+  readonly simulation?: {
+    onPlayerAction(event: PlayerActionObserved): void;
+    /** A judged accusation (ENG-006). Its consequences name characters: server side only. */
+    onAccusation?(outcome: AccusationOutcome, at: number): void;
+  };
+  /** Deduction rules for `accuse` (ENG-006); without them `accuse` is not available. */
+  readonly accusation?: AccusationPort;
   /**
    * Lets the simulation register phase handlers in the engine's `TimeSystem`. A handler that
    * returns `{ interrupt }` during an interruptible action (rest) stops it at that minute.
@@ -86,7 +95,8 @@ export interface DispatchResult {
   readonly error?: ErrorCode;
   readonly minutesSpent: number;
   readonly events: GameEvent[];
-  readonly outcome?: 'time_expired';
+  /** Set when the game is over: the clock ran out, the hero died or lost their mind, or an accusation ended it. */
+  readonly outcome?: 'time_expired' | Exclude<EndingId, 'time_up'>;
 }
 
 function rejected(error: ErrorCode): DispatchResult {
@@ -211,6 +221,17 @@ export class GameEngine {
   }
 
   dispatch(source: 'desktop' | 'phone', input: PlayerAction): DispatchResult {
+    const result = this.#dispatch(source, input);
+    if (!result.ok || result.outcome || !this.#desktop) return result;
+    const ending = endingOf(
+      this.#desktop,
+      this.#time.now(),
+      this.investigation.world.durationMinutes,
+    );
+    return ending && ending !== 'time_up' ? { ...result, outcome: ending } : result;
+  }
+
+  #dispatch(source: 'desktop' | 'phone', input: PlayerAction): DispatchResult {
     const parsed = PlayerAction.safeParse(input);
     const allowed: readonly PlayerAction['type'][] | undefined = ACTIONS_BY_ROLE[source];
     if (!parsed.success || !allowed?.includes(parsed.data.type)) return rejected('ACTION_INVALID');
@@ -219,10 +240,28 @@ export class GameEngine {
     const { durationMinutes } = this.investigation.world;
     const now = this.#time.now();
     if (now >= durationMinutes) return rejected('GAME_OVER');
-    if (action.type === 'accuse' || action.type === 'markSuspicion') {
-      return rejected('ACTION_NOT_AVAILABLE');
+    if (this.#desktop && endingOf(this.#desktop, now, durationMinutes)) {
+      return rejected('GAME_OVER');
     }
+    if (action.type === 'markSuspicion') return rejected('ACTION_NOT_AVAILABLE');
+    const port = this.ports.accusation;
+    if (action.type === 'accuse' && !port) return rejected('ACTION_NOT_AVAILABLE');
     const desktop = this.#desktop ?? this.#startingDesktop();
+    if (action.type === 'accuse' && port) {
+      const judged = accuse(action, desktop, {
+        investigation: this.investigation,
+        clues: this.ports.clues ?? [],
+        port,
+        now,
+      });
+      if (!judged.ok) return rejected('ACTION_INVALID');
+      if (!this.#desktop) {
+        this.#desktop = desktop;
+        this.ports.attachTime?.(this.#time);
+      }
+      if (judged.outcome) this.ports.simulation?.onAccusation?.(judged.outcome, now);
+      return { ok: true, minutesSpent: 0, events: judged.events };
+    }
     if (action.type === 'move' || action.type === 'wait') return this.#moveOrWait(action, desktop);
     if (!DESKTOP_ACTIONS.includes(action.type)) return rejected('ACTION_NOT_AVAILABLE');
 
