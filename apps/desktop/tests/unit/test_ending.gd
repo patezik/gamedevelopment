@@ -1,5 +1,5 @@
 extends GutTest
-## Ending (godot-client.md §4.4, ENG-006): the six endings on fixtures, their texts, what the
+## Ending (godot-client.md §4.5, ENG-006): the six endings on fixtures, their texts, what the
 ## accusation proved, the TruthRecap only from `ending.recap`, the seed row and the statistics.
 
 const GameStoreScript = preload("res://src/autoload/game_store.gd")

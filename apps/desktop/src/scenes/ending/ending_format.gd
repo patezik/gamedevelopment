@@ -28,7 +28,7 @@ const PART_TEXT: Dictionary = {
 const PROVEN_TEXT: String = "доказан"
 const NOT_PROVEN_TEXT: String = "не доказан"
 const MISSING: String = "—"
-## The protocol has no seed in any view (EndingView included); see godot-client.md §4.4.
+## The protocol has no seed in any view (EndingView included); see godot-client.md §4.5.
 const SEED_UNAVAILABLE_TEXT: String = "не передаётся сервером"
 
 

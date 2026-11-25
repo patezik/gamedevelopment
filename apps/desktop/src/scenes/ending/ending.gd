@@ -1,5 +1,5 @@
 extends Control
-## Ending screen (godot-client.md §4.4, game-design.md §5): which of the six endings the game
+## Ending screen (godot-client.md §4.5, game-design.md §5): which of the six endings the game
 ## reached, its text, what the accusation proved, the TruthRecap and the run's statistics.
 ##
 ## Everything shown is the `ending` of the PlayerView in GameStore, which the server adds only once

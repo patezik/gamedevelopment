@@ -1,5 +1,5 @@
 extends Control
-## Accusation screen (godot-client.md §4.3, game-design.md §5): the player names the accused,
+## Accusation screen (godot-client.md §4.4, game-design.md §5): the player names the accused,
 ## claims a motive, the means and the opportunity, attaches clues and confirms twice.
 ##
 ## The choice is offered from the PlayerView in GameStore only: characters the view names and the

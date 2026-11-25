@@ -1,5 +1,5 @@
 extends GutTest
-## Accusation (godot-client.md §4.3, ENG-006): the choice offered from the view, the `accuse`
+## Accusation (godot-client.md §4.4, ENG-006): the choice offered from the view, the `accuse`
 ## case file of the contract, the double confirmation (`confirm: false`, then `confirm: true`),
 ## cancelling, no repeated or wrong sending, server refusals and what follows a judged accusation.
 
