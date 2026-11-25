@@ -3,6 +3,7 @@ import { createRng } from '@hs/core/rng';
 import type { ScenarioContent } from '@hs/core/content';
 import { historySimulation, type PlotWorld } from '../../src/index.ts';
 import { planned } from '../support/history.ts';
+import { checkBudget } from '../../../core/bench/budget.ts';
 import { minimal, sanatorium, silent } from '../support/incident.ts';
 
 // ADR 0013: the history stage (3 days at most) takes <= 200 ms. Vitest 5 has no `bench`, so this
@@ -40,8 +41,8 @@ for (const [name, content] of [
   const max = times.at(-1)!;
   const minutes = -content.preset.time.historyStartMinutes;
   console.log(
-    `${name}: ${worlds.length} worlds, ${minutes} min of history, median ${median.toFixed(2)} ms, ` +
-      `max ${max.toFixed(2)} ms (budget ${BUDGET_MS} ms)`,
+    `${name}: ${worlds.length} worlds, ${minutes} min of history, max ${max.toFixed(2)} ms`,
   );
+  checkBudget(`history ${name} (median of ${worlds.length})`, median, BUDGET_MS);
   assert.ok(max < BUDGET_MS, `${name}: HistorySimulation took ${max.toFixed(2)} ms`);
 }
