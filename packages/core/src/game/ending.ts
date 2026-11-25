@@ -29,16 +29,19 @@ const TEXTS: Readonly<Record<EndingId, { title: string; text: string }>> = {
 
 /**
  * The ending the game is in, or `undefined` while it goes on. The accusation that ended the game
- * comes first; then the vitals (death before madness); then the clock.
+ * comes first; then the vitals (death before madness); then Static at 100; then the clock.
  */
 export function endingOf(
   state: { readonly verdict: Verdict | undefined; readonly vitals: { readonly vitals: Vitals } },
   now: number,
   durationMinutes: number,
+  /** Ending Static forces at 100 (ENG-010); `undefined` while Static is below it. */
+  staticEnding?: EndingId,
 ): EndingId | undefined {
   if (state.verdict) return state.verdict.endingId;
   const forced = endingFor(state.vitals.vitals);
   if (forced) return forced;
+  if (staticEnding) return staticEnding;
   return now >= durationMinutes ? 'time_up' : undefined;
 }
 
