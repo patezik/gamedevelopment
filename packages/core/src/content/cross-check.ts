@@ -69,6 +69,15 @@ export function crossCheck(content: ScenarioContent): ContentIssue[] {
   content.preset.cast.quotas.forEach(({ archetype }, row) =>
     reference(archetypes, archetype, `preset.cast.quotas[${row}].archetype`),
   );
+  index(content.preset.criticalEvents, 'preset.criticalEvents');
+  index(content.preset.deadlines, 'preset.deadlines');
+  content.preset.criticalEvents.forEach(({ requiresPresence, onMissed }, row) => {
+    const path = `preset.criticalEvents[${row}]`;
+    reference(locations, requiresPresence?.locationId, `${path}.requiresPresence.locationId`);
+    if (onMissed?.kind === 'closeLocation') {
+      reference(locations, onMissed.locationId, `${path}.onMissed.locationId`);
+    }
+  });
   content.preset.deadlines.forEach(({ outcome }, row) =>
     reference(endings, outcome, `preset.deadlines[${row}].outcome`),
   );
