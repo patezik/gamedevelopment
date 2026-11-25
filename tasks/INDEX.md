@@ -2,10 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **145** · todo: 35 · in_progress: 10 · review: 0 · done: 100 · blocked: 0
+Всего задач: **148** · todo: 38 · in_progress: 10 · review: 0 · done: 100 · blocked: 0
 
 ## Готовы к взятию сейчас
 
+- [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [SRV-010](SRV-010.md) — Проводка texts, проекций и событий в Session Server (P0, M)
+- [ENG-010](ENG-010.md) — Проводка модулей времени и выживания в GameEngine (P0, L)
 - [FND-010](FND-010.md) — Оркестрация разработки и проверка setup.md на чистой машине (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
@@ -149,7 +152,7 @@
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (24)
+## Фаза 6 · M6 — Vertical slice (26)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -161,6 +164,7 @@
 | [ENG-006](ENG-006.md) | Действие accuse, концовки и TruthRecap | P0 | M | done | claude-qa | [INV-005](INV-005.md), [ENG-003](ENG-003.md) |
 | [ENG-007](ENG-007.md) | Действие markSuspicion и проекция персон интереса и отметок в caseBoard | P0 | S | done | claude-qa | [ENG-003](ENG-003.md), [INV-003](INV-003.md) |
 | [ENG-009](ENG-009.md) | Проекция реплик NPC и стоимости предъявления в PlayerView | P0 | M | done | claude-qm | [ENG-003](ENG-003.md), [CNT-005](CNT-005.md) |
+| [ENG-011](ENG-011.md) | Источник рода и словарь терминов для русских текстов | P0 | M | todo | — | [CNT-005](CNT-005.md), [ENG-009](ENG-009.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
 | [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | done | egor-codex-gdt-005 | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | done | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
@@ -176,12 +180,14 @@
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
+| [SRV-010](SRV-010.md) | Проводка texts, проекций и событий в Session Server | P0 | M | todo | — | [SRV-005](SRV-005.md), [ENG-009](ENG-009.md), [PHONE-001](PHONE-001.md) |
 | [TIME-005](TIME-005.md) | Дедлайны, критические события, пропущенные события, условия завершения | P0 | M | done | claude-qh | [TIME-003](TIME-003.md), [ENG-006](ENG-006.md) |
 
-## Фаза 7 · M7 — MVP (10)
+## Фаза 7 · M7 — MVP (11)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
+| [ENG-010](ENG-010.md) | Проводка модулей времени и выживания в GameEngine | P0 | L | todo | — | [TIME-005](TIME-005.md), [SURV-002](SURV-002.md), [SURV-005](SURV-005.md), [SURV-003](SURV-003.md), [SIM-006](SIM-006.md) |
 | [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | done | egor-claude-gdt-010 | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
 | [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [MOB-011](MOB-011.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
