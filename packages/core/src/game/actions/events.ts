@@ -93,7 +93,21 @@ export type ActionEvent =
     }
   | { readonly type: 'ItemUsed'; readonly itemId: string; readonly at: GameMinutes }
   | { readonly type: 'ActionInterrupted'; readonly at: GameMinutes; readonly reason: string }
-  | { readonly type: 'InteractionEnded'; readonly characterId: string; readonly at: GameMinutes };
+  | { readonly type: 'InteractionEnded'; readonly characterId: string; readonly at: GameMinutes }
+  | { readonly type: 'AccusationConfirmationRequired'; readonly at: GameMinutes }
+  /** What the player learns of a verdict: never who the culprits are (the ending recap does that). */
+  | {
+      readonly type: 'AccusationMade';
+      readonly at: GameMinutes;
+      readonly result: 'solved' | 'partial' | 'wrong_accusation';
+      readonly proven: {
+        readonly motive: boolean;
+        readonly means: boolean;
+        readonly opportunity: boolean;
+      };
+      /** `false`: a wrong accusation with time left; the investigation goes on. */
+      readonly final: boolean;
+    };
 
 export type GameEvent =
   ClockEvent | SurvivalEvent | KnowledgeEvent | ActionEvent | PlayerActionObserved | PhoneEvent;
