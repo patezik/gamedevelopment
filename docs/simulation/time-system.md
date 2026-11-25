@@ -151,6 +151,13 @@ advance(m):
 21:00), при котором игрок не присутствовал, порождает `ScheduledEventMissed` во внутреннем
 журнале: информация из него доступна только косвенно (следы, пересказ свидетелей).
 
+### Static в движке
+
+`GameEngine` с портом `static` (ENG-010) регистрирует `StaticTimer` в своём `TimeSystem`: час за часом
+в фазе `Timers`, без собственных таймеров. Планировщик в снимок не входит, поэтому после `restore`
+следующий тик ставится на ближайшую границу часа. `GameEngine.staticLevel()` даёт текущий уровень
+для `earlierIf.staticAtLeast` ([survival-horror.md §3](../game-design/survival-horror.md)).
+
 ### События сценария (`ScenarioEvents`)
 
 `packages/core/src/time/scenario-events.ts` загружает `criticalEvents` и `deadlines` пресета в

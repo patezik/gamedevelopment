@@ -492,7 +492,19 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   startVitals?: Vitals; inventory?: readonly PackItem[];            // SURV-001, SURV-004
   simulation?: { onPlayerAction(e: PlayerActionObserved): void };   // SIM-006
   attachTime?: (time: TimeSystem) => void;              // обработчики фаз; прерывание отдыха
+  static?: { start?: number; endingAt100?: EndingId };  // ENG-010: Static в движке; без порта выключен
   ```
+- **ENG-010** (Static в движке): при `EnginePorts.static` движок вешает `StaticTimer` на свои
+  `TimeSystem` (рост +1 / 60 мин по часам, ровно по сетке часа и после `restore`), применяет
+  `STATIC_DELTAS`: раскрытое противоречие −3, подтверждённое ложное обвинение +15, и отдаёт
+  `StaticChanged`, `StaticThresholdReached`, `StaticOverwhelmed` в `DispatchResult.events`. Уровень —
+  в `PlayerView.static` и сигнале `PhoneView`; `GameEngine.staticLevel()` — порт `staticLevel` для
+  `ScenarioEvents` (TIME-006). Static 100 завершает игру концовкой `endingAt100` (по умолчанию
+  `madness`), `GameSnapshot.static` хранит состояние; старые снимки восстанавливаются с `start`. При
+  обвинении `hallucinationIds(phone)` добавляются в `hallucinatedClueIds`. Без порта `static` снимок
+  и хеш состояния не меняются, поэтому сохранения без него загружаются. Не подключены (остаток
+  ENG-010): ночь +3, находка тела +5, броски галлюцинаций по времени, реакции NPC и нападение
+  виновника.
   `DispatchResult.events` — `GameEvent[]`: события часов, показателей, `PlayerKnowledge`,
   действий и `PlayerActionObserved`. `GameSnapshot.desktop` хранит `PlayerKnowledge`, серверные
   показания с `veracity`, осмотренные локации и точки, открытые двери, диалог, показатели и
