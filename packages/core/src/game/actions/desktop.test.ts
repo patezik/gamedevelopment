@@ -756,7 +756,7 @@ describe('NPC lines and presentation cost (ENG-009)', () => {
       text: 'testimony_none',
       at: 1,
     } as never);
-    const restored = gameReplayRuntime(investigation, ports).restore(saved as never);
+    const restored = gameReplayRuntime(investigation, ports).restore(saved);
     const lines = restored.playerView().interaction!.history;
     expect(lines.at(-1)!.text).toMatch(/^Nothing to say/);
     // Old lines cannot fill their placeholders: the key stays, nothing throws.
