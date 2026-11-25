@@ -78,3 +78,18 @@ export {
   evidenceGen,
   type EvidenceWorld,
 } from './stages/evidence-gen.ts';
+export {
+  exactPattern,
+  testimonyGen,
+  type TestimonyReport,
+  type TestimonyWorld,
+} from './stages/testimony-gen.ts';
+export {
+  INCIDENT_MARGIN_MINUTES,
+  MAX_RED_HERRINGS,
+  MIN_RED_HERRINGS,
+  redHerrings,
+  type RedHerring,
+  type RedHerringReport,
+  type RedHerringWorld,
+} from './stages/red-herrings.ts';
