@@ -84,6 +84,7 @@
     "statements": [],
     "contradictions": [],
     "personsOfInterest": [],
+    "motiveTargets": [],
     "suspicions": [
       {
         "characterId": "ch_doctor",

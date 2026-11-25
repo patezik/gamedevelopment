@@ -40,6 +40,11 @@
 linkedStatementIds, links }`. Второй аргумент — тот же `Pick<ClaimContext, "clues">`, что и у
 `detectContradictions`: в `DiscoveredClue` нет ссылок на персонажей, их дают `Clue.supports`.
 
+- **Цели мотива (ENG-013).** `motiveTargets(pk, { clues })` возвращает id, на которых указывают
+  найденные улики и услышанные показания: второй аргумент `motive` и `about`, `against` услышанного
+  мотива. Читается только цель, «чей» мотив не раскрывается; истина не используется. Из этого
+  списка `PlayerView.caseBoard.motiveTargets` строит выбор цели в обвинении.
+
 - **Связь через улику.** Найденная улика связывает персонажей, названных в её ссылках: первый
   аргумент `presence`, `opportunity`, `means`, `alibi`, `motive` (`role: "subject"`) и жертва в
   `motive(c, victim)` (`role: "target"`). `contradiction(...)`, неизвестные ссылки и переменные

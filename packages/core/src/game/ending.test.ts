@@ -122,6 +122,21 @@ describe('accuse', () => {
     expect(accuseWith(found(), fullCase)).toMatchObject({ ok: true, outcome: 'solved' });
   });
 
+  test('motive targets come from the clues held, name no culprit, and ignore the truth (ENG-013)', () => {
+    const none = GameEngine.create(investigation, ports());
+    expect(none.playerView().caseBoard.motiveTargets).toEqual([]);
+
+    const engine = found();
+    const targets = engine.playerView().caseBoard.motiveTargets;
+    const victimName = investigation.characters.find(({ id }) => id === victim)!.name;
+    expect(targets).toEqual([{ characterId: victim, name: victimName }]);
+    // The target list lets the player build the claim that wins the case.
+    const motive = `motive(${culprit},${targets[0]!.characterId})`;
+    expect(accuseWith(engine, { ...fullCase, motive })).toMatchObject({ outcome: 'solved' });
+
+    expect(targets.map(({ characterId }) => characterId)).not.toContain(culprit);
+  });
+
   test('a false accusation raises Static by 15 once judged (ENG-010)', () => {
     const engine = found({ static: { start: 5 } });
     const result = accuseWith(engine, wrongCase);

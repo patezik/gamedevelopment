@@ -153,6 +153,20 @@ func test_claims_only_about_the_accused_and_known_characters() -> void:
 	assert_false(screen.get_case_file().has("opportunity"), "a claim about someone no longer accused drops")
 
 
+func test_motive_target_may_be_a_character_only_the_motive_targets_name() -> void:
+	var screen: Accusation = _live()
+	var named: Dictionary = _view.duplicate(true)
+	(named["caseBoard"] as Dictionary)["motiveTargets"] = [{"characterId": "ch_patient", "name": "Пациент Орлов"}]
+	_publish(named)
+	screen.set_accused(["ch_doctor"])
+	screen.set_claim("motive", "ch_doctor", "ch_patient")
+	var file: Dictionary = screen.get_case_file()
+	assert_eq(str(file.get("motive", "")), "motive(ch_doctor,ch_patient)")
+	_publish(_view)
+	file = screen.get_case_file()
+	assert_false(file.has("motive"), "a target the view no longer names drops")
+
+
 func test_selection_survives_a_view_update_and_drops_what_the_view_lost() -> void:
 	var screen: Accusation = _live()
 	_fill(screen)

@@ -380,6 +380,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   function compileDeductionRules(input: unknown): DeductionRules;       // DeductionRulesError DEDUCTION_RULES_INVALID (INV-002)
   function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules, ctx?: ClaimContext): EstablishedClaim[];
   // ClaimContext = { clues: Map<ClueId, { supports }>; incident?: { location; window } } — известное игроку, не истина
+  function motiveTargets(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">): string[];   // ENG-013; только цели, без «чей» мотив
   function personsOfInterest(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">): PersonOfInterest[];   // INV-003; подсказка, не Suspect
   function detectContradictions(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">, toleranceMinutes?: number): Contradiction[];   // INV-004; событие ContradictionFound — contradictionEvents()
   interface CaseFile { accusedIds: CharacterId[]; motive?: ClaimRef; means?: ClaimRef; opportunity?: ClaimRef; evidence: ClueId[] }
