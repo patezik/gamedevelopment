@@ -32,3 +32,15 @@ export {
   type LodLevel,
   type SimulationLodOptions,
 } from './lod.ts';
+export {
+  avoidPlayer,
+  refuseWhenAccused,
+  scoreAvoidPlayer,
+  PlayerReactions,
+  AVOID_MINUTES,
+  AVOID_WARINESS_THRESHOLD,
+  BYSTANDER_FACTOR,
+  type AvoidPorts,
+  type ObservedPlayerAction,
+  type ReactionPorts,
+} from './reactions.ts';
