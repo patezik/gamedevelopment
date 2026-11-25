@@ -504,8 +504,13 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `desktop` все следующие хеши включают его. Цепочка журнала, чекпойнт и итоговый хеш проверяются
   по ADR 0014 в обоих случаях. `PlayerView` заполняет
   точки интереса, доску дела (улики, показания, противоречия), `interaction`, показатели и рюкзак.
-- **Блокировка взаимодействия:** во время диалога или звонка (`activeInteraction`) действия,
-  несовместимые с ним, отклоняются `ACTION_BLOCKED` (ENG-005).
+- **Блокировка взаимодействия (ENG-005, `game/interaction.ts`):** `blockReason(action, context)` —
+  чистая матрица открытого диалога (`talk` или `interrogation`) и состояния звонка
+  (`EnginePorts.callState`) против нового действия. Открытый диалог блокирует `call` и `answerCall`;
+  допрос (`interrogation`, признак в `ActiveInteraction`) дополнительно блокирует `move`, `pickLock`
+  и `rest`, остальные действия допрос завершают; активный или входящий звонок блокирует `talk` и
+  `interrogate`, входящий — ещё и `call`. Отказ: `ACTION_BLOCKED` и `DispatchResult.blockedReason`
+  (`dialogue_open`, `interrogation_open`, `call_ringing`, `call_active`); состояние не меняется.
 - **Ошибки:** `ACTION_INVALID`, `ACTION_NOT_AVAILABLE`, `ACTION_BLOCKED`, `GAME_OVER`.
 - **Тесты:** каждое действие тратит время по таблице; проекции не содержат полей истины
   (тест сканирует JSON на запрещённые ключи `veracity`, `culpritIds`, `truth`); replay.

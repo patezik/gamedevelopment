@@ -32,6 +32,7 @@ import {
   type TestimonyPort,
 } from './actions/index.ts';
 import { applyMarkSuspicion } from './actions/suspicion.ts';
+import { blockReason, type BlockReason } from './interaction.ts';
 import {
   deserializeInvestigation,
   serializeInvestigation,
@@ -59,6 +60,8 @@ export interface EnginePorts {
    * returns `{ interrupt }` during an interruptible action (rest) stops it at that minute.
    */
   readonly attachTime?: (time: TimeSystem) => void;
+  /** The phone call state for arbitration (ENG-005); no phone in the engine yet means no call. */
+  readonly callState?: () => 'ringing' | 'active' | undefined;
 }
 
 const DESKTOP_ACTIONS: readonly string[] = [
@@ -88,6 +91,8 @@ export interface DispatchResult {
   readonly minutesSpent: number;
   readonly events: GameEvent[];
   readonly outcome?: 'time_expired';
+  /** Why `ACTION_BLOCKED` was returned, for the UI. */
+  readonly blockedReason?: BlockReason;
 }
 
 function rejected(error: ErrorCode): DispatchResult {
@@ -231,6 +236,12 @@ export class GameEngine {
       }
       return { ok: true, minutesSpent: 0, events: [] };
     }
+    const reason = blockReason(action.type, {
+      dialogue:
+        desktop.interaction && (desktop.interaction.interrogation ? 'interrogation' : 'talk'),
+      call: this.ports.callState?.(),
+    });
+    if (reason) return { ...rejected('ACTION_BLOCKED'), blockedReason: reason };
     if (action.type === 'move' || action.type === 'wait') return this.#moveOrWait(action, desktop);
     if (!DESKTOP_ACTIONS.includes(action.type)) return rejected('ACTION_NOT_AVAILABLE');
 
