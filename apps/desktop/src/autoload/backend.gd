@@ -120,6 +120,11 @@ func send_action(action: Dictionary) -> Error:
 	return result
 
 
+## The `sessionId` of the last `welcome`; empty before it and after [method disconnect_session].
+func get_session_id() -> String:
+	return _session_id
+
+
 ## Read immediately after a successful send_action to correlate its action.result.
 func get_last_action_request_id() -> String:
 	return _last_action_request_id

@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Wire protocol contract: message envelope, error codes, version, JSON Schema export.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./fixtures/*": "./fixtures/*"
   },
   "scripts": {
     "protocol:gen": "node scripts/gen.ts",
