@@ -2,14 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **154** · todo: 41 · in_progress: 7 · review: 1 · done: 105 · blocked: 0
+Всего задач: **154** · todo: 41 · in_progress: 7 · review: 0 · done: 106 · blocked: 0
 
 ## Готовы к взятию сейчас
 
+- [MOB-002](MOB-002.md) — Экран привязки: скан QR привязки, ручной ввод, SecureStore (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
 - [ENG-010](ENG-010.md) — Проводка модулей выживания в GameEngine (P0, L)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
+- [QA-003](QA-003.md) — Инфраструктура локализации RU/EN (Godot и мобильное приложение) (P2, M)
 
 ## Критический путь
 
@@ -29,10 +31,10 @@
 | [SRV-013](SRV-013.md) Штатная сборка Session Server с WebSocket и QR | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
-| [MOB-001](MOB-001.md) Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | 2 |
 | [MOB-005](MOB-005.md) Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | 2 |
 | [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
 | [SRV-012](SRV-012.md) Порты дела и стартовые данные пресета для GameEngine | 2 |
+| [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -133,7 +135,7 @@
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | todo | — | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
-| [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | review | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
+| [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | todo | — | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
 | [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | todo | — | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
 | [MOB-004](MOB-004.md) | Приложение Camera: сканирование QR улик и обработка ошибок | P0 | M | todo | — | [MOB-003](MOB-003.md), [SRV-006](SRV-006.md) |
