@@ -1,10 +1,20 @@
 import type { Check } from '../check.ts';
 import { determinismCheck, investigationHash } from './determinism.ts';
 import { phoneRequiredCheck } from './phone-required.ts';
+import {
+  liesBreakableCheck,
+  testimonyCheck,
+  collectTestimony,
+  TESTIMONY_CHECKS,
+} from './testimony.ts';
 import { timelineCheck } from './timeline.ts';
 import { truthInvariantsCheck } from './truth-invariants.ts';
 
 export {
+  TESTIMONY_CHECKS,
+  collectTestimony,
+  liesBreakableCheck,
+  testimonyCheck,
   determinismCheck,
   investigationHash,
   phoneRequiredCheck,

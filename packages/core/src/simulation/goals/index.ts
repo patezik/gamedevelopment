@@ -28,3 +28,4 @@ export {
   type SeekTrigger,
   type Threat,
 } from './npc-goals.ts';
+export { confrontPlayer, scoreConfrontPlayer, type ConfrontPorts } from './confront-player.ts';

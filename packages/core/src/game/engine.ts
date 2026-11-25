@@ -8,7 +8,15 @@ import {
   type EvidenceTokenPort,
   type PendingCapture,
 } from '../evidence/index.ts';
-import { burnFlashlight, rest, tickAwake, type PackItem, type Vitals } from '../survival/index.ts';
+import { projectPhoneView, type PhoneEvent } from '../phone/index.ts';
+import {
+  burnFlashlight,
+  costModifiers,
+  rest,
+  tickAwake,
+  type PackItem,
+  type Vitals,
+} from '../survival/index.ts';
 import {
   ActionCostError,
   Calendar,
@@ -20,17 +28,25 @@ import {
 import { WorldError, type Actor } from '../world/index.ts';
 import {
   DesktopState,
+  PhoneRuntime,
   currentModifiers,
   effectiveActor,
+  isPhoneAction,
+  planPhoneAction,
   planDesktopAction,
   presentAt,
   type ActionPlan,
   type DesktopActionType,
   type DesktopStateSnapshot,
   type GameEvent,
+  type PhoneActionType,
+  type PhonePlan,
+  type PhonePort,
   type PlayerActionObserved,
   type TestimonyPort,
 } from './actions/index.ts';
+import { applyMarkSuspicion } from './actions/suspicion.ts';
+import { blockReason, type BlockReason } from './interaction.ts';
 import {
   deserializeInvestigation,
   serializeInvestigation,
@@ -58,6 +74,10 @@ export interface EnginePorts {
    * returns `{ interrupt }` during an interruptible action (rest) stops it at that minute.
    */
   readonly attachTime?: (time: TimeSystem) => void;
+  /** The hero's phone (ENG-004): starting content and the simulation's answers to calls and messages. */
+  readonly phone?: PhonePort;
+  /** The phone call state for arbitration (ENG-005); no phone in the engine yet means no call. */
+  readonly callState?: () => 'ringing' | 'active' | undefined;
 }
 
 const DESKTOP_ACTIONS: readonly string[] = [
@@ -79,6 +99,8 @@ export interface GameSnapshot {
   readonly pendingCapture?: PendingCapture;
   /** ENG-003 state; absent in snapshots taken before it, which restore to the starting state. */
   readonly desktop?: DesktopStateSnapshot;
+  /** ENG-004 phone; present only for engines created with `ports.phone`. */
+  readonly phone?: unknown;
 }
 
 export interface DispatchResult {
@@ -87,6 +109,12 @@ export interface DispatchResult {
   readonly minutesSpent: number;
   readonly events: GameEvent[];
   readonly outcome?: 'time_expired';
+  /** Why `ACTION_BLOCKED` was returned, for the UI. */
+  readonly blockedReason?: BlockReason;
+}
+
+function isPhonePlan(plan: { readonly type: string }): plan is PhonePlan {
+  return isPhoneAction(plan.type);
 }
 
 function rejected(error: ErrorCode): DispatchResult {
@@ -101,6 +129,7 @@ export class GameEngine {
   private locationId: string;
   #pendingCapture: PendingCapture | undefined;
   #desktop: DesktopState | undefined;
+  #phone: PhoneRuntime | undefined;
 
   private constructor(
     investigation: Investigation,
@@ -147,6 +176,7 @@ export class GameEngine {
       engine.#desktop = engine.#startingDesktop();
       ports.attachTime?.(engine.#time);
     }
+    if (ports.phone) engine.#phone = new PhoneRuntime(ports.phone.initial);
     return engine;
   }
 
@@ -170,7 +200,17 @@ export class GameEngine {
       engine.#desktop = DesktopState.restore(snapshot.desktop);
       ports.attachTime?.(engine.#time);
     }
+    if (snapshot.phone !== undefined) engine.#phone = PhoneRuntime.restore(snapshot.phone);
+    else if (ports.phone) engine.#phone = new PhoneRuntime(ports.phone.initial);
     return engine;
+  }
+
+  /**
+   * Lets the simulation change the phone (an incoming call, a message, a revealed file). Call it
+   * only from deterministic code driven by game time, so that a replay repeats it.
+   */
+  receivePhoneEvent(event: PhoneEvent): PhoneEvent | undefined {
+    return this.#phone?.emit(event);
   }
 
   pendingEvidenceCapture(): PendingCapture | undefined {
@@ -213,17 +253,37 @@ export class GameEngine {
   dispatch(source: 'desktop' | 'phone', input: PlayerAction): DispatchResult {
     const parsed = PlayerAction.safeParse(input);
     const allowed: readonly PlayerAction['type'][] | undefined = ACTIONS_BY_ROLE[source];
-    if (!parsed.success || !allowed?.includes(parsed.data.type)) return rejected('ACTION_INVALID');
+    // The server dispatches `captureEvidence` itself after it validated `qr.scan`.
+    const capture = source === 'phone' && parsed.success && parsed.data.type === 'captureEvidence';
+    if (!parsed.success || !(capture || allowed?.includes(parsed.data.type))) {
+      return rejected('ACTION_INVALID');
+    }
 
     const action = parsed.data;
     const { durationMinutes } = this.investigation.world;
     const now = this.#time.now();
     if (now >= durationMinutes) return rejected('GAME_OVER');
-    if (action.type === 'accuse' || action.type === 'markSuspicion') {
-      return rejected('ACTION_NOT_AVAILABLE');
-    }
+    if (action.type === 'accuse') return rejected('ACTION_NOT_AVAILABLE');
     const desktop = this.#desktop ?? this.#startingDesktop();
+    if (action.type === 'markSuspicion') {
+      const known = new Set(this.investigation.characters.map(({ id }) => id));
+      if (!applyMarkSuspicion(desktop.knowledge, known, action)) return rejected('ACTION_INVALID');
+      if (!this.#desktop) {
+        this.#desktop = desktop;
+        this.ports.attachTime?.(this.#time);
+      }
+      return { ok: true, minutesSpent: 0, events: [] };
+    }
+    const reason = blockReason(action.type, {
+      dialogue:
+        desktop.interaction && (desktop.interaction.interrogation ? 'interrogation' : 'talk'),
+      call: this.ports.callState?.() ?? this.#phone?.state.activeCall?.state,
+    });
+    if (reason) return { ...rejected('ACTION_BLOCKED'), blockedReason: reason };
     if (action.type === 'move' || action.type === 'wait') return this.#moveOrWait(action, desktop);
+    if (isPhoneAction(action.type)) {
+      return this.#phoneAction(action as Extract<PlayerAction, { type: PhoneActionType }>, desktop);
+    }
     if (!DESKTOP_ACTIONS.includes(action.type)) return rejected('ACTION_NOT_AVAILABLE');
 
     const plan = planDesktopAction(
@@ -246,6 +306,31 @@ export class GameEngine {
     );
     if (typeof plan === 'string') return rejected(plan);
     return this.#perform(plan, desktop);
+  }
+
+  #phoneAction(
+    action: Extract<PlayerAction, { type: PhoneActionType }>,
+    desktop: DesktopState,
+  ): DispatchResult {
+    const runtime = this.#phone;
+    if (!runtime) return rejected('ACTION_NOT_AVAILABLE');
+    const pending = this.pendingEvidenceCapture();
+    const plan = planPhoneAction(action, {
+      runtime,
+      desktop,
+      clues: this.ports.clues ?? [],
+      now: this.#time.now(),
+      costs: this.ports.actionCosts ?? DEFAULT_ACTION_COSTS,
+      modifiers: costModifiers(desktop.vitals.vitals),
+      ...(this.ports.phone && { port: this.ports.phone }),
+      ...(pending && { pendingCapture: pending }),
+    });
+    if (typeof plan === 'string') return rejected(plan);
+    const result = this.#perform(plan, desktop);
+    if (result.events.some(({ type }) => type === 'EvidenceCaptured')) {
+      this.#pendingCapture = undefined;
+    }
+    return result;
   }
 
   /** Format 1 has no upgrade marker. A resumed journal changes rules at its first new state.
@@ -345,7 +430,7 @@ export class GameEngine {
 
   /** Spends the plan's time through `TimeSystem.advance`, then applies its effect. */
   #perform(
-    plan: Omit<ActionPlan, 'type'> & { type: ActionPlan['type'] | 'move' | 'wait' },
+    plan: (Omit<ActionPlan, 'type'> & { type: ActionPlan['type'] | 'move' | 'wait' }) | PhonePlan,
     desktop: DesktopState | undefined,
   ): DispatchResult {
     const now = this.#time.now();
@@ -364,21 +449,25 @@ export class GameEngine {
     const minutesSpent = elapsed.to - elapsed.from;
     const interrupted = elapsed.interruptedAt !== undefined;
     const completed = minutesSpent === plan.minutes && !interrupted;
-    this.investigation.truth.append({
-      t: now,
-      duration: minutesSpent,
-      verb:
-        completed || plan.type === 'wait' || plan.type === 'rest'
-          ? plan.verb
-          : `attempt_${plan.verb}`,
-      actorIds: ['player'],
-      location: from,
-      targets: [...plan.targets],
-      causes: [],
-      facts: [],
-      traceIds: [],
-      visibility: 'public',
-    });
+    const phonePlan = isPhonePlan(plan);
+
+    // Using the phone is not an event of the world: the truth log and the witnesses ignore it.
+    if (!phonePlan)
+      this.investigation.truth.append({
+        t: now,
+        duration: minutesSpent,
+        verb:
+          completed || plan.type === 'wait' || plan.type === 'rest'
+            ? plan.verb
+            : `attempt_${plan.verb}`,
+        actorIds: ['player'],
+        location: from,
+        targets: [...plan.targets],
+        causes: [],
+        facts: [],
+        traceIds: [],
+        visibility: 'public',
+      });
 
     if (!desktop) {
       // Before ENG-003 only move/wait spent time and recorded truth.
@@ -399,9 +488,13 @@ export class GameEngine {
     desktop.inventory = burnFlashlight(desktop.inventory, minutesSpent);
     events.push(...vitals.events);
 
+    if (this.#phone) {
+      events.push(...this.#phone.drain(minutesSpent), ...this.#phone.deliverDue(elapsed.to));
+    }
+
     const dialogue = plan.type === 'talk' || plan.type === 'interrogate';
     const open = desktop.interaction;
-    if (open && (!dialogue || open.characterId !== plan.characterId)) {
+    if (open && !phonePlan && (!dialogue || open.characterId !== plan.characterId)) {
       desktop.interaction = undefined;
       events.push({ type: 'InteractionEnded', characterId: open.characterId, at: elapsed.to });
     }
@@ -414,6 +507,14 @@ export class GameEngine {
       });
     }
 
+    if (phonePlan) {
+      return {
+        ok: true,
+        minutesSpent,
+        events,
+        ...(elapsed.to === durationMinutes ? { outcome: 'time_expired' as const } : {}),
+      };
+    }
     const heardByIds = plan.noisy
       ? [
           ...new Set([
@@ -459,6 +560,18 @@ export class GameEngine {
     });
   }
 
+  /** What the phone app shows; `undefined` when the engine has no phone. No truth in it. */
+  phoneView() {
+    const runtime = this.#phone;
+    if (!runtime) return undefined;
+    const minute = this.#time.now();
+    return projectPhoneView(
+      runtime.state,
+      { vitals: (this.#desktop ?? this.#startingDesktop()).vitals.vitals, static: 0 },
+      { minute, calendar: new Calendar(this.investigation.world.locations.startDateTime) },
+    );
+  }
+
   snapshot(): GameSnapshot {
     const pendingCapture = this.#pendingCapture;
     return {
@@ -468,6 +581,7 @@ export class GameEngine {
       locationId: this.locationId,
       ...(pendingCapture ? { pendingCapture: { ...pendingCapture } } : {}),
       ...(this.#desktop && { desktop: this.#desktop.serialize() }),
+      ...(this.#phone && { phone: this.#phone.serialize() }),
     };
   }
 
