@@ -88,8 +88,22 @@ jobs:
       - run: npm run typecheck
       - run: npm run content:check
       - run: npm test -- --coverage
-      - name: Scheduler performance without coverage
-        run: node packages/core/test/performance/scheduler.ts
+
+  # QA-002: separate job so benchmarks run without coverage and do not lengthen the node job.
+  perf:
+    name: Performance budgets
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run bench
 
   godot:
     name: Godot tests
