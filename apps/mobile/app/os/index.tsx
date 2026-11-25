@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeGrid } from '../../src/os/HomeGrid';
-import { NotificationCenter } from '../../src/os/NotificationCenter';
 import { StatusBar } from '../../src/os/StatusBar';
 import { usePhoneView } from '../../src/os/usePhoneView';
 import { OS_APPS } from '../../src/os-apps/registry';
@@ -20,10 +19,6 @@ export default function OsHome() {
           onOpen={(appId) => router.push({ pathname: '/os/[appId]', params: { appId } })}
         />
       </View>
-      <NotificationCenter
-        view={view}
-        onOpenApp={(appId) => router.push({ pathname: '/os/[appId]', params: { appId } })}
-      />
     </SafeAreaView>
   );
 }
