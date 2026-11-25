@@ -20,6 +20,11 @@ import {
   readableDocuments,
   type DesktopActionType,
 } from './actions/index.ts';
+import {
+  renderDialogueLine,
+  type DialogueTextContext,
+  type TextTemplates,
+} from './dialogue-text.ts';
 import { endingOf, endingView } from './ending.ts';
 import { blockReason } from './interaction.ts';
 import type { Investigation } from './investigation.ts';
@@ -34,6 +39,8 @@ export interface PlayerViewState {
   /** ENG-003 state: what the player examined, knows, carries and who they are talking to. */
   readonly desktop?: DesktopState;
   readonly clues?: readonly Clue[];
+  /** Text templates of the scenario locale (CNT-005); without them lines keep their keys. */
+  readonly texts?: TextTemplates;
 }
 
 type OfferedAction = PlayerView['availableActions'][number]['action'];
@@ -63,7 +70,13 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     pendingCapture,
     desktop = new DesktopState(),
     clues = [],
+    texts,
   } = state;
+  const textContext: DialogueTextContext | undefined = texts && {
+    investigation,
+    templates: texts,
+    statements: desktop.statements,
+  };
   const { locations, durationMinutes } = investigation.world;
   const room = locations.describe(locationId);
   const { day, hh, mm, period } = new Calendar(locations.startDateTime).toDisplay(minute);
@@ -116,6 +129,27 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
   const people = investigation.characters.filter(({ id }) => present.has(id));
   for (const { id, name } of people)
     offer({ type: 'talk', characterId: id, topicId: 'self' }, name);
+  // Presenting costs the same as the server charges for `interrogate` (planDesktopAction).
+  for (const { id: characterId, name } of people) {
+    for (const clueId of desktop.knowledge.clues.keys()) {
+      const label = clues.find((clue) => clue.id === clueId)?.presentation ?? clueId;
+      offer(
+        { type: 'interrogate', characterId, subject: { type: 'evidence', clueId } },
+        `${name}: ${label}`,
+      );
+    }
+    for (const { id, statementId } of contradictionsOf(desktop, clues)) {
+      if (desktop.statements.get(statementId)?.speakerId !== characterId) continue;
+      offer(
+        {
+          type: 'interrogate',
+          characterId,
+          subject: { type: 'contradiction', contradictionId: id },
+        },
+        `${name}: противоречие`,
+      );
+    }
+  }
   for (const documentId of readableDocuments(investigation, clues, locationId, minute)) {
     offer({ type: 'read', documentId }, 'Изучить документ');
   }
@@ -175,7 +209,11 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
         .filter(({ statementId }) => desktop.statements.get(statementId)?.speakerId === partner.id)
         .map(({ id }) => ({ type: 'contradiction' as const, id, label: 'Противоречие' })),
     ],
-    history: (open?.history ?? []).map((line) => ({ ...line })),
+    history: (open?.history ?? []).map((line, index) => ({
+      speaker: line.speaker,
+      at: line.at,
+      text: renderDialogueLine(line, index, partner.id, textContext),
+    })),
   };
 
   return {
@@ -200,7 +238,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     vitals: { ...desktop.vitals.vitals },
     static: 0,
     inventory: desktop.inventory.items.map(({ id, kind }) => ({ id, name: kind, description: '' })),
-    caseBoard: caseBoard(desktop, clues, investigation.characters),
+    caseBoard: caseBoard(desktop, clues, investigation.characters, textContext),
     ...(interaction && { interaction }),
     ...(ending && { ending: endingView(ending, investigation, desktop.verdict) }),
     phone: { paired: false, online: false, battery: 100 },
@@ -251,6 +289,7 @@ function caseBoard(
   desktop: DesktopState,
   clues: readonly Clue[],
   characters: readonly { id: string; name: string }[],
+  textContext?: DialogueTextContext,
 ): PlayerView['caseBoard'] {
   const byId = new Map(clues.map((clue) => [clue.id, clue]));
   const names = new Map(characters.map(({ id, name }) => [id, name]));
@@ -271,7 +310,17 @@ function caseBoard(
       id: statement.id,
       characterId: statement.speakerId,
       topicId: statement.topic,
-      text: statement.templateKey,
+      text: renderDialogueLine(
+        {
+          speaker: 'other',
+          text: statement.templateKey,
+          at: statement.at,
+          statementId: statement.id,
+        },
+        0,
+        statement.speakerId,
+        textContext,
+      ),
       heardAt: statement.at,
     })),
     contradictions: contradictionsOf(desktop, clues).map(({ id, statementId, clueId }) => ({

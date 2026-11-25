@@ -93,3 +93,13 @@ export {
   type RedHerringReport,
   type RedHerringWorld,
 } from './stages/red-herrings.ts';
+export {
+  GENERATION_CHECKS,
+  generateInvestigation,
+  packageInvestigation,
+  type AttemptValidation,
+  type GenerateOptions,
+  type GenerationRequest,
+  type GenerationResult,
+  type InvestigationReport,
+} from './generate.ts';
