@@ -2,13 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **150** · todo: 37 · in_progress: 8 · review: 1 · done: 104 · blocked: 0
+Всего задач: **154** · todo: 41 · in_progress: 8 · review: 1 · done: 104 · blocked: 0
 
 ## Готовы к взятию сейчас
 
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
-- [SRV-010](SRV-010.md) — Проводка texts, проекций и событий в Session Server (P0, M)
-- [ENG-010](ENG-010.md) — Проводка модулей времени и выживания в GameEngine (P0, L)
+- [ENG-010](ENG-010.md) — Проводка модулей выживания в GameEngine (P0, L)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
 
@@ -16,7 +15,7 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[MOB-001](MOB-001.md) → [MOB-002](MOB-002.md) → [MOB-003](MOB-003.md) → [MOB-005](MOB-005.md) → [MOB-006](MOB-006.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[SRV-002](SRV-002.md) → [SRV-012](SRV-012.md) → [SRV-010](SRV-010.md) → [SRV-013](SRV-013.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -26,14 +25,14 @@
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
+| [SRV-002](SRV-002.md) REST: создание сессии и список сценариев | 3 |
+| [SRV-013](SRV-013.md) Штатная сборка Session Server с WebSocket и QR | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [MOB-001](MOB-001.md) Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | 2 |
 | [MOB-005](MOB-005.md) Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | 2 |
 | [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
-| [SRV-002](SRV-002.md) REST: создание сессии и список сценариев | 2 |
-| [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
-| [CNT-003](CNT-003.md) MVP-сценарий: шаблоны преступлений и правила мотивов | 1 |
+| [SRV-012](SRV-012.md) Порты дела и стартовые данные пресета для GameEngine | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -133,7 +132,7 @@
 | [GDT-001](GDT-001.md) | Autoload Backend: REST и WebSocketPeer, переподключение | P0 | M | done | codex-engine-27 | [FND-007](FND-007.md), [PROTO-003](PROTO-003.md) |
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | todo | — | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
-| [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md) |
+| [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | in_progress | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | todo | — | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
 | [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | todo | — | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
@@ -153,7 +152,7 @@
 | [SRV-011](SRV-011.md) | Нативный запуск сервера: npm start без ошибок strip-types | P0 | S | done | egor-claude-srv-011 | [SAVE-001](SAVE-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (26)
+## Фаза 6 · M6 — Vertical slice (28)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -173,7 +172,7 @@
 | [GDT-008](GDT-008.md) | Доска дела: улики, показания, противоречия, персоны интереса, хронология | P0 | L | done | egor-claude-gdt-008 | [GDT-002](GDT-002.md), [INV-003](INV-003.md), [INV-004](INV-004.md) |
 | [GDT-009](GDT-009.md) | Экран обвинения и экраны концовок с разбором истины | P0 | M | in_progress | egor-claude-gdt-009 | [GDT-008](GDT-008.md), [ENG-006](ENG-006.md) |
 | [GDT-011](GDT-011.md) | Debug-панель: seed, время, просмотр истины в debug-режиме | P2 | S | done | egor-claude-gdt-011 | [GDT-002](GDT-002.md), [SRV-009](SRV-009.md) |
-| [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | todo | — | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md) |
+| [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | todo | — | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
 | [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | todo | — | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
 | [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | todo | — | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
@@ -181,24 +180,28 @@
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
-| [SRV-010](SRV-010.md) | Проводка texts, проекций и событий в Session Server | P0 | M | todo | — | [SRV-005](SRV-005.md), [ENG-009](ENG-009.md), [PHONE-001](PHONE-001.md) |
+| [SRV-010](SRV-010.md) | Проводка texts, проекций и событий в Session Server | P0 | M | todo | — | [SRV-005](SRV-005.md), [ENG-009](ENG-009.md), [PHONE-001](PHONE-001.md), [SRV-012](SRV-012.md) |
+| [SRV-012](SRV-012.md) | Порты дела и стартовые данные пресета для GameEngine | P0 | L | todo | — | [SRV-002](SRV-002.md), [GEN-013](GEN-013.md), [ENG-003](ENG-003.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [CNT-006](CNT-006.md) |
+| [SRV-013](SRV-013.md) | Штатная сборка Session Server с WebSocket и QR | P0 | M | todo | — | [SRV-006](SRV-006.md), [SRV-010](SRV-010.md), [SRV-011](SRV-011.md) |
 | [TIME-005](TIME-005.md) | Дедлайны, критические события, пропущенные события, условия завершения | P0 | M | done | claude-qh | [TIME-003](TIME-003.md), [ENG-006](ENG-006.md) |
 
-## Фаза 7 · M7 — MVP (11)
+## Фаза 7 · M7 — MVP (13)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [ENG-010](ENG-010.md) | Проводка модулей времени и выживания в GameEngine | P0 | L | todo | — | [TIME-005](TIME-005.md), [SURV-002](SURV-002.md), [SURV-005](SURV-005.md), [SURV-003](SURV-003.md), [SIM-006](SIM-006.md) |
+| [ENG-010](ENG-010.md) | Проводка модулей выживания в GameEngine | P0 | L | todo | — | [SURV-002](SURV-002.md), [SURV-005](SURV-005.md), [SURV-003](SURV-003.md), [SIM-006](SIM-006.md) |
 | [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | done | egor-claude-gdt-010 | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
 | [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [MOB-011](MOB-011.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
 | [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | todo | — | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
+| [SRV-014](SRV-014.md) | Атомарная смена сессии при загрузке сохранения | P1 | M | todo | — | [SRV-002](SRV-002.md), [SRV-007](SRV-007.md) |
+| [SRV-015](SRV-015.md) | Подключение сохранений к штатной сессии и восстановление QR | P1 | L | todo | — | [SRV-013](SRV-013.md), [SRV-014](SRV-014.md), [TIME-006](TIME-006.md) |
 | [SURV-001](SURV-001.md) | Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | P0 | M | done | claude-surv-1 | [ENG-001](ENG-001.md), [TIME-004](TIME-004.md) |
 | [SURV-002](SURV-002.md) | Static: глобальная эскалация, пороги, влияние на события сценария | P0 | M | done | claude-qi | [SURV-001](SURV-001.md), [TIME-005](TIME-005.md) |
 | [SURV-003](SURV-003.md) | Угрозы: нападение виновника, опасные локации, исход столкновения | P1 | M | done | claude-qc | [SURV-001](SURV-001.md), [SIM-006](SIM-006.md) |
 | [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | done | claude-w3 | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |
 | [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | done | claude-qj | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
-| [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | todo | — | [TIME-005](TIME-005.md), [SURV-002](SURV-002.md), [SRV-002](SRV-002.md) |
+| [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | todo | — | [TIME-005](TIME-005.md), [ENG-010](ENG-010.md), [SRV-012](SRV-012.md) |
 
 ## Фаза 8 · M8 — Content expansion (6)
 
