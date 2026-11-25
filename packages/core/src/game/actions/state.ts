@@ -24,6 +24,8 @@ export interface DialogueLine {
 export interface ActiveInteraction {
   readonly kind: 'dialogue';
   readonly characterId: string;
+  /** The latest exchange was an interrogation; it blocks walking away (ENG-005). */
+  readonly interrogation?: true;
   readonly history: readonly DialogueLine[];
 }
 
@@ -58,6 +60,7 @@ const snapshotSchema = z.strictObject({
     .strictObject({
       kind: z.literal('dialogue'),
       characterId: id,
+      interrogation: z.literal(true).optional(),
       history: z.array(
         z.strictObject({ speaker: z.enum(['player', 'other']), text: z.string(), at: minute }),
       ),
