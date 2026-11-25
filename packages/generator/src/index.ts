@@ -73,3 +73,8 @@ export {
   type HistoryReport,
   type HistoryWorld,
 } from './stages/history-sim.ts';
+export {
+  EVIDENCE_KEY_EVENT_UNCOVERED,
+  evidenceGen,
+  type EvidenceWorld,
+} from './stages/evidence-gen.ts';

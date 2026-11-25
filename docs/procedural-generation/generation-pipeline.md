@@ -330,6 +330,24 @@ simulatedEvents, encounters }` — серверная диагностика, н
 - цели SIM-005 (`ConcealEvidence`, `MeetCharacter` и другие) в предыстории не подключены;
 - начальные убеждения о предыстории (отношения, секреты `knownBy`) в хранилища не записываются.
 
+### EvidenceGen
+
+`evidenceGen: Stage<HistoryWorld, EvidenceWorld>` не добавляет своей случайности, кроме
+распределения `captureMode`. Шаги:
+
+1. `deriveTraces` (EVD-001) применяет `trace-rules.json` к журналу предыстории → `traces`
+   (в том числе `testimonial`: их использует TestimonyGen).
+2. Для следов `physical`/`document`/`digital` строится `ClueRule` по шаблону следа: документ
+   читается (`read`, `documentId = template`), остальное осматривается (`examineHotspot`,
+   `hotspotId = template`) в точке следа. `testimonial` улик не даёт (GEN-010).
+   `deriveClues` (EVD-002) создаёт `clues`.
+3. `requiredClueIds` — улики событий `IncidentRecord.keyEventIds`. Если у какого-то ключевого события
+   улики нет, стадия бросает `GenerationRejection('EVIDENCE_KEY_EVENT_UNCOVERED')`.
+4. `distributeCaptureModes` (EVD-003) доводит долю `qr` среди обязательных улик до
+   `preset.phone.minQrShare`.
+
+Выход `EvidenceWorld` = `HistoryWorld` + `traces`, `clues`, `requiredClueIds`.
+
 ## 4. Отчёт генерации
 
 `GenerationReport { seed, generatorVersion, attempts: AttemptReport[], timingsMs: Record<stage, number>,
