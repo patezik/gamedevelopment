@@ -18,6 +18,7 @@ export {
 export type {
   ActionEvent,
   DesktopActionType,
+  PhoneActionType,
   GameEvent,
   KnowledgeEvent,
   PlayerActionObserved,
@@ -30,3 +31,14 @@ export {
   type DesktopStateSnapshot,
   type DialogueLine,
 } from './state.ts';
+export {
+  PhoneRuntime,
+  PHONE_ACTIONS,
+  isPhoneAction,
+  planPhoneAction,
+  type PendingReply,
+  type PhoneActionEnv,
+  type PhonePlan,
+  type PhonePort,
+  type PhoneRuntimeSnapshot,
+} from './phone.ts';

@@ -109,3 +109,28 @@ test('QR overlay exposes only the active token, presentation label and remaining
   engine.dispatch('desktop', { type: 'move', locationId: startLocationId });
   expect(engine.playerView().pendingCapture).toBeUndefined();
 });
+
+test('an open interrogation holds the hero: no move, rest or pickLock offered; a plain talk keeps them', () => {
+  const engine = GameEngine.create(tinyManor(), { startLocationId });
+  expect(
+    engine.dispatch('desktop', { type: 'talk', characterId: 'ch_owner', topicId: 'self' }).ok,
+  ).toBe(true);
+  const offered = (e: GameEngine) =>
+    new Set(e.playerView().availableActions.map(({ action }) => action.type));
+  expect(offered(engine)).toContain('move');
+  expect(offered(engine)).toContain('rest');
+
+  const snapshot = structuredClone(engine.snapshot());
+  const { interaction } = snapshot.desktop ?? {};
+  if (!interaction) throw new Error('no open dialogue');
+  interaction.interrogation = true;
+  const held = GameEngine.restore(snapshot, tinyManor(), { startLocationId });
+  const types = offered(held);
+  for (const blocked of ['move', 'rest', 'pickLock']) expect(types).not.toContain(blocked);
+  expect(types).toContain('wait');
+  // What the view hides, the engine rejects.
+  expect(held.dispatch('desktop', { type: 'move', locationId: 'loc_study' })).toMatchObject({
+    ok: false,
+    blockedReason: 'interrogation_open',
+  });
+});
