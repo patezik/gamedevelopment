@@ -1,8 +1,13 @@
 import type { Character } from '@hs/core/characters';
 import type { ScenarioContent } from '@hs/core/content';
+import type { Clue } from '@hs/core/evidence';
 import { InvestigationBuilder, type Investigation } from '@hs/core/game';
-import { compileDeductionRules, type HeardStatement } from '@hs/core/investigation';
-import type { Question } from '@hs/core/knowledge';
+import {
+  compileDeductionRules,
+  type DeductionRules,
+  type HeardStatement,
+} from '@hs/core/investigation';
+import type { KnowledgeStore, LiePolicy, Question, Statement } from '@hs/core/knowledge';
 import {
   DEFAULT_CHECKS,
   SOLVER_CHECKS,
@@ -73,12 +78,41 @@ export interface InvestigationReport extends GenerationReport {
   readonly feasibleCulpritCount?: number;
 }
 
+/**
+ * Closed server payload of the accepted attempt (GEN-013): what the session server needs to set up
+ * the engine ports without generating again. It names the truth (required clues, the veracity of
+ * testimony, lie policies), so it never goes into a `PlayerView`, a `PhoneView`, a REST body, a log
+ * or `hs-gen` output. Every field is the very object the validation gate checked in that attempt.
+ */
+export interface ServerGenerationPayload {
+  /** Number of the accepted attempt (`report.attempts.at(-1).number`). */
+  readonly attempt: number;
+  /** Where the player starts (`ValidationContext.startLocationId`). */
+  readonly startLocationId: string;
+  /** Every clue of the case, misdeed clues included (`EnginePorts.clues`). */
+  readonly clues: readonly Clue[];
+  /** Clues of the incident's key events; a subset of `clues`. */
+  readonly requiredClueIds: readonly string[];
+  /** Memories of every character of the cast (`TestimonyPort.witness().knowledge`). */
+  readonly knowledge: ReadonlyMap<Character['id'], KnowledgeStore>;
+  /** Lie policy of every character of the cast (`TestimonyPort.witness().policy`). */
+  readonly liePolicies: ReadonlyMap<Character['id'], LiePolicy>;
+  /** Answers of the question bank at minute 0 with their veracity, as the gate checked them. */
+  readonly testimony: readonly Statement[];
+  /** The same answers without veracity: what the solver treated as obtainable. */
+  readonly statements: readonly HeardStatement[];
+  /** Compiled `deduction-rules.json` of the scenario (`AccusationPort.rules`). */
+  readonly deductionRules: DeductionRules;
+}
+
 export type GenerationResult =
   | {
       readonly ok: true;
       readonly investigation: Investigation;
       readonly investigationHash: string;
       readonly report: InvestigationReport;
+      /** Server only: see `ServerGenerationPayload`. Absent from a failed result. */
+      readonly server: ServerGenerationPayload;
     }
   | {
       readonly ok: false;
@@ -188,6 +222,31 @@ function validationContext(
   };
 }
 
+/** The payload of the accepted attempt, made of the objects its validation context holds. */
+function serverPayload(
+  attempt: number,
+  output: RedHerringWorld,
+  context: ValidationContext,
+): ServerGenerationPayload {
+  const { startLocationId, clues, requiredClueIds, testimony, statements, deductionRules } =
+    context;
+  if (!startLocationId || !clues || !requiredClueIds || !testimony || !statements) {
+    throw new Error('The validation context of the accepted attempt is incomplete');
+  }
+  if (!deductionRules) throw new Error('The accepted attempt was validated without rules');
+  return {
+    attempt,
+    startLocationId,
+    clues,
+    requiredClueIds,
+    knowledge: output.knowledge,
+    liePolicies: output.liePolicies,
+    testimony,
+    statements,
+    deductionRules,
+  };
+}
+
 const brief = ({ checkId, severity, code, message }: Finding) => ({
   checkId,
   severity,
@@ -226,6 +285,14 @@ export function generateInvestigation(
     });
 
   const validations: AttemptValidation[] = [];
+  let accepted:
+    | {
+        readonly attempt: number;
+        readonly output: RedHerringWorld;
+        readonly investigation: Investigation;
+        readonly context: ValidationContext;
+      }
+    | undefined;
   const result = run(1, maxAttempts, (output, attempt) => {
     const investigation = packageInvestigation(output, req);
     const context = validationContext(output, investigation, content);
@@ -247,14 +314,18 @@ export function generateInvestigation(
       findings = [...findings, ...again.findings];
     }
     validations.push({ attempt, ok, findings: findings.map(brief) });
+    // `runPipeline` stops at the first accepted attempt, so this is set once and never replaced.
+    if (ok) accepted = { attempt, output, investigation, context };
     return ok;
   });
 
   if (!result.ok) {
     return { ok: false, error: result.error, report: { ...result.report, validations } };
   }
-  const { output } = result;
-  const investigation = packageInvestigation(output, req);
+  if (accepted?.output !== result.output) {
+    throw new Error('The accepted output is not the one the validation gate passed');
+  }
+  const { output, investigation, context } = accepted;
   const { chosen, feasibleCulpritCount } = output.incidentReport;
   return {
     ok: true,
@@ -271,5 +342,6 @@ export function generateInvestigation(
       },
       feasibleCulpritCount,
     },
+    server: serverPayload(accepted.attempt, output, context),
   };
 }
