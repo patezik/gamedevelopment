@@ -167,8 +167,9 @@ Expo Go годится только для разработки на модул�
 
 Подготовка (один раз): Expo-аккаунт, `npm i -g eas-cli`, `eas login`, затем `eas init` в `apps/mobile`
 (привязка проекта; `projectId` попадёт в `app.json`). Для сборки нужны идентификаторы приложения
-`ios.bundleIdentifier` и `android.package` в `app.json`. Они не заданы намеренно: зависят от
-финального названия (OQ-05) и фиксируются до REL-002. Для iPhone в `development` и `preview` нужны
+`ios.bundleIdentifier` и `android.package` в `app.json`. Для внутренней сборки iOS согласован
+временный `dev.patezik.hollowsignal.internal`. Идентификатор App Store определяется в REL-002
+после решения по названию (OQ-05). Для iPhone в `development` и `preview` нужны
 платный Apple Developer аккаунт и регистрация устройства (`eas device:create`).
 
 Сборка и установка из `apps/mobile`:

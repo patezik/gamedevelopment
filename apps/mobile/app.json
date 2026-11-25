@@ -5,6 +5,7 @@
     "version": "0.0.0",
     "orientation": "portrait",
     "ios": {
+      "bundleIdentifier": "dev.patezik.hollowsignal.internal",
       "infoPlist": {
         "NSCameraUsageDescription": "Камера нужна, чтобы сканировать игровые QR-коды."
       }
