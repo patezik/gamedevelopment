@@ -30,6 +30,7 @@ var _heartbeat: float
 var _last_seq: int = -1
 var _state_version: int
 var _request_id: int
+var _last_action_request_id: String = ""
 var _random: RandomNumberGenerator = RandomNumberGenerator.new()
 var _http: HTTPRequest
 var _active_rest: RestCall
@@ -113,7 +114,15 @@ func disconnect_session() -> void:
 func send_action(action: Dictionary) -> Error:
 	if _state != ConnectionState.ONLINE:
 		return ERR_UNCONFIGURED
-	return _send(ProtocolConstants.MSG_ACTION_REQUEST, {"action": action})
+	var result: Error = _send(ProtocolConstants.MSG_ACTION_REQUEST, {"action": action})
+	if result == OK:
+		_last_action_request_id = _message_id()
+	return result
+
+
+## Read immediately after a successful send_action to correlate its action.result.
+func get_last_action_request_id() -> String:
+	return _last_action_request_id
 
 
 func _process(delta: float) -> void:
@@ -214,12 +223,16 @@ func _receive(packet: PackedByteArray) -> void:
 	message_received.emit(message)
 
 
+func _message_id() -> String:
+	return "desktop-%d" % _request_id
+
+
 func _send(kind: String, payload: Dictionary) -> Error:
 	_request_id += 1
 	var message: Dictionary = {
 		"v": ProtocolConstants.PROTOCOL_VERSION,
 		"type": kind,
-		"id": "desktop-%d" % _request_id,
+		"id": _message_id(),
 		"payload": payload,
 	}
 	if _last_seq >= 0:

@@ -9,6 +9,7 @@ var send_result: Error = OK
 func send_action(action: Dictionary) -> Error:
 	if send_result == OK:
 		sent.append(action)
+		_last_action_request_id = "desktop-%d" % sent.size()
 	return send_result
 
 
