@@ -1,7 +1,7 @@
 ---
 id: TOOL-001
 title: "Фейковые клиенты desktop/phone (CLI и библиотека) для тестов"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 5
@@ -9,8 +9,8 @@ milestone: M5
 area: tools
 depends_on: [SRV-004]
 modules: ["tools/fake-client"]
-assignee: null
-claimed_at: null
+assignee: claude-w3
+claimed_at: "2026-11-23T17:29:17Z"
 ---
 
 # TOOL-001 — Фейковые клиенты desktop/phone (CLI и библиотека) для тестов
@@ -47,9 +47,9 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Используются хотя бы одним интеграционным тестом сервера.
-- [ ] Документация в README каталога.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Используются хотя бы одним интеграционным тестом сервера.
+- [x] Документация в README каталога.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

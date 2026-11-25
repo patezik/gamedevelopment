@@ -1,7 +1,7 @@
 import { PlayerAction, PROTOCOL_VERSION } from '@hs/protocol';
 import { z } from 'zod';
 import { stateHash } from '../common/index.ts';
-import { GameEngine, type DispatchResult, type EnginePorts } from './engine.ts';
+import { GameEngine, type DispatchResult, type EnginePorts, type GameSnapshot } from './engine.ts';
 import type { Investigation } from './investigation.ts';
 
 export const CHECKPOINT_INTERVAL = 50;
@@ -47,8 +47,15 @@ export interface ReplayEngine {
 }
 
 export interface ReplayRuntime<Engine extends ReplayEngine> {
+  /** Version used to generate this engine, independent of the save header. */
+  readonly generatorVersion: string;
   readonly engine: Engine;
   restore(snapshot: unknown): Engine;
+  /** Same generator, earlier engine rules. Both initial and replayed states must match exactly. */
+  readonly beforeDesktop?: {
+    initial(): Engine;
+    replay(engine: Engine, entry: Entry): Engine;
+  };
 }
 
 export type Regenerate<Engine extends ReplayEngine> = (
@@ -144,9 +151,20 @@ export function loadSave<Engine extends ReplayEngine>(
     previous = entry.journalHash;
   }
   const runtime = regenerate({ scenarioId, seed, generatorVersion });
+  if (runtime.generatorVersion !== generatorVersion) {
+    throw new SaveDesyncError(
+      0,
+      `Unsupported generator version "${generatorVersion}". This runtime supports "${runtime.generatorVersion}".`,
+    );
+  }
   let engine = runtime.engine;
+  let previousRules: ReplayRuntime<Engine>['beforeDesktop'];
   if (engine.stateHash() !== initialStateHash) {
-    throw new SaveDesyncError(0, 'Regenerated state does not match');
+    previousRules = runtime.beforeDesktop;
+    if (previousRules) engine = previousRules.initial();
+    if (!previousRules || engine.stateHash() !== initialStateHash) {
+      throw new SaveDesyncError(0, 'Regenerated state does not match');
+    }
   }
   if (checkpoint) {
     const { atAction } = checkpoint;
@@ -165,7 +183,8 @@ export function loadSave<Engine extends ReplayEngine>(
   }
   for (const entry of actions.slice(checkpoint?.atAction ?? 0)) {
     try {
-      engine.dispatch(entry.source, entry.action);
+      if (previousRules) engine = previousRules.replay(engine, entry);
+      else engine.dispatch(entry.source, entry.action);
     } catch (cause) {
       throw new SaveDesyncError(entry.seq, 'Action replay failed', { cause });
     }
@@ -192,6 +211,10 @@ const gameSnapshot = z.strictObject({
       expiresAt: z.int(),
     })
     .optional(),
+  /** Validated by `DesktopState.restore`. */
+  desktop: z.json().optional(),
+  /** Validated by `PhoneRuntime.restore`. */
+  phone: z.json().optional(),
 });
 
 export function gameReplayRuntime(
@@ -199,11 +222,24 @@ export function gameReplayRuntime(
   ports: EnginePorts,
 ): ReplayRuntime<GameEngine> {
   return {
+    generatorVersion: investigation.generatorVersion,
     engine: GameEngine.create(investigation, ports),
+    beforeDesktop: {
+      initial: () => GameEngine.create(investigation, ports, 'beforeDesktop'),
+      replay: (current, entry) =>
+        current.replayBeforeDesktop(entry.source, entry.action, entry.stateHash, investigation),
+    },
     restore: (snapshot) => {
-      const { pendingCapture, ...state } = gameSnapshot.parse(snapshot);
+      const { pendingCapture, desktop, phone, ...state } = gameSnapshot.parse(snapshot);
       return GameEngine.restore(
-        { ...state, ...(pendingCapture && { pendingCapture }) },
+        {
+          ...state,
+          ...(pendingCapture && { pendingCapture }),
+          ...(desktop !== undefined && {
+            desktop: desktop as NonNullable<GameSnapshot['desktop']>,
+          }),
+          ...(phone !== undefined && { phone }),
+        },
         investigation,
         ports,
       );

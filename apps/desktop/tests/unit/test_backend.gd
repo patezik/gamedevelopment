@@ -2,6 +2,18 @@ extends GutTest
 
 const Envelope = preload("res://src/net/envelope.gd")
 const ReconnectPolicy = preload("res://src/net/reconnect_policy.gd")
+const BackendScript = preload("res://src/autoload/backend.gd")
+
+
+func test_cancel_queued_rest_removes_only_the_matching_call() -> void:
+	var backend: BackendScript = BackendScript.new()
+	add_child_autofree(backend)
+	var canceled: int = backend.request_rest("http://127.0.0.1/old")
+	var kept: int = backend.request_rest("http://127.0.0.1/current")
+	backend.cancel_queued_rest(canceled)
+	assert_eq(backend._rest_queue.size(), 1)
+	assert_eq(backend._rest_queue[0].id, kept)
+	backend.cancel_queued_rest(kept)
 
 
 func test_reconnect_delay_grows_and_stays_within_maximum() -> void:

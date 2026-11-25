@@ -1,0 +1,20 @@
+{
+  "name": "@hs/fake-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fake desktop and phone clients for server tests and manual debugging (TOOL-001).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "node src/cli.ts"
+  },
+  "dependencies": {
+    "@hs/protocol": "*",
+    "ws": "~8.22.0"
+  },
+  "devDependencies": {
+    "@types/ws": "~8.18.1"
+  }
+}

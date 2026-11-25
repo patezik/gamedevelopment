@@ -315,7 +315,8 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 - **SIM-001:** модуль экспортирует `SimulationRunner`, `SimulationRunnerOptions`, `Agent`,
   `Activity` и `ActivityStep`. Раннер регистрирует обработчики фаз `Schedules` и `Simulation`
   в переданном `TimeSystem`. Порт `items` предоставляет `ItemRegistry.locate` и `history` для
-  проверки физического владения ключами. `getAgent(characterId)` возвращает снимок текущей активности и
+  проверки физического владения ключами. Необязательные `exits` (GEN-008) задают минуту, с которой
+  персонаж больше не действует и не наблюдает. `getAgent(characterId)` возвращает снимок текущей активности и
   состояния RNG. Целевой интерфейс ниже включает возможности следующих задач SIM.
 - **Интерфейс:**
   ```ts
@@ -364,13 +365,25 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 - **Интерфейс:**
   ```ts
-  class PlayerKnowledge { clues: Map<ClueId, DiscoveredClue>; statements: Statement[] /* без veracity */; contacts: Set<CharacterId>; journal: JournalEntry[] }
+  class PlayerKnowledge {                       // packages/core/src/investigation/player-knowledge.ts (INV-001)
+    readonly clues: ReadonlyMap<ClueId, DiscoveredClue>; readonly statements: readonly HeardStatement[] /* Statement без veracity */;
+    readonly contacts: ReadonlySet<CharacterId>; readonly journal: readonly JournalEntry[];   // журнал по игровому времени
+    addClue(c: { clueId; discoveredAt; location; captured? }): boolean;   // false: уже известно
+    markCaptured(clueId: ClueId, at: GameMinutes): boolean;               // PlayerKnowledgeError INVESTIGATION_UNKNOWN_CLUE
+    addStatement(s: Statement | HeardStatement): boolean;                 // veracity вырезается в рантайме
+    addContact(id: CharacterId, at: GameMinutes): boolean;
+    readonly suspicions: readonly Suspicion[];   // отметки игрока (INV-003)
+    markSuspicion(id: CharacterId, level: "none" | "possible" | "prime", note?: string): boolean;   // без затрат времени
+    serialize(): PlayerKnowledgeSnapshot;  static restore(saved: unknown): PlayerKnowledge;   // INVESTIGATION_INVALID_STATE
+  }
   type Claim = { kind: "motive" | "means" | "opportunity" | "presence" | "alibi" | "contradiction"; subject: CharacterId; detail: unknown }
-  function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules): EstablishedClaim[];
-  function personsOfInterest(pk: PlayerKnowledge): PersonOfInterest[];   // Suspect — производное от знаний игрока
-  function detectContradictions(pk: PlayerKnowledge): Contradiction[];
+  function compileDeductionRules(input: unknown): DeductionRules;       // DeductionRulesError DEDUCTION_RULES_INVALID (INV-002)
+  function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules, ctx?: ClaimContext): EstablishedClaim[];
+  // ClaimContext = { clues: Map<ClueId, { supports }>; incident?: { location; window } } — известное игроку, не истина
+  function personsOfInterest(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">): PersonOfInterest[];   // INV-003; подсказка, не Suspect
+  function detectContradictions(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">, toleranceMinutes?: number): Contradiction[];   // INV-004; событие ContradictionFound — contradictionEvents()
   interface CaseFile { accusedIds: CharacterId[]; motive?: ClaimRef; means?: ClaimRef; opportunity?: ClaimRef; evidence: ClueId[] }
-  function evaluateAccusation(cf: CaseFile, truth: IncidentRecord, pk: PlayerKnowledge): AccusationOutcome;
+  function evaluateAccusation(cf: CaseFile, truth: IncidentRecord, pk: PlayerKnowledge, ctx: AccusationContext): AccusationOutcome;   // ctx = ClaimContext + rules, hallucinatedClueIds? (INV-005)
   ```
 - **Зависимости:** `evidence`, `knowledge`; **доступ к `truth` только в `evaluateAccusation`.**
 - **События:** `ClueDiscovered`, `StatementHeard`, `ContradictionFound`, `PersonOfInterestAdded`,
@@ -415,13 +428,22 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   ```ts
   interface PhoneState { contacts; threads; callLog; activeCall?; gallery; files; notes; mapPins; browserPages; notifications; battery: number }
   function reducePhone(s: PhoneState, e: DomainEvent): PhoneState;
-  function projectPhoneView(s: PhoneState, survival: SurvivalState): PhoneView;   // схема из @hs/protocol
+  function projectPhoneView(s: PhoneState, survival: PhoneSurvival, ctx: { minute; calendar }): PhoneView;   // схема из @hs/protocol
+  function initialPhoneState(templates: PhoneTemplate[], opts?): PhoneState;   // пресет → стартовый телефон героя
   ```
+  `PhoneEvent` — события телефона (`MessageReceived`, `CallStarted`, `FileUnlocked`, `PhotoAdded` и т.д.);
+  чужие события редьюсер игнорирует. `PhoneSurvival = { vitals, static }`; ему и времени нужны
+  `signal`, `glitchLevel` и `status.time`. Проекция собирает каждое поле явно: пароли файлов,
+  содержимое заблокированных файлов, скрытые файлы и `hallucination` в `PhoneView` не попадают.
 - **Тесты:** каждое доменное событие отражается в нужном приложении; галлюцинации помечены
   `hallucination: true` только на сервере и не попадают в `CaseFile`.
 
 ## 12. `@hs/core/game` — GameEngine, действия, представления, сохранения
 
+- **Загрузка сохранения.** `Regenerate` возвращает `ReplayRuntime` с обязательным полем
+  `readonly generatorVersion: string` из фактически сгенерированного расследования. Перед
+  восстановлением чекпойнта и replay `loadSave` сверяет его с версией файла по
+  [ADR 0019](adr/0019-save-generator-compatibility.md).
 - **Расследование (CORE-003):**
   ```ts
   interface WorldState { locations: LocationGraph; items: ItemRegistry; durationMinutes: number }
@@ -462,8 +484,70 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `move` и `wait` используют `TimeSystem.advance`; отклонённое действие сохраняет состояние.
   `GameSnapshot` содержит серверное расследование, игровую минуту, локацию игрока и хеш
   исходного расследования. Снимок остаётся на сервере.
-- **Блокировка взаимодействия:** во время диалога или звонка (`activeInteraction`) действия,
-  несовместимые с ним, отклоняются `ACTION_BLOCKED` (ENG-005).
+- **ENG-003** (`game/actions`): остальные действия desktop — правила в
+  [game-design.md §2](../game-design/game-design.md). Новые необязательные порты `EnginePorts`:
+  ```ts
+  clues?: readonly Clue[];                              // улики дела (EVD-002)
+  testimony?: { witness(id): { knowledge; policy } | undefined };   // память и LiePolicy (KNOW-002)
+  startVitals?: Vitals; inventory?: readonly PackItem[];            // SURV-001, SURV-004
+  simulation?: { onPlayerAction(e: PlayerActionObserved): void };   // SIM-006
+  attachTime?: (time: TimeSystem) => void;              // обработчики фаз; прерывание отдыха
+  ```
+  `DispatchResult.events` — `GameEvent[]`: события часов, показателей, `PlayerKnowledge`,
+  действий и `PlayerActionObserved`. `GameSnapshot.desktop` хранит `PlayerKnowledge`, серверные
+  показания с `veracity`, осмотренные локации и точки, открытые двери, диалог, показатели и
+  рюкзак. Новые игры включают это поле с первого снимка. Для сохранения той же версии генератора
+  загрузчик также узнаёт начальное состояние до ENG-003 по полному хешу. В старой части журнала
+  только `move` и `wait` меняли состояние, показатели и модификаторы desktop ещё отсутствовали.
+  При продолжении игры первое успешное действие создаёт `desktop` со стартовыми параметрами и
+  применяет текущие правила. При полном replay границу определяет хеш записи: если старый переход
+  не совпал, текущий переход выполняется из того же проверенного состояния. После появления
+  `desktop` все следующие хеши включают его. Цепочка журнала, чекпойнт и итоговый хеш проверяются
+  по ADR 0014 в обоих случаях. `PlayerView` заполняет
+  точки интереса, доску дела (улики, показания, противоречия), `interaction`, показатели и рюкзак.
+- **ENG-006** (`game/actions/accuse.ts`, `game/ending.ts`): `accuse` требует `EnginePorts.accusation
+  { rules, incident?, hallucinatedClueIds? }` (иначе `ACTION_NOT_AVAILABLE`); `incident` — инцидент,
+  как его выяснил игрок, а не истинный. `confirm: false` только возвращает событие
+  `AccusationConfirmationRequired` и ничего не меняет; `confirm: true` вызывает `evaluateAccusation`
+  (`CASEFILE_*`, неизвестный обвиняемый → `ACTION_INVALID`), время не тратится. Верное обвинение
+  (`solved`, `partial`), второе ложное или ложное без оставшегося времени ставят `verdict` и
+  завершают игру (`outcome` результата — id концовки); первое ложное при оставшемся времени
+  прощается один раз (`failedAccusations`), игра идёт дальше. Событие `AccusationMade` несёт
+  `result`, `proven`, `final` и не называет виновных. `AccusationOutcome` с `consequences`
+  (в них есть `characterId` виновных) уходит только в серверный порт
+  `simulation.onAccusation`, не в `events` и не в `PlayerView`. `endingOf` определяет концовку:
+  вердикт, затем `death`/`madness` по показателям, затем `time_up` по часам; после неё любое
+  действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` с `recap` (`TruthRecap`:
+  `responsible` — единственная проекция истины клиенту) появляется только когда игра окончена.
+- **Блокировка взаимодействия (ENG-005, `game/interaction.ts`):** `blockReason(action, context)` —
+  чистая матрица открытого диалога (`talk` или `interrogation`) и состояния звонка
+  (`EnginePorts.callState`) против нового действия. Открытый диалог блокирует `call` и `answerCall`;
+  допрос (`interrogation`, признак в `ActiveInteraction`) дополнительно блокирует `move`, `pickLock`
+  и `rest`, остальные действия допрос завершают; активный или входящий звонок блокирует `talk` и
+  `interrogate`, входящий — ещё и `call`. Отказ: `ACTION_BLOCKED` и `DispatchResult.blockedReason`
+  (`dialogue_open`, `interrogation_open`, `call_ringing`, `call_active`); состояние не меняется.
+- **Действия телефона (ENG-004, `game/actions/phone.ts`):** `call`, `answerCall`, `callChoice`,
+  `message`, `browse`, `openFile`, `unlockFile`, `addNote`, `captureEvidence`. Телефон героя —
+  `PhoneRuntime` (`PhoneState`, остаток минут заряда, счётчик id, очередь ответов); он есть, только
+  если задан порт `EnginePorts.phone?: PhonePort`, иначе все действия телефона дают
+  `ACTION_NOT_AVAILABLE`. `PhonePort` (всё необязательно): `initial` — стартовый `PhoneState`;
+  `callGreeting` (ответ контакта и темы звонка; `undefined` — не ответил, звонок «пропущен»),
+  `callReply` (ответ на тему, длительность, конец разговора), `messageReply` (задержка и текст
+  ответа NPC на шаблон). Движок сам ничего не решает: ответ приходит через `delayMinutes`,
+  выбранный симуляцией, и доставляется (`MessageReceived`, уведомление) при следующем продвижении
+  времени. Правила: звонок только контакту из `PhoneState.contacts` и без активного звонка;
+  `message` — только шаблон из `availableReplies` существующей переписки; `unlockFile` — скрытый
+  заблокированный файл недоступен, неверный пароль тратит минуту (`FileUnlockAttempted`);
+  закрытый на пароль файл не открыть без `unlockFile`. `captureEvidence` принимает только токен
+  текущей `pendingCapture` (место, срок): помечает улику как зафиксированную (`captured: true`),
+  снимает `pendingCapture`, добавляет снимок в галерею; сервер диспатчит его с ролью `phone` после
+  `qr.scan`, хотя в `ACTIONS_BY_ROLE` его нет. Время: `call` и `message` по таблице затрат,
+  `callChoice` — по `minutes` ответа порта, остальные — 1 минута. Заряд: −1 % за 10 минут любого
+  времени (остаток переносится), −2 % за соединённый звонок, −1 % за снимок; на 0 % все действия
+  телефона отклоняются (зарядка в номере не реализована). Действия телефона не пишутся в журнал
+  истины, не создают `PlayerActionObserved` и не закрывают диалог. `GameEngine.receivePhoneEvent`
+  принимает события симуляции (входящий звонок, сообщение), `phoneView()` отдаёт `PhoneView`;
+  `GameSnapshot.phone` есть только у движка с телефоном.
 - **Ошибки:** `ACTION_INVALID`, `ACTION_NOT_AVAILABLE`, `ACTION_BLOCKED`, `GAME_OVER`.
 - **Тесты:** каждое действие тратит время по таблице; проекции не содержат полей истины
   (тест сканирует JSON на запрещённые ключи `veracity`, `culpritIds`, `truth`); replay.
@@ -479,6 +563,11 @@ interface Stage<I, O> { name: string; run(input: I, ctx: GenerationContext): O }
 function generateInvestigation(req: { scenarioId: string; seed: string }, content: ContentRepo): GenerationResult;
 interface GenerationResult { ok: true; investigation: Investigation; report: GenerationReport } | { ok: false; error: "GENERATION_UNSOLVABLE"; report: GenerationReport }
 const GENERATOR_VERSION: string;
+class GenerationRejection extends Error { code: string; diagnostics?: Record<string, unknown> }   // стадия отклоняет вход → следующая попытка
+const incidentSelection: Stage<ConflictWorld & { world: GeneratedWorld }, IncidentWorld>;        // IncidentPlan + IncidentReport (GEN-006)
+function assessIncidents(input, content): IncidentAssessment;   // все допустимые виновники по жертвам и шаблонам, без случайности
+function selectIncident(input, assessment, content, rng): IncidentWorld;   // выбор жертвы, шаблона и виновника (score^γ) на готовой оценке
+const historySimulation: Stage<PlotWorld, HistoryWorld>;   // TruthModel с IncidentRecord, знания, отношения и позиции на t = 0 (GEN-008)
 ```
 **Зависимости:** `@hs/core`, `@hs/validator` (шлюз). **Тесты:** каждая стадия отдельно на фикстурах;
 golden-снимки для 5 seed; распределение виновников.
@@ -490,7 +579,10 @@ golden-снимки для 5 seed; распределение виновнико
 ```ts
 interface Check { id: string; severity: "error" | "warning"; run(inv: Investigation): CheckResult }
 function validateInvestigation(inv: Investigation, opts?): ValidationReport;
-function solve(inv: Investigation, opts: { timeBudget: GameMinutes }): SolutionPath | null;
+function solve(inv: Investigation, opts: { timeBudget: GameMinutes }): SolutionPath | null;   // планировщик по времени, VAL-003
+// Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
+function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
+// Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE
 // CLI: hs-sweep --scenario sanatorium_winter --count 1000 --from 0 --out reports/
 ```
 **Зависимости:** `@hs/core` (без `@hs/generator`, чтобы не было цикла; sweep-CLI живёт в

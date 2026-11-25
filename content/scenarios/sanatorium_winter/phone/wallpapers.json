@@ -1,0 +1,50 @@
+[
+  {
+    "id": "wp_default",
+    "kind": "wallpaper",
+    "title": "Заснеженный сосновый лес на рассвете, тёплый свет в окнах корпуса вдали",
+    "template": "pine_forest"
+  },
+  {
+    "id": "wp_static_25",
+    "kind": "wallpaper",
+    "title": "Тот же лес, лёгкая рябь и горизонтальные полосы, как на старом телевизоре",
+    "event": "static_25",
+    "template": "pine_forest_noise"
+  },
+  {
+    "id": "wp_static_50",
+    "kind": "wallpaper",
+    "title": "Лес почти скрыт серым шумом, окна корпуса погасли",
+    "event": "static_50",
+    "template": "pine_forest_static"
+  },
+  {
+    "id": "wp_static_75",
+    "kind": "wallpaper",
+    "title": "Сквозь шум между соснами угадывается неподвижный силуэт; при повторном взгляде его нет",
+    "event": "static_75",
+    "template": "pine_forest_silhouette"
+  },
+  {
+    "id": "wp_sanity_low",
+    "kind": "wallpaper",
+    "title": "Цвета инвертированы, стволы сосен изгибаются к центру экрана",
+    "event": "sanity_low",
+    "template": "pine_forest_inverted"
+  },
+  {
+    "id": "wp_blackout",
+    "kind": "wallpaper",
+    "title": "Ночной лес без единого огня, экран притушен в режиме энергосбережения",
+    "event": "blackout",
+    "template": "pine_forest_dark"
+  },
+  {
+    "id": "wp_rest",
+    "kind": "wallpaper",
+    "title": "После отдыха возвращаются исходные обои",
+    "event": "rest",
+    "template": "pine_forest"
+  }
+]

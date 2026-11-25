@@ -100,7 +100,7 @@
 | `pickLock` | `targetId` |
 | `rest`, `wait` | `minutes` — положительное целое |
 | `accuse` | `caseFile: { accusedIds, motive?, means?, opportunity?, evidence }, confirm`; `confirm` — логическое значение |
-| `markSuspicion` | `characterId, level, note?`; `level` — неотрицательное целое |
+| `markSuspicion` | `characterId, level, note?`; `level` — неотрицательное целое: индекс в `SUSPICION_LEVELS` (`0` = `none`, `1` = `possible`, `2` = `prime`); другое число или неизвестный `characterId` — `ACTION_INVALID`; время не тратится |
 | `call` | `contactId` |
 | `answerCall` | `callId` |
 | `callChoice` | `choiceId` |
@@ -118,6 +118,12 @@
 `QR_INVALID`, `QR_WRONG_SESSION`, `QR_EXPIRED`, `QR_ALREADY_USED`, `QR_PRECONDITION_FAILED`,
 `SAVE_NOT_FOUND`, `SAVE_DESYNC`, `GENERATION_UNSOLVABLE`, `RATE_LIMITED`, `INTERNAL`.
 
+`ACTION_BLOCKED` — действие отклонено из-за открытого диалога, допроса или звонка. Причину несёт
+`DispatchResult.blockedReason` Game Core (`dialogue_open`, `interrogation_open`, `call_ringing`,
+`call_active`); это внутреннее поле движка, в протокол оно не пробрасывается: клиент видит только код
+`ACTION_BLOCKED`. Чтобы клиент не предлагал такие действия, `availableActions` их исключает (во время
+допроса нет `move`, `rest`, `pickLock`).
+
 ## 6. Представления
 
 Схемы — `packages/protocol/src/views` (`PlayerView`, `PhoneView` и вложенные типы), JSON Schema —
@@ -131,7 +137,9 @@
 используют те же ограничения доступа и расчёт стоимости, что и `dispatch`. Для ожидания
 предлагается минимальная положительная длительность из таблицы стоимостей. При истечении времени
 действия больше не предлагаются. Для активной QR-фиксации передаются токен, подпись и оставшееся
-время. Доска дела, инвентарь, показатели и статус телефона заполняются в соответствующих задачах.
+время. `knownMap` строится из завершённых перемещений игрока в журнале и выходов посещённых
+локаций. Журнал уже входит в снимок, поэтому формат сохранения не меняется.
+Доска дела, инвентарь, показатели и статус телефона заполняются в соответствующих задачах.
 
 Единицы и диапазоны: время — `GameMinutes` (целые минуты, в предыстории отрицательные), `clock.time`
 и `status.time` — `HH:mm`; `health`, `sanity` — 0–10; `fatigue`, `static`, `battery`, `signal`,
@@ -143,6 +151,8 @@ interface PlayerView {
   location: { id; name; description; lighting: "bright"|"dim"|"dark";
               hotspots: { id; name; examined }[];                       // examined — история игрока, не «есть ли улика»
               exits: { locationId; name; minutes; blockedReason? }[] };
+  knownMap?: { locations: { id; name; visited }[];                       // посещённые и увиденные как выход
+              links: { from; to }[] };                                  // выходы посещённых локаций; не граф мира
   presentCharacters: { id; name; portraitRef; demeanor }[];
   availableActions: { action: PlayerAction; label; costPreview: { min; max }; blockedReason? }[];
   vitals: { health; sanity; fatigue }; static; inventory: { id; name; description }[];
@@ -218,4 +228,13 @@ interface PhoneView {
 сессии, поэтому между сообщениями одной роли возможны пропуски номеров. При возобновлении шлюз
 досылает только сообщения этой роли. `ack` отмечает последний обработанный номер и не удаляет
 записи из буфера. При утрате записи для роли или несовместимой версии состояния шлюз посылает
-`resync` и запрашивает снимок для роли. Наполнение снимков в приложении относится к SRV-005.
+`resync` и запрашивает снимок для роли.
+
+После каждого успешного `dispatch` `stateVersion` растёт на 1. Шлюз отправляет `action.result`
+отправителю, затем `view.update` каждой роли со своей проекцией и события, видимые роли (источник
+проекций `snapshot` и событий `events` задаёт приложение). `gameOver` получают обе роли. Последняя
+проекция роли кэшируется по `stateVersion` и используется при `resync` и входе клиента. Версия в `view.update` берётся из результата
+`dispatch`; если состояние уже ушло вперёд, устаревшая проекция не публикуется, её заменит
+рассылка следующего `dispatch`. Подключение реальных проекций (`GameEngine.playerView`,
+`projectPhoneView`) и сырых событий движка к `snapshot` и `events` не входит в SRV-005 и
+выполняется в INT-002; до этого приложение по умолчанию создаёт шлюз без них.

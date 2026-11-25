@@ -9,5 +9,8 @@
   "dependencies": {
     "@hs/core": "*",
     "@hs/validator": "*"
+  },
+  "devDependencies": {
+    "fast-check": "~4.10.3"
   }
 }

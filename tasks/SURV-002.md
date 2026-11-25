@@ -1,7 +1,7 @@
 ---
 id: SURV-002
 title: "Static: глобальная эскалация, пороги, влияние на события сценария"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 7
@@ -9,8 +9,8 @@ milestone: M7
 area: survival
 depends_on: [SURV-001, TIME-005]
 modules: ["packages/core/src/survival/static.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-qi
+claimed_at: "2026-11-25T13:08:35Z"
 ---
 
 # SURV-002 — Static: глобальная эскалация, пороги, влияние на события сценария

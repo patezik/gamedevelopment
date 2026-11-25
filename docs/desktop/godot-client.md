@@ -21,27 +21,36 @@ apps/desktop/
 ├── src/
 │   ├── autoload/
 │   │   ├── backend.gd            — Backend: REST (HTTPRequest) + WS (WebSocketPeer), очередь запросов, reconnect
-│   │   ├── game_store.gd         — GameStore: текущий PlayerView, сигналы view_changed, event_received, peer_status_changed
-│   │   ├── scene_router.gd       — SceneRouter: переходы между экранами
-│   │   ├── settings.gd           — Settings: адрес сервера, громкость, доступность (ConfigFile user://)
-│   │   ├── audio_director.gd     — AudioDirector: эмбиент по локации/периоду, стингеры
+│   │   ├── game_store.gd         — GameStore: текущий PlayerView, сигналы view_changed, event_received, peer_status_changed, action_failed
+│   │   ├── scene_router.gd       — SceneRouter: переходы между экранами через затемнение
+│   │   ├── settings.gd           — Settings: настройки игрока (ConfigFile user://); пока — «Снизить визуальные эффекты» (§7.1)
+│   │   ├── audio_director.gd     — AudioDirector: эмбиент по локации/периоду, стингеры (§7.3)
 │   │   └── server_launcher.gd    — ServerLauncher: запуск встроенного сервера в релизе (INT-005)
 │   ├── net/
 │   │   ├── protocol_constants.gd — ProtocolConstants, СГЕНЕРИРОВАНО из @hs/protocol (не редактировать)
 │   │   ├── envelope.gd           — сборка/разбор конверта
 │   │   └── reconnect_policy.gd   — экспоненциальная задержка
+│   ├── util/
+│   │   └── read_only.gd          — глубокие read-only копии данных для экранов
 │   ├── scenes/
 │   │   ├── bootstrap.tscn        — стартовая сцена каркаса, показывает версию клиента
 │   │   ├── main_menu/  new_game/  pairing/  exploration/  dialogue/
 │   │   ├── case_board/  accusation/  ending/  hud/  overlays/ (evidence_capture, horror_fx, phone_status)
-│   └── ui/                       — общие компоненты (кнопка действия со стоимостью, карточка улики)
+│   │   ├── exploration/          — экран Exploration и загрузчик фикстур для предпросмотра (§4.1)
+│   │   └── overlays/debug/       — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
+│   │   └── overlays/horror_fx/   — HorrorFx: шейдер искажения и шума по рассудку и Static (§7.2)
+│   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта)
 ├── assets/                       — арт, шрифты, звук (стиль — CNT-008)
 └── tests/
-    ├── unit/                     — GUT: reconnect_policy, envelope, qr_texture
+    ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture, экраны и smoke сцен
+    │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, экран-заглушка)
+    ├── manual/
+    │   └── horror_fx_benchmark.gd — ручной замер FPS хоррор-эффектов (§7.4), не входит в GUT
     └── contract/
         ├── contract_support.gd         — пути к packages/protocol, чтение JSON, проверка формы по JSON Schema
         ├── test_protocol_constants.gd  — ProtocolConstants против схем и фикстур
-        └── test_protocol_fixtures.gd   — все фикстуры, включая fixtures/views
+        ├── test_protocol_fixtures.gd   — все фикстуры, включая fixtures/views
+        └── test_game_store_contract.gd — FORBIDDEN_VIEW_KEYS и фикстуры PlayerView против GameStore
 ```
 
 ### 2.1. Константы протокола
@@ -74,13 +83,15 @@ apps/desktop/
 ## 3. Потоки данных
 
 ```
-Backend (WS) ──view.update──▶ GameStore.set_view(view) ──signal view_changed──▶ сцены перерисовываются
-Сцена (кнопка действия) ──▶ Backend.send_action(action) ──action.result──▶ GameStore (ошибки → тост)
+Backend (WS) ──view.update──▶ GameStore.set_view(view, stateVersion) ──signal view_changed──▶ сцены перерисовываются
+Сцена (кнопка действия) ──▶ GameStore.request_action(action) ──▶ Backend.send_action ──action.result──▶ GameStore.action_failed (ошибки → тост)
 Backend ──event──▶ GameStore.event_received ──▶ HUD/оверлеи/аудио
 ```
 
-Сцены подписываются на сигналы `GameStore` и не обращаются к `Backend` напрямую, кроме
-отправки действий через `GameStore.request_action()`.
+Сцены получают `PlayerView` и отправляют игровые действия через `GameStore`. Оверлей фиксации
+запрашивает отдельный REST-ресурс через `Backend.request_evidence_qr(token_id)`. Backend использует
+`sessionId` из `welcome` и desktop-токен текущей сессии. Матрица используется только для показа QR
+в оверлее. Подробнее — [qr-mechanics.md](../mobile/qr-mechanics.md).
 
 `Backend.request_rest` возвращает ID запроса и последовательно выполняет запросы с
 таймаутом в 10 секунд. Результат приходит через `rest_completed`; при наличии токена
@@ -91,6 +102,73 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 `connection_state_changed` сообщает этап подключения. После обрыва клиент повторяет
 `hello` с последним обработанным `seq` и версией представления. Таймеры подключения
 и heartbeat используют время работы клиента в процессе, отдельно от игровых часов.
+
+### 3.1. GameStore
+
+`GameStore` — единственная клиентская копия `PlayerView`. Все словари, которые он отдаёт
+(`get_view()`, параметры `view_changed` и `event_received`), — глубокие read-only копии: экран
+не может изменить общее состояние.
+
+| API | Поведение |
+|-----|-----------|
+| `set_view(view, state_version) -> bool` | Принимает представление, только если `state_version` больше текущей; устаревшая и совпадающая версии игнорируются без сигнала. Первое представление после `resync` принимается при любой версии. Представление с ключом из `FORBIDDEN_VIEW_KEYS` (`veracity`, `culpritIds`, `truth`, `hallucination` — зеркало `@hs/protocol`) отвергается с `push_error` |
+| `view_changed(view, state_version)` | новое принятое представление |
+| `event_received(event)` | `ClientEvent` из сообщения `event` известного типа |
+| `peer_status_changed(desktop, phone)` | изменение `peer.status`; до первого сообщения сессии — `unknown` |
+| `action_failed(code, message)` | действие отвергнуто: локально (`ACTION_INVALID` — не действие desktop; `NOT_CONNECTED` — нет живого соединения), `action.result` с `ok: false` или `error` с `requestId` |
+| `action_resolved(request_id, ok, code, message)` | ответ сервера с идентификатором действия из `action.result` или `error` |
+| `error_received(code, message)` | `error` без `requestId` (например, `UNAUTHORIZED` при рукопожатии) |
+| `connection_state_changed(state)` | этап подключения `Backend`; `OFFLINE` (только после `disconnect_session`) очищает представление, версию и статус пиров |
+| `request_action(action) -> Error` | отправляет копию действия через `Backend.send_action`; исход решает сервер |
+| `get_last_action_request_id() -> String` | сразу после успешной отправки даёт идентификатор для сопоставления с ответом |
+
+Повторная доставка `view.update` после переподключения безопасна: версия не растёт — сигнала нет.
+
+### 3.2. SceneRouter
+
+`SceneRouter.goto(screen, params = {}) -> Error` ищет экран в реестре `SCREENS` (id → путь сцены;
+задачи экранов добавляют туда свои записи), закрывает экран чёрной шторкой (`fade_seconds`,
+по умолчанию 0,25 с реального времени; во время перехода шторка блокирует ввод), заменяет
+текущую сцену и открывает шторку. Экран получает read-only копию `params` через необязательный
+метод `set_params(params: Dictionary)` до своего `_ready`; текущие значения — `get_current_screen()`
+и `get_current_params()`.
+
+- Неизвестный экран → `ERR_DOES_NOT_EXIST`, `push_error`, `transition_failed(screen, "unknown_screen")`.
+- `params` должны быть простыми данными: объект на любой глубине → `ERR_INVALID_PARAMETER`,
+  `transition_failed(screen, "invalid_params")`.
+- Ошибка загрузки сцены → `transition_failed(screen, "load_failed")`, текущий экран остаётся.
+- Во время перехода новый запрос ставится в очередь и выполняется сразу после текущего;
+  из нескольких запросов в очереди выполняется последний. Повтор уже ожидаемого перехода
+  (тот же экран и те же параметры) → `ERR_BUSY`.
+- Сигналы: `transition_started(screen)`, `screen_changed(screen, params)`, `transition_failed(screen, reason)`.
+
+### 3.3. Debug-панель (`scenes/overlays/debug`)
+
+`DebugOverlay` (`CanvasLayer`, слой 128) — панель разработчика по F12: seed, сценарий и версия
+генератора, игровое время (`clock` из `GameStore`), `stateVersion`, копирование seed, просмотр истины
+и экспорт репро-пакета. Клавиша обрабатывается в `_input`, без записи в `InputMap` и без изменений
+`project.godot`; `bootstrap.gd` вызывает `DebugOverlay.install(get_tree().root)`, оверлей живёт в
+корне дерева и переживает смену экранов `SceneRouter`.
+
+- **Только debug-сборка.** Проверка — feature-тег `debug` (`OS.has_feature("debug")`): запуск из
+  редактора и debug-шаблоны экспорта. В релизной сборке `install()` ничего не добавляет, а экземпляр,
+  созданный иначе, освобождает себя в `_ready`, не строит интерфейс и не отправляет запросов.
+  `force_release_mode()` (необратимо) включает то же поведение в тестах.
+- **Истина — только с сервера.** Запросы идут через `Backend.request_rest` на существующие маршруты
+  SRV-009 — `GET /api/v1/sessions/:id/debug/truth` и `GET /api/v1/sessions/:id/debug/export` — с
+  `desktopToken` сессии в `Authorization` ([backend.md §6](../backend/backend.md)). Сервер отвечает
+  на них только при `HS_DEBUG_TRUTH=1`; 404 панель показывает как «debug API недоступен», 401/403 —
+  как ошибку доступа, сетевую ошибку и ответ неожиданной формы — отдельно.
+- **Изоляция.** Истина хранится только в панели: не попадает в `GameStore`, `PlayerView` и сигналы
+  экранов, скрыта до кнопки «Показать истину» и забывается при закрытии панели, ошибке запроса,
+  смене сессии и `OFFLINE`. Токен хранится в памяти и уходит только заголовком debug-маршрутов.
+  Предупреждения об ошибках содержат вид маршрута и HTTP-статус — без URL, тела ответа и токена.
+- **Сессия.** Клиент пока не создаёт сессию сам (GDT-003), поэтому адрес сервера, id сессии и
+  `desktopToken` из ответа `POST /sessions` передаёт тот, кто создал сессию:
+  `attach_session(base_url, session_id, desktop_token) -> Error`. Без сессии запросы не
+  отправляются (`ERR_UNCONFIGURED`). Seed приходит в ответах debug-маршрутов.
+- **Экспорт.** Репро-пакет из `debug/export` записывается в `user://debug_repro/repro-<sessionId>-v<stateVersion>.json`
+  (`export_directory`); путь показывается в панели. Пакет содержит решение — это файл разработчика.
 
 ## 4. Экраны
 
@@ -105,6 +183,129 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | Accusation | выбор обвиняемого, мотив/средство/возможность, улики, двойное подтверждение |
 | Ending | концовка, разбор истины (`TruthRecap`), seed, статистика |
 | HUD (оверлей) | часы/день/период, остаток времени, здоровье/рассудок/усталость, Static, статус телефона |
+| Debug (оверлей, только debug-сборка) | seed, время, `stateVersion`, истина и экспорт репро через debug-маршруты (§3.3) |
+
+### 4.1. Exploration
+
+`src/scenes/exploration/exploration.tscn` (экран `exploration` в `SceneRouter`) показывает только
+данные текущего `PlayerView` из `GameStore`:
+
+| Элемент | Поля `PlayerView` |
+|---------|-------------------|
+| Заголовок, описание, освещение | `location.name`, `location.description`, `location.lighting` |
+| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (арт — CNT-010) |
+| Точки интереса | `location.hotspots[]` (`name`, отметка `examined`) |
+| Персонажи | `presentCharacters[]` (`name`, `demeanor`) |
+| Выходы | `location.exits[]` (`name`, `minutes`, `blockedReason`) |
+| Действия | `availableActions[]` (`label`, `costPreview`, `blockedReason`) |
+| Карта | локации и связи из полученных экраном видов (см. ниже) |
+
+- **Действия.** Кнопка — это запись `availableActions`, отправляемая через
+  `GameStore.request_action` без изменений; клиент не строит действия сам и не считает стоимость.
+  Запись показывается один раз: `move` — в строке своего выхода, `examineHotspot` — у точки
+  интереса, `talk`/`interrogate` — у присутствующего персонажа, остальное — в общем списке. Выход
+  без действия `move` помечается «недоступно» или причиной `blockedReason`.
+- **Стоимость** — `costPreview` как есть: «15 мин» или «20–30 мин» (`src/ui/cost_format.gd`).
+  Действие с `max` ≥ 60 мин или с некорректной оценкой требует подтверждения
+  (`ConfirmationDialog`); порог — константа интерфейса `LONG_ACTION_MINUTES`, не правило игры.
+- **Повторная отправка.** После отправки кнопки заблокированы до `view_changed`, `action_failed`
+  или потери соединения. Для разговора и допроса ожидается результат по `requestId`. Ошибка
+  показывается текстом над экраном.
+- **Карта.** `PlayerView.knownMap` содержит известные игроку локации (посещённые и увиденные как
+  выход) и связи; `known_map.gd` принимает их как есть. Для вида без этого поля карта запасно
+  накапливает текущую локацию и выходы из полученных видов. Текущая локация подсвечена, посещённые
+  и только увиденные различаются; ничего сверх присланного карта не показывает, при выходе с
+  экрана или завершении сессии она очищается.
+- **Скрытые данные.** Вид с ключом из `FORBIDDEN_VIEW_KEYS` не отображается (вдобавок к проверке
+  в `GameStore`); доска дела, диалог, инвентарь и внутренние id на экран не выводятся.
+- **Предпросмотр без сервера.** Сцена, запущенная отдельно (без параметров `SceneRouter`), или
+  переход с параметром `{"preview": "start|mid|capture|end"}` показывает фикстуру
+  `packages/protocol/fixtures/views/player-view.<имя>.json`. Первый живой `view_changed` заменяет
+  предпросмотр. Действия в предпросмотре уходят в `GameStore` и честно получают
+  `NOT_CONNECTED`. Фикстуры читаются из монорепозитория, поэтому режим работает только из
+  исходников.
+
+### 4.2. CaseBoard (доска дела)
+
+`src/scenes/case_board/case_board.tscn` — экран `case_board` в `SceneRouter` и переиспользуемая
+сцена: её можно вложить в другой экран, она сама следует за `GameStore` (или за хранилищем из
+`bind_store`). Показывает только `PlayerView.caseBoard` и имена из того же вида
+([investigation-model.md §7](../investigation/investigation-model.md)):
+
+| Вкладка | Поля `caseBoard` |
+|---------|------------------|
+| Улики | `clues[]`: `title`, `kind`, `discoveredAt`, место (имя — если локация встречалась в `location`/`exits` полученных видов), `captured`, `description` |
+| Показания | `statements[]`: говорящий, `heardAt`, `text` |
+| Противоречия | `contradictions[]`: `summary`, показание `statementId` и опровергающая улика или показание `againstId` |
+| Персоны интереса | `personsOfInterest[]` (`name`, связанные улики) и остальные известные персонажи; отметка `suspicions[]` и заметка |
+| Хронология | `timeline[]` по возрастанию `from` (затем `to`): интервал, `text`, источники |
+
+- **Ничего не вычисляется.** Противоречия, персоны интереса и хронологию присылает сервер; доска
+  их только раскладывает. Игровые минуты показываются циферблатом по часам того же вида
+  (`clock.t` — тот же момент, что `clock.day`/`clock.time`); без часов — «минута N». Внутренние id
+  не выводятся: персонаж без имени в видах — «Неизвестный персонаж».
+- **Известные персонажи** (для фильтра и вкладки персон) — в порядке: персоны интереса, отмеченные,
+  говорящие в показаниях, присутствующие, собеседник `interaction`. Имена, увиденные в
+  предыдущих видах, доска помнит, пока открыта; `OFFLINE` очищает их.
+- **Фильтр по персонажу** использует только связи из вида: улики `linkedClueIds` персоны интереса,
+  показания говорящего, противоречия с такой уликой или показанием на любой стороне, записи
+  хронологии с таким источником. Фильтр сохраняется между видами, пока персонаж известен.
+- **Отметка подозрения** — действие `markSuspicion { characterId, level, note? }` через
+  `GameStore.request_action`. `level` протокола — неотрицательное целое (§4 protocol.md), а
+  `SuspicionView.level` — строка; доска отправляет индекс уровня в порядке `SUSPICION_LEVELS`
+  (`none` = 0, `possible` = 1, `prime` = 2). Обработчик действия и проекция `suspicions` и
+  `personsOfInterest` в движке — [ENG-007](../../tasks/ENG-007.md); до неё движок отвечает
+  `ACTION_NOT_AVAILABLE`, а доска показывает эту ошибку. Если движок выберет другой перевод, его
+  нужно отразить в `case_board_format.gd`. Повтор текущего уровня и неизменённая заметка не
+  отправляются; Enter в поле заметки отправляет текущий уровень с заметкой (пустая — удаляет).
+  Пока действие в пути, кнопки заблокированы; кнопка показывает подтверждённый сервером уровень,
+  новый — только с новым видом. Ошибка `action_failed` показывается, только если действие
+  отправила доска.
+- **Пустые и неполные данные.** Без вида — «ожидание состояния от сервера»; у пустой вкладки —
+  заглушка (при фильтре — «Ничего не связано с персонажем …»); отсутствующие необязательные поля
+  (`to`, `note`, `captured`, неизвестные `kind`/`level`, ссылки на неизвестные улики) не
+  угадываются. Вид с ключом из `FORBIDDEN_VIEW_KEYS` не показывается.
+- **Производительность.** Вид, в котором `caseBoard`, часы и известные имена не изменились, не
+  перестраивает карточки. Строится только открытая вкладка, остальные — при открытии; карточки
+  открытой вкладки создаются порциями не дольше `BUILD_BUDGET_USEC` (6 мс реального времени) за
+  кадр. Ручной замер FPS: `<godot> --path apps/desktop res://tests/perf/case_board_fps.tscn --
+  --clues=24` (окно, vsync выключен; печатает средний FPS, p99, худший кадр и число кадров дольше
+  16,7 мс в покое и при переключении вкладок, фильтра и изменении доски).
+- **Параметры маршрута:** `{"back": "<экран>"}` показывает кнопку «Назад» (`SceneRouter.goto` и
+  сигнал `close_requested`); `{"preview": "start|mid|capture|end|large"}` — предпросмотр фикстуры,
+  `large` — встроенная фикстура `case_board_fixtures.gd` (24 улики, работает и в сборке).
+  Обвинение — отдельный экран (GDT-009).
+
+### 4.3. Диалог и допрос
+
+`src/scenes/dialogue/dialogue.tscn` — экран `dialogue` в `SceneRouter`. Exploration открывает его
+после ответа на свой `talk` или `interrogate` и следующего `view.update` с тем же собеседником в
+`PlayerView.interaction`. Действующий разговор можно открыть повторно без затрат времени кнопкой
+«Продолжить разговор». «К локации» и Escape закрывают экран. Протокол не содержит отдельного
+действия завершения разговора. Если сервер убирает `interaction`, экран очищает историю и
+показывает, что разговор завершён.
+
+- Темы и их стоимость поступают из `interaction.topics`, реплики — из `interaction.history`
+  в порядке сервера. Готовый текст признания, смены версии или отказа отображается в истории.
+  В текущем ENG-003 результаты неразличимы по полям истории. Для `testimony_none` показывается,
+  что собеседник ничего не сообщил. Если сервер прислал только ключ шаблона, экран сообщает,
+  что текст показания недоступен.
+- «Предъявить» открывает список `interaction.presentable`. Стоимость и причину блокировки экран
+  берёт из совпадающего действия в `availableActions`, если оно есть. Без цены от сервера
+  экран показывает «время неизвестно» и запрашивает подтверждение.
+- Пока ожидается результат с соответствующим `requestId` и новый снимок состояния, повторная
+  отправка заблокирована. При отказе показывается ошибка; она сохраняется при постороннем
+  `view.update` и сбрасывается следующей отправкой. При разрыве — ожидание соединения. После
+  принятого `SceneRouter` перехода в диалог или из него экран не отправляет действия, в том
+  числе с клавиатуры.
+- Блокировки взаимодействий решает сервер (ENG-005): во время допроса `availableActions` не
+  содержит `move`, `rest` и `pickLock`, поэтому Exploration показывает выходы недоступными, пока
+  другое действие не завершит допрос. Отказ `ACTION_BLOCKED` показывается как «Действие
+  заблокировано».
+- Самостоятельный запуск сцены без сессии открывает контрактную фикстуру `player-view.mid.json`
+  с отключённой отправкой действий. Проекция текста и стоимости допроса запланирована в
+  [ENG-009](../../tasks/ENG-009.md). Подключение реальных проекций к штатному WebSocket-шлюзу
+  относится к [INT-002](../../tasks/INT-002.md).
 
 ## 5. Стиль кода
 
@@ -127,4 +328,72 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   фикстуры-коллекции (`client-messages.json`, `server-messages.json`); остальные, в том числе
   `PlayerView` и `PhoneView`, проверяются как один JSON-объект. `ProtocolConstants` сверяются со схемами
   (типы сообщений, событий, действий, коды ошибок, роли) и фикстурами (`v`, покрытие типов).
-- Smoke: все сцены из `src/scenes` загружаются и инстанцируются без ошибок.
+- Smoke (`tests/unit/test_scene_smoke.gd`): все сцены из `src/scenes`, включая подкаталоги,
+  загружаются, инстанцируются и входят в дерево без ошибок.
+
+## 7. Хоррор-подача (GDT-010)
+
+Рассудок и Static ощущаются на экране и на слух ([game-design.md §8](../game-design/game-design.md),
+[survival-horror.md](../game-design/survival-horror.md)). Клиент только интерпретирует значения,
+уже пришедшие в `PlayerView` и событиях: `vitals.sanity`, `static`, `location.id`,
+`location.lighting`, `clock.period`, события `incomingCall` и `gameOver`. Правил, игрового времени и
+других полей эффекты не читают; вид с ключом из `FORBIDDEN_VIEW_KEYS` считается отсутствующим.
+
+### 7.1. Settings
+
+`Settings` (autoload, `src/autoload/settings.gd`) хранит настройки игрока в `user://settings.cfg`
+(`ConfigFile`, секция `accessibility`). Сейчас там одна настройка — «Снизить визуальные эффекты»:
+`get_reduce_visual_effects()`, `set_reduce_visual_effects(enabled)` (сохраняет файл при изменении),
+сигнал `reduce_visual_effects_changed(enabled)`. Нет файла — значения по умолчанию (выключено);
+нечитаемый файл или значение не того типа — значение по умолчанию и предупреждение. Экран настроек
+появится вместе с главным меню; до тех пор настройка меняется через API или файл.
+
+### 7.2. HorrorFx
+
+`src/scenes/overlays/horror_fx/` — `CanvasLayer` (слой 100: над экранами и HUD, под DebugOverlay и
+шторкой SceneRouter) с полноэкранным `ColorRect` и CanvasItem-шейдером `horror_fx.gdshader`, который
+читает уже нарисованный кадр (`hint_screen_texture`) и не перехватывает ввод.
+
+| Параметр шейдера | Источник | Вид |
+|------------------|----------|-----|
+| `distortion` | `vitals.sanity` ≤ 5: 0,2 на 5 → 1,0 на 0 | волнение картинки, расхождение цветовых каналов, затемнение краёв |
+| `noise` | `static` ≥ 25: 0,2 на 25 → 1,0 на 100 | зерно, строки развёртки, редкая полоса срыва |
+
+Пороги — презентационные зеркала порогов survival-horror.md (рассудок ≤ 5 — первые помехи,
+Static 25 — первые сбои). Новое значение наплывает за ~1–2 с реального времени (анимация между
+двумя состояниями сервера). Нет вида, значение отсутствует или не целое, сессия закончилась
+(`OFFLINE`) — эффекта нет. При «Снизить визуальные эффекты» оверлей скрыт целиком и не
+обрабатывает кадры. `bootstrap.gd` вызывает `HorrorFx.install(get_tree().root)`: оверлей живёт в
+корне дерева и переживает смену экранов `SceneRouter`.
+
+### 7.3. AudioDirector
+
+`AudioDirector` (autoload) следует за `GameStore`, а не за экранами, поэтому эмбиент не
+прерывается при смене экрана.
+
+- **Эмбиент** — петля по ключу `<location.id>|<lighting>|<period>`; смена ключа — кроссфейд 2 с,
+  нет ни локации, ни периода (или `OFFLINE`) — тишина.
+- **Стингеры** — `sanity_drop` (рассудок упал между двумя видами), `static_threshold` (Static
+  перешёл вверх через 25, 50 или 75), `incoming_call`, `game_over`. Первый вид сессии только задаёт
+  точку отсчёта. Стингеры редки: следующий — не раньше чем через 2 с реального времени, кроме
+  `game_over`.
+- **Звуки-заглушки** синтезируются в коде (детерминированно, без файлов и сторонних лицензий)
+  один раз в `_ready` автозагрузки, до первого кадра; во время игры синтеза нет. Эмбиент — гул с
+  тёмным шумом: уровень шума зависит от освещения, высота тона (`pitch_scale`) — от периода и
+  локации. Финальные ассеты (CNT-011) подставляются через `ambient_stream()`, `ambient_pitch()` и
+  `stinger_stream()`. Громкость и шина —
+  `Master` (настройки громкости — вне GDT-010).
+
+### 7.4. Замер производительности
+
+Критерий GDT-010 — не ниже 60 FPS на интегрированной графике с активными эффектами. Ручной замер:
+
+```bash
+<godot> --path apps/desktop --script res://tests/manual/horror_fx_benchmark.gd --   --seconds=30 --sanity=0 --static=100 [--reduce] [--vsync=off] [--window=exclusive]
+```
+
+Скрипт открывает Exploration на фикстуре `mid` с HUD и оверлеем, задаёт рассудок и Static
+(по умолчанию — максимальный эффект) и печатает адаптер, драйвер, режим окна, VSync, средний FPS,
+FPS по секундам и перцентили времени кадра. Графический адаптер выбирает Windows: для замера на
+интегрированной графике ноутбука с Optimus нужна настройка «Графика → Энергосбережение» для exe
+Godot (сам Godot запрашивает дискретную карту); фактический адаптер — строка `BENCH adapter=`.

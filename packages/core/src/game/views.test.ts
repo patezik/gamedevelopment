@@ -33,6 +33,27 @@ test('desktop payloads validate and omit the server solution and unseen characte
   }
 });
 
+test('known map holds visited locations and the exits shown, nothing else', () => {
+  const engine = GameEngine.create(tinyManor(), { startLocationId });
+  const first = engine.playerView().knownMap;
+  expect(first?.locations.filter(({ visited }) => visited).map(({ id }) => id)).toEqual([
+    startLocationId,
+  ]);
+  const exitIds = engine.playerView().location.exits.map(({ locationId }) => locationId);
+  expect(first?.locations.map(({ id }) => id).sort()).toEqual([startLocationId, ...exitIds].sort());
+  expect(first?.links.every(({ from }) => from === startLocationId)).toBe(true);
+
+  expect(engine.dispatch('desktop', { type: 'move', locationId: 'loc_study' }).ok).toBe(true);
+  const second = engine.playerView().knownMap;
+  const visited = second?.locations.filter(({ visited: seen }) => seen).map(({ id }) => id);
+  expect(visited?.sort()).toEqual(['loc_hall', 'loc_study']);
+  expect(second?.links).toContainEqual({ from: 'loc_hall', to: 'loc_study' });
+  expect(second?.links).toContainEqual({ from: 'loc_study', to: 'loc_archive' });
+  const restored = GameEngine.restore(engine.snapshot(), tinyManor(), { startLocationId });
+  expect(restored.playerView().knownMap).toEqual(second);
+  expect(restored.stateHash()).toBe(engine.stateHash());
+});
+
 test('clock and action previews reflect the engine, including locked exits and expiration', () => {
   const fixture = tinyManor();
   const investigation = { ...fixture, world: { ...fixture.world, durationMinutes: 25 } };
@@ -61,6 +82,8 @@ test('clock and action previews reflect the engine, including locked exits and e
   });
   expect(study.availableActions.map(({ action }) => action)).toEqual([
     { type: 'move', locationId: 'loc_hall' },
+    { type: 'examineLocation' },
+    { type: 'rest', minutes: 60 },
     { type: 'wait', minutes: 20 },
   ]);
   expect(engine.dispatch('desktop', { type: 'wait', minutes: 20 }).outcome).toBe('time_expired');
@@ -85,4 +108,29 @@ test('QR overlay exposes only the active token, presentation label and remaining
   });
   engine.dispatch('desktop', { type: 'move', locationId: startLocationId });
   expect(engine.playerView().pendingCapture).toBeUndefined();
+});
+
+test('an open interrogation holds the hero: no move, rest or pickLock offered; a plain talk keeps them', () => {
+  const engine = GameEngine.create(tinyManor(), { startLocationId });
+  expect(
+    engine.dispatch('desktop', { type: 'talk', characterId: 'ch_owner', topicId: 'self' }).ok,
+  ).toBe(true);
+  const offered = (e: GameEngine) =>
+    new Set(e.playerView().availableActions.map(({ action }) => action.type));
+  expect(offered(engine)).toContain('move');
+  expect(offered(engine)).toContain('rest');
+
+  const snapshot = structuredClone(engine.snapshot());
+  const { interaction } = snapshot.desktop ?? {};
+  if (!interaction) throw new Error('no open dialogue');
+  interaction.interrogation = true;
+  const held = GameEngine.restore(snapshot, tinyManor(), { startLocationId });
+  const types = offered(held);
+  for (const blocked of ['move', 'rest', 'pickLock']) expect(types).not.toContain(blocked);
+  expect(types).toContain('wait');
+  // What the view hides, the engine rejects.
+  expect(held.dispatch('desktop', { type: 'move', locationId: 'loc_study' })).toMatchObject({
+    ok: false,
+    blockedReason: 'interrogation_open',
+  });
 });

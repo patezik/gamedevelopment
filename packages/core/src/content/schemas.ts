@@ -78,6 +78,8 @@ export const presetSchema = z.strictObject({
     types: ids.min(1),
     templates: ids.min(1),
     minMotive: share,
+    /** IncidentSelection weighs feasible culprits by score^gamma; omitted means 0.7. */
+    gamma: z.number().min(0).max(4).optional(),
     victimConstraints: z.strictObject({ excludeArchetypes: ids }),
   }),
   criticalEvents: z.array(
@@ -86,6 +88,14 @@ export const presetSchema = z.strictObject({
       at: minutes,
       earlierIf: z
         .strictObject({ staticAtLeast: z.number().min(0).max(100), at: minutes })
+        .optional(),
+      requiresPresence: z.strictObject({ locationId: id }).optional(),
+      onMissed: z
+        .discriminatedUnion('kind', [
+          z.strictObject({ kind: z.literal('static'), delta: z.number() }),
+          z.strictObject({ kind: z.literal('incident'), incidentId: id }),
+          z.strictObject({ kind: z.literal('closeLocation'), locationId: id }),
+        ])
         .optional(),
     }),
   ),

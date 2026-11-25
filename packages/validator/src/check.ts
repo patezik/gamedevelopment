@@ -1,5 +1,8 @@
 import type { GameMinutes } from '@hs/core/common';
+import type { Clue } from '@hs/core/evidence';
 import type { Investigation } from '@hs/core/game';
+import type { Statement } from '@hs/core/knowledge';
+import type { DeductionRules, HeardStatement } from '@hs/core/investigation';
 import type { EntityRef } from '@hs/core/truth/facts';
 
 export type Severity = 'error' | 'warning';
@@ -29,6 +32,25 @@ export interface ValidationContext {
    * when it is absent.
    */
   readonly historyStartMinutes?: GameMinutes;
+  /** Every clue of the case; `V-PHONE-REQUIRED` reads the capture mode of the required ones. */
+  readonly clues?: readonly Clue[];
+  /** IDs of the mandatory clues: the solver's minimal covering set (a subset of `clues`). */
+  readonly requiredClueIds?: readonly string[];
+  /** The preset's `phone.minQrShare`: the least share of mandatory clues captured by QR, 0..1. */
+  readonly minQrShare?: number;
+  /** Compiled `deduction-rules.json`; the solver checks need it. */
+  readonly deductionRules?: DeductionRules;
+  /** Testimony the player can obtain from characters (the solver treats it as reachable). */
+  readonly statements?: readonly HeardStatement[];
+  /**
+   * Every statement the question bank draws from the witnesses, with its veracity (see
+   * `collectTestimony`). `V-TESTIMONY` and `V-LIES-BREAKABLE` read it; a player never sees veracity.
+   */
+  readonly testimony?: readonly Statement[];
+  /** Where the player starts; defaults to the first location of the scenario. */
+  readonly startLocationId?: string;
+  /** Generates the same investigation again (same seed, preset and generator version). */
+  readonly regenerate?: () => Investigation;
 }
 
 /** One validation rule from docs/investigation/validation.md; checks are independent. */

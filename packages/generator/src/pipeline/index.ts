@@ -1,7 +1,7 @@
 import type { ScenarioContent } from '@hs/core/content';
 import { createRng, type Rng } from '@hs/core/rng';
 
-export const GENERATOR_VERSION = '0.1.0';
+export const GENERATOR_VERSION = '0.3.0';
 const DEFAULT_MAX_ATTEMPTS = 8;
 
 export interface GenerationLogger {
@@ -36,11 +36,39 @@ type Compatible<Stages extends readonly AnyStage[]> = Stages extends readonly [
     : never
   : unknown;
 
+/**
+ * A stage throws this when its input admits no valid output, for example when no character can
+ * commit any allowed crime. `runPipeline` records the attempt as rejected and starts the next
+ * attempt with a new seed. Any other exception is a defect and propagates.
+ */
+export class GenerationRejection extends Error {
+  readonly code: string;
+  /** Server diagnostics. Keep this out of player and phone views. */
+  readonly diagnostics: Readonly<Record<string, unknown>> | undefined;
+
+  constructor(code: string, message: string, diagnostics?: Readonly<Record<string, unknown>>) {
+    super(message);
+    this.name = 'GenerationRejection';
+    this.code = code;
+    this.diagnostics = diagnostics;
+  }
+}
+
+export interface StageRejectionReport {
+  readonly stage: string;
+  readonly code: string;
+  readonly message: string;
+  readonly diagnostics?: Readonly<Record<string, unknown>>;
+}
+
 export interface AttemptReport {
   readonly number: number;
   readonly seed: string;
+  /** Stages that ran, including a rejecting stage. */
   readonly timingsMs: Readonly<Record<string, number>>;
   readonly accepted: boolean;
+  /** Set when a stage rejected its input; later stages and `accepts` did not run. */
+  readonly rejection?: StageRejectionReport;
 }
 
 /** Server diagnostics. Keep this out of player and phone views. */
@@ -97,15 +125,34 @@ export function runPipeline<const Stages extends Pipeline>(
     const root = createRng(attemptSeed);
     const timings = new Map<string, number>();
     let value: unknown = input;
+    let rejection: StageRejectionReport | undefined;
     for (const stage of stages) {
       const started = now();
-      // Compatible checks the input/output chain at the public boundary.
-      value = (stage as Stage<unknown, unknown>).generate(value, {
-        rng: root.fork(`gen/${stage.name}`),
-        content,
-        logger,
-      });
+      try {
+        // Compatible checks the input/output chain at the public boundary.
+        value = (stage as Stage<unknown, unknown>).generate(value, {
+          rng: root.fork(`gen/${stage.name}`),
+          content,
+          logger,
+        });
+      } catch (error) {
+        if (!(error instanceof GenerationRejection)) throw error;
+        const { code, message, diagnostics } = error;
+        rejection = { stage: stage.name, code, message, ...(diagnostics && { diagnostics }) };
+      }
       timings.set(stage.name, now() - started);
+      if (rejection) break;
+    }
+    if (rejection) {
+      logger.debug('generation attempt rejected', { seed: attemptSeed, ...rejection });
+      attempts.push({
+        number,
+        seed: attemptSeed,
+        timingsMs: Object.fromEntries(timings),
+        accepted: false,
+        rejection,
+      });
+      continue;
     }
     const output = value as PipelineOutput<Stages>;
     const accepted = accepts(output);

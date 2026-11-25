@@ -62,8 +62,8 @@ apps/server/src/
 телефона для них не подходит (`UNAUTHORIZED`).
 | `POST /pair` | код привязки | `{ code, deviceName, appVersion, protocolVersion }` → `{ sessionId, deviceToken, wsPath }` | `PAIRING_CODE_INVALID`, `PAIRING_CODE_EXPIRED`, `PAIRING_RATE_LIMITED`, `PROTOCOL_MISMATCH` |
 | `DELETE /sessions/:id/device` | desktop | отвязать телефон | |
-| `GET /saves` | — (локальный сервер) | `[{ saveId, scenarioId, seed, updatedAt, gameTime }]` | |
-| `POST /saves/:saveId/load` | — | → `{ sessionId, desktopToken, pairing }` | `SAVE_NOT_FOUND`, `SAVE_DESYNC` |
+| `GET /saves` | — (локальный сервер) | `[{ saveId, scenarioId, seed, updatedAt, gameTime }]`, новые первыми; `updatedAt` — ISO-время последней записи, `gameTime` — прошедшие игровые минуты (`null`, если файл метаданных потерян). Повреждённые и посторонние файлы в список не попадают | |
+| `POST /saves/:saveId/load` | — | → `{ sessionId, desktopToken, pairing }`; `sessionId` равен `saveId`. Ответ с `Cache-Control: no-store` | `SAVE_NOT_FOUND` (404, в том числе неверный формат id), `SAVE_DESYNC` (422, с `error.atAction`), `ACTION_NOT_AVAILABLE` (409, сессия с этим id ещё идёт) |
 | `GET /sessions/:id/debug/truth` | desktop + `HS_DEBUG_TRUTH=1` | `{ sessionId, scenarioId, seed, generatorVersion, minute, truth }`: журнал истины целиком | 404 если флаг выключен (маршрута нет); `UNAUTHORIZED`, `SESSION_NOT_FOUND`, 501 если движок сессии нельзя осмотреть |
 | `GET /sessions/:id/debug/export` | desktop + `HS_DEBUG_TRUTH=1` | репро-пакет `{ format: "hollow-signal-repro", exportedAt, server, session, scenarioId, seed, generatorVersion, stateHash, snapshot }` | как у `debug/truth` |
 
@@ -77,6 +77,37 @@ apps/server/src/
 При создании сессии SRV-002 выдаёт desktop-токен и первоначальный код через сервис привязки.
 expiresAt — Unix-время в миллисекундах. При отзыве сервис удаляет хеш токена и передаёт
 DEVICE_REVOKED обработчику шлюза (SRV-004).
+
+### Сохранения ([ADR 0014](../architecture/adr/0014-save-system.md))
+
+Код — `apps/server/src/saves`. Формат и replay — `@hs/core/save` (SAVE-001); сервер только пишет и читает файлы.
+
+- **Файлы.** `HS_DATA_DIR/saves/<sessionId>.json` (журнал) и рядом `<sessionId>.meta.json`
+  (`{ gameTime }` для списка: производные данные, не источник истины). Идентификатор — только
+  `[A-Za-z0-9_-]{1,64}`, иначе это не сохранение (защита от выхода из каталога). Файлы создаются с
+  правами `0600` (в них истина), каталог — `0700`.
+- **Автосохранение.** `SaveService.createEngine` передаётся в `SessionManager` и оборачивает
+  `GameEngine`: каждое действие идёт через `recordAction`, затем журнал целиком записывается на диск и
+  только после этого результат уходит клиенту. Каждое 50-е действие добавляет чекпойнт (это делает
+  `recordAction`). До первого действия ничего не пишется. Отклонённые движком действия тоже попадают в журнал (состояние не меняется).
+- **Атомарность.** Запись идёт во временный файл `<имя>.<hex>.tmp` в том же каталоге
+  (`open wx`, `fsync`), затем `rename` поверх цели. Обрыв оставляет прежний файл целым; временные
+  файлы список не видит, а при старте (`onReady`) сервер их удаляет. Сначала пишется журнал, потом
+  метаданные: при обрыве между ними `gameTime` отстаёт на одно действие.
+- **Сбой записи** (диск, права) переводит сессию в `faulted` (`INTERNAL`): на диске остаётся последнее
+  согласованное состояние, в памяти — на одно действие впереди, продолжать нельзя.
+- **Загрузка.** `POST /saves/:id/load` регенерирует расследование через тот же `InvestigationProvider`,
+  вызывает `loadSave` (цепочка хешей, чекпойнт + хвост, `finalStateHash`) и отказывает с `SAVE_DESYNC`,
+  если версия генератора не совпала. Ответ HTTP 422 содержит `atAction: 0` и обе версии в
+  `error.message`. Файл остаётся на диске. Политика описана в
+  [ADR 0019](../architecture/adr/0019-save-generator-compatibility.md). При успехе создаётся сессия с `sessionId = saveId`
+  (дальнейшие действия дописываются в тот же файл: одно сохранение на прохождение), выдаются новый
+  desktop-токен и код привязки; статус сессии `created`, телефон привязывается заново. Если сессия с
+  этим id ещё идёт (`created`/`active`), загрузка отклоняется (409); приостановленную, завершённую или
+  сбойную сессию загрузка заменяет, а её старый движок после этого писать в файл не может.
+- **Не сохраняется** состояние порта улик (выпущенные QR-токены): оно живёт в памяти процесса и
+  определяется провайдером; после загрузки ожидающий скан токен нужно выпустить заново.
+- Лог: имена файлов и содержимое сохранений не пишутся; ответы `/saves` не содержат токенов и истины.
 
 ## 4. Жизненный цикл сессии
 
