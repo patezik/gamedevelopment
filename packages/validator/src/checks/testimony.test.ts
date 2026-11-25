@@ -142,6 +142,13 @@ describe('V-TESTIMONY', () => {
     expect(honest([cook('mistaken', 'loc_pantry', -50, 25)])).toEqual([]);
   });
 
+  it('forgives a blurred statement that only touches the true interval', () => {
+    // A memory rounded down to the minute before the stay is still inside the blur.
+    expect(honest([cook('mistaken', 'loc_pantry', -80, -50)])).toEqual([]);
+    expect(honest([cook('mistaken', 'loc_pantry', 1, 20)])).toEqual([]);
+    expect(honest([cook('mistaken', 'loc_pantry', -90, -80)])).toHaveLength(1);
+  });
+
   it('catches a "true" statement about the wrong place', () => {
     const wrong = cook('true', 'loc_hall', -50, 1);
     expect(honest([wrong]).map(({ code, data }) => [code, data?.statementId])).toEqual([
@@ -185,6 +192,37 @@ describe('V-TESTIMONY', () => {
     expect(honest([stmt(didFact.who, 'true', { ...didFact, where: 'loc_nowhere' })])).toHaveLength(
       1,
     );
+  });
+
+  it('takes an event of the same actor, verb and place for the truth of a "did" statement', () => {
+    // The log states a plain stay only as presence, yet observers remember it as `did`.
+    const withStay = tinyManor();
+    withStay.truth.append({
+      t: -30,
+      duration: 5,
+      verb: 'stay',
+      actorIds: ['ch_porter'],
+      location: 'loc_hall',
+      targets: [],
+      causes: [],
+      facts: [],
+      traceIds: [],
+      visibility: 'public',
+    });
+    const did = {
+      kind: 'did' as const,
+      who: 'ch_porter',
+      verb: 'stay',
+      where: 'loc_hall',
+      at: -30,
+    };
+    const check = (testimony: Statement[]) =>
+      validateInvestigation(withStay, { checks: [testimonyCheck], context: { testimony } })
+        .findings;
+    expect(check([stmt('ch_cook', 'true', did)])).toEqual([]);
+    expect(check([stmt('ch_cook', 'true', { ...did, verb: 'sweep' })])).toHaveLength(1);
+    expect(check([stmt('ch_cook', 'true', { ...did, who: 'ch_cook' })])).toHaveLength(1);
+    expect(check([stmt('ch_cook', 'true', { ...did, at: -30 + 31 })])).toHaveLength(1);
   });
 
   it('does not compare lies, and reports missing input', () => {

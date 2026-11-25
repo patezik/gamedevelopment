@@ -92,22 +92,32 @@ export const testimonyCheck: Check = {
           .some(
             ({ location, interval }) =>
               location === p.where &&
-              p.interval.from < interval.to &&
-              interval.from < p.interval.to &&
               interval.from - tolerance <= p.interval.from &&
               p.interval.to <= interval.to + tolerance,
           );
       } else if (p.kind === 'did') {
-        agrees = truth
-          .facts({ kind: 'did' })
-          .some(
-            (fact) =>
-              fact.kind === 'did' &&
-              fact.who === p.who &&
-              fact.verb === p.verb &&
-              fact.where === p.where &&
-              Math.abs(fact.at - p.at) <= tolerance,
-          );
+        // Observers remember an event as `did`, but the log states a plain stay or move only as
+        // presence, so an event of the same actor, verb and place counts as the truth too.
+        agrees =
+          truth
+            .facts({ kind: 'did' })
+            .some(
+              (fact) =>
+                fact.kind === 'did' &&
+                fact.who === p.who &&
+                fact.verb === p.verb &&
+                fact.where === p.where &&
+                Math.abs(fact.at - p.at) <= tolerance,
+            ) ||
+          truth
+            .events()
+            .some(
+              (event) =>
+                event.actorIds.includes(p.who) &&
+                event.verb === p.verb &&
+                event.location === p.where &&
+                Math.abs(event.t - p.at) <= tolerance,
+            );
       }
       if (!agrees) {
         findings.push({
