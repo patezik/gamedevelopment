@@ -151,6 +151,22 @@ advance(m):
 21:00), при котором игрок не присутствовал, порождает `ScheduledEventMissed` во внутреннем
 журнале: информация из него доступна только косвенно (следы, пересказ свидетелей).
 
+### События сценария (`ScenarioEvents`)
+
+`packages/core/src/time/scenario-events.ts` загружает `criticalEvents` и `deadlines` пресета в
+`TimeSystem`. Критическое событие — фаза `WorldEvents`, дедлайн — фаза `Outcome`, поэтому дедлайн в
+той же минуте обрабатывается после критического события. Дедлайн ровно в `durationMinutes` срабатывает
+(`advance` обрабатывает события в `target`) и даёт `outcome() === 'time_up'`; позже конца — не срабатывает.
+
+- `earlierIf { staticAtLeast, at }`: в минуту `earlierIf.at` (раньше `at` события) читается Static; если он
+  не ниже порога, событие переносится на эту минуту, иначе остаётся на `at`. Сработать дважды оно не может.
+  Static даёт порт `staticLevel` (SURV-002).
+- `requiresPresence { locationId }`: если порт `isPlayerPresent` вернул `false`, вместо
+  `CriticalEventFired` записывается `ScheduledEventMissed` с эффектом `onMissed`
+  (`static` / `incident` / `closeLocation`); применять эффект должен потребитель события.
+- Сработавшее критическое событие прерывает прерываемое действие (`critical:<id>`).
+- События забираются `drain()`; схема пресета пока не содержит `requiresPresence` и `onMissed`.
+
 ## 6. Сценарии разной длительности
 
 `durationMinutes`, `criticalEvents`, `deadlines`, `endConditions` — из пресета. Досрочное
