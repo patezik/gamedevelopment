@@ -57,8 +57,9 @@
 машинах не сравнимы). Обновление базовой линии — осознанное: `BENCH_UPDATE=1 npm run bench`, файл
 коммитится вместе с причиной в PR.
 
-Базовая линия для `background` (0,000567) снята на Ubuntu-раннере GitHub Actions в
-[прогоне QA-002](https://github.com/patezik/gamedevelopment/actions/runs/45669432892).
+Для симуляции на Ubuntu-раннерах CI использованы замеры `background` (0,000567) и
+`focus` (0,00136) из [первого](https://github.com/patezik/gamedevelopment/actions/runs/45669432892)
+и [второго](https://github.com/patezik/gamedevelopment/actions/runs/45685534296) прогонов QA-002.
 CI отдельно вводит задержку 210 мс в замер планировщика и проверяет, что бенчмарк
 завершается ошибкой именно из-за превышения бюджета.
 
