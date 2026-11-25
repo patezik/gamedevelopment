@@ -295,6 +295,19 @@ describe('captureEvidence', () => {
     expectRejected(engine, { type: 'captureEvidence', tokenId: 'tok_1' }, 'ACTION_NOT_AVAILABLE');
   });
 
+  test('an already captured clue cannot be captured again', () => {
+    const { engine, clues } = withPending();
+    phone(engine, { type: 'captureEvidence', tokenId: 'tok_1' });
+    const gallery = state(engine).gallery.length;
+    engine.dispatch('desktop', { type: 'read', documentId: 'ledger_note' });
+    const again = phone(engine, { type: 'captureEvidence', tokenId: 'tok_1' });
+    expect(again.ok).toBe(false);
+    expect(state(engine).gallery).toHaveLength(gallery);
+    expect(engine.snapshot().desktop?.knowledge).toMatchObject({
+      clues: [{ clueId: clues[0]!.id, captured: true }],
+    });
+  });
+
   test('an expired token cannot be used', () => {
     const { engine } = withPending();
     for (let i = 0; i < 8; i++) engine.dispatch('desktop', { type: 'wait', minutes: 15 });
@@ -323,6 +336,31 @@ describe('files, pages and notes', () => {
       { type: 'unlockFile', fileId: 'f_open', password: 'x' },
       'ACTION_NOT_AVAILABLE',
     );
+  });
+
+  test('a hidden locked file cannot be unlocked even with its password', () => {
+    const initial = createPhoneState({
+      contacts: [],
+      threads: [],
+      browserPages: [],
+      files: [
+        {
+          id: 'f_secret',
+          name: 'Secret',
+          locked: true,
+          password: 'pw',
+          content: 'X',
+          hidden: true,
+        },
+      ],
+    });
+    const { engine } = setup({ phone: { initial, ...port } });
+    expectRejected(
+      engine,
+      { type: 'unlockFile', fileId: 'f_secret', password: 'pw' },
+      'ACTION_NOT_AVAILABLE',
+    );
+    expect(state(engine).files.find(({ id }) => id === 'f_secret')?.locked).toBe(true);
   });
 
   test('unlockFile needs the right password, which costs time either way', () => {
