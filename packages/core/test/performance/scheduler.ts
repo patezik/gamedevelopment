@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { checkBudget } from '../../bench/budget.ts';
 import { Scheduler, type TickPhase } from '../../src/time/scheduler.ts';
 
 const eventCount = 100_000;
@@ -26,7 +27,9 @@ function measureScheduler(): number {
 }
 
 measureScheduler(); // Warm up the JIT.
-const samples = [measureScheduler(), measureScheduler(), measureScheduler()];
+const samples = Array.from({ length: 9 }, measureScheduler);
 const bestMs = Math.min(...samples);
-console.log(`Scheduler: ${samples.map((ms) => ms.toFixed(1)).join(', ')} ms (limit: ${budgetMs} ms)`);
-assert.ok(bestMs < budgetMs, `Best run took ${bestMs.toFixed(1)} ms`);
+console.log(
+  `Scheduler: ${samples.map((ms) => ms.toFixed(1)).join(', ')} ms (limit: ${budgetMs} ms)`,
+);
+checkBudget('scheduler 100k events', bestMs, budgetMs);
