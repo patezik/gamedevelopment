@@ -1,7 +1,6 @@
 import type { Check } from '../check.ts';
-import { timeFeasibleCheck } from '../planner/planner.ts';
-import { SOLVER_CHECKS } from '../solver/index.ts';
 import { determinismCheck, investigationHash } from './determinism.ts';
+import { hallucinationCheck } from './hallucination.ts';
 import { phoneRequiredCheck } from './phone-required.ts';
 import {
   liesBreakableCheck,
@@ -18,6 +17,7 @@ export {
   liesBreakableCheck,
   testimonyCheck,
   determinismCheck,
+  hallucinationCheck,
   investigationHash,
   phoneRequiredCheck,
   timelineCheck,
@@ -29,12 +29,6 @@ export const DEFAULT_CHECKS: readonly Check[] = [
   truthInvariantsCheck,
   timelineCheck,
   phoneRequiredCheck,
+  hallucinationCheck,
   determinismCheck,
-];
-
-/** Complete validation of a generated case when its clues and deduction rules are available. */
-export const GENERATION_CHECKS: readonly Check[] = [
-  ...DEFAULT_CHECKS,
-  ...SOLVER_CHECKS,
-  timeFeasibleCheck,
 ];

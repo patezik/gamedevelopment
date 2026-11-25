@@ -18,7 +18,7 @@
 apps/mobile/
 ├── app/                         — Expo Router
 │   ├── _layout.tsx              — провайдеры, подключение, глобальные оверлеи (уведомления, звонок)
-│   ├── index.tsx                — редирект: нет токена → /pair, есть → /os
+│   ├── index.tsx                — стартовый экран с версией протокола; редирект появится с привязкой
 │   ├── pair.tsx                 — экран привязки (скан QR привязки / ручной ввод)
 │   └── os/
 │       ├── index.tsx            — домашний экран ОС (сетка приложений)
@@ -133,14 +133,20 @@ interface OsAppManifest {
 - `WsClient` — с mock WebSocket: resume, backoff, невалидные сообщения.
 - Разбор QR (pairing/evidence/неизвестный формат) — unit.
 - Компоненты приложений — RNTL на фикстурах `PhoneView` из `@hs/protocol/fixtures`.
-- Ручной чек-лист на реальных устройствах (Android + iOS) — INT-003.
+- Ручной чек-лист на физическом iPhone — INT-003. Проверка Android вынесена в [MOB-012](../../tasks/MOB-012.md).
 - E2E (Maestro) — после MVP (QA-001).
 
 ## 8. Запуск в Expo Go
 
+Из корня репозитория:
+
 ```bash
-npm run dev:server            # в корне репозитория
-npm run start -w @hs/mobile   # npx expo start; отсканировать QR Expo Go (это QR разработки!)
+npm ci
+npm run start -w @hs/mobile
+npm run typecheck -w @hs/mobile
+npm test -w @hs/mobile
 ```
 
-Телефон и компьютер — в одной сети. Expo Go требует входа в Expo-аккаунт.
+Установите Expo Go с поддержкой SDK 58 и отсканируйте QR разработки из терминала. Телефон и
+компьютер должны быть в одной сети. Expo Go требует входа в Expo-аккаунт. Для стартового экрана
+сервер игры не требуется.

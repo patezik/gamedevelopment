@@ -18,12 +18,12 @@ export type {
 } from './check.ts';
 export {
   DEFAULT_CHECKS,
-  GENERATION_CHECKS,
   TESTIMONY_CHECKS,
   collectTestimony,
   liesBreakableCheck,
   testimonyCheck,
   determinismCheck,
+  hallucinationCheck,
   investigationHash,
   phoneRequiredCheck,
   timelineCheck,

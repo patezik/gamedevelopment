@@ -101,3 +101,23 @@ test('a GenerationRejection ends the attempt; other errors propagate', () => {
     runPipeline([draw, broken], 'snow', { seed: 'winter', content, now: () => 0 }),
   ).toThrow('defect');
 });
+
+test('replays one numbered attempt and tells `accepts` which attempt it checks', () => {
+  const options = { seed: 'winter', content, now: () => 0 };
+  const seen: number[] = [];
+  const full = runPipeline([draw], 'snow', {
+    ...options,
+    accepts: (_value, attempt) => {
+      seen.push(attempt);
+      return attempt === 3;
+    },
+  });
+  const replay = runPipeline([draw], 'snow', { ...options, firstAttempt: 3, maxAttempts: 1 });
+  if (!full.ok || !replay.ok) throw new Error('Expected both runs to succeed');
+  expect(seen).toEqual([1, 2, 3]);
+  expect(replay.output).toBe(full.output);
+  expect(replay.report.attempts.map(({ number, seed }) => [number, seed])).toEqual([
+    [3, 'winter#3'],
+  ]);
+  expect(() => runPipeline([draw], 'snow', { ...options, firstAttempt: 0 })).toThrow(RangeError);
+});

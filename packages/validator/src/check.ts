@@ -47,6 +47,8 @@ export interface ValidationContext {
    * `collectTestimony`). `V-TESTIMONY` and `V-LIES-BREAKABLE` read it; a player never sees veracity.
    */
   readonly testimony?: readonly Statement[];
+  /** Every text the preset may show as a phone hallucination; `V-HALLUCINATION` reads it. */
+  readonly hallucinations?: readonly string[];
   /** Where the player starts; defaults to the first location of the scenario. */
   readonly startLocationId?: string;
   /** Only a briefing already given to the player, including its uncertainty. */

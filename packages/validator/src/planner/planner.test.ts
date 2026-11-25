@@ -8,7 +8,6 @@ import { expect, it } from 'vitest';
 import { tinyManor } from '../../../core/test/fixtures/tiny-manor.ts';
 import { clue } from '../../test/mutations.ts';
 import {
-  GENERATION_CHECKS,
   solutionSource,
   solve,
   timeFeasibleCheck,
@@ -129,7 +128,6 @@ it('cannot use a locked clue, a QR without a phone, a wrong subject, or the true
   expect(validateInvestigation(inv, { checks: [timeFeasibleCheck] }).findings[0]?.code).toBe(
     'PLANNER_INPUT_MISSING',
   );
-  expect(GENERATION_CHECKS).toContain(timeFeasibleCheck);
 });
 
 it('reports an inconclusive bounded search and refuses a case without a producible means claim', () => {

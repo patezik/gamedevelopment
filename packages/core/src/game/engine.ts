@@ -55,6 +55,7 @@ import {
   serializeInvestigation,
   type Investigation,
 } from './investigation.ts';
+import type { TextTemplates } from './dialogue-text.ts';
 import { moveCost, projectPlayerView } from './views.ts';
 
 export interface EnginePorts {
@@ -66,6 +67,8 @@ export interface EnginePorts {
   readonly clues?: readonly Clue[];
   /** Witness memories and lie policies for talk and interrogate (KNOW-002). */
   readonly testimony?: TestimonyPort;
+  /** Scenario text templates (CNT-005) used to render NPC lines in the view (ENG-009). */
+  readonly texts?: TextTemplates;
   /** Starting vitals; default 10 / 10 / 0. */
   readonly startVitals?: Vitals;
   /** Starting pack (SURV-004): flashlight, medkits, lockpick, keys. */
@@ -597,6 +600,7 @@ export class GameEngine {
       ...(this.#pendingCapture && { pendingCapture: this.#pendingCapture }),
       desktop: this.#desktop ?? this.#startingDesktop(),
       clues: this.ports.clues ?? [],
+      ...(this.ports.texts && { texts: this.ports.texts }),
     });
   }
 

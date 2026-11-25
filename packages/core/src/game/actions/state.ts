@@ -16,8 +16,11 @@ const minute = z.int();
 
 export interface DialogueLine {
   readonly speaker: 'player' | 'other';
+  /** The player's prompt, or the template key of an NPC line (old saves hold keys only). */
   readonly text: string;
   readonly at: number;
+  /** Statement the NPC line renders; lets the view fill the template (ENG-009). */
+  readonly statementId?: string | undefined;
 }
 
 /** The open conversation (`activeInteraction`); ENG-005 decides which actions it blocks. */
@@ -72,7 +75,12 @@ const snapshotSchema = z.strictObject({
       characterId: id,
       interrogation: z.literal(true).optional(),
       history: z.array(
-        z.strictObject({ speaker: z.enum(['player', 'other']), text: z.string(), at: minute }),
+        z.strictObject({
+          speaker: z.enum(['player', 'other']),
+          text: z.string(),
+          at: minute,
+          statementId: z.string().optional(),
+        }),
       ),
     })
     .optional(),
