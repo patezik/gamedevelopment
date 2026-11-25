@@ -20,6 +20,7 @@ signal transition_failed(screen: StringName, reason: String)
 const SCREENS: Dictionary = {
 	&"bootstrap": "res://src/scenes/bootstrap.tscn",
 	&"exploration": "res://src/scenes/exploration/exploration.tscn",
+	&"dialogue": "res://src/scenes/dialogue/dialogue.tscn",
 	&"case_board": "res://src/scenes/case_board/case_board.tscn",
 }
 const DEFAULT_FADE_SECONDS: float = 0.25

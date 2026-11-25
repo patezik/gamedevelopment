@@ -1,0 +1,167 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/scenes/dialogue/dialogue.gd" id="1_dialogue"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_history"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(0.11, 0.12, 0.14, 1)
+border_width_top = 2
+border_color = Color(0.37, 0.43, 0.49, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_choices"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(0.13, 0.14, 0.16, 1)
+border_width_top = 2
+border_color = Color(0.37, 0.43, 0.49, 1)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBox_no_fill"]
+
+[node name="Dialogue" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dialogue")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.08, 0.09, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 32
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Header" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Back" type="Button" parent="Margin/Layout/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 44)
+layout_mode = 2
+size_flags_vertical = 4
+text = "← К локации"
+
+[node name="CharacterName" type="Label" parent="Margin/Layout/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+autowrap_mode = 3
+
+[node name="Status" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67, 0.76, 0.83, 1)
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 3
+
+[node name="Error" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.4, 1)
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 3
+
+[node name="Content" type="HBoxContainer" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="HistoryPanel" type="PanelContainer" parent="Margin/Layout/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
+theme_override_styles/panel = SubResource("StyleBox_history")
+
+[node name="Column" type="VBoxContainer" parent="Margin/Layout/Content/HistoryPanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="Margin/Layout/Content/HistoryPanel/Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "История разговора"
+
+[node name="History" type="RichTextLabel" parent="Margin/Layout/Content/HistoryPanel/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 23
+theme_override_styles/normal = SubResource("StyleBox_no_fill")
+scroll_following = true
+selection_enabled = true
+
+[node name="ChoicesPanel" type="PanelContainer" parent="Margin/Layout/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBox_choices")
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Layout/Content/ChoicesPanel"]
+layout_mode = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="Column" type="VBoxContainer" parent="Margin/Layout/Content/ChoicesPanel/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="TopicsTitle" type="Label" parent="Margin/Layout/Content/ChoicesPanel/Scroll/Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Темы разговора"
+
+[node name="Topics" type="VBoxContainer" parent="Margin/Layout/Content/ChoicesPanel/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Present" type="Button" parent="Margin/Layout/Content/ChoicesPanel/Scroll/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+toggle_mode = true
+text = "Предъявить"
+
+[node name="Subjects" type="VBoxContainer" parent="Margin/Layout/Content/ChoicesPanel/Scroll/Column"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Confirm" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Подтверждение"
+ok_button_text = "Выполнить"
+cancel_button_text = "Отмена"
+dialog_autowrap = true

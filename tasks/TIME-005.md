@@ -1,7 +1,7 @@
 ---
 id: TIME-005
 title: "Дедлайны, критические события, пропущенные события, условия завершения"
-status: todo
+status: in_progress
 priority: P0
 complexity: M
 phase: 6
@@ -9,8 +9,8 @@ milestone: M6
 area: time
 depends_on: [TIME-003, ENG-006]
 modules: ["packages/core/src/time/scenario-events.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-qh
+claimed_at: "2026-11-25T12:53:19Z"
 ---
 
 # TIME-005 — Дедлайны, критические события, пропущенные события, условия завершения
