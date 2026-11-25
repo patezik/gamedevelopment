@@ -13,7 +13,11 @@ export function suspicionLevelOf(level: number): SuspicionLevel | undefined {
 export function applyMarkSuspicion(
   knowledge: PlayerKnowledge,
   characterIds: ReadonlySet<string>,
-  action: { readonly characterId: string; readonly level: number; readonly note?: string },
+  action: {
+    readonly characterId: string;
+    readonly level: number;
+    readonly note?: string | undefined;
+  },
 ): boolean {
   const level = suspicionLevelOf(action.level);
   if (level === undefined || !characterIds.has(action.characterId)) return false;
