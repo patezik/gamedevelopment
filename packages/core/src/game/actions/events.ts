@@ -1,0 +1,72 @@
+import type { GameMinutes } from '../../common/index.ts';
+import type { ContradictionFound } from '../../investigation/index.ts';
+import type { SurvivalEvent } from '../../survival/index.ts';
+import type { ClockEvent } from '../../time/index.ts';
+
+/** The desktop action types that ENG-003 resolves (move and wait stay in ENG-001). */
+export type DesktopActionType =
+  | 'examineLocation'
+  | 'examineHotspot'
+  | 'talk'
+  | 'interrogate'
+  | 'read'
+  | 'useItem'
+  | 'pickLock'
+  | 'rest';
+
+/**
+ * What characters could notice of a player action (SIM-006 turns it into wariness). Carries only
+ * what the player did and who was there to see or hear it, never what is true.
+ */
+export interface PlayerActionObserved {
+  readonly type: 'PlayerActionObserved';
+  readonly at: GameMinutes;
+  readonly action: DesktopActionType | 'move' | 'wait';
+  readonly locationId: string;
+  /** Characters in the player's location when the action started. */
+  readonly witnessIds: readonly string[];
+  /** Characters who heard a noisy action (`pickLock`): here and in adjacent locations. */
+  readonly heardByIds: readonly string[];
+  readonly characterId?: string;
+  readonly topicId?: string;
+  readonly clueId?: string;
+  readonly contradictionId?: string;
+}
+
+/** PlayerKnowledge changes, in the vocabulary of modules.md section 9. */
+export type KnowledgeEvent =
+  | {
+      readonly type: 'ClueDiscovered';
+      readonly clueId: string;
+      readonly locationId: string;
+      readonly at: GameMinutes;
+      readonly captureRequested: boolean;
+    }
+  | {
+      readonly type: 'StatementHeard';
+      readonly statementId: string;
+      readonly characterId: string;
+      readonly topicId: string;
+      readonly at: GameMinutes;
+    }
+  | ContradictionFound;
+
+export type ActionEvent =
+  | {
+      readonly type: 'InterrogationReaction';
+      readonly characterId: string;
+      readonly reaction: 'admit' | 'change' | 'refuse';
+      readonly at: GameMinutes;
+    }
+  | {
+      readonly type: 'LockPicked';
+      readonly targetId: string;
+      readonly success: boolean;
+      readonly at: GameMinutes;
+    }
+  | { readonly type: 'ItemUsed'; readonly itemId: string; readonly at: GameMinutes }
+  | { readonly type: 'ActionInterrupted'; readonly at: GameMinutes; readonly reason: string }
+  | { readonly type: 'InteractionEnded'; readonly characterId: string; readonly at: GameMinutes };
+
+export type GameEvent =
+  ClockEvent | SurvivalEvent | KnowledgeEvent | ActionEvent | PlayerActionObserved;
