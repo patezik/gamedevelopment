@@ -21,6 +21,8 @@ signal peer_status_changed(desktop: String, phone: String)
 ## An action was rejected before sending, by `action.result` with `ok: false`, or by an `error`
 ## that names a request. [param code] is an ErrorCode or [constant ERROR_NOT_CONNECTED].
 signal action_failed(code: String, message: String)
+## A server response for a specific request. A successful response precedes its view update.
+signal action_resolved(request_id: String, ok: bool, code: String, message: String)
 ## A server `error` that names no request (for example UNAUTHORIZED during the handshake).
 signal error_received(code: String, message: String)
 ## The Backend connection stage changed; OFFLINE also clears the store (the session ended).
@@ -147,6 +149,11 @@ func request_action(action: Dictionary) -> Error:
 	return error
 
 
+## Read immediately after an OK return from request_action.
+func get_last_action_request_id() -> String:
+	return _backend.get_last_action_request_id() if is_instance_valid(_backend) else ""
+
+
 ## The first key from [constant FORBIDDEN_VIEW_KEYS] found at any depth of [param value];
 ## an empty string if there is none.
 static func find_forbidden_key(value: Variant) -> String:
@@ -211,9 +218,15 @@ func _on_event(payload: Dictionary) -> void:
 
 func _on_action_result(payload: Dictionary) -> void:
 	var ok: Variant = payload.get("ok")
-	if not ok is bool or ok as bool:
+	if not ok is bool:
 		return
-	action_failed.emit(str(payload.get("error", ProtocolConstants.ERROR_INTERNAL)), "")
+	var accepted: bool = ok as bool
+	var code: String = "" if accepted else str(payload.get("error", ProtocolConstants.ERROR_INTERNAL))
+	if not accepted:
+		action_failed.emit(code, "")
+	var request_id: String = str(payload.get("requestId", ""))
+	if not request_id.is_empty():
+		action_resolved.emit(request_id, accepted, code, "")
 
 
 func _on_error(payload: Dictionary) -> void:
@@ -223,6 +236,7 @@ func _on_error(payload: Dictionary) -> void:
 	# request is a rejected action.
 	if payload.has("requestId"):
 		action_failed.emit(code, text)
+		action_resolved.emit(str(payload["requestId"]), false, code, text)
 	else:
 		error_received.emit(code, text)
 
