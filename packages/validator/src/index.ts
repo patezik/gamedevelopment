@@ -1,4 +1,10 @@
 export const VALIDATOR_PACKAGE_NAME = '@hs/validator';
+export {
+  solve,
+  timeFeasibleCheck,
+  type PlannerOptions,
+  type SolutionPath,
+} from './planner/planner.ts';
 
 export type {
   Check,
@@ -11,6 +17,7 @@ export type {
 } from './check.ts';
 export {
   DEFAULT_CHECKS,
+  GENERATION_CHECKS,
   TESTIMONY_CHECKS,
   collectTestimony,
   liesBreakableCheck,

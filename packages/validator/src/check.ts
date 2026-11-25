@@ -1,8 +1,8 @@
 import type { GameMinutes } from '@hs/core/common';
 import type { Clue } from '@hs/core/evidence';
-import type { Investigation } from '@hs/core/game';
+import type { EnginePorts, Investigation } from '@hs/core/game';
 import type { Statement } from '@hs/core/knowledge';
-import type { DeductionRules, HeardStatement } from '@hs/core/investigation';
+import type { ClaimContext, DeductionRules, HeardStatement } from '@hs/core/investigation';
 import type { EntityRef } from '@hs/core/truth/facts';
 
 export type Severity = 'error' | 'warning';
@@ -49,6 +49,10 @@ export interface ValidationContext {
   readonly testimony?: readonly Statement[];
   /** Where the player starts; defaults to the first location of the scenario. */
   readonly startLocationId?: string;
+  /** Only a briefing already given to the player, including its uncertainty. */
+  readonly knownIncident?: ClaimContext['incident'];
+  /** Each call creates identical, independent ports for one simulation from minute zero. */
+  readonly createSimulationPorts?: () => Omit<EnginePorts, 'clues' | 'startLocationId'>;
   /** Generates the same investigation again (same seed, preset and generator version). */
   readonly regenerate?: () => Investigation;
 }

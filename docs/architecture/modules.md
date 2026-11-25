@@ -565,7 +565,10 @@ golden-снимки для 5 seed; распределение виновнико
 ```ts
 interface Check { id: string; severity: "error" | "warning"; run(inv: Investigation): CheckResult }
 function validateInvestigation(inv: Investigation, opts?): ValidationReport;
-function solve(inv: Investigation, opts: { timeBudget: GameMinutes }): SolutionPath | null;   // планировщик по времени, VAL-003
+type SolutionPath = readonly PlayerAction[];
+function solve(inv: Investigation, opts: PlannerOptions): SolutionPath | null;
+// PlannerOptions: timeBudget, clues, deductionRules; необязательные startLocationId, knownIncident и createSimulationPorts.
+// GENERATION_CHECKS = DEFAULT_CHECKS + SOLVER_CHECKS + timeFeasibleCheck.
 // Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
 function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
 // Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE
