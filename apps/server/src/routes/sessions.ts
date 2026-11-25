@@ -48,7 +48,6 @@ export const CreateSessionResponse = z.strictObject({
         const portNumber = Number(port);
         return (
           host !== undefined &&
-          host !== '0.0.0.0' &&
           isPairingHost(host) &&
           portNumber >= 1 &&
           portNumber <= 65535 &&

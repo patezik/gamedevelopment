@@ -6,7 +6,11 @@ const hostnamePattern =
   /^(?=.{1,253}\.?$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.?$/i;
 
 export function isPairingHost(host: string): boolean {
-  return hostnamePattern.test(host) && URL.parse(`http://${host}`)?.hostname === host.toLowerCase();
+  return (
+    host !== '0.0.0.0' &&
+    hostnamePattern.test(host) &&
+    URL.parse(`http://${host}`)?.hostname === host.toLowerCase()
+  );
 }
 
 const envSchema = z.object({
@@ -21,7 +25,7 @@ const envSchema = z.object({
   HS_PUBLIC_HOST: z
     .string()
     .trim()
-    .refine(isPairingHost, 'Expected an IPv4 address or host name without a port')
+    .refine(isPairingHost, 'Expected a non-wildcard IPv4 address or host name without a port')
     .optional(),
   HS_DATA_DIR: z
     .string()
