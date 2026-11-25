@@ -7,6 +7,7 @@ import {
   type CaseFile,
   type ClaimContext,
   type DeductionRules,
+  type PlayerKnowledge,
 } from '../../investigation/index.ts';
 import type { Investigation } from '../investigation.ts';
 import type { GameEvent } from './events.ts';
@@ -20,8 +21,11 @@ export interface AccusationPort {
   /**
    * The incident as the player has worked it out (location and window), for rules that read
    * `$incident`. Not the true one: the caller derives it from body examination and testimony.
+   * A function receives the player's knowledge at the moment of the accusation and returns
+   * `undefined` while the incident is not yet worked out.
    */
-  readonly incident?: ClaimContext['incident'];
+  readonly incident?:
+    ClaimContext['incident'] | ((knowledge: PlayerKnowledge) => ClaimContext['incident']);
 }
 
 export type AccuseResult =
@@ -65,12 +69,16 @@ export function accuse(
   const known = new Set(env.investigation.characters.map(({ id }) => id));
   if (file.accusedIds.some((id) => !known.has(id))) return { ok: false };
 
+  const incident =
+    typeof env.port.incident === 'function'
+      ? env.port.incident(state.knowledge)
+      : env.port.incident;
   let outcome: AccusationOutcome;
   try {
     outcome = evaluateAccusation(file, env.investigation.truth.incident, state.knowledge, {
       rules: env.port.rules,
       clues: new Map(env.clues.map((clue) => [clue.id, clue])),
-      ...(env.port.incident && { incident: env.port.incident }),
+      ...(incident && { incident }),
       ...(env.port.hallucinatedClueIds && { hallucinatedClueIds: env.port.hallucinatedClueIds }),
     });
   } catch (error) {

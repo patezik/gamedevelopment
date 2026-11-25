@@ -6,7 +6,7 @@ import {
   type ActionCostTable,
   type CostModifier,
 } from '../time/index.ts';
-import { personsOfInterest } from '../investigation/index.ts';
+import { motiveTargets, personsOfInterest } from '../investigation/index.ts';
 import type { Clue, PendingCapture } from '../evidence/index.ts';
 import type { Actor } from '../world/index.ts';
 import {
@@ -25,7 +25,7 @@ import {
   type DialogueTextContext,
   type TextTemplates,
 } from './dialogue-text.ts';
-import { endingOf, endingView } from './ending.ts';
+import { endingOf, endingView, type EndingId } from './ending.ts';
 import { blockReason } from './interaction.ts';
 import type { Investigation } from './investigation.ts';
 
@@ -41,6 +41,10 @@ export interface PlayerViewState {
   readonly clues?: readonly Clue[];
   /** Text templates of the scenario locale (CNT-005); without them lines keep their keys. */
   readonly texts?: TextTemplates;
+  /** Global Static, 0 to 100 (ENG-010); 0 when the engine does not track it. */
+  readonly staticLevel?: number;
+  /** Ending Static forces once it reached 100. */
+  readonly staticEnding?: EndingId;
 }
 
 type OfferedAction = PlayerView['availableActions'][number]['action'];
@@ -81,7 +85,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
   const room = locations.describe(locationId);
   const { day, hh, mm, period } = new Calendar(locations.startDateTime).toDisplay(minute);
   const remainingMinutes = durationMinutes - minute;
-  const ending = endingOf(desktop, minute, durationMinutes);
+  const ending = endingOf(desktop, minute, durationMinutes, state.staticEnding);
   const present = new Set(presentAt(investigation, locationId, minute));
   const modifiers = currentModifiers(desktop, investigation, locationId, minute);
   const availableActions: PlayerView['availableActions'] = [];
@@ -236,7 +240,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     presentCharacters: people.map(({ id, name }) => ({ id, name, portraitRef: '', demeanor: '' })),
     availableActions,
     vitals: { ...desktop.vitals.vitals },
-    static: 0,
+    static: state.staticLevel ?? 0,
     inventory: desktop.inventory.items.map(({ id, kind }) => ({ id, name: kind, description: '' })),
     caseBoard: caseBoard(desktop, clues, investigation.characters, textContext),
     ...(interaction && { interaction }),
@@ -333,6 +337,10 @@ function caseBoard(
       characterId: person.characterId,
       name: names.get(person.characterId) ?? person.characterId,
       linkedClueIds: [...person.linkedClueIds],
+    })),
+    motiveTargets: motiveTargets(desktop.knowledge, { clues: byId }).map((characterId) => ({
+      characterId,
+      name: names.get(characterId) ?? characterId,
     })),
     suspicions: desktop.knowledge.suspicions.map(({ characterId, level, note }) => ({
       characterId,

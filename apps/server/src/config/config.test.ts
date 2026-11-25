@@ -53,13 +53,20 @@ test('leaves publicHost undefined unless HS_PUBLIC_HOST is set', () => {
   expect(readConfig({}).publicHost).toBeUndefined();
 });
 
+test('accepts 0.0.0.0 as the listener bind address', () => {
+  expect(readConfig({ HS_HOST: '0.0.0.0' }).host).toBe('0.0.0.0');
+});
+
 test.each(['game-pc.local', '192.168.1.42', 'localhost'])('accepts HS_PUBLIC_HOST %j', (host) => {
   expect(readConfig({ HS_PUBLIC_HOST: host }).publicHost).toBe(host);
 });
 
 // ':' would break the hs1:pair:<host>:<port>:<code> QR payload.
 test.each([
+  '0.0.0.0',
+  ' 0.0.0.0 ',
   '192.168.1.42:7420',
+  '::1',
   '[::1]',
   'http://pc',
   'two words',

@@ -162,6 +162,7 @@ interface PlayerView {
     statements: { id; characterId; topicId; text; heardAt }[];
     contradictions: { id; statementId; againstId; summary }[];          // только когда у игрока есть обе стороны
     personsOfInterest: { characterId; name; linkedClueIds }[];
+    motiveTargets: { characterId; name }[];                              // кого можно назвать целью мотива: вторые аргументы motive/about улик и показаний (ENG-013); без «чей» мотив
     suspicions: { characterId; level: "none"|"possible"|"prime"; note? }[];
     timeline: { id; from; to?; text; sourceIds }[];
   };
