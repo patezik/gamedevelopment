@@ -78,7 +78,8 @@ test('the full server module graph loads in Node without TypeScript transform fl
   // `npm start` runs `node src/server.ts`: Node only strips types, so syntax that needs
   // a transform (parameter properties, enums, namespaces) breaks the launch while vitest,
   // which transforms TypeScript itself, stays green. Importing app.ts covers the graph.
-  const { NODE_OPTIONS: _ignored, ...env } = process.env;
+  const env = { ...process.env };
+  delete env.NODE_OPTIONS;
   const probe = spawnSync(
     process.execPath,
     [
