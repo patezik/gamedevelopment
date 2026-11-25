@@ -35,8 +35,11 @@ const CURTAIN_LAYER: int = 128
 
 ## A requested transition.
 class Route:
-	## False once the route has been canceled or its mount has started.
+	## False once its mount has started: a mounted route still opening its curtain stays a pending
+	## destination for [method SceneRouter.goto] deduplication.
 	var pending_mount: bool = true
+	## True once [method SceneRouter.cancel_terminal] dropped it: never mounted, never a duplicate.
+	var canceled: bool = false
 	var screen: StringName
 	var path: String
 	var params: Dictionary
@@ -125,7 +128,7 @@ func cancel_terminal(screen: StringName) -> void:
 		return
 	_terminal = &""
 	if _active != null and _active.screen == screen:
-		_active.pending_mount = false
+		_active.canceled = true
 	if _queued != null and _queued.screen == screen:
 		_queued = null
 
@@ -152,7 +155,7 @@ func goto(screen: StringName, params: Dictionary = {}) -> Error:
 	var route: Route = Route.new(screen, str(_screens[screen]), frozen)
 	if _active != null:
 		var pending: Route = _queued if _queued != null else _active
-		if pending.pending_mount and pending.screen == route.screen and pending.params == route.params:
+		if not pending.canceled and pending.screen == route.screen and pending.params == route.params:
 			return ERR_BUSY
 		_queued = route
 		return OK
@@ -167,7 +170,7 @@ func _run(first: Route) -> void:
 	await _fade_to(1.0)
 	# Requests that arrived while the curtain was closing are mounted behind it right away.
 	while true:
-		if _active.pending_mount:
+		if _active.pending_mount and not _active.canceled:
 			_active.pending_mount = false
 			_mount(_active)
 		if _queued == null:

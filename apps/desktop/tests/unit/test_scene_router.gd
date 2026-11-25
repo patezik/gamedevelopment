@@ -184,3 +184,67 @@ func test_terminal_route_replaces_a_queued_ordinary_route() -> void:
 	assert_eq(_router.goto_terminal(&"beta"), OK)
 	await _settle()
 	assert_eq(_router.get_current_screen(), &"beta")
+
+
+# --- regression: a mounted route still opening its curtain is not a canceled one (review P2) -----
+
+
+func _mount_alpha_and_hold_the_curtain() -> RoutedScreen:
+	_router.fade_seconds = 0.1
+	assert_eq(_router.goto(&"alpha", {"n": 1}), OK)
+	await wait_for_signal(_router.screen_changed, 2.0)
+	assert_true(_router.is_transitioning(), "the curtain is still opening")
+	return _mounted()
+
+
+func test_repeat_of_a_route_mounted_while_its_curtain_opens_is_ignored() -> void:
+	await _mount_alpha_and_hold_the_curtain()
+	assert_eq(_router.goto(&"alpha", {"n": 1}), ERR_BUSY)
+	await _settle()
+	assert_signal_emit_count(_router, "screen_changed", 1)
+	assert_eq(_host.get_child_count(), 1)
+
+
+func test_ignored_repeat_keeps_the_screen_instance_and_its_state() -> void:
+	var screen: RoutedScreen = await _mount_alpha_and_hold_the_curtain()
+	screen.set_meta(&"draft", "typed by the player")
+	_router.goto(&"alpha", {"n": 1})
+	await _settle()
+	await wait_process_frames(2)
+	assert_true(is_instance_valid(screen))
+	assert_eq(_mounted(), screen, "the same instance stays mounted")
+	assert_eq(str(screen.get_meta(&"draft", "")), "typed by the player")
+
+
+func test_other_params_while_the_curtain_opens_remount_the_screen() -> void:
+	var first: RoutedScreen = await _mount_alpha_and_hold_the_curtain()
+	assert_eq(_router.goto(&"alpha", {"n": 2}), OK)
+	await _settle()
+	assert_signal_emit_count(_router, "screen_changed", 2)
+	assert_ne(_mounted(), first)
+	assert_eq(_mounted().params, {"n": 2})
+
+
+func test_a_canceled_terminal_route_gives_way_to_the_next_ending() -> void:
+	_router.fade_seconds = 0.1
+	assert_eq(_router.goto_terminal(&"beta"), OK)
+	assert_true(_router.is_transitioning())
+	_router.cancel_terminal(&"beta")  # the client left that game during the fade
+	assert_eq(_router.get_terminal_screen(), &"")
+	assert_eq(_router.goto_terminal(&"beta"), OK, "the ending of the new session is not a repeat")
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"beta")
+	assert_eq(_router.get_terminal_screen(), &"")
+	assert_signal_emit_count(_router, "screen_changed", 1)
+	assert_eq(_host.get_child_count(), 1)
+
+
+func test_a_canceled_terminal_route_is_never_mounted() -> void:
+	_router.fade_seconds = 0.1
+	assert_eq(_router.goto_terminal(&"beta"), OK)
+	_router.cancel_terminal(&"beta")
+	await _settle()
+	assert_signal_emit_count(_router, "screen_changed", 0)
+	assert_eq(_router.goto(&"alpha"), OK, "navigation is unlocked")
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"alpha")
