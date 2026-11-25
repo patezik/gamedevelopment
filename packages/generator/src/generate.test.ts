@@ -389,9 +389,7 @@ test('GEN-013: after a rejected first attempt the payload is the accepted attemp
   expect(result.investigationHash).not.toBe(investigationHash(rejected.investigation));
   expect(result.server.clues).not.toEqual(rejected.context.clues);
   expect(result.server.testimony).not.toEqual(rejected.context.testimony);
-  expect(testimonyOf(result.server, result.investigation)).not.toEqual(
-    rejected.context.testimony,
-  );
+  expect(testimonyOf(result.server, result.investigation)).not.toEqual(rejected.context.testimony);
 
   // Deterministic: a second run gives the same payload and hash.
   const again = run().result;
