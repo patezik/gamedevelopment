@@ -9,6 +9,7 @@ import { tinyManor } from '../../../core/test/fixtures/tiny-manor.ts';
 import { clue } from '../../test/mutations.ts';
 import {
   GENERATION_CHECKS,
+  solutionSource,
   solve,
   timeFeasibleCheck,
   validateInvestigation,
@@ -95,7 +96,7 @@ it('accepts exactly 70% and rejects one minute less, including two individually 
   expect(check(29).findings.map((f) => f.code)).toEqual(['TIME_PATH_NOT_FOUND']);
 });
 
-it('cannot use a locked clue, pending QR, a wrong subject, or the true incident in place of a public briefing', () => {
+it('cannot use a locked clue, a QR without a phone, a wrong subject, or the true incident in place of a public briefing', () => {
   const inv = manor(40);
   const hidden = document('register', [...clues[1]!.supports], 'loc_archive');
   const other = document('ledger', ['debt(ch_cook)', 'has_key(ch_cook)'], 'loc_hall');
@@ -288,4 +289,40 @@ it('does not repeat a free action at the same minute and exhausts the search ins
   expect(timeFeasibleCheck.run(manor(10), context).map((f) => f.code)).toEqual([
     'TIME_PATH_NOT_FOUND',
   ]);
+});
+
+it('captures a QR clue with the phone and replays the capture from the phone role', () => {
+  const inv = manor(40);
+  const qr = { ...clues[1]!, captureMode: 'qr' as const };
+  const caseClues = [clues[0]!, qr];
+  let issued = 0;
+  const createSimulationPorts = () => {
+    let next = 0;
+    return {
+      phone: {},
+      evidenceTokens: {
+        issue: () => {
+          issued++;
+          return `tok_${++next}`;
+        },
+        revoke: () => {},
+      },
+    };
+  };
+  const path = solve(inv, { ...options, clues: caseClues, createSimulationPorts, timeBudget: 28 });
+  expect(path).not.toBeNull();
+  expect(issued).toBeGreaterThan(0);
+  const capture = path!.findIndex((a) => a.type === 'captureEvidence');
+  expect(path![capture - 1]).toEqual({ type: 'read', documentId: 'register' });
+  expect(path!.map(solutionSource).filter((s) => s === 'phone')).toHaveLength(1);
+  const engine = GameEngine.create(inv, {
+    ...createSimulationPorts(),
+    startLocationId,
+    clues: caseClues,
+  });
+  for (const action of path!) expect(engine.dispatch(solutionSource(action), action).ok).toBe(true);
+  expect(engine.playerView().caseBoard.clues).toContainEqual(
+    expect.objectContaining({ id: 'register', captured: true }),
+  );
+  expect(engine.playerView().clock.t).toBeLessThanOrEqual(28);
 });

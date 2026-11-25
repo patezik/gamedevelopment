@@ -11,6 +11,11 @@ import { GUILT_KINDS } from '../solver/index.ts';
 type PlayerAction = Parameters<GameEngine['dispatch']>[1];
 type PlayerView = ReturnType<GameEngine['playerView']>;
 export type SolutionPath = readonly PlayerAction[];
+
+/** The role that replays a step: the server dispatches a validated QR capture from the phone. */
+export function solutionSource(action: PlayerAction): 'desktop' | 'phone' {
+  return action.type === 'captureEvidence' ? 'phone' : 'desktop';
+}
 export type PlannerOptions = Required<Pick<ValidationContext, 'clues' | 'deductionRules'>> &
   Pick<ValidationContext, 'startLocationId' | 'knownIncident' | 'createSimulationPorts'> & {
     readonly timeBudget: number;
@@ -23,6 +28,12 @@ const MAX_DISPATCHES = 256;
 // The same action after new knowledge may still yield a new clue or reply, but usually repeats
 // one. It ranks with a return to a visited location, so it cannot crowd useful moves out of the beam.
 const REPEATED = 4;
+/** Events after which the player's knowledge may prove more. */
+const PROGRESS: ReadonlySet<string> = new Set([
+  'ClueDiscovered',
+  'EvidenceCaptured',
+  'StatementHeard',
+]);
 
 interface Branch {
   engine: GameEngine;
@@ -54,6 +65,13 @@ function offers(view: PlayerView): { action: PlayerAction; min: number }[] {
     action,
     min: costPreview.min,
   }));
+  if (view.pendingCapture) {
+    // The cost table bounds it from below; dispatch spends the real minutes.
+    result.push({
+      action: { type: 'captureEvidence', tokenId: view.pendingCapture.tokenId },
+      min: 0,
+    });
+  }
   const dialogue = view.interaction;
   if (dialogue) {
     const characterId = dialogue.characterId;
@@ -77,6 +95,7 @@ function offers(view: PlayerView): { action: PlayerAction; min: number }[] {
 
 function priority(action: PlayerAction, view: PlayerView): number {
   switch (action.type) {
+    case 'captureEvidence':
     case 'read':
     case 'examineHotspot':
     case 'interrogate':
@@ -210,18 +229,18 @@ function search(
       if (consumed.has(parent)) {
         engine = create();
         for (const step of parent.path) {
-          if (!engine.dispatch('desktop', step).ok)
+          if (!engine.dispatch(solutionSource(step), step).ok)
             throw new Error('Simulation ports cannot reproduce the prefix');
         }
       }
       consumed.add(parent);
-      const result = engine.dispatch('desktop', action);
+      const result = engine.dispatch(solutionSource(action), action);
       if (!result.ok || result.outcome) continue;
       const view = engine.playerView();
       if (view.clock.t > timeBudget) continue;
       const path = [...parent.path, action];
       let coverage = parent.coverage;
-      if (result.events.some((e) => e.type === 'ClueDiscovered' || e.type === 'StatementHeard')) {
+      if (result.events.some((e) => PROGRESS.has(e.type))) {
         const clueKey =
           view.caseBoard.statements.length === 0
             ? JSON.stringify(view.caseBoard.clues.map((c) => c.id))

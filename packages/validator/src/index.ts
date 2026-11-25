@@ -1,5 +1,6 @@
 export const VALIDATOR_PACKAGE_NAME = '@hs/validator';
 export {
+  solutionSource,
   solve,
   timeFeasibleCheck,
   type PlannerOptions,

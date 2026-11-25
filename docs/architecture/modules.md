@@ -567,6 +567,7 @@ interface Check { id: string; severity: "error" | "warning"; run(inv: Investigat
 function validateInvestigation(inv: Investigation, opts?): ValidationReport;
 type SolutionPath = readonly PlayerAction[];
 function solve(inv: Investigation, opts: PlannerOptions): SolutionPath | null;
+function solutionSource(action: PlayerAction): 'desktop' | 'phone'; // роль для воспроизведения шага
 // PlannerOptions: timeBudget, clues, deductionRules; необязательные startLocationId, knownIncident и createSimulationPorts.
 // GENERATION_CHECKS = DEFAULT_CHECKS + SOLVER_CHECKS + timeFeasibleCheck.
 // Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
