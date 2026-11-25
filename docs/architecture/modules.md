@@ -560,8 +560,9 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
 
 ```ts
 interface Stage<I, O> { name: string; run(input: I, ctx: GenerationContext): O }   // ctx.rng = rng.fork("gen/" + name)
-function generateInvestigation(req: { scenarioId: string; seed: string }, content: ContentRepo): GenerationResult;
-interface GenerationResult { ok: true; investigation: Investigation; report: GenerationReport } | { ok: false; error: "GENERATION_UNSOLVABLE"; report: GenerationReport }
+function generateInvestigation(req: { scenarioId: string; seed: string }, content: ScenarioContent, options?: { maxAttempts?: number; checks?: Check[]; now?: () => number }): GenerationResult;
+interface GenerationResult { ok: true; investigation: Investigation; investigationHash: string; report: InvestigationReport } | { ok: false; error: "GENERATION_UNSOLVABLE"; report: InvestigationReport }   // шлюз валидации, ADR 0006 (GEN-011)
+// CLI: packages/generator/bin/hs-gen.ts --scenario <id> --seed <s> [--debug-truth]
 const GENERATOR_VERSION: string;
 class GenerationRejection extends Error { code: string; diagnostics?: Record<string, unknown> }   // стадия отклоняет вход → следующая попытка
 const incidentSelection: Stage<ConflictWorld & { world: GeneratedWorld }, IncidentWorld>;        // IncidentPlan + IncidentReport (GEN-006)
