@@ -7,6 +7,7 @@ const AudioDirectorScript = preload("res://src/autoload/audio_director.gd")
 const FakeBackend = preload("res://tests/unit/support/fake_backend.gd")
 const Fixtures = preload("res://src/scenes/exploration/preview_fixtures.gd")
 const Contract = preload("res://tests/contract/contract_support.gd")
+const ExplorationScene = preload("res://src/scenes/exploration/exploration.tscn")
 const SCENE: String = "res://src/scenes/dialogue/dialogue.tscn"
 
 var _backend: FakeBackend
@@ -47,6 +48,9 @@ func test_preview_shows_topics_history_and_presentable_subjects() -> void:
 
 
 func test_talk_waits_for_its_result_then_a_fresh_view() -> void:
+	var interaction: Dictionary = _view["interaction"]
+	var topics: Array = interaction["topics"]
+	topics[0] = {"id": "self", "label": "Расскажите о себе", "costPreview": {"min": 13, "max": 13}}
 	_publish(1)
 	var screen: Control = _screen({"characterId": "ch_doctor"})
 	if screen == null:
@@ -54,7 +58,7 @@ func test_talk_waits_for_its_result_then_a_fresh_view() -> void:
 	var topic: Button = _button(screen, ^"%Topics", 0)
 	topic.pressed.emit()
 	topic.pressed.emit()
-	_assert_sent({"type": "talk", "characterId": "ch_doctor", "topicId": "topic_whereabouts"})
+	_assert_sent({"type": "talk", "characterId": "ch_doctor", "topicId": "self"})
 	_result(true, "unrelated-request")
 	_publish(2)
 	assert_true(_button(screen, ^"%Topics", 0).disabled)
@@ -166,6 +170,7 @@ func test_rejection_reconnect_and_end_of_dialogue() -> void:
 		return
 	_button(screen, ^"%Topics", 0).pressed.emit()
 	_result(false)
+	_publish(2)
 	assert_string_contains((screen.get_node(^"%Error") as Label).text, "недоступно")
 	assert_false(_button(screen, ^"%Topics", 0).disabled)
 	_button(screen, ^"%Topics", 0).pressed.emit()
@@ -175,10 +180,23 @@ func test_rejection_reconnect_and_end_of_dialogue() -> void:
 	_backend.change_state(BackendScript.ConnectionState.ONLINE)
 	assert_false(_button(screen, ^"%Topics", 0).disabled)
 	_view.erase("interaction")
-	_publish(2)
+	_publish(3)
 	assert_true(_history(screen).is_empty())
 	assert_string_contains((screen.get_node(^"%Status") as Label).text, "завершён")
 	assert_false((screen.get_node(^"%Back") as Button).disabled)
+
+
+func test_failed_interrogation_from_exploration_survives_a_new_view() -> void:
+	_view.erase("interaction")
+	_publish(1)
+	var exploration: Control = ExplorationScene.instantiate() as Control
+	add_child_autofree(exploration)
+	var row: Node = exploration.get_node(^"%Characters").get_child(0)
+	(row.get_child(1) as Button).pressed.emit()
+	assert_eq(_backend.sent.size(), 1)
+	_result(false)
+	_publish(2)
+	assert_string_contains((exploration.get_node(^"%Error") as Label).text, "недоступно")
 
 
 func test_route_opens_from_exploration_and_back_does_not_reopen_automatically() -> void:
@@ -190,7 +208,7 @@ func test_route_opens_from_exploration_and_back_does_not_reopen_automatically() 
 	add_child_autofree(host)
 	var old_fade: float = router.fade_seconds
 	router.host = host
-	router.fade_seconds = 0.0
+	router.fade_seconds = 0.03
 	var open_view: Dictionary = _view.duplicate(true)
 	_view.erase("interaction")
 	var offers: Array = _view["availableActions"]
@@ -211,11 +229,17 @@ func test_route_opens_from_exploration_and_back_does_not_reopen_automatically() 
 	assert_eq(router.get_current_screen(), &"exploration", "unrelated snapshot cannot open dialogue")
 	_result(true)
 	_publish(3)
+	characters = exploration.get_node(^"%Characters") as VBoxContainer
+	row = characters.get_child(0)
+	(row.get_child(1) as Button).pressed.emit()
+	assert_eq(_backend.sent.size(), 1, "keyboard cannot send another action during the entry fade")
 	await _settle(router)
 	assert_eq(router.get_current_screen(), &"dialogue")
 	if router.get_current_screen() == &"dialogue":
-		var dialogue: Node = host.get_child(0)
+		var dialogue: Control = host.get_child(0) as Control
 		(dialogue.get_node(^"%Back") as Button).pressed.emit()
+		_button(dialogue, ^"%Topics", 0).pressed.emit()
+		assert_eq(_backend.sent.size(), 1, "keyboard cannot send a topic during the exit fade")
 		await _settle(router)
 		assert_eq(router.get_current_screen(), &"exploration")
 		_publish(4)

@@ -71,6 +71,8 @@ var _pending: bool = false
 var _dialogue_target: String = ""
 var _dialogue_request_id: String = ""
 var _dialogue_accepted: bool = false
+var _opening_dialogue: bool = false
+var _dialogue_error: bool = false
 var _confirm_action: Dictionary = {}
 var _action_buttons: Array[Button] = []
 
@@ -313,7 +315,7 @@ func _make_action_button(entry: Dictionary, caption: String) -> Button:
 
 
 func _on_action_pressed(entry: Dictionary) -> void:
-	if _pending or not _text(entry.get("blockedReason")).is_empty():
+	if _pending or _opening_dialogue or not _text(entry.get("blockedReason")).is_empty():
 		return
 	var action: Dictionary = _dict(entry.get("action"))
 	var preview: Variant = entry.get("costPreview")
@@ -338,8 +340,9 @@ func _on_confirm_canceled() -> void:
 
 
 func _send(action: Dictionary) -> void:
-	if _pending:
+	if _pending or _opening_dialogue:
 		return
+	_dialogue_error = false
 	_error.text = ""
 	if _store == null:
 		_show_error(GameStoreScript.ERROR_NOT_CONNECTED, "")
@@ -358,7 +361,7 @@ func _send(action: Dictionary) -> void:
 
 
 func _resume_dialogue(character_id: String) -> void:
-	if not _pending:
+	if not _pending and not _opening_dialogue:
 		_open_dialogue(character_id)
 
 
@@ -369,7 +372,8 @@ func _open_dialogue(character_id: String) -> void:
 	var params: Dictionary = {"characterId": character_id}
 	if is_preview():
 		params["preview"] = _preview_name
-	router.goto(&"dialogue", params)
+	_opening_dialogue = router.goto(&"dialogue", params) == OK
+	_update_buttons()
 
 
 func _on_view_changed(view: Dictionary, _state_version: int) -> void:
@@ -380,7 +384,8 @@ func _on_view_changed(view: Dictionary, _state_version: int) -> void:
 		_clear_pending()
 	_preview_name = ""
 	_preview_failed = false
-	_error.text = ""
+	if not _dialogue_error:
+		_error.text = ""
 	_show(view)
 	if not open_partner.is_empty():
 		_open_dialogue(open_partner)
@@ -402,6 +407,7 @@ func _on_dialogue_result(request_id: String, ok: bool, code: String, message: St
 	else:
 		_clear_pending()
 		_on_action_failed(code, message)
+		_dialogue_error = true
 
 
 func _clear_pending() -> void:
@@ -419,6 +425,8 @@ func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 	_clear_pending()
 	if state == BackendScript.ConnectionState.OFFLINE and not is_preview():
 		# The session is over: GameStore forgot the view, the map of that session goes too.
+		_dialogue_error = false
+		_error.text = ""
 		_known_map.clear()
 		_show(ReadOnly.empty())
 	else:
@@ -438,7 +446,7 @@ func _update_buttons() -> void:
 	for button: Button in _action_buttons:
 		if is_instance_valid(button):
 			var blocked: bool = button.get_meta(META_BLOCKED, false)
-			button.disabled = _pending or blocked
+			button.disabled = _pending or _opening_dialogue or blocked
 
 
 ## Background placeholder until location art exists (CNT-010): a hue from the location id,

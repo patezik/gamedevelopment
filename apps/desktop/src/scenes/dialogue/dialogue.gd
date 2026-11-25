@@ -21,6 +21,7 @@ var _routed: bool = false
 var _preview: String = ""
 var _partner: String = ""
 var _active: bool = false
+var _leaving: bool = false
 var _lines: Array = []
 var _request_id: String = ""
 var _accepted: bool = false
@@ -72,12 +73,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _return_to_exploration() -> void:
-	if not _request_id.is_empty():
+	if _back.disabled:
 		return
 	var router: SceneRouterScript = get_node_or_null(^"/root/SceneRouter") as SceneRouterScript
 	if router != null:
 		var params: Dictionary = {} if _preview.is_empty() else {"preview": _preview}
-		router.goto(&"exploration", params)
+		_leaving = router.goto(&"exploration", params) == OK
+		_update_controls()
 
 
 func _show(view: Dictionary) -> void:
@@ -87,6 +89,8 @@ func _show(view: Dictionary) -> void:
 		_partner = character_id
 	_active = not character_id.is_empty() and character_id == _partner and not view.has("ending")
 	_content.visible = _active
+	if not _active:
+		_error.hide()
 	_name.text = str(interaction.get("characterName", "")) if _active else "Разговор"
 	_choices.clear()
 	_clear_items(_topics)
@@ -224,8 +228,6 @@ func _send(action: Dictionary) -> void:
 func _on_view_changed(view: Dictionary, _version: int) -> void:
 	if _accepted:
 		_clear_request()
-	_error.text = ""
-	_error.hide()
 	_preview = ""
 	_clear_confirmation()
 	_show(view)
@@ -247,6 +249,7 @@ func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 	if state != BackendScript.ConnectionState.ONLINE:
 		_clear_request()
 		_clear_confirmation()
+		_error.hide()
 	if state == BackendScript.ConnectionState.OFFLINE and _preview.is_empty():
 		_show({})
 	else:
@@ -259,7 +262,9 @@ func _clear_request() -> void:
 
 
 func _can_send() -> bool:
-	return _active and _preview.is_empty() and _request_id.is_empty() and _is_online()
+	return (
+		_active and not _leaving and _preview.is_empty() and _request_id.is_empty() and _is_online()
+	)
 
 
 func _is_online() -> bool:
@@ -271,7 +276,7 @@ func _update_controls() -> void:
 	for button: Button in _choices:
 		var blocked: bool = button.get_meta(&"blocked")
 		button.disabled = not can_send or blocked
-	_back.disabled = not _request_id.is_empty()
+	_back.disabled = _leaving or not _request_id.is_empty()
 	_status.text = ""
 	if not _preview.is_empty():
 		_status.text = "Предпросмотр без сервера."
