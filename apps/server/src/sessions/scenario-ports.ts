@@ -15,7 +15,7 @@ const toPhoneTemplate = (row: unknown): PhoneTemplate =>
  *
  * Deliberately left to the engine defaults: `actionCosts`, `player`, `inventory`, the call
  * arbitration (`callState`) and the phone answers (`callGreeting`, `callReply`, `messageReply`).
- * `texts` (SRV-010), tokens (SRV-013) and simulation hooks (ENG-010, TIME-006) are other tasks.
+ * Tokens (SRV-013) and simulation hooks (ENG-010, TIME-006) are other tasks.
  */
 export function scenarioEnginePorts(
   content: ScenarioContent,
@@ -26,6 +26,7 @@ export function scenarioEnginePorts(
   const required = new Set(server.requiredClueIds);
   return {
     startLocationId: server.startLocationId,
+    texts: new Map(Object.values(content.text.ru ?? {}).flatMap((group) => Object.entries(group))),
     clues: server.clues,
     startVitals: { ...content.preset.survival.startVitals },
     phone: {

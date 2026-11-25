@@ -88,6 +88,14 @@ export class RecordingEngine implements SessionEngine {
     return this.#engine.snapshot();
   }
 
+  playerView() {
+    return this.#engine.playerView();
+  }
+
+  phoneView() {
+    return this.#engine.phoneView();
+  }
+
   stateHash(): string {
     return this.#engine.stateHash();
   }
