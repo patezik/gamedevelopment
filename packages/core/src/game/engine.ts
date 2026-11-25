@@ -31,6 +31,7 @@ import {
   type PlayerActionObserved,
   type TestimonyPort,
 } from './actions/index.ts';
+import { applyMarkSuspicion } from './actions/suspicion.ts';
 import {
   deserializeInvestigation,
   serializeInvestigation,
@@ -219,10 +220,17 @@ export class GameEngine {
     const { durationMinutes } = this.investigation.world;
     const now = this.#time.now();
     if (now >= durationMinutes) return rejected('GAME_OVER');
-    if (action.type === 'accuse' || action.type === 'markSuspicion') {
-      return rejected('ACTION_NOT_AVAILABLE');
-    }
+    if (action.type === 'accuse') return rejected('ACTION_NOT_AVAILABLE');
     const desktop = this.#desktop ?? this.#startingDesktop();
+    if (action.type === 'markSuspicion') {
+      const known = new Set(this.investigation.characters.map(({ id }) => id));
+      if (!applyMarkSuspicion(desktop.knowledge, known, action)) return rejected('ACTION_INVALID');
+      if (!this.#desktop) {
+        this.#desktop = desktop;
+        this.ports.attachTime?.(this.#time);
+      }
+      return { ok: true, minutesSpent: 0, events: [] };
+    }
     if (action.type === 'move' || action.type === 'wait') return this.#moveOrWait(action, desktop);
     if (!DESKTOP_ACTIONS.includes(action.type)) return rejected('ACTION_NOT_AVAILABLE');
 
