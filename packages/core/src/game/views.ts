@@ -6,6 +6,7 @@ import {
   type ActionCostTable,
   type CostModifier,
 } from '../time/index.ts';
+import { personsOfInterest } from '../investigation/index.ts';
 import type { Clue, PendingCapture } from '../evidence/index.ts';
 import type { Actor } from '../world/index.ts';
 import {
@@ -20,6 +21,7 @@ import {
   type DesktopActionType,
 } from './actions/index.ts';
 import { endingOf, endingView } from './ending.ts';
+import { blockReason } from './interaction.ts';
 import type { Investigation } from './investigation.ts';
 
 export interface PlayerViewState {
@@ -70,8 +72,10 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
   const present = new Set(presentAt(investigation, locationId, minute));
   const modifiers = currentModifiers(desktop, investigation, locationId, minute);
   const availableActions: PlayerView['availableActions'] = [];
+  const dialogue =
+    desktop.interaction && (desktop.interaction.interrogation ? 'interrogation' : 'talk');
   const offer = (action: Extract<OfferedAction, { type: DesktopActionType }>, label: string) => {
-    if (remainingMinutes <= 0 || ending) return;
+    if (remainingMinutes <= 0 || ending || blockReason(action.type, { dialogue })) return;
     const context = action.type === 'rest' ? { minutes: action.minutes } : { modifiers };
     const { min, max } = resolveActionCost(action.type, context, actionCosts);
     availableActions.push({ action, label, costPreview: { min, max } });
@@ -89,7 +93,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
       actionCosts,
       modifiers,
     );
-    if (remainingMinutes > 0 && !ending && !blockedReason) {
+    if (remainingMinutes > 0 && !ending && !blockedReason && !blockReason('move', { dialogue })) {
       availableActions.push({
         action: { type: 'move', locationId: to },
         label: name,
@@ -196,7 +200,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
     vitals: { ...desktop.vitals.vitals },
     static: 0,
     inventory: desktop.inventory.items.map(({ id, kind }) => ({ id, name: kind, description: '' })),
-    caseBoard: caseBoard(desktop, clues),
+    caseBoard: caseBoard(desktop, clues, investigation.characters),
     ...(interaction && { interaction }),
     ...(ending && { ending: endingView(ending, investigation, desktop.verdict) }),
     phone: { paired: false, online: false, battery: 100 },
@@ -243,8 +247,13 @@ function knownMapOf(investigation: Investigation, locationId: string): PlayerVie
   return { locations: [...known.values()], links };
 }
 
-function caseBoard(desktop: DesktopState, clues: readonly Clue[]): PlayerView['caseBoard'] {
+function caseBoard(
+  desktop: DesktopState,
+  clues: readonly Clue[],
+  characters: readonly { id: string; name: string }[],
+): PlayerView['caseBoard'] {
   const byId = new Map(clues.map((clue) => [clue.id, clue]));
+  const names = new Map(characters.map(({ id, name }) => [id, name]));
   return {
     clues: [...desktop.knowledge.clues.values()].map((found) => {
       const clue = byId.get(found.clueId);
@@ -271,8 +280,16 @@ function caseBoard(desktop: DesktopState, clues: readonly Clue[]): PlayerView['c
       againstId: clueId,
       summary: 'Показание расходится с уликой',
     })),
-    personsOfInterest: [],
-    suspicions: [],
+    personsOfInterest: personsOfInterest(desktop.knowledge, { clues: byId }).map((person) => ({
+      characterId: person.characterId,
+      name: names.get(person.characterId) ?? person.characterId,
+      linkedClueIds: [...person.linkedClueIds],
+    })),
+    suspicions: desktop.knowledge.suspicions.map(({ characterId, level, note }) => ({
+      characterId,
+      level,
+      ...(note !== undefined && { note }),
+    })),
     timeline: [],
   };
 }

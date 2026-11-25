@@ -72,6 +72,7 @@ function setup(
     itemChangeMinutes?: readonly number[];
     overrides?: ScheduleOverride[];
     initialLocations?: ReadonlyMap<string, string>;
+    exits?: ReadonlyMap<string, number>;
     rng?: Rng;
   } = {},
 ) {
@@ -494,6 +495,60 @@ describe('SimulationRunner', () => {
       [2, 'stay', corridor, 1],
     ]);
     expect(runner.getAgent(alpha.id)?.activity).toBeUndefined();
+  });
+
+  it('ends the actions and observations of a character at its exit minute', () => {
+    const { runner, time, truth } = setup([alpha, beta], { exits: new Map([[alpha.id, 11]]) });
+    time.advance(20);
+    const steps = (id: string) =>
+      truth
+        .events()
+        .filter(({ actorIds }) => actorIds.includes(id))
+        .map(({ t, verb, location, duration }) => [t, verb, location, duration]);
+    // The transition at minute 10 would arrive after the exit, so alpha waits in place.
+    expect(steps(alpha.id)).toEqual([
+      [0, 'stay', bed, 10],
+      [10, 'stay', bed, 1],
+    ]);
+    expect(steps(beta.id).slice(0, 3)).toEqual([
+      [0, 'stay', bed, 10],
+      [10, 'move', bed, 2],
+      [12, 'move', corridor, 3],
+    ]);
+    expect(runner.getAgent(alpha.id)?.activity).toBeUndefined();
+
+    // The caller keeps the body in place; it is present but no longer observes.
+    truth.append({
+      t: 11,
+      duration: 0,
+      verb: 'die',
+      actorIds: [alpha.id],
+      location: bed,
+      targets: [],
+      causes: [],
+      facts: [{ kind: 'at', who: alpha.id, where: bed, interval: { from: 11, to: 1440 } }],
+      traceIds: [],
+      visibility: 'public',
+    });
+    const event = {
+      t: 16,
+      verb: 'knock',
+      actorIds: [beta.id],
+      location: bed,
+      visibility: 'public' as const,
+    };
+    const id = truth.append({
+      ...event,
+      duration: 0,
+      targets: [],
+      causes: [],
+      facts: [],
+      traceIds: [],
+    });
+    runner.observe({ ...event, id });
+    expect(runner.knowledgeOf(alpha.id)?.query({ kind: 'did', who: beta.id, at: 16 })).toEqual([]);
+    expect(() => setup([alpha], { exits: new Map([['ch_missing', 3]]) })).toThrow(/unknown/);
+    expect(() => setup([alpha], { exits: new Map([[alpha.id, 1.5]]) })).toThrow(/Invalid exit/);
   });
 
   it('does not run later steps when TimeSystem is interrupted', () => {

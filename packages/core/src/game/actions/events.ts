@@ -1,6 +1,7 @@
 import type { GameMinutes } from '../../common/index.ts';
 import type { ContradictionFound } from '../../investigation/index.ts';
 import type { SurvivalEvent } from '../../survival/index.ts';
+import type { PhoneEvent } from '../../phone/index.ts';
 import type { ClockEvent } from '../../time/index.ts';
 
 /** The desktop action types that ENG-003 resolves (move and wait stay in ENG-001). */
@@ -13,6 +14,18 @@ export type DesktopActionType =
   | 'useItem'
   | 'pickLock'
   | 'rest';
+
+/** The phone action types that ENG-004 resolves. */
+export type PhoneActionType =
+  | 'call'
+  | 'answerCall'
+  | 'callChoice'
+  | 'message'
+  | 'browse'
+  | 'openFile'
+  | 'unlockFile'
+  | 'addNote'
+  | 'captureEvidence';
 
 /**
  * What characters could notice of a player action (SIM-006 turns it into wariness). Carries only
@@ -64,6 +77,20 @@ export type ActionEvent =
       readonly success: boolean;
       readonly at: GameMinutes;
     }
+  | { readonly type: 'PageViewed'; readonly pageId: string; readonly at: GameMinutes }
+  | { readonly type: 'FileOpened'; readonly fileId: string; readonly at: GameMinutes }
+  | {
+      readonly type: 'FileUnlockAttempted';
+      readonly fileId: string;
+      readonly success: boolean;
+      readonly at: GameMinutes;
+    }
+  | {
+      readonly type: 'EvidenceCaptured';
+      readonly clueId: string;
+      readonly tokenId: string;
+      readonly at: GameMinutes;
+    }
   | { readonly type: 'ItemUsed'; readonly itemId: string; readonly at: GameMinutes }
   | { readonly type: 'ActionInterrupted'; readonly at: GameMinutes; readonly reason: string }
   | { readonly type: 'InteractionEnded'; readonly characterId: string; readonly at: GameMinutes }
@@ -83,4 +110,4 @@ export type ActionEvent =
     };
 
 export type GameEvent =
-  ClockEvent | SurvivalEvent | KnowledgeEvent | ActionEvent | PlayerActionObserved;
+  ClockEvent | SurvivalEvent | KnowledgeEvent | ActionEvent | PlayerActionObserved | PhoneEvent;

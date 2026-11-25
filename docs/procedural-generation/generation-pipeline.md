@@ -263,6 +263,91 @@ CastGen не передаёт мир дальше, поэтому вызываю
 проверила пересимуляция IncidentSelection), покрытие окна изгибом. Невыполнимый план — отказ
 `PLOT_INFEASIBLE`. Исполнение плана — HistorySimulation (GEN-008).
 
+### HistorySimulation
+
+`historySimulation` (`HistoryWorld = PlotWorld + truth, worldState, knowledge,
+relationshipsAtStart, locationsAtStart, historyReport`) — предыстория от
+`preset.time.historyStartMinutes` до `t = 0`. Истина — то, что сделала симуляция, а не описание
+плана. Подпоток `gen/HistorySimulation/simulation` получают `SimulationRunner` и `GoalLoop`.
+
+**Прогон.** `TruthModel` начинается с событий `history` (SocialGen, ConflictGen). Весь состав идёт
+по распорядкам через `SimulationRunner` так же, как в проверке IncidentSelection: те же стартовые
+локации, `plot.overrides` виновника, средство переходит к виновнику в `ItemRegistry` в минуту
+`acquisition.at + 1` (`itemChangeMinutes`). Виновник исполняет `plot.steps` целью `ExecutePlot`
+(оценка 1, выше `FollowRoutine`) в `GoalLoop`: шаг начинается в начале своего окна, следующий —
+после конца предыдущего. Каждый шаг — событие `covert` с актором-виновником, фактом `did`
+(глагол и цель шага) и причиной — предыдущим шагом (первый шаг — событием `harbor_motive` мотива).
+Шаг `acquire` (`take` средства) добавляет факт `possessed` до `t = 0` и цель-персонажа, если
+средство взято у владельца. Сокрытие (`hide`) средство не перемещает: как и в модели
+IncidentSelection, взятое средство остаётся у виновника. Восприятие шагов — `SimulationRunner.observe`
+в фазе `WorldEvents` той же минуты.
+
+**Смерть.** Жертва инцидента из `LETHAL_INCIDENT_TYPES` (`murder`) умирает в `plot.deathAt`
+(отложенная смерть), иначе в конце смертельного шага: первого шага на жертву, без него — первого
+шага на месте. С этой минуты жертва — `exits` раннера: её шаги заканчиваются там, переход, который
+пришёл бы позже, не начинается, а наблюдений нет. Событие `die` (`public`, актор — жертва, причина —
+смертельный шаг) содержит `state(alive = false)` и `at` тела в месте смерти на `[d, 0)`
+(truth-model.md §4, «Смерть»). Смерть в минуту `0` или позже — проблема плана.
+
+**Проверка и перенос.** После прогона каждый шаг сверяется с истиной: шаг исполнен; виновник в
+локации шага всё время шага; на шаге на месте нет никого, кроме виновника и (если план направлен на
+неё) жертвы; на шаге на жертву она в локации; при получении средство (с учётом контейнеров) лежит
+в локации или у владельца, который там же; отложенная смерть без шага на жертву — на месте
+преступления. Если проверка не прошла (например, вошёл свидетель), шаги на месте сдвигаются на
+`shift = 1, 2, …` минут внутри своих окон (не больше наименьшего запаса окна `maxShift`; шаг
+получения не сдвигается) и предыстория симулируется заново с начала. Первый сдвиг без проблем
+принимается. Если подходящего сдвига нет, стадия бросает `GenerationRejection` с кодом
+`HISTORY_PLOT_FRUSTRATED` и `diagnostics.attempts` (проблемы каждого сдвига), и конвейер начинает
+следующую попытку (§2). Подменять исполнение готовыми событиями стадия не может.
+
+**Знания и отношения.** После принятого прогона встречи (SIM-003) находятся по интервалам
+присутствия живых (тело собеседником не считается) и обрабатываются по порядку: события `talk`,
+пересказ и дрейф отношений на копии графа (`relationshipsAtStart`; вход не меняется). До LiePolicy
+(GEN-010) виновник не пересказывает свои действия (`did`), мотив и присутствие на месте
+преступления. `knowledge` — хранилища раннера после встреч.
+
+**Выход.** `IncidentRecord` = `plot.incident` + `motive` (`factId(motiveFact(incident.motive))`,
+факт события `harbor_motive`) + `keyEventIds` — события исполненных шагов: сначала шаги на месте в
+порядке плана (локация первого — место инцидента для валидатора), затем получение средства.
+`worldState` — локации и реестр предметов после предыстории, `locationsAtStart` — где каждый
+(или тело) находится в `t = 0`. `historyReport { attempts, maxShift, steps, deathAt,
+simulatedEvents, encounters }` — серверная диагностика, не для клиентов.
+
+**Проверки (GEN-008).** `npx vitest run packages/generator/test/properties/history-sim.prop.test.ts`:
+1000 seed `_test_minimal` — 1000 планов, все исполнены с первой попытки, без сдвигов; 1000 seed
+`sanatorium_winter` — 301 план (остальные отклоняются раньше), все исполнены без сдвигов;
+`checkTruthInvariants` пуст во всех. Время стадии —
+`node --experimental-transform-types packages/generator/test/performance/history-sim.ts` (лучшее из
+5 после прогрева по 20 мирам, 2026-11-25): `_test_minimal` (60 минут) — медиана 3,6 мс, максимум
+4,8 мс; `sanatorium_winter` (1440 минут) — медиана 48,9 мс, максимум 72,3 мс; бюджет — 200 мс
+(ADR 0013).
+
+Ограничения MVP:
+
+- траектории в предыстории совпадают с прогоном IncidentSelection (персонажи движутся независимо,
+  прятанье средства его не перемещает), поэтому срыв плана возможен только при расхождении модели
+  и симуляции; перенос и отказ покрыты тестами на изменённых распорядках;
+- цели SIM-005 (`ConcealEvidence`, `MeetCharacter` и другие) в предыстории не подключены;
+- начальные убеждения о предыстории (отношения, секреты `knownBy`) в хранилища не записываются.
+
+### EvidenceGen
+
+`evidenceGen: Stage<HistoryWorld, EvidenceWorld>` не добавляет своей случайности, кроме
+распределения `captureMode`. Шаги:
+
+1. `deriveTraces` (EVD-001) применяет `trace-rules.json` к журналу предыстории → `traces`
+   (в том числе `testimonial`: их использует TestimonyGen).
+2. Для следов `physical`/`document`/`digital` строится `ClueRule` по шаблону следа: документ
+   читается (`read`, `documentId = template`), остальное осматривается (`examineHotspot`,
+   `hotspotId = template`) в точке следа. `testimonial` улик не даёт (GEN-010).
+   `deriveClues` (EVD-002) создаёт `clues`.
+3. `requiredClueIds` — улики событий `IncidentRecord.keyEventIds`. Если у какого-то ключевого события
+   улики нет, стадия бросает `GenerationRejection('EVIDENCE_KEY_EVENT_UNCOVERED')`.
+4. `distributeCaptureModes` (EVD-003) доводит долю `qr` среди обязательных улик до
+   `preset.phone.minQrShare`.
+
+Выход `EvidenceWorld` = `HistoryWorld` + `traces`, `clues`, `requiredClueIds`.
+
 ## 4. Отчёт генерации
 
 `GenerationReport { seed, generatorVersion, attempts: AttemptReport[], timingsMs: Record<stage, number>,

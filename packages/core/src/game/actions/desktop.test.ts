@@ -371,6 +371,25 @@ describe('talk and interrogate', () => {
     expect(engine.playerView().caseBoard.statements).toHaveLength(2);
   });
 
+  test('an interrogation holds the hero in place until another action ends it (ENG-005)', () => {
+    const { engine, talk } = toContradiction(0.5);
+    const [found] = ofType(talk, 'ContradictionFound');
+    engine.dispatch('desktop', {
+      type: 'interrogate',
+      characterId: bursar,
+      subject: { type: 'contradiction', contradictionId: found!.contradictionId },
+    });
+    const hash = engine.stateHash();
+    expect(engine.dispatch('desktop', { type: 'move', locationId: hall })).toMatchObject({
+      ok: false,
+      error: 'ACTION_BLOCKED',
+      blockedReason: 'interrogation_open',
+    });
+    expect(engine.stateHash()).toBe(hash);
+    expect(engine.dispatch('desktop', { type: 'wait', minutes: 15 }).ok).toBe(true);
+    expect(engine.dispatch('desktop', { type: 'move', locationId: hall }).ok).toBe(true);
+  });
+
   test('a dishonest witness changes the story instead', () => {
     const { engine, talk } = toContradiction(0.4);
     const [found] = ofType(talk, 'ContradictionFound');
