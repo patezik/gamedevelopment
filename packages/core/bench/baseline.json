@@ -1,7 +1,7 @@
 {
   "rows": {
     "scheduler 100k events": 0.23,
-    "60 min x 8 NPC, background": 0.000417,
+    "60 min x 8 NPC, background": 0.000567,
     "60 min x 8 NPC, focus": 0.000975,
     "24 h history x 8 NPC": 0.00287,
     "3 days history x 8 NPC": 0.00906,
