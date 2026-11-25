@@ -24,7 +24,7 @@ const at = (who: string, where: string, from: number, to: number): Fact => ({
 });
 
 /** tiny-manor where the bursar walks into the study at minute 1 and stays there. */
-function manor(honesty = 0.5): Investigation {
+function manor(honesty = 0.5, cookJoins = false): Investigation {
   const base = tinyManor(undefined, [
     { id: 'hs_desk', name: 'Desk', description: 'A writing desk with muddy footprints.' },
   ]);
@@ -40,6 +40,20 @@ function manor(honesty = 0.5): Investigation {
     traceIds: [],
     visibility: 'covert',
   });
+  if (cookJoins) {
+    base.truth.append({
+      t: 1,
+      verb: 'move',
+      location: archive,
+      duration: 0,
+      actorIds: ['ch_cook'],
+      targets: [{ kind: 'location', id: study }],
+      causes: [],
+      facts: [at('ch_cook', study, 1, 1440)],
+      traceIds: [],
+      visibility: 'covert',
+    });
+  }
   return {
     ...base,
     characters: base.characters.map((c) =>
@@ -111,6 +125,7 @@ function testimony(oneVersion = false): NonNullable<EnginePorts['testimony']> {
 interface Setup {
   honesty?: number;
   oneVersion?: boolean;
+  cook?: boolean;
   startLocationId?: string;
   inventory?: PackItem[];
   startVitals?: Vitals;
@@ -118,7 +133,7 @@ interface Setup {
 }
 
 function setup(options: Setup = {}) {
-  const investigation = manor(options.honesty);
+  const investigation = manor(options.honesty, options.cook);
   const clues = cluesOf(investigation);
   const issued: string[] = [];
   const observed: PlayerActionObserved[] = [];
@@ -727,5 +742,35 @@ describe('NPC lines and presentation cost (ENG-009)', () => {
     );
     expect(renderDialogueLine(line('testimony_none'), 0, bursar, undefined)).toBe('testimony_none');
     expect(renderDialogueLine({ ...line('Hi'), speaker: 'player' }, 0, bursar, context)).toBe('Hi');
+  });
+  test('a saved dialogue without statement ids or with testimony_none still restores and renders', () => {
+    const { engine, investigation, ports } = rebutted({ honesty: 0.5 });
+    engine.dispatch('desktop', { type: 'talk', characterId: bursar, topicId: 'self' });
+    const saved = JSON.parse(JSON.stringify(engine.snapshot())) as {
+      desktop: { interaction: { history: { text: string; statementId?: string }[] } };
+    };
+    // A save written before ENG-009 has neither statementId nor the new keys.
+    for (const line of saved.desktop.interaction.history) delete line.statementId;
+    saved.desktop.interaction.history.push({
+      speaker: 'other',
+      text: 'testimony_none',
+      at: 1,
+    } as never);
+    const restored = gameReplayRuntime(investigation, ports).restore(saved as never);
+    const lines = restored.playerView().interaction!.history;
+    expect(lines.at(-1)!.text).toMatch(/^Nothing to say/);
+    // Old lines cannot fill their placeholders: the key stays, nothing throws.
+    expect(lines.some(({ text }) => text.startsWith('testimony_'))).toBe(true);
+    expect(PlayerView.parse(JSON.parse(JSON.stringify(restored.playerView())))).toBeDefined();
+  });
+
+  test('a contradiction is offered only to the character who made the statement', () => {
+    const { engine, action } = rebutted({ honesty: 0.5, cook: true });
+    const view = engine.playerView();
+    expect(view.presentCharacters.map(({ id }) => id).sort()).toEqual([bursar, 'ch_cook']);
+    const contradictions = view.availableActions
+      .map(({ action: offer }) => offer)
+      .filter((offer) => offer.type === 'interrogate' && offer.subject.type === 'contradiction');
+    expect(contradictions).toEqual([action]);
   });
 });
