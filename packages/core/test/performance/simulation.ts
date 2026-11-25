@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+import { checkBudget } from '../../bench/budget.ts';
 import { SimulationLod } from '../../src/simulation/index.ts';
 import { createSimWorld, roomIds } from '../fixtures/sim-world.ts';
 
@@ -27,6 +27,5 @@ const rows = [
 ];
 for (const { name, minutes, start, focus, budgetMs } of rows) {
   const ms = best(minutes, start, focus);
-  console.log(`${name}: ${ms.toFixed(2)} ms (budget ${budgetMs} ms)`);
-  assert.ok(ms < budgetMs, `${name} took ${ms.toFixed(2)} ms`);
+  checkBudget(name, ms, budgetMs);
 }
