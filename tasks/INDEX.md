@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **150** · todo: 38 · in_progress: 11 · review: 0 · done: 101 · blocked: 0
+Всего задач: **150** · todo: 38 · in_progress: 9 · review: 0 · done: 103 · blocked: 0
 
 ## Готовы к взятию сейчас
 
@@ -151,7 +151,7 @@
 | [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | done | claude-w2 | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
 | [SRV-008](SRV-008.md) | Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам | P0 | S | done | claude-server-1 | [FND-005](FND-005.md) |
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
-| [SRV-011](SRV-011.md) | Нативный запуск сервера: npm start без ошибок strip-types | P0 | S | in_progress | egor-claude-srv-011 | [SAVE-001](SAVE-001.md) |
+| [SRV-011](SRV-011.md) | Нативный запуск сервера: npm start без ошибок strip-types | P0 | S | done | egor-claude-srv-011 | [SAVE-001](SAVE-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
 ## Фаза 6 · M6 — Vertical slice (26)
@@ -226,7 +226,7 @@
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [QA-001](QA-001.md) | Maestro E2E мобильного приложения: привязка, скан, приложения | P2 | M | todo | — | [INT-007](INT-007.md), [MOB-004](MOB-004.md) |
-| [QA-002](QA-002.md) | Бюджеты производительности в CI | P1 | S | in_progress | claude-ql | [SIM-007](SIM-007.md), [GEN-011](GEN-011.md) |
+| [QA-002](QA-002.md) | Бюджеты производительности в CI | P1 | S | done | claude-ql | [SIM-007](SIM-007.md), [GEN-011](GEN-011.md) |
 | [QA-003](QA-003.md) | Инфраструктура локализации RU/EN (Godot и мобильное приложение) | P2 | M | todo | — | [GDT-004](GDT-004.md), [MOB-001](MOB-001.md), [CNT-005](CNT-005.md) |
 | [QA-004](QA-004.md) | Совместимость сохранений между версиями генератора и политика миграций | P1 | M | done | egor-codex-qa-004 | [SAVE-001](SAVE-001.md), [SRV-007](SRV-007.md) |
 | [QA-005](QA-005.md) | Доступность: снижение эффектов, размер текста, цветовая слепота, субтитры | P2 | M | todo | — | [GDT-010](GDT-010.md), [MOB-011](MOB-011.md) |
