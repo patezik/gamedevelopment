@@ -2,14 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **142** · todo: 49 · in_progress: 10 · review: 0 · done: 82 · blocked: 1
+Всего задач: **142** · todo: 48 · in_progress: 11 · review: 0 · done: 82 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [ENG-004](ENG-004.md) — Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик (P0, L)
 - [ENG-006](ENG-006.md) — Действие accuse, концовки и TruthRecap (P0, M)
 - [GDT-005](GDT-005.md) — Диалог и допрос: темы, ответы, предъявление улик и противоречий (P0, M)
-- [ENG-005](ENG-005.md) — Блокировка взаимодействий и арбитраж действий desktop/phone (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 
 ## Критический путь
@@ -159,7 +158,7 @@
 | [CNT-006](CNT-006.md) | Контент телефона: сообщения NPC, страницы браузера, файлы, обои | P0 | M | done | egor-claude-cnt-006 | [PHONE-001](PHONE-001.md), [CNT-002](CNT-002.md) |
 | [ENG-003](ENG-003.md) | Действия desktop: осмотр, разговор, допрос, чтение, предметы, замки, отдых | P0 | L | done | egor-claude-eng-003 | [ENG-001](ENG-001.md), [EVD-002](EVD-002.md), [INV-001](INV-001.md), [KNOW-002](KNOW-002.md), [WORLD-002](WORLD-002.md) |
 | [ENG-004](ENG-004.md) | Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик | P0 | L | todo | — | [ENG-003](ENG-003.md), [PHONE-001](PHONE-001.md), [EVD-003](EVD-003.md) |
-| [ENG-005](ENG-005.md) | Блокировка взаимодействий и арбитраж действий desktop/phone | P1 | S | todo | — | [ENG-003](ENG-003.md) |
+| [ENG-005](ENG-005.md) | Блокировка взаимодействий и арбитраж действий desktop/phone | P1 | S | in_progress | claude-qa | [ENG-003](ENG-003.md) |
 | [ENG-006](ENG-006.md) | Действие accuse, концовки и TruthRecap | P0 | M | todo | — | [INV-005](INV-005.md), [ENG-003](ENG-003.md) |
 | [ENG-007](ENG-007.md) | Действие markSuspicion и проекция персон интереса и отметок в caseBoard | P0 | S | in_progress | claude-qa | [ENG-003](ENG-003.md), [INV-003](INV-003.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
