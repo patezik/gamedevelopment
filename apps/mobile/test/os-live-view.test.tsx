@@ -19,8 +19,8 @@ jest.mock('expo-router', () => ({
   Slot: () => {
     const Component =
       mockRoute === 'home'
-        ? require('../app/os/index').default
-        : require('../app/os/[appId]').default;
+        ? jest.requireActual<typeof import('../app/os/index')>('../app/os/index').default
+        : jest.requireActual<typeof import('../app/os/[appId]')>('../app/os/[appId]').default;
     return <Component />;
   },
 }));
