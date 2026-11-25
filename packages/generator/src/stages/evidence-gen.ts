@@ -30,7 +30,7 @@ function compare(a: string, b: string): number {
  * Clue rule of a trace template: a document is read, anything else is a hotspot of the trace
  * location. Both use the template as the target ID. Testimonial traces get no rule.
  */
-function ruleFor(trace: Trace): ClueRule | undefined {
+export function ruleFor(trace: Trace): ClueRule | undefined {
   if (trace.kind === 'testimonial') return undefined;
   return {
     action:
