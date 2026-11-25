@@ -149,7 +149,7 @@
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (25)
+## Фаза 6 · M6 — Vertical slice (24)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -177,9 +177,8 @@
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
 | [TIME-005](TIME-005.md) | Дедлайны, критические события, пропущенные события, условия завершения | P0 | M | done | claude-qh | [TIME-003](TIME-003.md), [ENG-006](ENG-006.md) |
-| [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | todo | — | [TIME-005](TIME-005.md), [SURV-002](SURV-002.md), [SRV-002](SRV-002.md) |
 
-## Фаза 7 · M7 — MVP (9)
+## Фаза 7 · M7 — MVP (10)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -192,6 +191,7 @@
 | [SURV-003](SURV-003.md) | Угрозы: нападение виновника, опасные локации, исход столкновения | P1 | M | done | claude-qc | [SURV-001](SURV-001.md), [SIM-006](SIM-006.md) |
 | [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | done | claude-w3 | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |
 | [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | todo | — | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
+| [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | todo | — | [TIME-005](TIME-005.md), [SURV-002](SURV-002.md), [SRV-002](SRV-002.md) |
 
 ## Фаза 8 · M8 — Content expansion (6)
 

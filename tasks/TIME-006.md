@@ -4,8 +4,8 @@ title: "Подключение событий сценария к GameEngine и 
 status: todo
 priority: P0
 complexity: M
-phase: 6
-milestone: M6
+phase: 7
+milestone: M7
 area: time
 depends_on: [TIME-005, SURV-002, SRV-002]
 modules: ["packages/core/src/game/engine.ts", "packages/core/src/game/save.ts", "apps/server/src/sessions"]
