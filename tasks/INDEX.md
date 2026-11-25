@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **145** · todo: 37 · in_progress: 10 · review: 1 · done: 97 · blocked: 0
+Всего задач: **145** · todo: 37 · in_progress: 9 · review: 2 · done: 97 · blocked: 0
 
 ## Готовы к взятию сейчас
 
@@ -191,7 +191,7 @@
 | [SURV-002](SURV-002.md) | Static: глобальная эскалация, пороги, влияние на события сценария | P0 | M | done | claude-qi | [SURV-001](SURV-001.md), [TIME-005](TIME-005.md) |
 | [SURV-003](SURV-003.md) | Угрозы: нападение виновника, опасные локации, исход столкновения | P1 | M | done | claude-qc | [SURV-001](SURV-001.md), [SIM-006](SIM-006.md) |
 | [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | done | claude-w3 | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |
-| [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | in_progress | claude-qj | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
+| [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | review | claude-qj | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
 | [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | todo | — | [TIME-005](TIME-005.md), [SURV-002](SURV-002.md), [SRV-002](SRV-002.md) |
 
 ## Фаза 8 · M8 — Content expansion (6)

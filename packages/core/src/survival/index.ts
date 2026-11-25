@@ -76,3 +76,13 @@ export {
   type ThreatResolution,
   type ThreatTarget,
 } from './threats.ts';
+export {
+  HALLUCINATION_MAX_ACTIVE,
+  HALLUCINATION_STATIC_FROM,
+  clearHallucinations,
+  hallucinationChance,
+  hallucinationIds,
+  rollHallucination,
+  type HallucinationInput,
+  type HallucinationPool,
+} from './hallucinations.ts';
