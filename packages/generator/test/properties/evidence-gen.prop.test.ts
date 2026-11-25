@@ -4,8 +4,7 @@ import { expect, test } from 'vitest';
 import { CONCEALMENT_VERBS } from '@hs/core/evidence';
 import { evidenceGen, GenerationRejection, type HistoryWorld } from '../../src/index.ts';
 import { planned, simulateHistory } from '../support/history.ts';
-import { silent } from '../support/incident.ts';
-import { sanatorium } from '../support/incident.ts';
+import { minimal, sanatorium, silent } from '../support/incident.ts';
 
 const COUNT = 1000;
 
@@ -89,9 +88,9 @@ test('a key event without any clue rejects the attempt', () => {
 
 test('the stage raises the QR share of required clues when the rules give too few', () => {
   const content: ScenarioContent = {
-    ...sanatorium,
-    preset: { ...sanatorium.preset, phone: { minQrShare: 0.6 } },
-    traceRules: sanatorium.traceRules.map((rule) => ({
+    ...minimal,
+    preset: { ...minimal.preset, phone: { minQrShare: 0.6 } },
+    traceRules: minimal.traceRules.map((rule) => ({
       ...rule,
       produces: rule.produces.map((spec) => ({ ...spec, captureMode: 'direct' as const })),
     })),
@@ -99,8 +98,8 @@ test('the stage raises the QR share of required clues when the rules give too fe
   let checked = 0;
   for (let n = 0; n < 40; n++) {
     const seed = `evidence-qr-${n}`;
-    const world = planned(sanatorium, seed);
-    const history = world && simulateHistory(world, sanatorium, seed);
+    const world = planned(minimal, seed);
+    const history = world && simulateHistory(world, minimal, seed);
     if (!history || history instanceof GenerationRejection) continue;
     const result = evidence(history, content, seed);
     const required = new Set(result.requiredClueIds);
