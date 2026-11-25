@@ -2,11 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **145** · todo: 35 · in_progress: 10 · review: 0 · done: 100 · blocked: 0
+Всего задач: **147** · todo: 37 · in_progress: 10 · review: 0 · done: 100 · blocked: 0
 
 ## Готовы к взятию сейчас
 
 - [FND-010](FND-010.md) — Оркестрация разработки и проверка setup.md на чистой машине (P1, S)
+- [SRV-010](SRV-010.md) — Нативный запуск сервера: npm start без ошибок strip-types (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
 
@@ -24,12 +25,12 @@
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
+| [SRV-002](SRV-002.md) REST: создание сессии и список сценариев | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [MOB-001](MOB-001.md) Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | 2 |
 | [MOB-005](MOB-005.md) Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | 2 |
 | [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
-| [SRV-002](SRV-002.md) REST: создание сессии и список сценариев | 2 |
 | [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
 | [CNT-003](CNT-003.md) MVP-сценарий: шаблоны преступлений и правила мотивов | 1 |
 
@@ -123,7 +124,7 @@
 | [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | todo | — | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
 | [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
 
-## Фаза 5 · M5 — Phone linked (21)
+## Фаза 5 · M5 — Phone linked (23)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -138,6 +139,7 @@
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | todo | — | [MOB-003](MOB-003.md) |
 | [PHONE-001](PHONE-001.md) | Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | P0 | L | done | claude-w3 | [INV-001](INV-001.md), [PROTO-002](PROTO-002.md) |
 | [PROTO-003](PROTO-003.md) | Генерация GDScript-констант протокола и контрактные тесты Godot | P0 | S | done | egor-claude-proto-003 | [PROTO-002](PROTO-002.md), [FND-008](FND-008.md) |
+| [PROTO-005](PROTO-005.md) | REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot | P2 | S | todo | — | [SRV-002](SRV-002.md) |
 | [SRV-001](SRV-001.md) | SessionManager: сессии, очередь действий, жизненный цикл | P0 | M | done | codex-engine-27 | [FND-005](FND-005.md), [ENG-001](ENG-001.md) |
 | [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | in_progress | egor-claude-srv-002 | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
 | [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | done | codex-prototype-27 | [SRV-001](SRV-001.md) |
@@ -147,6 +149,7 @@
 | [SRV-007](SRV-007.md) | Сохранения: автосохранение, чекпойнты, список и загрузка | P1 | M | done | claude-w2 | [SAVE-001](SAVE-001.md), [SRV-001](SRV-001.md) |
 | [SRV-008](SRV-008.md) | Сетевая конфигурация: LAN-адреса для QR привязки, привязка к интерфейсам | P0 | S | done | claude-server-1 | [FND-005](FND-005.md) |
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
+| [SRV-010](SRV-010.md) | Нативный запуск сервера: npm start без ошибок strip-types | P1 | S | todo | — | [SAVE-001](SAVE-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
 ## Фаза 6 · M6 — Vertical slice (24)

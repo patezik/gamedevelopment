@@ -206,7 +206,13 @@ class Network {
   readonly #parents = new Map<CharacterId, number>();
   readonly #templateCounts = new Map<string, number>();
 
-  constructor(private readonly historyStart: number) {}
+  // A plain field, not a parameter property: the server loads this file in native Node, which
+  // only strips types.
+  private readonly historyStart: number;
+
+  constructor(historyStart: number) {
+    this.historyStart = historyStart;
+  }
 
   partners(id: CharacterId): ReadonlySet<CharacterId> {
     return this.#partners.get(id) ?? new Set();

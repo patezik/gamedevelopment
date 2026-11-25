@@ -15,11 +15,14 @@ import { registerPairingRoutes, type PairingService } from './pairing/index.ts';
 import { registerGateway, SessionGateway } from './gateway/index.ts';
 import { registerQrRoutes, type QrRouteDependencies } from './qr/index.ts';
 import { registerSaveRoutes, type SaveRouteDependencies } from './saves/index.ts';
+import { registerSessionRoutes, type SessionRouteDependencies } from './routes/sessions.ts';
 
 export interface AppDependencies {
   /** Defaults to `os.networkInterfaces`; replaced in tests. */
   networkInterfaces?: () => NetworkInterfaces;
   pairing?: PairingService;
+  /** `GET /scenarios` and `POST /sessions` (SRV-002). */
+  sessions?: SessionRouteDependencies;
   gateway?: SessionGateway;
   qr?: QrRouteDependencies;
   /** `GET /saves` and `POST /saves/:saveId/load`. */
@@ -35,6 +38,7 @@ export function buildApp(
   {
     networkInterfaces = os.networkInterfaces,
     pairing,
+    sessions,
     qr,
     saves,
     gateway = new SessionGateway({ serverVersion: serverPackage.version }),
@@ -69,6 +73,7 @@ export function buildApp(
     candidates: listNetworkCandidates(networkInterfaces(), config.publicHost),
   }));
 
+  if (sessions) registerSessionRoutes(app, sessions);
   if (pairing) registerPairingRoutes(app, pairing);
   if (qr) registerQrRoutes(app, qr);
   if (saves) registerSaveRoutes(app, saves);

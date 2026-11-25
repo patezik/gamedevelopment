@@ -26,6 +26,7 @@ apps/server/src/
 ├── qr/            — payload pairing/evidence, HMAC, матрица QR, реализация EvidenceTokenPort
 ├── saves/         — запись журнала действий, чекпойнты, загрузка (ADR 0014)
 ├── diagnostics/   — /health, /debug (только HS_DEBUG_TRUTH), метрики сессии
+├── routes/        — GET /scenarios, POST /sessions: каталог сценариев, InvestigationProvider на генераторе
 └── app.ts         — сборка Fastify; server.ts — запуск
 ```
 
@@ -51,9 +52,9 @@ apps/server/src/
 | Метод и путь | Аутентификация | Тело / ответ | Ошибки |
 |--------------|----------------|--------------|--------|
 | `GET /health` | — | `{ status, version, protocolVersion }` | — |
-| `GET /scenarios` | — | `[{ id, title, durationMinutes }]` | — |
+| `GET /scenarios` | — | `[{ id, title, durationMinutes }]`: сценарии для игрока; `title` — строка (локаль `ru`) | — |
 | `GET /network` | — | `{ candidates: [{ address, interface, recommended, virtual }] }` — LAN-адреса для QR привязки, лучшие первыми; `virtual` — похож на Docker/WSL/VM/VPN (остаётся в списке, но ниже); `recommended` — не более одного; `HS_PUBLIC_HOST` идёт первым. Подробности — [setup.md §6](../development/setup.md) | — |
-| `POST /sessions` | — | `{ scenarioId, seed? }` → `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }` | `SCENARIO_NOT_FOUND`, `GENERATION_UNSOLVABLE` |
+| `POST /sessions` | — | `{ scenarioId, seed? }` → 201 `{ sessionId, seed, desktopToken, pairing: { code, expiresAt, qrPayload } }`, `Cache-Control: no-store`. Подробности ниже | `INVALID_MESSAGE` (400), `SCENARIO_NOT_FOUND` (404), `GENERATION_UNSOLVABLE` (422), `INTERNAL` (500) |
 | `POST /sessions/:id/pairing-code` | desktop | → новый `pairing` | `SESSION_NOT_FOUND` |
 | `GET /sessions/:id/pairing-qr` | desktop | → `{ size, modules }` текущего кода привязки (новый не выпускается) | `PAIRING_CODE_INVALID` (404, кода нет), `PAIRING_CODE_EXPIRED` (410) |
 | `GET /sessions/:id/evidence-qr/:tokenId` | desktop | → `{ size, modules }` | `QR_INVALID` (404), `QR_EXPIRED` (410), `QR_ALREADY_USED` (409) |
@@ -77,6 +78,43 @@ apps/server/src/
 При создании сессии SRV-002 выдаёт desktop-токен и первоначальный код через сервис привязки.
 expiresAt — Unix-время в миллисекундах. При отзыве сервис удаляет хеш токена и передаёт
 DEVICE_REVOKED обработчику шлюза (SRV-004).
+
+### Создание сессии (SRV-002)
+
+Код — `apps/server/src/routes`: `sessions.ts` (маршруты и zod-схемы запроса и ответов),
+`generation.ts` (каталог сценариев, провайдер на генераторе, seed, сборка зависимостей для
+`server.ts`).
+
+- **Сценарии.** При старте сервер загружает каждый каталог `content/scenarios/<id>`
+  (`loadScenarioFromDir`); ошибка контента останавливает запуск. Каталоги с `_` в начале имени
+  (`_test_minimal`) — тестовый контент: их нет в `GET /scenarios`, и `POST /sessions` отвечает на
+  них `SCENARIO_NOT_FOUND`. Порядок списка — по `id`.
+- **Запрос.** Тело строгое (лишние поля — `INVALID_MESSAGE`). `scenarioId` — строка 1–64 символа.
+  `seed` — `[A-Za-z0-9_-]{1,64}`: без `#` (генератор называет попытки `<seed>#<n>`), пробелов и
+  управляющих символов, поэтому он безопасен в логе. Тело не JSON или неверный `Content-Type` —
+  тоже `INVALID_MESSAGE` с тем же статусом 4xx.
+- **Seed по умолчанию.** Без `seed` сервер берёт 12 символов Crockford Base32 из CSPRNG
+  (`crypto.randomInt`) и пишет их группами `XXXX-XXXX-XXXX` (60 бит): такой seed можно прочитать
+  вслух и ввести заново. Ответ всегда возвращает `seed`, по которому сгенерировано дело.
+- **Генерация.** `GeneratorInvestigationProvider` реализует `InvestigationProvider` SRV-001 через
+  `generateInvestigation` (GEN-011) с полным шлюзом валидации. Отклонённое шлюзом дело — ошибка
+  `GENERATION_UNSOLVABLE` (422): провайдер бросает её до того, как `SessionManager` выдаёт id, так
+  что ни сессии, ни токена, ни кода привязки не появляется. Текст находок шлюза в ответ не попадает
+  (он называет персонажей). Порты движка — пока только `startLocationId` (стартовая локация пресета,
+  иначе первая); улики, показания и обвинение генератор в `GenerationResult` не отдаёт.
+  Генерация синхронная (сотни миллисекунд на `sanatorium_winter`) и на это время занимает поток
+  сервера.
+- **Ответ.** 201 `{ sessionId, seed, desktopToken, pairing }`: `sessionId` — UUID v4,
+  `desktopToken` — 256 бит base64url (в сессии хранится только SHA-256), `pairing` — как у
+  `POST /sessions/:id/pairing-code`. Статус новой сессии — `created`; активирует её привязка
+  телефона. Истины в ответе нет: ни персонажей, ни виновника.
+- **Схемы.** `CreateSessionRequest`, `CreateSessionResponse`, `ScenarioList` и `ErrorResponse`
+  (с `ErrorCode` из `@hs/protocol`) экспортирует `routes/sessions.ts`; ответы проверяются ими в
+  integration-тестах. В `@hs/protocol` схем REST пока нет.
+- **Состояние на SRV-002.** Пока открыт [OQ-20](../planning/open-questions.md), полный шлюз
+  отклоняет все известные seed обоих сценариев: реальный `POST /sessions` отвечает
+  `GENERATION_UNSOLVABLE` (на `sanatorium_winter` за 0,6–0,9 с). Успешный путь проверяется
+  тестами с внедрённым провайдером и с генератором без проверок солвера (только в тестах).
 
 ### Сохранения ([ADR 0014](../architecture/adr/0014-save-system.md))
 
@@ -154,7 +192,11 @@ created → (pairing) → active → (game over) → finished → (TTL 30 мин
   `token`, `tokenId`, `deviceToken`, `desktopToken`, `pairingCode`, `sig`, `signature`, `secret`,
   `sessionSecret`, `password`, `raw`, `qrPayload` на любой глубине (до двух уровней вложенности), если
   кто-то залогирует объект с такими полями.
-- Генерация логирует `seed`, `generatorVersion`, попытки, время стадий.
+- Генерация логирует `seed`, `generatorVersion`, попытки, время стадий: запись `generation finished`
+  (`info`) или `slow generation` (`warn`, дольше 2 с) с полями `scenarioId`, `seed`,
+  `generatorVersion`, `ok`, `attempts`, `durationMs`, `stageMs` (сумма по попыткам) и `rejections`
+  — только коды отказов (`INCIDENT_NO_FEASIBLE_CULPRIT`, `V-UNIQUE:NOT_UNIQUE`), как `hs-gen` без
+  `--debug-truth`. Тексты находок и выбранный инцидент называют персонажей и в лог не пишутся.
 
 ### Отладка и репро
 
