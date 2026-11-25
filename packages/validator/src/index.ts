@@ -11,12 +11,17 @@ export type {
 } from './check.ts';
 export {
   DEFAULT_CHECKS,
+  TESTIMONY_CHECKS,
+  collectTestimony,
+  liesBreakableCheck,
+  testimonyCheck,
   determinismCheck,
   investigationHash,
   phoneRequiredCheck,
   timelineCheck,
   truthInvariantsCheck,
 } from './checks/index.ts';
+export type { TestimonyWitness } from './checks/testimony.ts';
 export { validateInvestigation, type ValidateOptions } from './validate.ts';
 export {
   SOLVER_CHECKS,
