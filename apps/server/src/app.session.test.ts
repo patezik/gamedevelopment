@@ -188,6 +188,15 @@ test('production factory: create, pair, inspect and scan a real generated clue u
   expect(device.gallery.length).toBe(initialPhone.gallery.length + 1);
   const scanEvent = (await phone.next('event')).payload.event;
   expect(scanEvent).toMatchObject({ type: 'scanResult', ok: true });
+  if (scanEvent.type !== 'scanResult' || !scanEvent.clueRef)
+    throw new Error('No captured clue reference');
+  expect(player.caseBoard.clues).toContainEqual(
+    expect.objectContaining({ id: scanEvent.clueRef, captured: true }),
+  );
+  expect(device.gallery.some(({ imageRef }) => imageRef === `capture_${scanEvent.clueRef}`)).toBe(
+    true,
+  );
+  expect(desktop.history.filter((m) => m.type === 'event')).toEqual([]);
   const count = desktop.history.filter((m) => m.type === 'view.update').length;
   const phoneCount = phone.history.filter((m) => m.type === 'view.update').length;
   phone.send({ type: 'qr.scan', payload: { raw } });
