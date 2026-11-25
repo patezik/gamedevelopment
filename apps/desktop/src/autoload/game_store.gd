@@ -1,8 +1,8 @@
 extends Node
 ## GameStore: the single client copy of the PlayerView and the typed signals screens listen to.
 ##
-## Screens never talk to Backend directly: they read the view here, subscribe to the signals below
-## and send actions through [method request_action]. The store keeps only what the server sent to
+## Screens read the view here, subscribe to the signals below and send actions through
+## [method request_action]. The store keeps only what the server sent to
 ## the desktop role, computes no game rules (ADR 0002) and refuses a view that carries server-only
 ## truth (AGENTS.md rule 1). Every Dictionary it hands out is a deep read-only copy.
 
