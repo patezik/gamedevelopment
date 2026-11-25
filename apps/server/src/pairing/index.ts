@@ -97,16 +97,22 @@ export class PairingService {
     do {
       code = Array.from({ length: 6 }, () => alphabet.charAt(randomInt(alphabet.length))).join('');
     } while (this.#codes.has(code));
+    // Everything that can throw (the host lookup) runs before the maps change.
+    const qrPayload = ['hs1', 'pair', this.#options.host(), this.#options.port, code].join(':');
     const previous = this.#sessionCodes.get(session.id);
     if (previous !== undefined) this.#codes.delete(previous);
     const expiresAt = now + ttlMs;
     this.#codes.set(code, { session, expiresAt, failures: 0 });
     this.#sessionCodes.set(session.id, code);
-    return {
-      code,
-      expiresAt,
-      qrPayload: ['hs1', 'pair', this.#options.host(), this.#options.port, code].join(':'),
-    };
+    return { code, expiresAt, qrPayload };
+  }
+
+  /** Forgets the session's pairing code, if it has one (a session whose creation failed). */
+  discardCode(session: Session): void {
+    const code = this.#sessionCodes.get(session.id);
+    if (code === undefined) return;
+    if (this.#codes.get(code)?.session === session) this.#codes.delete(code);
+    this.#sessionCodes.delete(session.id);
   }
 
   /** The session's latest pairing code (it may have expired), without issuing a new one. */

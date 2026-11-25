@@ -230,11 +230,20 @@ export class SessionManager {
       options.createEngine ?? ((investigation, ports) => GameEngine.create(investigation, ports));
   }
 
-  async create(scenarioId: string, seed: string): Promise<Session> {
+  /**
+   * `prepare` runs synchronously on the new session before it is registered (tokens, pairing
+   * code, the answer): if it throws, the manager never holds the session and the error propagates.
+   */
+  async create(
+    scenarioId: string,
+    seed: string,
+    prepare?: (session: Session) => void,
+  ): Promise<Session> {
     const { investigation, ports } = await this.#provider.create(scenarioId, seed);
     const id = this.#createId();
     if (this.#sessions.has(id)) throw new Error('Duplicate session ID');
     const session = new Session(id, this.#createEngine(investigation, ports, id), this.#now);
+    prepare?.(session);
     this.#sessions.set(id, session);
     return session;
   }

@@ -93,3 +93,34 @@ test('limits IPs in a sliding window and invalidates a code after 20 attributabl
   expect((await pair(code, PROTOCOL_VERSION, '192.0.2.4')).json<{ error: { code: string } }>().error.code)
     .toBe('PAIRING_CODE_INVALID');
 });
+
+test('createCode changes nothing when the host lookup throws; discardCode forgets the code', async () => {
+  const session = new Session('atomic-session', {
+    dispatch: () => ({ ok: false, error: 'INTERNAL', minutesSpent: 0, events: [] }),
+  }, () => 0);
+  let hostFails = false;
+  const service = new PairingService({ get: () => session }, {
+    host: () => {
+      if (hostFails) throw new Error('no interface');
+      return 'game-pc.local';
+    },
+    port: 7420,
+  });
+  const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), { pairing: service });
+  apps.push(app);
+  const pair = (code: string) => app.inject({
+    method: 'POST', url: '/api/v1/pair',
+    payload: { code, deviceName: 'Phone', appVersion: '0.0.0', protocolVersion: PROTOCOL_VERSION },
+  });
+
+  const first = service.createCode(session);
+  hostFails = true;
+  expect(() => service.createCode(session)).toThrow('no interface');
+  hostFails = false;
+  // The failed call neither replaced nor removed the code the session already had.
+  expect(service.activeCode(session)?.code).toBe(first.code);
+
+  service.discardCode(session);
+  expect(service.activeCode(session)).toBeUndefined();
+  expect((await pair(first.code)).json()).toMatchObject({ error: { code: 'PAIRING_CODE_INVALID' } });
+});

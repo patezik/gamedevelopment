@@ -8,7 +8,7 @@ phase: 5
 milestone: M5
 area: protocol
 depends_on: [SRV-002]
-modules: ["packages/protocol/src/rest.ts", "packages/protocol/schemas", "packages/protocol/fixtures/rest"]
+modules: ["packages/protocol/src/rest.ts", "packages/protocol/schemas", "packages/protocol/fixtures/rest", "apps/server/src/routes/sessions.ts", "apps/server/src/pairing/index.ts", "apps/server/src/saves/routes.ts", "apps/server/src/qr/routes.ts", "apps/server/src/diagnostics/debug.ts", "apps/server/src/app.ts"]
 assignee: null
 claimed_at: null
 ---
@@ -21,6 +21,14 @@ claimed_at: null
 каждый маршрут сервера проверяет тело сам, а Godot и мобильное приложение знают форму ответов только
 из документации. SRV-002 описал схемы `POST /sessions` и `GET /scenarios` в
 `apps/server/src/routes/sessions.ts`; клиентам они недоступны.
+
+До начала работы владелец решает (в карточке не решено):
+
+- входят ли в пакет `/health`, `/network` и отладочные `debug/*` или только игровые маршруты;
+- как описать расширение формата ошибки `SAVE_DESYNC` полем `error.atAction` (общая схема ошибки
+  с необязательными полями или отдельная схема для этого кода);
+- порядок относительно SRV-002 (см. «Зависимости»): от него зависит, можно ли начинать задачу до
+  приёмки SRV-002.
 
 ## Цель
 
@@ -54,6 +62,10 @@ claimed_at: null
 - `packages/protocol/src/rest.ts`
 - `packages/protocol/schemas`
 - `packages/protocol/fixtures/rest`
+- Маршруты сервера, которые переходят на схемы пакета: `apps/server/src/routes/sessions.ts`,
+  `apps/server/src/pairing/index.ts`, `apps/server/src/saves/routes.ts`,
+  `apps/server/src/qr/routes.ts`, `apps/server/src/diagnostics/debug.ts`, `apps/server/src/app.ts`
+  (`/health`, `/network`) — состав зависит от решения владельца выше.
 
 ## Ожидаемый результат
 

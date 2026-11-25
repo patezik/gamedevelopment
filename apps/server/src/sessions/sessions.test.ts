@@ -152,3 +152,22 @@ test('session manager loads under the server native Node runtime', () => {
   expect(probe.error).toBeUndefined();
   expect(probe.status, probe.stderr).toBe(0);
 });
+
+test('create registers the session only after prepare succeeded', async () => {
+  const ids = ['s-failed', 's-ok'];
+  const manager = new SessionManager(provider, { createId: () => ids.shift()! });
+  await expect(
+    manager.create('tiny', 'seed', () => {
+      throw new Error('prepare failed');
+    }),
+  ).rejects.toThrow('prepare failed');
+  expect(manager.get('s-failed')).toBeUndefined();
+
+  const prepared: string[] = [];
+  const session = await manager.create('tiny', 'seed', (candidate) => {
+    prepared.push(candidate.id);
+    expect(manager.get(candidate.id)).toBeUndefined();
+  });
+  expect(prepared).toEqual(['s-ok']);
+  expect(manager.get('s-ok')).toBe(session);
+});

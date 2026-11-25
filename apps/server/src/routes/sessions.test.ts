@@ -1,5 +1,9 @@
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { loadScenarioFromDir } from '@hs/core/content';
 import type { Investigation } from '@hs/core/game';
 import { GENERATION_CHECKS, generateInvestigation, type GenerationResult } from '@hs/generator';
 import { describe, expect, test, vi } from 'vitest';
@@ -12,13 +16,17 @@ import { Session, SessionManager, type InvestigationProvider } from '../sessions
 import {
   createReadableSeed,
   createSessionServices,
+  defaultScenariosDir,
   GeneratorInvestigationProvider,
+  pairingHost,
   ScenarioCatalog,
   type GeneratorProviderOptions,
 } from './generation.ts';
 import {
+  CreateSessionRequest,
   CreateSessionResponse,
   ErrorResponse,
+  ScenarioId,
   ScenarioList,
   Seed,
   type SessionRouteDependencies,
@@ -42,6 +50,8 @@ interface BootOptions {
   generation?: SessionRouteDependencies['generation'];
   createSeed?: () => string;
   logStream?: { write(line: string): void };
+  host?: () => string;
+  createId?: () => string;
 }
 
 /** The app wired the way server.ts wires it, with the given provider. */
@@ -49,9 +59,12 @@ function boot(options: BootOptions = {}) {
   const fixture = fixtureProvider();
   const provider = options.provider ?? fixture;
   const catalog = options.catalog ?? scenarios;
-  const createId = vi.fn(randomUUID);
+  const createId = vi.fn(options.createId ?? randomUUID);
   const sessions = new SessionManager(provider, { createId });
-  const pairing = new PairingService(sessions, { host: () => 'game-pc.local', port: 7420 });
+  const pairing = new PairingService(sessions, {
+    host: options.host ?? (() => 'game-pc.local'),
+    port: 7420,
+  });
   const createCode = vi.spyOn(pairing, 'createCode');
   const app = buildApp(readConfig({ HS_LOG_LEVEL: options.logStream ? 'trace' : 'silent' }), {
     pairing,
@@ -463,33 +476,6 @@ describe('real generator', () => {
     }
   });
 
-  // The production path, full validation gate. With OQ-20 open every seed is refused; once the
-  // content proves motives, the same test expects a session instead.
-  test.each([
-    ['_test_minimal', '42'],
-    ['sanatorium_winter', '42'],
-  ])(
-    'full gate on %s seed %s: a session only for an accepted case',
-    async (scenarioId, seed) => {
-      const { app, sessions, createId, createCode, create } = generatorBoot();
-      try {
-        const response = await create({ scenarioId, seed });
-        if (response.statusCode === 201) {
-          const body = CreateSessionResponse.parse(response.json());
-          expect(sessions.get(body.sessionId)?.status).toBe('created');
-        } else {
-          expect(response.statusCode).toBe(422);
-          expect(ErrorResponse.parse(response.json()).error.code).toBe('GENERATION_UNSOLVABLE');
-          expect(createId).not.toHaveBeenCalled();
-          expect(createCode).not.toHaveBeenCalled();
-        }
-      } finally {
-        await app.close();
-      }
-    },
-    60_000,
-  );
-
   test('a generation over 2 s is logged as a warning', async () => {
     let clock = 0;
     const logs = captureLogs();
@@ -548,6 +534,337 @@ test('createSessionServices wires the production app: catalog, real generator, p
   } finally {
     await app.close();
   }
+});
+
+/** Pairing data a failed creation could have left: the session's code, the code itself, the hash. */
+async function leftovers(
+  app: ReturnType<typeof boot>['app'],
+  pairing: PairingService,
+  session: Session,
+  code: string | undefined,
+) {
+  const pair =
+    code === undefined
+      ? undefined
+      : await app.inject({
+          method: 'POST',
+          url: '/api/v1/pair',
+          payload: { code, deviceName: 'Phone', appVersion: '0.0.0', protocolVersion: 1 },
+        });
+  return {
+    sessionCode: pairing.activeCode(session),
+    pairByCode: pair?.json<{ error?: { code: string } }>().error?.code,
+    desktopHash: session.tokenHash('desktop'),
+  };
+}
+
+describe('late failures leave nothing behind (P1)', () => {
+  test('host() throws while the pairing code is built: 500, no session, no code, no hash', async () => {
+    const logs = captureLogs();
+    const { app, sessions, pairing, createId, create } = boot({
+      host: () => {
+        throw new Error('no network interface');
+      },
+      logStream: logs.stream,
+    });
+    const discarded = vi.spyOn(pairing, 'discardCode');
+    try {
+      const response = await create({ scenarioId: 'sanatorium_winter', seed: 'p1-host' });
+      expect(response.statusCode).toBe(500);
+      expect(ErrorResponse.parse(response.json()).error.code).toBe('INTERNAL');
+      const id = createId.mock.results[0]!.value as string;
+      expect(sessions.get(id)).toBeUndefined();
+      const session = discarded.mock.calls[0]![0];
+      expect(session.id).toBe(id);
+      expect(await leftovers(app, pairing, session, undefined)).toEqual({
+        sessionCode: undefined,
+        pairByCode: undefined,
+        desktopHash: undefined,
+      });
+      expect(logs.text()).not.toContain('no network interface');
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('the pairing service fails: 500 and no session', async () => {
+    const { app, sessions, createId, createCode, create } = boot();
+    createCode.mockImplementationOnce(() => {
+      throw new Error('pairing store is broken');
+    });
+    try {
+      const response = await create({ scenarioId: 'sanatorium_winter', seed: 'p1-code' });
+      expect(response.statusCode).toBe(500);
+      expect(sessions.get(createId.mock.results[0]!.value as string)).toBeUndefined();
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('the answer breaks its schema after the code was issued: code, hash and session rolled back', async () => {
+    // A session id that is not a UUID makes `CreateSessionResponse` refuse the answer.
+    const { app, sessions, pairing, createCode, create } = boot({ createId: () => 'not-a-uuid' });
+    const discarded = vi.spyOn(pairing, 'discardCode');
+    try {
+      const response = await create({ scenarioId: 'sanatorium_winter', seed: 'p1-dto' });
+      expect(response.statusCode).toBe(500);
+      expect(ErrorResponse.parse(response.json()).error.code).toBe('INTERNAL');
+      expect(sessions.get('not-a-uuid')).toBeUndefined();
+      const issued = createCode.mock.results[0]!.value as { code: string };
+      const session = discarded.mock.calls[0]![0];
+      expect(await leftovers(app, pairing, session, issued.code)).toEqual({
+        sessionCode: undefined,
+        pairByCode: 'PAIRING_CODE_INVALID',
+        desktopHash: undefined,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('a seed source that breaks the seed contract: 500 before generation', async () => {
+    const { app, generated, createId, create } = boot({ createSeed: () => 'bad seed#1' });
+    try {
+      const response = await create({ scenarioId: 'sanatorium_winter' });
+      expect(response.statusCode).toBe(500);
+      expect(ErrorResponse.parse(response.json()).error.code).toBe('INTERNAL');
+      expect(generated).not.toHaveBeenCalled();
+      expect(createId).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('concurrent requests: the one failing late leaves nothing, the others keep their sessions', async () => {
+    let calls = 0;
+    const { app, sessions, createId, create } = boot({
+      host: () => {
+        if (++calls === 3) throw new Error('interface went away');
+        return 'game-pc.local';
+      },
+    });
+    try {
+      const responses = await Promise.all(
+        Array.from({ length: 6 }, (_, n) =>
+          create({ scenarioId: 'sanatorium_winter', seed: `c${String(n)}` }),
+        ),
+      );
+      const statuses = responses.map(({ statusCode }) => statusCode).sort();
+      expect(statuses).toEqual([201, 201, 201, 201, 201, 500]);
+      const created = responses
+        .filter(({ statusCode }) => statusCode === 201)
+        .map((response) => CreateSessionResponse.parse(response.json()));
+      for (const body of created) {
+        const session = sessions.get(body.sessionId)!;
+        expect(verifyToken(session, 'desktop', body.desktopToken)).toBe(true);
+      }
+      const ids = createId.mock.results.map(({ value }) => value as string);
+      const lost = ids.filter((id) => !created.some(({ sessionId }) => sessionId === id));
+      expect(lost).toHaveLength(1);
+      expect(sessions.get(lost[0]!)).toBeUndefined();
+    } finally {
+      await app.close();
+    }
+  });
+});
+
+describe('scenario ids and seeds (P2)', () => {
+  test('GET and POST share one scenario id schema', () => {
+    expect(CreateSessionRequest.shape.scenarioId).toBe(ScenarioId);
+    expect(ScenarioList.element.shape.id).toBe(ScenarioId);
+  });
+
+  test('a scenario that POST would refuse stops the catalog instead of being listed', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'hs-catalog-'));
+    try {
+      const long = 'a'.repeat(65);
+      cpSync(join(defaultScenariosDir(), 'sanatorium_winter'), join(dir, long), {
+        recursive: true,
+      });
+      const preset = join(dir, long, 'preset.json');
+      writeFileSync(
+        preset,
+        readFileSync(preset, 'utf8').replace('"sanatorium_winter"', `"${long}"`),
+      );
+      expect(() => ScenarioCatalog.fromDirectory(dir)).toThrow(/cannot be offered/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('pairing address (P3)', () => {
+  const nic = (address: string, mac: string) => ({
+    address,
+    netmask: '255.255.255.0',
+    family: 'IPv4' as const,
+    mac,
+    internal: false,
+    cidr: `${address}/24`,
+  });
+  // eth0 ranks first among equal ranges, so a bind on wlan0 is the case that used to go wrong.
+  const interfaces = {
+    eth0: [nic('192.168.1.10', 'a4:83:e7:00:00:01')],
+    wlan0: [nic('192.168.2.10', 'a4:83:e7:00:00:02')],
+  };
+  const payloadHost = (env: Record<string, string>) => {
+    const config = readConfig({ HS_LOG_LEVEL: 'silent', ...env });
+    const services = createSessionServices(config, { networkInterfaces: () => interfaces });
+    const session = new Session(
+      randomUUID(),
+      { dispatch: () => ({ ok: false, error: 'INTERNAL', minutesSpent: 0, events: [] }) },
+      Date.now,
+    );
+    return services.pairing.createCode(session).qrPayload.split(':').slice(2, 4).join(':');
+  };
+
+  test('an explicit IPv4 bind is the address of the QR, with the configured port', () => {
+    expect(payloadHost({ HS_HOST: '192.168.2.10', HS_PORT: '7421' })).toBe('192.168.2.10:7421');
+  });
+
+  test('HS_PUBLIC_HOST still wins over the bind', () => {
+    expect(payloadHost({ HS_HOST: '192.168.2.10', HS_PUBLIC_HOST: 'game-pc.lan' })).toBe(
+      'game-pc.lan:7420',
+    );
+  });
+
+  test('a wildcard bind takes the recommended candidate of GET /network', async () => {
+    const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), {
+      networkInterfaces: () => interfaces,
+    });
+    try {
+      const network = await app.inject({ method: 'GET', url: '/api/v1/network' });
+      const recommended = network
+        .json<{ candidates: { address: string; recommended: boolean }[] }>()
+        .candidates.find((candidate) => candidate.recommended)!.address;
+      expect(payloadHost({})).toBe(`${recommended}:7420`);
+      expect(payloadHost({ HS_HOST: '::' })).toBe(`${recommended}:7420`);
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('an IPv6 bind cannot go into the QR and falls back to the LAN candidates', () => {
+    expect(pairingHost({ host: 'fe80::1', publicHost: undefined }, interfaces)).toBe(
+      '192.168.1.10',
+    );
+    expect(pairingHost({ host: '0.0.0.0', publicHost: undefined }, {})).toBe('127.0.0.1');
+  });
+});
+
+describe('production factory uses the full GEN-011 gate (P4)', () => {
+  /** A copy of `_test_minimal` without deduction rules: the full gate can never prove a culprit. */
+  function unprovableScenarios() {
+    const dir = mkdtempSync(join(tmpdir(), 'hs-gate-'));
+    const target = join(dir, 'gate_probe');
+    cpSync(join(defaultScenariosDir(), '_test_minimal'), target, { recursive: true });
+    const preset = join(target, 'preset.json');
+    writeFileSync(preset, readFileSync(preset, 'utf8').replace('"_test_minimal"', '"gate_probe"'));
+    writeFileSync(join(target, 'deduction-rules.json'), '[]\n');
+    return { dir, content: loadScenarioFromDir(target) };
+  }
+
+  const post = (app: ReturnType<typeof buildApp>, scenarioId: string, seed: string) =>
+    app.inject({ method: 'POST', url: '/api/v1/sessions', payload: { scenarioId, seed } });
+
+  test('a case only a bypassed gate accepts is refused through createSessionServices', async () => {
+    const { dir, content } = unprovableScenarios();
+    const config = readConfig({ HS_LOG_LEVEL: 'silent' });
+    const services = createSessionServices(config, {
+      scenariosDir: dir,
+      networkInterfaces: () => ({}),
+    });
+    const app = buildApp(config, services);
+    try {
+      for (const seed of ['1', '2']) {
+        const req = { scenarioId: 'gate_probe', seed };
+        // Independent references: the full gate refuses, a gate without checks would accept.
+        expect(generateInvestigation(req, content).ok).toBe(false);
+        expect(generateInvestigation(req, content, { checks: [] }).ok).toBe(true);
+        const response = await post(app, 'gate_probe', seed);
+        expect(response.statusCode).toBe(422);
+        expect(ErrorResponse.parse(response.json()).error.code).toBe('GENERATION_UNSOLVABLE');
+      }
+    } finally {
+      await app.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Not pinned to today's outcome: the answer must follow the full gate, whichever way it goes.
+  test('the shipped scenario answers exactly as the full gate decides', async () => {
+    const config = readConfig({ HS_LOG_LEVEL: 'silent' });
+    const app = buildApp(config, createSessionServices(config, { networkInterfaces: () => ({}) }));
+    const content = loadScenarioFromDir(join(defaultScenariosDir(), 'sanatorium_winter'));
+    try {
+      const reference = generateInvestigation(
+        { scenarioId: 'sanatorium_winter', seed: '42' },
+        content,
+      );
+      const response = await post(app, 'sanatorium_winter', '42');
+      if (reference.ok) {
+        expect(response.statusCode).toBe(201);
+        CreateSessionResponse.parse(response.json());
+      } else {
+        expect(response.statusCode).toBe(422);
+        expect(ErrorResponse.parse(response.json()).error.code).toBe('GENERATION_UNSOLVABLE');
+      }
+    } finally {
+      await app.close();
+    }
+  }, 30_000);
+});
+
+describe('error classes (P5)', () => {
+  const raw = (app: ReturnType<typeof boot>['app'], type: string, payload: string) =>
+    app.inject({
+      method: 'POST',
+      url: '/api/v1/sessions',
+      headers: { 'content-type': type },
+      payload,
+    });
+
+  test('Fastify body refusals: 400 malformed JSON, 413 too large, 415 media type', async () => {
+    const { app, createId } = boot();
+    try {
+      const cases = [
+        [await raw(app, 'application/json', '{"scenarioId":'), 400],
+        [await raw(app, 'application/json', JSON.stringify({ pad: 'x'.repeat(1_100_000) })), 413],
+        [await raw(app, 'application/xml', '<session/>'), 415],
+      ] as const;
+      for (const [response, status] of cases) {
+        expect(response.statusCode).toBe(status);
+        expect(ErrorResponse.parse(response.json()).error.code).toBe('INVALID_MESSAGE');
+      }
+      expect(createId).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('an internal error carrying a client statusCode is still 500 INTERNAL, and logged', async () => {
+    const logs = captureLogs();
+    const provider = {
+      create: vi.fn(() => {
+        throw Object.assign(new Error('char_nurse teapot'), { statusCode: 418, status: 418 });
+      }),
+    };
+    const { app, create } = boot({ provider, logStream: logs.stream });
+    try {
+      const response = await create({ scenarioId: 'sanatorium_winter', seed: '1' });
+      expect(response.statusCode).toBe(500);
+      expect(ErrorResponse.parse(response.json()).error).toEqual({
+        code: 'INTERNAL',
+        message: 'Internal error',
+      });
+      expect(logs.entries()).toContainEqual(
+        expect.objectContaining({ msg: 'request failed', errorCode: 'INTERNAL' }),
+      );
+      expect(logs.text()).not.toContain('char_nurse');
+    } finally {
+      await app.close();
+    }
+  });
 });
 
 describe('createReadableSeed', () => {

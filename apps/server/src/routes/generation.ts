@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadScenarioFromDir, type ScenarioContent } from '@hs/core/content';
 import { generateInvestigation, type GenerationResult } from '@hs/generator';
+import { z } from 'zod';
 import type { ServerConfig } from '../config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from '../config/network.ts';
 import { PairingService } from '../pairing/index.ts';
@@ -21,12 +22,22 @@ export const defaultScenariosDir = (): string =>
 /** Generation slower than this is logged as a warning (backend.md §4). */
 export const SLOW_GENERATION_MS = 2_000;
 
+/** A scenario id as `POST /sessions` accepts it; the catalog holds no other (backend.md §3). */
+export const ScenarioId = z.string().min(1).max(64);
+
+/**
+ * A seed the client may choose: printable, bounded, safe in logs and file names. `#` is left out
+ * on purpose: the generator names its attempts `<seed>#<n>`.
+ */
+export const Seed = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
+
 /** What `GET /api/v1/scenarios` lists for one scenario. */
-export interface ScenarioSummary {
-  readonly id: string;
-  readonly title: string;
-  readonly durationMinutes: number;
-}
+export const ScenarioSummary = z.strictObject({
+  id: ScenarioId,
+  title: z.string().min(1),
+  durationMinutes: z.int().positive(),
+});
+export type ScenarioSummary = z.infer<typeof ScenarioSummary>;
 
 /** The locale of the game texts (game-design.md: Russian; other locales are QA-003). */
 const TITLE_LOCALE = 'ru';
@@ -34,12 +45,30 @@ const TITLE_LOCALE = 'ru';
 /** Scenarios whose directory starts with `_` are test content: never offered to the player. */
 const isTestScenario = (id: string) => id.startsWith('_');
 
-/** The scenarios the server can generate, loaded once (a broken scenario stops the start). */
+/**
+ * The scenarios the server can generate, loaded once. A broken scenario stops the start, and so
+ * does one whose summary `POST /sessions` or the answer schema could not accept: `GET` never lists
+ * a scenario that cannot be created.
+ */
 export class ScenarioCatalog {
   readonly #contents: ReadonlyMap<string, ScenarioContent>;
+  readonly #summaries: readonly ScenarioSummary[];
 
   constructor(contents: readonly ScenarioContent[]) {
     this.#contents = new Map(contents.map((content) => [content.preset.id, content]));
+    this.#summaries = [...this.#contents.values()].map(({ preset }) => {
+      const summary = ScenarioSummary.safeParse({
+        id: preset.id,
+        title: preset.title[TITLE_LOCALE] ?? Object.values(preset.title)[0],
+        durationMinutes: preset.time.durationMinutes,
+      });
+      if (!summary.success) {
+        throw new RangeError(
+          `Scenario ${preset.id.slice(0, 80)} cannot be offered: ${summary.error.message}`,
+        );
+      }
+      return summary.data;
+    });
   }
 
   /** Every scenario directory under `dir`; test scenarios (`_…`) only with `includeTest`. */
@@ -63,11 +92,7 @@ export class ScenarioCatalog {
   }
 
   list(): ScenarioSummary[] {
-    return [...this.#contents.values()].map(({ preset }) => ({
-      id: preset.id,
-      title: preset.title[TITLE_LOCALE] ?? Object.values(preset.title)[0]!,
-      durationMinutes: preset.time.durationMinutes,
-    }));
+    return this.#summaries.map((summary) => ({ ...summary }));
   }
 
   has(id: string): boolean {
@@ -210,6 +235,24 @@ export function createReadableSeed(): string {
   return groups.join('-');
 }
 
+/** Bind addresses that mean "every interface": the phone needs one concrete address instead. */
+const WILDCARD_HOSTS = new Set(['0.0.0.0', '::', '0:0:0:0:0:0:0:0']);
+
+/**
+ * The host the pairing QR names: `HS_PUBLIC_HOST` first; otherwise an explicit `HS_HOST` bind (the
+ * server listens only there); otherwise, for a wildcard bind, the best LAN candidate of
+ * `GET /network`. An IPv6 bind cannot be written into `hs1:pair:<host>:<port>:<code>` and falls back
+ * to the LAN candidates as well.
+ */
+export function pairingHost(
+  config: Pick<ServerConfig, 'host' | 'publicHost'>,
+  interfaces: NetworkInterfaces,
+): string {
+  if (config.publicHost !== undefined) return config.publicHost;
+  if (!WILDCARD_HOSTS.has(config.host) && !config.host.includes(':')) return config.host;
+  return listNetworkCandidates(interfaces)[0]?.address ?? '127.0.0.1';
+}
+
 export interface SessionServicesOptions {
   /** Scenario content; the repository's by default. */
   readonly scenariosDir?: string;
@@ -223,16 +266,14 @@ export interface SessionServicesOptions {
  * passed to `buildApp` as is.
  */
 export function createSessionServices(
-  config: Pick<ServerConfig, 'port' | 'publicHost'>,
+  config: Pick<ServerConfig, 'host' | 'port' | 'publicHost'>,
   { scenariosDir, networkInterfaces = os.networkInterfaces }: SessionServicesOptions = {},
 ): { pairing: PairingService; sessions: SessionRouteDependencies } {
   const scenarios = ScenarioCatalog.fromDirectory(scenariosDir);
   const provider = new GeneratorInvestigationProvider(scenarios);
   const sessions = new SessionManager(provider);
   const pairing = new PairingService(sessions, {
-    // The address the phone reaches the server at, as `GET /network` recommends it.
-    host: () =>
-      listNetworkCandidates(networkInterfaces(), config.publicHost)[0]?.address ?? '127.0.0.1',
+    host: () => pairingHost(config, networkInterfaces()),
     port: config.port,
   });
   return { pairing, sessions: { scenarios, sessions, pairing, generation: provider } };
