@@ -409,13 +409,14 @@ function plan(action: Desktop, state: DesktopState, env: ActionEnv): ActionPlan 
         characterId,
         { contradictionId: found.id },
         'Противоречие',
-        (ctx, events, at) => {
+        (ctx, events, at, lead) => {
           const reaction = reactToRebuttal(
             challenged,
             { kind: 'at', who: found.subject, where: found.found.where },
             ctx,
           );
           events.push({ type: 'InterrogationReaction', characterId, reaction: reaction.kind, at });
+          lead.push(`rebuttal_${reaction.kind}`);
           return reaction.kind === 'refuse' ? [] : [reaction.statement];
         },
       );
@@ -513,7 +514,7 @@ function dialogue(
   characterId: string,
   subject: Pick<ActionPlan, 'topicId' | 'clueId' | 'contradictionId'>,
   prompt: string,
-  reply: (ctx: SpeakerContext, events: GameEvent[], at: number) => Statement[],
+  reply: (ctx: SpeakerContext, events: GameEvent[], at: number, lead: string[]) => Statement[],
 ): ActionPlan {
   const character = env.investigation.characters.find(({ id }) => id === characterId)!;
   return {
@@ -529,17 +530,26 @@ function dialogue(
       if (!completed) return [];
       const events: GameEvent[] = [];
       const witness = env.testimony?.witness(characterId);
+      const lead: string[] = [];
       const statements = witness
         ? reply(
             { character, knowledge: witness.knowledge, policy: witness.policy, now: at },
             events,
             at,
+            lead,
           )
         : [];
       const lines: DialogueLine[] = [{ speaker: 'player', text: prompt, at }];
+      // Admission, change of version and refusal are separate lines with their own keys.
+      for (const key of lead) lines.push({ speaker: 'other', text: key, at });
       for (const statement of statements) {
         state.statements.set(statement.id, statement);
-        lines.push({ speaker: 'other', text: statement.templateKey, at });
+        lines.push({
+          speaker: 'other',
+          text: statement.templateKey,
+          at,
+          statementId: statement.id,
+        });
         if (state.knowledge.addStatement(statement)) {
           events.push({
             type: 'StatementHeard',
@@ -550,7 +560,9 @@ function dialogue(
           });
         }
       }
-      if (statements.length === 0) lines.push({ speaker: 'other', text: 'testimony_none', at });
+      if (statements.length === 0 && lead.length === 0) {
+        lines.push({ speaker: 'other', text: 'testimony_none', at });
+      }
       const previous =
         state.interaction?.characterId === characterId ? state.interaction.history : [];
       state.interaction = {
