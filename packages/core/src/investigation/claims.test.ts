@@ -13,6 +13,12 @@ import { PlayerKnowledge, type HeardStatement } from './player-knowledge.ts';
 const rulesFile = (scenario: string): unknown =>
   JSON.parse(readFileSync(`content/scenarios/${scenario}/deduction-rules.json`, 'utf8'));
 const sanatorium = compileDeductionRules(rulesFile('sanatorium_winter'));
+/** The means rule these tests combine with the sanatorium rules (not a shipped file). */
+const MEANS_FROM_LOG = {
+  id: 'means_from_log',
+  establishes: 'means($actor)',
+  requires: ['access_to_record($actor)'],
+};
 const [opportunityRule, , motiveRule] = rulesFile('sanatorium_winter') as object[];
 const minimal = compileDeductionRules([
   opportunityRule,
@@ -21,7 +27,7 @@ const minimal = compileDeductionRules([
     establishes: 'alibi($c,$i)',
     requires: ['testimony($w,presence($c,$l,$i))', 'neq($l,$incident.location)'],
   },
-  ...(rulesFile('_test_minimal') as object[]),
+  MEANS_FROM_LOG,
   motiveRule,
 ]);
 
@@ -184,10 +190,62 @@ describe('evaluateClaims', () => {
 
 describe('compileDeductionRules', () => {
   it('accepts the scenario rule files and orders alibi before the rule that excludes it', () => {
-    expect(compileDeductionRules(rulesFile('_test_minimal')).rules).toHaveLength(1);
-    expect(sanatorium.rules).toHaveLength(4);
+    expect(compileDeductionRules(rulesFile('_test_minimal')).rules).toHaveLength(6);
+    expect(sanatorium.rules).toHaveLength(7);
     const stratum = (id: string) => sanatorium.rules.find((rule) => rule.id === id)?.stratum;
     expect(stratum('opportunity_from_presence')).toBeGreaterThan(stratum('alibi_from_witness')!);
+  });
+
+  it('establishes no_access and no_means with the clues they stand on, and withholds them on contrary evidence', () => {
+    const rules = compileDeductionRules([
+      {
+        id: 'na',
+        establishes: 'no_access($c,$i)',
+        requires: ['presence($c,$l,$i)', 'neq($l,$incident.location)'],
+      },
+      {
+        id: 'nm',
+        establishes: 'no_means($c)',
+        requires: ['lacks_means($c)'],
+        excludes: ['means($c)'],
+      },
+      { id: 'm', establishes: 'means($c)', requires: ['access_to_record($c)'] },
+    ]);
+    const clues = new Map([
+      ['cl_away', { supports: [`presence(${cook},loc_pantry,-20..-8)`] }],
+      ['cl_scene', { supports: [`presence(${bursar},loc_study,-20..-8)`] }],
+      ['cl_lacks', { supports: [`lacks_means(${cook})`, `lacks_means(${bursar})`] }],
+      ['cl_log', { supports: [`access_to_record(${bursar})`] }],
+    ]);
+    const claims = evaluateClaims(
+      knowledgeWith('cl_away', 'cl_scene', 'cl_lacks', 'cl_log'),
+      rules,
+      {
+        clues,
+        incident,
+      },
+    );
+    const text = claims.map(({ claim }) => claim).sort();
+    // The cook is clear; the bursar was at the scene and has the means, so neither is excused.
+    expect(text).toEqual([`means(${bursar})`, `no_access(${cook},-20..-8)`, `no_means(${cook})`]);
+    const noAccess = claims.find(({ kind }) => kind === 'no_access');
+    expect(noAccess?.support.clueIds).toEqual(['cl_away']);
+    expect(claims.find(({ kind }) => kind === 'no_means')?.support.clueIds).toEqual(['cl_lacks']);
+  });
+
+  it('lets a rule turn a reference a clue supports into the claim itself, once', () => {
+    const rules = compileDeductionRules([
+      { id: 'means_from_trace', establishes: 'means($c)', requires: ['means($c)'] },
+    ]);
+    const clues = new Map([
+      ['cl_a', { supports: [`means(${cook})`] }],
+      ['cl_b', { supports: [`means(${cook})`] }],
+    ]);
+    const claims = evaluateClaims(knowledgeWith('cl_a', 'cl_b'), rules, { clues });
+    expect(claims.map(({ claim }) => claim)).toEqual([`means(${cook})`]);
+    expect(claims[0]?.support.clueIds).toEqual(['cl_a', 'cl_b']);
+    // Without the clue there is no claim: the rule does not invent the reference.
+    expect(evaluateClaims(new PlayerKnowledge(), rules, { clues })).toEqual([]);
   });
 
   it('applies an exclusion regardless of rule order in the file', () => {

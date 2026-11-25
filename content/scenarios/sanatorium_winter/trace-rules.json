@@ -72,5 +72,11 @@
     "produces": [
       { "kind": "physical", "at": "$location", "template": "burnt_remains", "supports": ["presence($actor,$location,$t)"], "captureMode": "qr" }
     ]
+  },
+  {
+    "verb": "stay",
+    "produces": [
+      { "kind": "document", "at": "$location", "template": "duty_log_entry", "supports": ["presence($actor,$location,$span)"] }
+    ]
   }
 ]

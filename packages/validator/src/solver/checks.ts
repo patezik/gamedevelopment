@@ -101,9 +101,8 @@ export const culpritProvableCheck: Check = {
 
 /**
  * V-UNIQUE: every character except the culprits and the victims is excluded by a reachable
- * exonerating claim. The deduction rules can establish one kind of exoneration, an `alibi` that
- * covers the incident window; a character without it is reported, whether or not the evidence
- * also accuses them. "No means" and "no access" cannot be expressed as claims yet (OQ-19).
+ * exonerating claim: an `alibi` or a `no_access` that covers the incident window, or `no_means`
+ * (OQ-19). A character without one is reported, whether or not the evidence also accuses them.
  */
 export const uniqueCheck: Check = {
   id: 'V-UNIQUE',
@@ -120,7 +119,7 @@ export const uniqueCheck: Check = {
       .map((id): FindingInput => ({
         severity: 'error',
         code: 'NOT_UNIQUE',
-        message: `Character ${id} is not excluded: no reachable alibi covers the incident window`,
+        message: `Character ${id} is not excluded: no reachable alibi, no_access or no_means excludes them`,
         eventIds: [...investigation.truth.incident.keyEventIds.slice(0, 1)],
         subject: { kind: 'character', id },
         data: { accused: solution.provable.includes(id) ? 1 : 0 },

@@ -129,7 +129,10 @@ export interface Solution {
   readonly culpritIds: readonly string[];
   /** Characters with motive, means and opportunity all established, culprit or not. */
   readonly provable: readonly string[];
-  /** Characters with an established `alibi` claim that covers the whole incident window. */
+  /**
+   * Characters excluded by an established claim: an `alibi` or a `no_access` that covers the whole
+   * incident window, or `no_means` (OQ-19).
+   */
   readonly exonerated: readonly string[];
   /** Kinds (`motive`, `means`, `opportunity`) established per character. */
   readonly kindsBy: ReadonlyMap<string, ReadonlySet<string>>;
@@ -144,7 +147,10 @@ function knownIncident(investigation: Investigation) {
   return first ? { location: first.location, window: incident.window } : undefined;
 }
 
-/** `alibi(who,a..b)` (or a single minute) covers the window when `a <= from` and `to <= b`. */
+/** Exonerating kinds with an interval (`alibi(who,a..b)`, `no_access(who,a..b)`). */
+const INTERVAL_EXCUSES = ['alibi', 'no_access'];
+
+/** `alibi(who,a..b)` / `no_access(who,a..b)` (or a single minute) covers the window when `a <= from` and `to <= b`. */
 function coversWindow(claim: string, window?: { from: number; to: number }): boolean {
   if (!window) return false;
   const when = /,(-?\d+)(?:\.\.(-?\d+))?\)$/.exec(claim);
@@ -180,7 +186,11 @@ export function solveDeduction(input: SolveInput): Solution {
   const exonerated = [
     ...new Set(
       claims
-        .filter(({ kind, claim }) => kind === 'alibi' && coversWindow(claim, incident?.window))
+        .filter(
+          ({ kind, claim }) =>
+            kind === 'no_means' ||
+            (INTERVAL_EXCUSES.includes(kind) && coversWindow(claim, incident?.window)),
+        )
         .map(({ subject }) => subject),
     ),
   ].sort();

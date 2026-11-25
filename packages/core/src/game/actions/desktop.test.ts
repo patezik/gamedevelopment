@@ -289,8 +289,11 @@ describe('read', () => {
 });
 
 describe('talk and interrogate', () => {
-  function toContradiction(honesty?: number) {
-    const context = setup(honesty === undefined ? {} : { honesty });
+  function toContradiction(honesty?: number, ports?: Partial<EnginePorts>) {
+    const context = setup({
+      ...(honesty !== undefined && { honesty }),
+      ...(ports && { ports }),
+    });
     const { engine } = context;
     expectRejected(
       engine,
@@ -306,6 +309,16 @@ describe('talk and interrogate', () => {
     });
     return { ...context, talk };
   }
+
+  test('a revealed contradiction lowers Static by 3 (ENG-010)', () => {
+    const { engine, talk } = toContradiction(undefined, { static: { start: 10 } });
+    expect(ofType(talk, 'ContradictionFound')).toHaveLength(1);
+    expect(ofType(talk, 'StaticChanged')).toMatchObject([
+      { before: 10, after: 7, cause: 'contradictionRevealed' },
+    ]);
+    expect(engine.staticLevel()).toBe(7);
+    expect(engine.playerView().static).toBe(7);
+  });
 
   test('talk records a statement without veracity, opens the dialogue and finds the contradiction', () => {
     const { engine, talk, observed } = toContradiction();

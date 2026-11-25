@@ -3,12 +3,16 @@
     "id": "opportunity_from_presence",
     "establishes": "opportunity($c)",
     "requires": ["presence($c,$incident.location,$incident.window)"],
-    "excludes": ["alibi($c,$incident.window)"]
+    "excludes": ["alibi($c,$incident.window)", "no_access($c,$incident.window)"]
   },
   {
     "id": "alibi_from_witness",
     "establishes": "alibi($c,$i)",
-    "requires": ["presence($c,$l,$i)", "testimony($w,presence($c,$l,$i))"]
+    "requires": [
+      "presence($c,$l,$i)",
+      "testimony($w,presence($c,$l,$i))",
+      "neq($l,$incident.location)"
+    ]
   },
   {
     "id": "motive_from_secret",
@@ -19,5 +23,20 @@
     "id": "contradiction_presence",
     "establishes": "contradiction($c)",
     "requires": ["statement($c,presence($c,$l,$i))", "presence($c,$l2,$i)"]
+  },
+  {
+    "id": "means_from_trace",
+    "establishes": "means($c)",
+    "requires": ["means($c)"]
+  },
+  {
+    "id": "no_access_from_record",
+    "establishes": "no_access($c,$i)",
+    "requires": ["presence($c,$l,$i)", "neq($l,$incident.location)"]
+  },
+  {
+    "id": "motive_from_testimony",
+    "establishes": "motive($c,$v)",
+    "requires": ["testimony($w,motive($c,$v))"]
   }
 ]

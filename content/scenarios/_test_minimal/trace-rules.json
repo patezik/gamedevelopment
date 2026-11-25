@@ -9,10 +9,21 @@
         "kind": "document",
         "at": "loc_archive",
         "template": "missing_record",
-        "supports": ["means($actor)"],
+        "supports": ["took_record($actor,$location)"],
         "requires": {
           "itemId": "it_log"
         }
+      }
+    ]
+  },
+  {
+    "verb": "stay",
+    "produces": [
+      {
+        "kind": "document",
+        "at": "$location",
+        "template": "visitor_register",
+        "supports": ["presence($actor,$location,$span)"]
       }
     ]
   },

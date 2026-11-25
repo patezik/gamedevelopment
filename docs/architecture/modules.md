@@ -376,10 +376,11 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     markSuspicion(id: CharacterId, level: "none" | "possible" | "prime", note?: string): boolean;   // без затрат времени
     serialize(): PlayerKnowledgeSnapshot;  static restore(saved: unknown): PlayerKnowledge;   // INVESTIGATION_INVALID_STATE
   }
-  type Claim = { kind: "motive" | "means" | "opportunity" | "presence" | "alibi" | "contradiction"; subject: CharacterId; detail: unknown }
+  type Claim = { kind: "motive" | "means" | "opportunity" | "presence" | "alibi" | "no_means" | "no_access" | "contradiction"; subject: CharacterId; detail: unknown }
   function compileDeductionRules(input: unknown): DeductionRules;       // DeductionRulesError DEDUCTION_RULES_INVALID (INV-002)
   function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules, ctx?: ClaimContext): EstablishedClaim[];
   // ClaimContext = { clues: Map<ClueId, { supports }>; incident?: { location; window } } — известное игроку, не истина
+  function motiveTargets(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">): string[];   // ENG-013; только цели, без «чей» мотив
   function personsOfInterest(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">): PersonOfInterest[];   // INV-003; подсказка, не Suspect
   function detectContradictions(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">, toleranceMinutes?: number): Contradiction[];   // INV-004; событие ContradictionFound — contradictionEvents()
   interface CaseFile { accusedIds: CharacterId[]; motive?: ClaimRef; means?: ClaimRef; opportunity?: ClaimRef; evidence: ClueId[] }
@@ -492,7 +493,19 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   startVitals?: Vitals; inventory?: readonly PackItem[];            // SURV-001, SURV-004
   simulation?: { onPlayerAction(e: PlayerActionObserved): void };   // SIM-006
   attachTime?: (time: TimeSystem) => void;              // обработчики фаз; прерывание отдыха
+  static?: { start?: number; endingAt100?: EndingId };  // ENG-010: Static в движке; без порта выключен
   ```
+- **ENG-010** (Static в движке): при `EnginePorts.static` движок вешает `StaticTimer` на свои
+  `TimeSystem` (рост +1 / 60 мин по часам, ровно по сетке часа и после `restore`), применяет
+  `STATIC_DELTAS`: раскрытое противоречие −3, подтверждённое ложное обвинение +15, и отдаёт
+  `StaticChanged`, `StaticThresholdReached`, `StaticOverwhelmed` в `DispatchResult.events`. Уровень —
+  в `PlayerView.static` и сигнале `PhoneView`; `GameEngine.staticLevel()` — порт `staticLevel` для
+  `ScenarioEvents` (TIME-006). Static 100 завершает игру концовкой `endingAt100` (по умолчанию
+  `madness`), `GameSnapshot.static` хранит состояние; старые снимки восстанавливаются с `start`. При
+  обвинении `hallucinationIds(phone)` добавляются в `hallucinatedClueIds`. Без порта `static` снимок
+  и хеш состояния не меняются, поэтому сохранения без него загружаются. Не подключены (остаток
+  ENG-010): ночь +3, находка тела +5, броски галлюцинаций по времени, реакции NPC и нападение
+  виновника.
   `DispatchResult.events` — `GameEvent[]`: события часов, показателей, `PlayerKnowledge`,
   действий и `PlayerActionObserved`. `GameSnapshot.desktop` хранит `PlayerKnowledge`, серверные
   показания с `veracity`, осмотренные локации и точки, открытые двери, диалог, показатели и
