@@ -25,7 +25,7 @@ export interface ActiveInteraction {
   readonly kind: 'dialogue';
   readonly characterId: string;
   /** The latest exchange was an interrogation; it blocks walking away (ENG-005). */
-  readonly interrogation?: true;
+  readonly interrogation?: true | undefined;
   readonly history: readonly DialogueLine[];
 }
 
