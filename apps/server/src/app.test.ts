@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { PROTOCOL_VERSION } from '@hs/protocol';
 import { expect, test } from 'vitest';
 import serverPackage from '../package.json' with { type: 'json' };
@@ -71,4 +72,24 @@ test('GET /network puts HS_PUBLIC_HOST first', async () => {
   } finally {
     await app.close();
   }
+});
+
+test('the full server module graph loads in Node without TypeScript transform flags', () => {
+  // `npm start` runs `node src/server.ts`: Node only strips types, so syntax that needs
+  // a transform (parameter properties, enums, namespaces) breaks the launch while vitest,
+  // which transforms TypeScript itself, stays green. Importing app.ts covers the graph.
+  const { NODE_OPTIONS: _ignored, ...env } = process.env;
+  const probe = spawnSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      "const { buildApp } = await import(process.argv[1]); if (typeof buildApp !== 'function') process.exit(2);",
+      new URL('./app.ts', import.meta.url).href,
+    ],
+    { encoding: 'utf8', env },
+  );
+
+  expect(probe.error).toBeUndefined();
+  expect(probe.status, probe.stderr).toBe(0);
 });
