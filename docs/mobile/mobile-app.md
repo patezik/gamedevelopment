@@ -41,7 +41,7 @@ apps/mobile/
 interface OsAppManifest {
   id: string;                         // "messages"
   title: string;                      // "Сообщения"
-  icon: IconRef;
+  icon: IconRef;                      // { glyph: string } — текстовый символ, без картинок и иконочных шрифтов
   component: React.ComponentType<OsAppProps>;
   badge?: (view: PhoneView) => number;
   enabled?: (view: PhoneView) => boolean;   // например, браузер без сигнала при Static ≥ 90
@@ -50,7 +50,10 @@ interface OsAppManifest {
 ```
 
 Чтобы добавить приложение: создать каталог `src/os-apps/<id>/` с `manifest.ts` и компонентом,
-добавить одну строку в `registry.ts`. Приложения не импортируют друг друга; общаются через
+добавить одну строку в `registry.ts`. Бейдж и доступность по умолчанию берутся из `PhoneView.apps`
+(`badge`, `enabled`); `badge`/`enabled` манифеста переопределяют бейдж и могут только дополнительно
+отключить приложение. До подключения сервера оболочка работает на фикстуре `phone-view.mid.json`
+(`src/os/demoPhoneView.ts`), а до реальных приложений каждое — заглушка «В разработке». Приложения не импортируют друг друга; общаются через
 `phoneStore` и действия (`sendAction`). Тест реестра проверяет уникальность `id` и наличие компонентов.
 
 ## 4. Приложения (MVP)
