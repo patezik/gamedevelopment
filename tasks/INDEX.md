@@ -2,13 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **154** · todo: 41 · in_progress: 7 · review: 0 · done: 106 · blocked: 0
+Всего задач: **157** · todo: 44 · in_progress: 6 · review: 0 · done: 107 · blocked: 0
 
 ## Готовы к взятию сейчас
 
 - [MOB-002](MOB-002.md) — Экран привязки: скан QR привязки, ручной ввод, SecureStore (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [ENG-013](ENG-013.md) — Цели мотива для обвинения: кого игрок может указать в motive(c, v) (P0, S)
 - [ENG-010](ENG-010.md) — Проводка модулей выживания в GameEngine (P0, L)
+- [ENG-012](ENG-012.md) — EndingView: хронология истины, seed и статистика прохождения (P1, M)
+- [PROTO-005](PROTO-005.md) — Исход необратимого действия после переподключения: признак совершённого обвинения (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
 - [QA-003](QA-003.md) — Инфраструктура локализации RU/EN (Godot и мобильное приложение) (P2, M)
@@ -154,7 +157,7 @@
 | [SRV-011](SRV-011.md) | Нативный запуск сервера: npm start без ошибок strip-types | P0 | S | done | egor-claude-srv-011 | [SAVE-001](SAVE-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (28)
+## Фаза 6 · M6 — Vertical slice (31)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -167,12 +170,14 @@
 | [ENG-007](ENG-007.md) | Действие markSuspicion и проекция персон интереса и отметок в caseBoard | P0 | S | done | claude-qa | [ENG-003](ENG-003.md), [INV-003](INV-003.md) |
 | [ENG-009](ENG-009.md) | Проекция реплик NPC и стоимости предъявления в PlayerView | P0 | M | done | claude-qm | [ENG-003](ENG-003.md), [CNT-005](CNT-005.md) |
 | [ENG-011](ENG-011.md) | Источник рода и словарь терминов для русских текстов | P0 | M | todo | — | [CNT-005](CNT-005.md), [ENG-009](ENG-009.md) |
+| [ENG-012](ENG-012.md) | EndingView: хронология истины, seed и статистика прохождения | P1 | M | todo | — | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
+| [ENG-013](ENG-013.md) | Цели мотива для обвинения: кого игрок может указать в motive(c, v) | P0 | S | todo | — | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
 | [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | done | egor-codex-gdt-005 | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | done | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
 | [GDT-007](GDT-007.md) | Оверлей фиксации улики: показ QR, ожидание скана, результат | P0 | S | done | egor-codex-gdt-007 | [GDT-004](GDT-004.md), [SRV-006](SRV-006.md) |
 | [GDT-008](GDT-008.md) | Доска дела: улики, показания, противоречия, персоны интереса, хронология | P0 | L | done | egor-claude-gdt-008 | [GDT-002](GDT-002.md), [INV-003](INV-003.md), [INV-004](INV-004.md) |
-| [GDT-009](GDT-009.md) | Экран обвинения и экраны концовок с разбором истины | P0 | M | in_progress | egor-claude-gdt-009 | [GDT-008](GDT-008.md), [ENG-006](ENG-006.md) |
+| [GDT-009](GDT-009.md) | Экран обвинения и экраны концовок с разбором истины | P0 | M | done | egor-claude-gdt-009 | [GDT-008](GDT-008.md), [ENG-006](ENG-006.md) |
 | [GDT-011](GDT-011.md) | Debug-панель: seed, время, просмотр истины в debug-режиме | P2 | S | done | egor-claude-gdt-011 | [GDT-002](GDT-002.md), [SRV-009](SRV-009.md) |
 | [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | todo | — | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
 | [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | todo | — | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
@@ -181,6 +186,7 @@
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
+| [PROTO-005](PROTO-005.md) | Исход необратимого действия после переподключения: признак совершённого обвинения | P1 | S | todo | — | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
 | [SRV-010](SRV-010.md) | Проводка texts, проекций и событий в Session Server | P0 | M | todo | — | [SRV-005](SRV-005.md), [ENG-009](ENG-009.md), [PHONE-001](PHONE-001.md), [SRV-012](SRV-012.md) |
 | [SRV-012](SRV-012.md) | Порты дела и стартовые данные пресета для GameEngine | P0 | L | todo | — | [SRV-002](SRV-002.md), [GEN-013](GEN-013.md), [ENG-003](ENG-003.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [CNT-006](CNT-006.md) |
