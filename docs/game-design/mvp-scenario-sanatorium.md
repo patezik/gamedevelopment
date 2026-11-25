@@ -187,7 +187,7 @@ node --experimental-transform-types --no-warnings packages/generator/scripts/inc
   или прерванный прогон. Логика — в `incident-sweep-lib.ts`, регрессионные тесты — рядом.
 
 Данные CNT-003 меняют результат существующих seed, поэтому `GENERATOR_VERSION` повышен до
-0.3.0 (ADR 0004) относительно 0.2.0 из GEN-006. Если порядок слияния изменится, версию нужно
+0.4.0 (ADR 0004) относительно 0.3.0 из GEN-008. Если порядок слияния изменится, версию нужно
 повысить от той, что будет в `main`.
 
 | Seed | `poisoning` | `staged_fall` | `boiler_accident` | Хотя бы один | Без мотива |
