@@ -2,13 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **145** · todo: 39 · in_progress: 10 · review: 0 · done: 96 · blocked: 0
+Всего задач: **145** · todo: 39 · in_progress: 9 · review: 0 · done: 97 · blocked: 0
 
 ## Готовы к взятию сейчас
 
+- [SRV-002](SRV-002.md) — REST: создание сессии и список сценариев (P0, S)
 - [FND-010](FND-010.md) — Оркестрация разработки и проверка setup.md на чистой машине (P1, S)
 - [INT-007](INT-007.md) — Профиль Expo Development Build (EAS) как резерв к Expo Go (P1, M)
+- [QA-002](QA-002.md) — Бюджеты производительности в CI (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
+- [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
 
 ## Критический путь
 
@@ -21,7 +24,6 @@
 | Задача | Блокирует напрямую |
 |---|---|
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
-| [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
 | [CNT-005](CNT-005.md) Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | 3 |
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
@@ -32,6 +34,7 @@
 | [MOB-005](MOB-005.md) Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | 2 |
 | [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
 | [SRV-002](SRV-002.md) REST: создание сессии и список сценариев | 2 |
+| [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -105,7 +108,7 @@
 | [EVD-003](EVD-003.md) | Режим фиксации улик телефоном и порт EvidenceTokenPort | P0 | S | done | codex-engine-27 | [EVD-002](EVD-002.md) |
 | [GEN-009](GEN-009.md) | Стадия EvidenceGen: следы и улики сгенерированного расследования | P0 | M | done | claude-qd | [GEN-008](GEN-008.md), [EVD-002](EVD-002.md), [EVD-003](EVD-003.md) |
 | [GEN-010](GEN-010.md) | Стадии TestimonyGen и RedHerrings | P0 | M | done | claude-qf | [GEN-009](GEN-009.md), [KNOW-002](KNOW-002.md) |
-| [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | in_progress | claude-qg | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
+| [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | done | claude-qg | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
 | [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | done | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
 | [INV-002](INV-002.md) | Утверждения (Claims) и правила дедукции | P0 | L | done | claude-w1 | [INV-001](INV-001.md) |
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | done | egor-claude-inv-003 | [INV-002](INV-002.md) |
