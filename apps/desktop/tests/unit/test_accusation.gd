@@ -14,6 +14,8 @@ const Contract = preload("res://tests/contract/contract_support.gd")
 const AccusationScene = preload("res://src/scenes/accusation/accusation.tscn")
 const Accusation = preload("res://src/scenes/accusation/accusation.gd")
 const AccusationFormat = preload("res://src/scenes/accusation/accusation_format.gd")
+const AccusationLedger = preload("res://src/scenes/accusation/accusation_ledger.gd")
+const ExplorationScene = preload("res://src/scenes/exploration/exploration.tscn")
 
 const FULL_FILE: Dictionary = {
 	"accusedIds": ["ch_doctor"],
@@ -50,6 +52,13 @@ func before_each() -> void:
 	_old_fade = _router.fade_seconds
 	_router.host = _host
 	_router.fade_seconds = 0.0
+	# The ledger outlives screens on the scene root; every test starts without one.
+	var ledger: Node = get_tree().root.get_node_or_null(NodePath(AccusationLedger.NODE_NAME))
+	if ledger != null:
+		get_tree().root.remove_child(ledger)
+		ledger.free()
+	get_tree().root.remove_meta(AccusationLedger.META_KEY)
+	_backend.set_session_id("session-a")
 
 
 func after_each() -> void:
@@ -321,13 +330,202 @@ func test_send_failure_without_a_connection() -> void:
 	assert_eq(_backend.sent.size(), 0)
 
 
-func test_connection_loss_in_flight_unlocks_with_a_notice() -> void:
+func test_connection_loss_during_the_probe_needs_a_new_confirmation() -> void:
+	var screen: Accusation = _live()
+	_fill(screen)
+	screen.request_accusation()
+	screen.get_first_dialog().confirmed.emit()
+	_backend.change_state(BackendScript.ConnectionState.RETRYING)
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING, "confirm:false is harmless; start over")
+	assert_string_contains(screen.get_error_text(), "Связь")
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_result(true)
+	assert_false(screen.get_final_dialog().visible, "a probe answer after the drop opens nothing")
+	assert_eq(screen.get_case_file(), FULL_FILE, "the choice of the same session is kept")
+
+
+# --- regression: an executed accusation must never be sent again (review P1-1) ------------------
+
+
+func test_lost_result_after_confirm_true_blocks_a_second_accusation() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	screen.get_final_dialog().confirmed.emit()
+	assert_eq(_backend.sent.size(), 2)
+	# The server executed it (a forgiven wrong accusation), the socket dropped before action.result,
+	# the resume brought only the snapshot: no ending, no result.
+	_backend.change_state(BackendScript.ConnectionState.RETRYING)
+	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_publish()
+	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN, "a new stateVersion proves nothing")
+	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE)
+	assert_true(screen.get_accuse_button().disabled)
+	assert_false(screen.get_first_dialog().visible)
+	assert_true(screen.can_go_back(), "the player is not trapped")
+	assert_string_contains(screen.get_status_text(), "неизвестен")
+	assert_eq(_backend.sent.size(), 2, "nothing is re-sent, automatically or by hand")
+
+
+func test_unknown_outcome_survives_reopening_the_screen() -> void:
 	var screen: Accusation = _live()
 	_reach_final(screen)
 	screen.get_final_dialog().confirmed.emit()
 	_backend.change_state(BackendScript.ConnectionState.RETRYING)
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	screen.free()
+	var again: Accusation = AccusationScene.instantiate() as Accusation
+	again.set_params({"back": "case_board"})
+	add_child_autofree(again)
+	assert_eq(again.get_stage(), Accusation.Stage.UNKNOWN)
+	_fill(again)
+	assert_eq(again.request_accusation(), ERR_UNAVAILABLE)
+	assert_eq(_backend.sent.size(), 2)
+
+
+func test_unknown_outcome_resolves_when_the_game_ends() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	screen.get_final_dialog().confirmed.emit()
+	_backend.change_state(BackendScript.ConnectionState.RETRYING)
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_publish(EndingFixtures.view_for("wrong_accusation").duplicate(true))
+	assert_eq(screen.get_stage(), Accusation.Stage.ENDED)
+	await wait_until(func() -> bool: return not _router.is_transitioning(), 2.0)
+	assert_eq(_router.get_current_screen(), &"ending")
+
+
+func test_result_timeout_is_unknown_and_a_late_result_still_counts() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	screen.get_final_dialog().confirmed.emit()
+	var ledger: Node = screen.get_ledger()
+	ledger.call(&"advance", AccusationLedger.RESULT_TIMEOUT_SECONDS)
+	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
+	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE)
+	_result(true)  # the late answer of the same request on the same connection
+	assert_eq(screen.get_stage(), Accusation.Stage.AWAITING_VIEW)
+	_publish()
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING, "the game went on: a known outcome")
+	assert_string_contains(screen.get_status_text(), "продолжается")
+
+
+# --- regression: the view after an accepted accusation may not come (review P2) ----------------
+
+
+func test_missing_view_after_an_accepted_accusation_unlocks_the_way_back_only() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	screen.get_final_dialog().confirmed.emit()
+	_result(true)
+	assert_eq(screen.get_stage(), Accusation.Stage.AWAITING_VIEW)
+	assert_false(screen.can_go_back(), "an answer is due shortly")
+	screen.get_ledger().call(&"advance", AccusationLedger.VIEW_TIMEOUT_SECONDS)
+	assert_eq(_store.get_connection_state(), BackendScript.ConnectionState.ONLINE, "still online")
+	assert_true(screen.can_go_back(), "the player is not trapped")
+	assert_false((screen.find_child("Back", true, false) as Button).disabled)
+	assert_eq(screen.request_accusation(), ERR_BUSY, "no new accusation before the state arrives")
+	assert_string_contains(screen.get_status_text(), "принял")
+	_publish()
 	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
-	assert_string_contains(screen.get_error_text(), "Связь")
+	assert_eq(_backend.sent.size(), 2)
+
+
+# --- regression: nothing confirmed in one session reaches another (review P1-2) ----------------
+
+
+func _session_b() -> void:
+	_backend.change_state(BackendScript.ConnectionState.OFFLINE)
+	_backend.set_session_id("session-b")
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_version = 0
+	_publish()  # session B: the same character ids
+
+
+func test_final_confirmation_of_session_a_never_reaches_session_b() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	assert_true(screen.get_final_dialog().visible)
+	_session_b()
+	assert_false(screen.get_final_dialog().visible, "the dialog of session A is closed")
+	screen.get_final_dialog().confirmed.emit()
+	assert_eq(_backend.sent.size(), 1, "session B got no confirm:true")
+	assert_eq(screen.get_accused(), [] as Array[String], "the choice of session A is gone")
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
+
+
+func test_first_confirmation_of_session_a_never_reaches_session_b() -> void:
+	var screen: Accusation = _live()
+	_fill(screen)
+	screen.request_accusation()
+	_session_b()
+	screen.get_first_dialog().confirmed.emit()
+	assert_eq(_backend.sent.size(), 0)
+
+
+func test_session_change_without_offline_is_caught_before_sending() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	_backend.set_session_id("session-b")
+	screen.get_final_dialog().confirmed.emit()
+	assert_eq(_backend.sent.size(), 1, "confirm:true is not sent into another session")
+	assert_string_contains(screen.get_error_text(), "Сессия сменилась")
+
+
+func test_late_answers_of_session_a_do_not_touch_session_b() -> void:
+	var screen: Accusation = _live()
+	_fill(screen)
+	screen.request_accusation()
+	screen.get_first_dialog().confirmed.emit()
+	_session_b()
+	_result(true, "", "desktop-1")
+	assert_false(screen.get_final_dialog().visible, "a late probe answer opens nothing")
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
+
+
+func test_a_pending_accusation_of_session_a_does_not_block_session_b() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	screen.get_final_dialog().confirmed.emit()
+	_session_b()
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
+	_result(true, "", "desktop-2")  # the late result of session A
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
+	_fill(screen)
+	assert_eq(screen.request_accusation(), OK, "session B starts clean")
+
+
+# --- several accused (review: CaseFile unchanged in both phases) --------------------------------
+
+
+func test_several_accused_go_out_unchanged_in_both_phases() -> void:
+	var screen: Accusation = _live()
+	screen.set_accused(["ch_doctor", "ch_nurse"])
+	screen.set_claim("motive", "ch_nurse", "ch_doctor")
+	screen.set_claim("means", "ch_doctor")
+	screen.set_evidence(["clue_voicemail", "clue_note"])
+	var expected: Dictionary = {
+		"accusedIds": ["ch_doctor", "ch_nurse"],
+		"evidence": ["clue_voicemail", "clue_note"],
+		"motive": "motive(ch_nurse,ch_doctor)",
+		"means": "means(ch_doctor)",
+	}
+	assert_eq(screen.get_case_file(), expected)
+	screen.request_accusation()
+	screen.get_first_dialog().confirmed.emit()
+	_result(true)
+	screen.get_final_dialog().confirmed.emit()
+	assert_eq(_backend.sent.size(), 2)
+	for index: int in 2:
+		var action: Dictionary = _backend.sent[index]
+		var file: Dictionary = action["caseFile"]
+		assert_eq(file, expected, "phase %d carries the same case file" % index)
+		var problems: Array = Contract.shape_problems(action, Contract.schema("player-action.json"), "$")
+		assert_true(problems.is_empty(), "phase %d matches the schema: %s" % [index, problems])
+	var probe: Dictionary = _backend.sent[0]
+	var final: Dictionary = _backend.sent[1]
+	assert_false(probe["confirm"] as bool)
+	assert_true(final["confirm"] as bool)
 
 
 # --- after the judgement -----------------------------------------------------------------------

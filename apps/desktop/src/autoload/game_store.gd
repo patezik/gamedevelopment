@@ -104,6 +104,12 @@ func get_connection_state() -> BackendScript.ConnectionState:
 	return _connection_state
 
 
+## The session the Backend is in (`welcome.sessionId`); empty without one. Screens bind
+## session-scoped state (an accusation in flight) to it.
+func get_session_id() -> String:
+	return _backend.get_session_id() if _backend != null and is_instance_valid(_backend) else ""
+
+
 func is_online() -> bool:
 	return _connection_state == BackendScript.ConnectionState.ONLINE
 

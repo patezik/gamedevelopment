@@ -13,7 +13,7 @@ signal transition_started(screen: StringName)
 ## [param screen] is mounted and received [param params] (read-only); the curtain opens next.
 signal screen_changed(screen: StringName, params: Dictionary)
 ## A transition to [param screen] was refused or failed; the current screen stays.
-## [param reason]: "unknown_screen", "invalid_params" or "load_failed".
+## [param reason]: "unknown_screen", "invalid_params", "load_failed" or "terminal_pending".
 signal transition_failed(screen: StringName, reason: String)
 
 ## Screen id -> scene path. Screen tasks add their entries here; tests use register_screen().
@@ -57,6 +57,8 @@ var _current_params: Dictionary = ReadOnly.empty()
 var _current_node: Node = null
 var _active: Route = null
 var _queued: Route = null
+## A screen requested with [method goto_terminal] that is not mounted yet; other requests wait.
+var _terminal: StringName = &""
 
 
 func _ready() -> void:
@@ -97,11 +99,32 @@ func is_transitioning() -> bool:
 	return _active != null
 
 
+## The terminal screen requested with [method goto_terminal] and not shown yet; empty otherwise.
+func get_terminal_screen() -> StringName:
+	return _terminal
+
+
+## Like [method goto], but the screen is terminal (the ending of the game): until it is mounted,
+## every request for another screen is refused with ERR_LOCKED and `transition_failed(screen,
+## "terminal_pending")`, so a back button or Escape pressed during the fade cannot displace it.
+## Once it is shown, ordinary navigation works again.
+func goto_terminal(screen: StringName, params: Dictionary = {}) -> Error:
+	var previous: StringName = _terminal
+	_terminal = screen
+	var error: Error = goto(screen, params)
+	if error != OK and error != ERR_BUSY:
+		_terminal = previous
+	return error
+
+
 ## Opens [param screen] with [param params] (plain data only: no Objects at any depth; the screen
 ## gets a read-only deep copy). Returns OK when the transition started or was queued,
 ## ERR_BUSY when the same destination with the same params is already pending,
 ## ERR_DOES_NOT_EXIST for an unknown screen and ERR_INVALID_PARAMETER for params with Objects.
 func goto(screen: StringName, params: Dictionary = {}) -> Error:
+	if not _terminal.is_empty() and screen != _terminal:
+		transition_failed.emit(screen, "terminal_pending")
+		return ERR_LOCKED
 	if not _screens.has(screen):
 		push_error("SceneRouter: unknown screen '%s'" % screen)
 		transition_failed.emit(screen, "unknown_screen")
@@ -157,6 +180,8 @@ func _mount(route: Route) -> void:
 	var node: Node = packed.instantiate() if packed != null else null
 	if node == null:
 		push_error("SceneRouter: cannot load screen '%s' from '%s'" % [route.screen, route.path])
+		if route.screen == _terminal:
+			_terminal = &""
 		transition_failed.emit(route.screen, "load_failed")
 		return
 	if node.has_method(PARAMS_METHOD):
@@ -175,4 +200,6 @@ func _mount(route: Route) -> void:
 	_current_node = node
 	_current_screen = route.screen
 	_current_params = route.params
+	if route.screen == _terminal:
+		_terminal = &""
 	screen_changed.emit(route.screen, route.params)

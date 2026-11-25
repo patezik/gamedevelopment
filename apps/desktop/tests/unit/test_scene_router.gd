@@ -161,3 +161,26 @@ func _signal_calls(signal_name: String) -> Array:
 	for index: int in count:
 		calls.append(get_signal_parameters(_router, signal_name, index))
 	return calls
+
+
+func test_terminal_route_refuses_other_screens_until_it_is_mounted() -> void:
+	_router.fade_seconds = 0.05
+	assert_eq(_router.goto_terminal(&"beta"), OK)
+	assert_eq(_router.get_terminal_screen(), &"beta")
+	assert_eq(_router.goto(&"alpha"), ERR_LOCKED)
+	assert_signal_emitted_with_parameters(_router, "transition_failed", [&"alpha", "terminal_pending"])
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"beta")
+	assert_eq(_router.get_terminal_screen(), &"", "the lock ends once the screen is shown")
+	assert_eq(_router.goto(&"alpha"), OK)
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"alpha")
+
+
+func test_terminal_route_replaces_a_queued_ordinary_route() -> void:
+	_router.fade_seconds = 0.05
+	assert_eq(_router.goto(&"alpha"), OK)
+	assert_eq(_router.goto(&"alpha", {"queued": true}), OK)
+	assert_eq(_router.goto_terminal(&"beta"), OK)
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"beta")

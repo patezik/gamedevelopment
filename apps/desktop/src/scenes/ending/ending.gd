@@ -193,9 +193,9 @@ func _on_view_changed(view: Dictionary, _state_version: int) -> void:
 
 
 func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
-	# The final view stays on screen when the session closes; only a preview-less empty screen
-	# waits for a view.
-	if state == BackendScript.ConnectionState.OFFLINE and _view.is_empty():
+	# A dropped connection (RETRYING) keeps the final view: the session goes on. OFFLINE ends the
+	# session: its ending and TruthRecap must not stay on screen for the next one.
+	if state == BackendScript.ConnectionState.OFFLINE and not is_preview():
 		_show(ReadOnly.empty())
 
 

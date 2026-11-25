@@ -14,6 +14,7 @@ const EndingFixtures = preload("res://src/scenes/ending/ending_fixtures.gd")
 const EndingWatcher = preload("res://src/scenes/ending/ending_watcher.gd")
 const Accusation = preload("res://src/scenes/accusation/accusation.gd")
 const Ending = preload("res://src/scenes/ending/ending.gd")
+const AccusationLedger = preload("res://src/scenes/accusation/accusation_ledger.gd")
 
 var _backend: FakeBackend
 var _store: GameStoreScript
@@ -39,6 +40,11 @@ func before_each() -> void:
 	_router.host = _host
 	_router.fade_seconds = 0.0
 	_version = 0
+	var ledger: Node = get_tree().root.get_node_or_null(NodePath(AccusationLedger.NODE_NAME))
+	if ledger != null:
+		get_tree().root.remove_child(ledger)
+		ledger.free()
+	get_tree().root.remove_meta(AccusationLedger.META_KEY)
 
 
 func after_each() -> void:
@@ -120,7 +126,7 @@ func test_watcher_opens_the_ending_reached_anywhere_once() -> void:
 	_publish(Fixtures.load_view("mid").duplicate(true))
 	_router.goto(&"exploration")
 	await _settle()
-	assert_false(watcher.call(&"has_opened_ending") as bool)
+	assert_false(watcher.call(&"has_shown_ending") as bool)
 	watch_signals(_router)
 	_publish(EndingFixtures.view_for("death").duplicate(true))
 	await _settle()
@@ -145,7 +151,7 @@ func test_watcher_reacts_to_game_over_and_a_new_session() -> void:
 	assert_eq(_router.get_current_screen(), &"ending")
 	assert_eq(EndingWatcher.open_ending(_router), ERR_ALREADY_EXISTS)
 	_backend.change_state(BackendScript.ConnectionState.OFFLINE)
-	assert_false(watcher.call(&"has_opened_ending") as bool, "a new session may end again")
+	assert_false(watcher.call(&"has_shown_ending") as bool, "a new session may end again")
 
 
 func test_ending_opens_the_case_board_to_review_the_case() -> void:
@@ -159,3 +165,89 @@ func test_ending_opens_the_case_board_to_review_the_case() -> void:
 	assert_eq(_router.get_current_params(), {"back": "ending"})
 	var board: Node = _screen()
 	assert_false((board.get_node(^"%Accuse") as Button).visible, "no accusation after the end")
+
+
+# --- regression: the terminal route cannot be displaced (review P1-3) ---------------------------
+
+
+func test_escape_during_the_fade_to_the_ending_cannot_displace_it() -> void:
+	var watcher: Node = EndingWatcher.new()
+	add_child_autofree(watcher)
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	_router.goto(&"dialogue", {"characterId": "ch_doctor"})
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"dialogue")
+	_router.fade_seconds = 0.1
+	_publish(EndingFixtures.view_for("death").duplicate(true))
+	assert_true(_router.is_transitioning(), "the fade to the ending runs")
+	assert_eq(_router.get_terminal_screen(), &"ending")
+	# Escape in the dialogue during the fade: its way back to exploration.
+	var escape: InputEventAction = InputEventAction.new()
+	escape.action = &"ui_cancel"
+	escape.pressed = true
+	(_screen() as Control).call(&"_unhandled_input", escape)
+	assert_eq(_router.goto(&"exploration"), ERR_LOCKED, "an ordinary route waits for the ending")
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"ending")
+	assert_true(watcher.call(&"has_shown_ending") as bool, "counted once actually mounted")
+	_router.fade_seconds = 0.0
+	assert_eq(_router.goto(&"case_board", {"back": "ending"}), OK, "after the ending, by choice")
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"case_board")
+
+
+func test_watcher_installed_late_honours_a_terminal_snapshot() -> void:
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	_router.goto(&"exploration")
+	await _settle()
+	_publish(EndingFixtures.view_for("madness").duplicate(true))
+	assert_eq(_router.get_current_screen(), &"exploration", "no watcher yet")
+	var root_host: Node = Node.new()
+	add_child_autofree(root_host)
+	var watcher: Node = EndingWatcher.install(root_host)
+	await get_tree().process_frame
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"ending")
+	assert_true(watcher.call(&"has_shown_ending") as bool)
+
+
+func test_ending_requested_while_another_fade_runs_still_wins() -> void:
+	var watcher: Node = EndingWatcher.new()
+	add_child_autofree(watcher)
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	_router.goto(&"dialogue", {"characterId": "ch_doctor"})
+	await _settle()
+	_router.fade_seconds = 0.1
+	assert_eq(_router.goto(&"exploration"), OK, "Escape first: its fade starts")
+	_publish(EndingFixtures.view_for("death").duplicate(true))
+	assert_false(watcher.call(&"has_shown_ending") as bool, "requested is not shown")
+	await _settle()
+	_router.fade_seconds = 0.0
+	assert_eq(_router.get_current_screen(), &"ending")
+	assert_true(watcher.call(&"has_shown_ending") as bool)
+
+
+func test_a_second_session_shows_its_own_ending_without_the_old_recap() -> void:
+	var watcher: Node = EndingWatcher.new()
+	add_child_autofree(watcher)
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	_router.goto(&"exploration")
+	await _settle()
+	_publish(EndingFixtures.view_for("time_up").duplicate(true))
+	await _settle()
+	var first: Ending = _screen() as Ending
+	assert_eq(first.get_ending_id(), "time_up")
+	_backend.change_state(BackendScript.ConnectionState.OFFLINE)
+	assert_false(first.has_recap(), "the old TruthRecap leaves with its session")
+	assert_eq(first.get_ending_id(), "")
+	assert_false(watcher.call(&"has_shown_ending") as bool)
+	_backend.set_session_id("session-b")
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_version = 0
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	_router.goto(&"exploration")
+	await _settle()
+	_publish(EndingFixtures.view_for("madness").duplicate(true))
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"ending")
+	assert_eq((_screen() as Ending).get_ending_id(), "madness")

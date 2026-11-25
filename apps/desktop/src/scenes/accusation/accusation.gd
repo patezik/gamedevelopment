@@ -12,10 +12,20 @@ extends Control
 ## 2. When the server accepts that request, the final confirmation opens; on "yes" the screen sends
 ##    the same case file with `confirm: true` — the irreversible accusation.
 ##
-## Cancelling either confirmation sends nothing more. While a request is in flight every control
-## is locked, so an accusation cannot go out twice. A refusal shows the error and keeps the
-## choice. If the game ended, the server's view carries `ending` and the screen opens the `ending`
-## screen; if the game goes on (a first wrong accusation with time left), the screen says so.
+## Cancelling either confirmation sends nothing more. While a request is in flight the choice and
+## the button are locked, so an accusation cannot go out twice. A refusal shows the error and
+## keeps the choice.
+##
+## The fate of the irreversible request lives in AccusationLedger (one per scene tree, it
+## outlives this screen): a request whose `action.result` was lost to a dropped connection or a
+## timeout has an UNKNOWN outcome, and no new accusation can be sent in that session; the screen
+## says so and lets the player go back. After an accepted request the next view decides: `ending`
+## opens the `ending` screen (a terminal route), no `ending` means the game goes on. If that view
+## does not come, the way back unlocks after a timeout while a new accusation still waits for it.
+##
+## Everything is bound to the session (`GameStore.get_session_id()`): going OFFLINE or a new
+## `sessionId` closes both confirmations and drops the choice, the case file, the pending probe
+## and the names, so nothing confirmed in one session reaches another.
 ##
 ## A SceneRouter screen (`accusation`). Route params: `{"back": "<screen>", "backParams": {...}}`
 ## shows a back button; `{"preview": "<fixture>"}` renders a PlayerView fixture without a session
@@ -26,6 +36,7 @@ const BackendScript = preload("res://src/autoload/backend.gd")
 const SceneRouterScript = preload("res://src/autoload/scene_router.gd")
 const AccusationFormat = preload("res://src/scenes/accusation/accusation_format.gd")
 const EndingWatcher = preload("res://src/scenes/ending/ending_watcher.gd")
+const AccusationLedger = preload("res://src/scenes/accusation/accusation_ledger.gd")
 const PreviewFixtures = preload("res://src/scenes/exploration/preview_fixtures.gd")
 const ReadOnly = preload("res://src/util/read_only.gd")
 
@@ -43,6 +54,8 @@ enum Stage {
 	SUBMITTING,
 	## The server accepted the accusation; waiting for the view that follows it.
 	AWAITING_VIEW,
+	## The outcome of a sent accusation cannot be told; no new accusation in this session.
+	UNKNOWN,
 	## The game is over (the view carries `ending`); nothing more can be sent.
 	ENDED,
 }
@@ -90,17 +103,26 @@ const ERROR_TEXT: Dictionary = {
 	GameStoreScript.ERROR_NOT_CONNECTED: "Нет соединения с сервером.",
 }
 const ERROR_FALLBACK_TEXT: String = "Не удалось предъявить обвинение (%s)."
-const CONNECTION_LOST_TEXT: String = "Связь с сервером прервана. Результат придёт с состоянием сервера."
+const CONNECTION_LOST_TEXT: String = "Связь с сервером прервалась до отправки обвинения. Подтвердите его заново."
+const UNKNOWN_TEXT: String = "Исход обвинения неизвестен: ответ сервера не получен. Чтобы не предъявить его дважды, новое обвинение в этой игре недоступно. Если обвинение завершило игру, откроется концовка."
+const STALLED_TEXT: String = "Сервер принял обвинение, но новое состояние игры ещё не пришло. Можно вернуться к делу; новое обвинение станет доступно после обновления состояния."
+const SESSION_CHANGED_TEXT: String = "Сессия сменилась: обвинение не отправлено."
 
 var _store: GameStoreScript = null
+var _ledger: Node = null
 var _params: Dictionary = ReadOnly.empty()
 var _params_received: bool = false
 var _preview_name: String = ""
 var _preview_failed: bool = false
 var _view: Dictionary = ReadOnly.empty()
+## The local part of the flow (choice and confirmations); the ledger owns what follows a sent
+## accusation (see [method get_stage]).
 var _stage: Stage = Stage.EDITING
-var _request_id: String = ""
-## The case file being confirmed or in flight; the choice may not change meanwhile.
+## `requestId` of the `confirm: false` probe in flight.
+var _probe_id: String = ""
+## The session the choice, the case file and the probe belong to.
+var _session: String = ""
+## The case file being confirmed; the choice may not change meanwhile.
 var _file: Dictionary = {}
 
 # The player's choice. It survives view updates and refusals; ids the view no longer names drop.
@@ -138,16 +160,15 @@ func set_params(params: Dictionary) -> void:
 func bind_store(store: GameStoreScript) -> void:
 	if _store != null and is_instance_valid(_store):
 		_store.view_changed.disconnect(_on_view_changed)
-		_store.action_failed.disconnect(_on_action_failed)
 		_store.action_resolved.disconnect(_on_action_resolved)
 		_store.connection_state_changed.disconnect(_on_connection_state_changed)
 	_store = store
 	if _store != null:
 		_store.view_changed.connect(_on_view_changed)
-		_store.action_failed.connect(_on_action_failed)
 		_store.action_resolved.connect(_on_action_resolved)
 		_store.connection_state_changed.connect(_on_connection_state_changed)
 	if is_node_ready():
+		_attach_ledger()
 		_refresh()
 
 
@@ -158,14 +179,61 @@ func _ready() -> void:
 		if autoload is GameStoreScript:
 			bind_store(autoload as GameStoreScript)
 			return
+	_attach_ledger()
 	_refresh()
+
+
+func _attach_ledger() -> void:
+	var ledger: Node = AccusationLedger.of(get_tree().root, _store) if _store != null else null
+	if ledger == _ledger:
+		return
+	if _ledger != null and is_instance_valid(_ledger):
+		_ledger.disconnect(&"changed", _on_ledger_changed)
+		_ledger.disconnect(&"refused", _on_ledger_refused)
+		_ledger.disconnect(&"continued", _on_ledger_continued)
+	_ledger = ledger
+	if _ledger != null:
+		_ledger.connect(&"changed", _on_ledger_changed)
+		_ledger.connect(&"refused", _on_ledger_refused)
+		_ledger.connect(&"continued", _on_ledger_continued)
 
 
 # --- public API (also used by tests) -----------------------------------------------------------
 
 
+## Where the accusation stands: the local stage while choosing and confirming, otherwise what the
+## ledger knows about the sent accusation.
 func get_stage() -> Stage:
+	if _stage == Stage.ENDED:
+		return Stage.ENDED
+	var outcome: int = AccusationLedger.Outcome.NONE
+	if _ledger != null:
+		outcome = _ledger.call(&"get_outcome")
+	match outcome:
+		AccusationLedger.Outcome.SENT:
+			return Stage.SUBMITTING
+		AccusationLedger.Outcome.EXECUTED:
+			return Stage.AWAITING_VIEW
+		AccusationLedger.Outcome.UNKNOWN:
+			return Stage.UNKNOWN
+		AccusationLedger.Outcome.ENDED:
+			return Stage.ENDED
 	return _stage
+
+
+## The ledger of this scene tree (null before the screen is ready or without a store).
+func get_ledger() -> Node:
+	return _ledger
+
+
+## True when the back button works (it is locked only while an answer is due shortly).
+func can_go_back() -> bool:
+	var stage: Stage = get_stage()
+	if stage == Stage.PROBING or stage == Stage.SUBMITTING:
+		return false
+	if stage == Stage.AWAITING_VIEW:
+		return _ledger != null and _ledger.call(&"is_stalled") == true
+	return true
 
 
 func get_view() -> Dictionary:
@@ -259,11 +327,15 @@ func get_case_file() -> Dictionary:
 
 ## "Обвинить": checks that the choice is complete enough to send and opens the first
 ## confirmation. Returns ERR_BUSY while a request is in flight or a confirmation is open,
-## ERR_UNAVAILABLE in a preview or after the game ended, ERR_INVALID_DATA for an incomplete choice.
+## ERR_UNAVAILABLE in a preview, after the game ended or while the outcome of a sent accusation is
+## unknown, ERR_INVALID_DATA for an incomplete choice.
 func request_accusation() -> Error:
-	if _stage != Stage.EDITING:
-		return ERR_UNAVAILABLE if _stage == Stage.ENDED else ERR_BUSY
-	if is_preview() or _view.is_empty():
+	var stage: Stage = get_stage()
+	if stage == Stage.ENDED or stage == Stage.UNKNOWN:
+		return ERR_UNAVAILABLE
+	if stage != Stage.EDITING:
+		return ERR_BUSY
+	if is_preview() or _view.is_empty() or _store == null:
 		return ERR_UNAVAILABLE
 	_error.text = ""
 	if _accused.is_empty():
@@ -273,6 +345,7 @@ func request_accusation() -> Error:
 		_error.text = NEED_TARGET_TEXT
 		return ERR_INVALID_DATA
 	_file = get_case_file()
+	_session = _store.get_session_id()
 	_first_confirm.dialog_text = _first_confirm_text(_file)
 	_set_stage(Stage.CONFIRMING)
 	_first_confirm.popup_centered()
@@ -287,14 +360,34 @@ func _on_first_confirmed() -> void:
 		return
 	# Closed before the final confirmation can open: only one exclusive dialog at a time.
 	_first_confirm.hide()
-	_send(false)
+	if not _same_session():
+		_fail_session()
+		return
+	_set_stage(Stage.PROBING)
+	if _store.request_action(AccusationFormat.accuse_action(_file, false)) != OK:
+		_fail(GameStoreScript.ERROR_NOT_CONNECTED, "")
+		return
+	_probe_id = _store.get_last_action_request_id()
 
 
 func _on_final_confirmed() -> void:
 	if _stage != Stage.FINAL:
 		return
 	_final_confirm.hide()
-	_send(true)
+	if not _same_session() or _ledger == null or _ledger.call(&"can_accuse") != true:
+		_fail_session()
+		return
+	if _store.request_action(AccusationFormat.accuse_action(_file, true)) != OK:
+		# Nothing left: safe to try again after reconnecting.
+		_fail(GameStoreScript.ERROR_NOT_CONNECTED, "")
+		return
+	# From here on the ledger owns the accusation; the local flow is over.
+	var file: Dictionary = _file
+	_file = {}
+	_stage = Stage.EDITING
+	_ledger.call(&"begin", file, _store.get_last_action_request_id())
+	_render_status()
+	_sync_controls()
 
 
 func _on_confirm_canceled() -> void:
@@ -303,78 +396,117 @@ func _on_confirm_canceled() -> void:
 		_set_stage(Stage.EDITING)
 
 
-func _send(confirm: bool) -> void:
-	if _store == null:
-		_fail(GameStoreScript.ERROR_NOT_CONNECTED, "")
-		return
-	_request_id = ""
-	_set_stage(Stage.SUBMITTING if confirm else Stage.PROBING)
-	# A refusal before sending comes back synchronously as action_failed (no request id yet).
-	if _store.request_action(AccusationFormat.accuse_action(_file, confirm)) != OK:
-		return
-	_request_id = _store.get_last_action_request_id()
-
-
+## Answers to the `confirm: false` probe; the confirmed accusation is the ledger's.
 func _on_action_resolved(request_id: String, ok: bool, code: String, message: String) -> void:
-	if _request_id.is_empty() or request_id != _request_id:
+	if _probe_id.is_empty() or request_id != _probe_id:
 		return
-	_request_id = ""
+	_probe_id = ""
+	if _stage != Stage.PROBING:
+		return
+	if not _same_session():
+		_fail_session()
+		return
 	if not ok:
 		_fail(code, message)
 		return
-	if _stage == Stage.PROBING:
-		_final_confirm.dialog_text = FINAL_CONFIRM_TEXT % _accused_names(_file)
-		_set_stage(Stage.FINAL)
-		_final_confirm.popup_centered()
-	elif _stage == Stage.SUBMITTING:
-		# The view that follows tells whether the game ended.
-		_set_stage(Stage.AWAITING_VIEW)
+	_final_confirm.dialog_text = FINAL_CONFIRM_TEXT % _accused_names(_file)
+	_set_stage(Stage.FINAL)
+	_final_confirm.popup_centered()
 
 
-func _on_action_failed(code: String, message: String) -> void:
-	# Only a refusal before the request left (no id yet); a server refusal also arrives as
-	# action_resolved for our request id.
-	if (_stage == Stage.PROBING or _stage == Stage.SUBMITTING) and _request_id.is_empty():
-		_fail(code, message)
+func _on_ledger_changed(_outcome: int) -> void:
+	_render_status()
+	_sync_controls()
+
+
+func _on_ledger_refused(code: String, message: String) -> void:
+	_fail(code, message)
+
+
+func _on_ledger_continued() -> void:
+	_error.text = ""
+	_status.text = CONTINUED_TEXT
+	_sync_controls()
 
 
 func _fail(code: String, message: String) -> void:
-	_request_id = ""
+	_probe_id = ""
 	_file = {}
 	_first_confirm.hide()
 	_final_confirm.hide()
 	var text: String = str(ERROR_TEXT.get(code, ERROR_FALLBACK_TEXT % code))
 	if not message.is_empty():
 		text += " " + message
-	_set_stage(Stage.EDITING)
+	if _stage != Stage.ENDED:
+		_set_stage(Stage.EDITING)
 	_error.text = text
+
+
+func _fail_session() -> void:
+	_forget_session()
+	_render_status()
+	_sync_controls()
+	_error.text = SESSION_CHANGED_TEXT
+
+
+func _same_session() -> bool:
+	return _store != null and _store.get_session_id() == _session
+
+
+## Closes the confirmations and drops everything of the session: the choice, the case file, the
+## pending probe and the names.
+func _forget_session() -> void:
+	_first_confirm.hide()
+	_final_confirm.hide()
+	_probe_id = ""
+	_file = {}
+	_session = _store.get_session_id() if _store != null else ""
+	_accused.clear()
+	for part: String in AccusationFormat.PARTS:
+		_subjects[part] = ""
+	_motive_target = ""
+	_evidence.clear()
+	_names.clear()
+	_signature = []
+	_error.text = ""
+	_stage = Stage.EDITING
 
 
 func _on_view_changed(view: Dictionary, _state_version: int) -> void:
 	_preview_name = ""
 	_preview_failed = false
-	var continued: bool = _stage == Stage.AWAITING_VIEW and not view.has("ending")
+	if _store != null and not _session.is_empty() and _store.get_session_id() != _session:
+		_forget_session()
 	_show(view)
-	if continued:
-		_file = {}
-		_set_stage(Stage.EDITING)
-		_status.text = CONTINUED_TEXT
 
 
 func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
-	if state == BackendScript.ConnectionState.ONLINE or _stage == Stage.ENDED:
+	if state == BackendScript.ConnectionState.OFFLINE:
+		# The session is over or replaced: nothing of it may reach the next one.
+		_forget_session()
+		if not is_preview():
+			_show(ReadOnly.empty())
 		return
-	if _stage == Stage.PROBING or _stage == Stage.SUBMITTING or _stage == Stage.AWAITING_VIEW:
-		_request_id = ""
+	if state == BackendScript.ConnectionState.ONLINE:
+		if not _session.is_empty() and _store.get_session_id() != _session:
+			_forget_session()
+			_show(_store.get_view() if _store.has_view() else ReadOnly.empty())
+		return
+	if _stage == Stage.CONFIRMING or _stage == Stage.PROBING or _stage == Stage.FINAL:
+		# A probe answered on the lost connection is not trusted for the next one.
+		_first_confirm.hide()
+		_final_confirm.hide()
+		_probe_id = ""
 		_file = {}
 		_set_stage(Stage.EDITING)
 		_error.text = CONNECTION_LOST_TEXT
-	if state == BackendScript.ConnectionState.OFFLINE and not is_preview():
-		_show(ReadOnly.empty())
+	else:
+		_render_status()
+		_sync_controls()
 
 
 func _on_back_pressed() -> void:
-	if _in_flight():
+	if not can_go_back():
 		return
 	var back: String = _text(_params.get(PARAM_BACK))
 	var router: Node = get_node_or_null(^"/root/SceneRouter")
@@ -411,19 +543,24 @@ func _show(view: Dictionary) -> void:
 		push_error("Accusation: view with the server-only field '%s' is not shown" % leaked)
 		view = ReadOnly.empty()
 	_view = view
+	if _store != null and _session.is_empty() and not is_preview():
+		_session = _store.get_session_id()
 	_characters = AccusationFormat.known_characters(view)
 	_clues = AccusationFormat.clues(view)
 	for character: Dictionary in _characters:
 		_names[str(character["id"])] = str(character["name"])
-	if not _in_flight() and _stage != Stage.ENDED:
+	if _editable():
 		_drop_unknown()
 	var signature: Array = [_characters, _clues.map(_clue_signature)]
 	if signature != _signature:
 		_signature = signature.duplicate(true)
 		_rebuild()
 	if view.has("ending"):
+		_first_confirm.hide()
+		_final_confirm.hide()
+		_probe_id = ""
+		_file = {}
 		_set_stage(Stage.ENDED)
-		_status.text = ENDED_TEXT
 		if not is_preview():
 			EndingWatcher.open_ending(get_node_or_null(^"/root/SceneRouter"))
 		return
@@ -432,21 +569,28 @@ func _show(view: Dictionary) -> void:
 
 
 func _render_status() -> void:
-	if _view.is_empty():
+	var stage: Stage = get_stage()
+	if stage == Stage.ENDED:
+		_status.text = ENDED_TEXT
+	elif _view.is_empty():
 		_status.text = (PREVIEW_FAILED_TEXT % _preview_name) if _preview_failed else NO_VIEW_TEXT
 	elif is_preview():
 		_status.text = PREVIEW_TEXT % _preview_name
-	elif _stage == Stage.PROBING:
+	elif stage == Stage.PROBING:
 		_status.text = PROBING_TEXT
-	elif _stage == Stage.SUBMITTING or _stage == Stage.AWAITING_VIEW:
+	elif stage == Stage.SUBMITTING:
 		_status.text = SUBMITTING_TEXT
-	else:
+	elif stage == Stage.AWAITING_VIEW:
+		_status.text = STALLED_TEXT if can_go_back() else SUBMITTING_TEXT
+	elif stage == Stage.UNKNOWN:
+		_status.text = UNKNOWN_TEXT
+	elif _status.text != CONTINUED_TEXT:
 		_status.text = ""
 
 
 func _set_stage(stage: Stage) -> void:
 	_stage = stage
-	if _status != null and stage != Stage.ENDED:
+	if _status != null:
 		_render_status()
 	_sync_controls()
 
@@ -636,7 +780,7 @@ func _sync_controls() -> void:
 	_fill_option(_target_option, everyone, _motive_target)
 	_target_option.disabled = not editable or str(_subjects["motive"]).is_empty()
 	_accuse.disabled = not editable or _accused.is_empty()
-	_back.disabled = _in_flight()
+	_back.disabled = not can_go_back()
 
 
 func _fill_option(option: OptionButton, ids: Array[String], selected: String) -> void:
@@ -721,11 +865,7 @@ func _name_of(character_id: String) -> String:
 
 
 func _editable() -> bool:
-	return _stage == Stage.EDITING
-
-
-func _in_flight() -> bool:
-	return _stage == Stage.PROBING or _stage == Stage.SUBMITTING or _stage == Stage.AWAITING_VIEW
+	return get_stage() == Stage.EDITING
 
 
 func _knows_character(character_id: String) -> bool:
