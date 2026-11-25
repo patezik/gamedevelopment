@@ -170,6 +170,8 @@ interface PlayerView {
                   topics: { id; label; costPreview }[];
                   presentable: { type: "evidence"|"contradiction"; id; label }[];
                   history: { speaker: "player"|"other"; text; at }[] };
+  // history[].text реплики NPC — готовый текст из шаблонов сценария (ENG-009); без шаблонов — ключ.
+  // Цена предъявления — costPreview действия interrogate в availableActions.
   phone: { paired; online; battery };
   ending?: { endingId: "solved"|"partial"|"wrong_accusation"|"time_up"|"death"|"madness";
              title; text; proven?: { motive; means; opportunity };

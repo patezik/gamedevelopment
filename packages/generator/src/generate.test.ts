@@ -146,6 +146,7 @@ test('the gate runs every check of the default list', () => {
     'V-TRUTH-INV',
     'V-TIMELINE',
     'V-PHONE-REQUIRED',
+    'V-HALLUCINATION',
     'V-REACHABLE',
     'V-CULPRIT-PROVABLE',
     'V-UNIQUE',
