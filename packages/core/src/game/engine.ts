@@ -178,9 +178,25 @@ export class GameEngine {
     rules: 'desktop' | 'beforeDesktop' = 'desktop',
   ): GameEngine {
     const serialized = serializeInvestigation(investigation);
+    return GameEngine.#start(serialized, stateHash(serialized), ports, rules);
+  }
+
+  /** Reuses the immutable starting data while each simulation gets its own world and ports. */
+  static prepareStart(investigation: Investigation): (ports: EnginePorts) => GameEngine {
+    const serialized = serializeInvestigation(investigation);
+    const hash = stateHash(serialized);
+    return (ports) => GameEngine.#start(serialized, hash, ports, 'desktop');
+  }
+
+  static #start(
+    serialized: ReturnType<typeof serializeInvestigation>,
+    hash: string,
+    ports: EnginePorts,
+    rules: 'desktop' | 'beforeDesktop',
+  ): GameEngine {
     const engine = new GameEngine(
       deserializeInvestigation(serialized),
-      stateHash(serialized),
+      hash,
       ports,
       ports.startLocationId,
       0,

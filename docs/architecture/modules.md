@@ -473,6 +473,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     | RestAction | WaitAction | CallAction | MessageAction | BrowseAction | OpenFileAction | CaptureEvidenceAction | AccuseAction;
   class GameEngine {
     static create(inv: Investigation, ports: EnginePorts): GameEngine;
+    static prepareStart(inv: Investigation): (ports: EnginePorts) => GameEngine;
     dispatch(source: "desktop" | "phone", a: PlayerAction): DispatchResult;
     playerView(): PlayerView; phoneView(): PhoneView;   // проекции без истины
     snapshot(): GameSnapshot; static restore(s: GameSnapshot, inv: Investigation, ports): GameEngine;

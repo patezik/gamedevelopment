@@ -188,9 +188,10 @@ function search(
     clues: new Map(clues.map((clue) => [clue.id, clue])),
     ...(knownIncident && { incident: knownIncident }),
   };
+  const startEngine = GameEngine.prepareStart(investigation);
   const create = () => {
     const ports: EnginePorts = { ...options.createSimulationPorts?.(), startLocationId, clues };
-    return GameEngine.create(investigation, ports);
+    return startEngine(ports);
   };
   const root = create();
   // With no testimony, INV-002 reads only the ordered IDs of actually discovered clues.
