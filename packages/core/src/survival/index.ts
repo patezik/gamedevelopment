@@ -45,3 +45,16 @@ export {
   type PackItem,
   type PhonePower,
 } from './inventory.ts';
+export {
+  ATTACK_VERB,
+  THREAT,
+  attackEvent,
+  canAttack,
+  escapeChance,
+  exploreHazard,
+  resolveThreat,
+  type AttackSetting,
+  type PlayerAttacked,
+  type ThreatResolution,
+  type ThreatTarget,
+} from './threats.ts';

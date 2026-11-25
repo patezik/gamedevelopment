@@ -1,7 +1,7 @@
 import type { ScenarioContent } from '@hs/core/content';
 import { createRng, type Rng } from '@hs/core/rng';
 
-export const GENERATOR_VERSION = '0.2.0';
+export const GENERATOR_VERSION = '0.3.0';
 const DEFAULT_MAX_ATTEMPTS = 8;
 
 export interface GenerationLogger {

@@ -553,7 +553,12 @@ function dialogue(
       if (statements.length === 0) lines.push({ speaker: 'other', text: 'testimony_none', at });
       const previous =
         state.interaction?.characterId === characterId ? state.interaction.history : [];
-      state.interaction = { kind: 'dialogue', characterId, history: [...previous, ...lines] };
+      state.interaction = {
+        kind: 'dialogue',
+        characterId,
+        ...(type === 'interrogate' && { interrogation: true as const }),
+        history: [...previous, ...lines],
+      };
       return [...events, ...announceContradictions(state, env.clues, at)];
     },
   };

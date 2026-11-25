@@ -1,6 +1,6 @@
-import type { Interval } from '../common/index.ts';
+import { canonicalJson, type Interval } from '../common/index.ts';
 import type { RelationshipGraph, RelationType } from '../characters/index.ts';
-import type { KnowledgeStore } from '../knowledge/index.ts';
+import { recallBelief, type Belief, type KnowledgeStore } from '../knowledge/index.ts';
 import {
   factId,
   matchProposition,
@@ -180,11 +180,18 @@ function candidates(
   maxShares: number,
 ): Transfer[] {
   if (trust === undefined) return [];
-  const shareable: Transfer[] = [];
+  const shareable: { readonly transfer: Transfer; readonly id: string }[] = [];
   for (const kind of KINDS) {
-    for (const { proposition, fromCharacter } of speaker.knowledge.query({
-      kind,
-    } as PropositionPattern)) {
+    // Sorted as `recall` ranks matches: confidence, then recency, then fact id.
+    const beliefs = speaker.knowledge.query({ kind } as PropositionPattern);
+    const groups = new Map<string, Belief[]>();
+    for (const belief of beliefs) {
+      const key = requiredKey(belief.proposition);
+      const group = groups.get(key);
+      if (group) group.push(belief);
+      else groups.set(key, [belief]);
+    }
+    for (const { proposition, fromCharacter } of beliefs) {
       if (fromCharacter === listener.id) continue;
       if (speaker.conceal.some((pattern) => matchProposition(proposition, pattern) !== null)) {
         continue;
@@ -194,24 +201,39 @@ function candidates(
         throw new RangeError('Sensitivity must be between 0 and 1');
       }
       if (!(trust > threshold)) continue;
-      // Recall applies the speaker's memory decay and hides beliefs acquired after `t`.
-      const recalled = speaker.knowledge.recall(asPattern(proposition), t);
-      if (!recalled) continue;
+      // `recall(proposition, t)`: the best-ranked match acquired by `t`, with memory decay. A full
+      // proposition fixes every field it has, so matches agree on the required ones; looking
+      // only there avoids scanning the whole store for each belief.
+      const pattern = asPattern(proposition);
+      const match = groups
+        .get(requiredKey(proposition))!
+        .find((b) => b.acquiredAt <= t && matchProposition(b.proposition, pattern) !== null);
+      if (!match) continue;
+      const recalled = recallBelief(match, t);
       shareable.push({
-        from: speaker.id,
-        to: listener.id,
-        proposition: recalled.proposition,
-        confidence: recalled.confidence * TOLD_CONFIDENCE_FACTOR,
-        fuzzMinutes: recalled.fuzzMinutes,
+        transfer: {
+          from: speaker.id,
+          to: listener.id,
+          proposition: recalled.proposition,
+          confidence: recalled.confidence * TOLD_CONFIDENCE_FACTOR,
+          fuzzMinutes: recalled.fuzzMinutes,
+        },
+        id: factId(recalled.proposition),
       });
     }
   }
   return shareable
-    .sort(
-      (x, y) =>
-        y.confidence - x.confidence || compareText(factId(x.proposition), factId(y.proposition)),
-    )
-    .slice(0, maxShares);
+    .sort((x, y) => y.transfer.confidence - x.transfer.confidence || compareText(x.id, y.id))
+    .slice(0, maxShares)
+    .map(({ transfer }) => transfer);
+}
+
+/** The proposition without its optional fields (`did.target`, `relation.since`). */
+function requiredKey(proposition: Proposition): string {
+  const required: Record<string, unknown> = { ...proposition };
+  if (proposition.kind === 'did') delete required['target'];
+  if (proposition.kind === 'relation') delete required['since'];
+  return canonicalJson(required);
 }
 
 function receive(listener: Talker, transfer: Transfer, t: number): boolean {
