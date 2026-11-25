@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **162** · todo: 33 · in_progress: 11 · review: 2 · done: 115 · blocked: 1
+Всего задач: **162** · todo: 33 · in_progress: 10 · review: 3 · done: 115 · blocked: 1
 
 ## Готовы к взятию сейчас
 
