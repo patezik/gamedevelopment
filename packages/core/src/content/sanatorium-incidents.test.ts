@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import { PERSONALITY_TRAITS } from '../common/index.ts';
+import { LocationGraph } from '../world/index.ts';
 import { loadScenarioFromDir } from './index.ts';
 import type { ScenarioContent } from './scenario.ts';
 
@@ -38,6 +39,20 @@ const SYMMETRIC_RELATIONS = new Set([
 const REVERSE_RELATIONS: Record<string, string> = { parent: 'child', child: 'parent' };
 
 const archetypes = new Map(content.archetypes.map((archetype) => [archetype.id, archetype]));
+
+test('boiler room has daytime access from the hall and a free exit after closing', () => {
+  const graph = new LocationGraph(content);
+  const keyHolder = { itemIds: new Set(['it_key_boiler']) };
+  const closing = 13 * 60; // The preset starts at 08:00 and the public entrance closes at 21:00.
+  expect(graph.directConnection('loc_hall', 'loc_boiler', {})).toBeDefined();
+  expect(graph.isAccessible('loc_boiler', {}, closing - 1)).toEqual({ ok: true });
+  expect(graph.isAccessible('loc_boiler', {}, closing)).toMatchObject({ ok: false });
+  expect(graph.isAccessible('loc_boiler', keyHolder, closing)).toEqual({ ok: true });
+  expect(graph.directConnection('loc_kitchen', 'loc_boiler', {})).toBeUndefined();
+  expect(graph.directConnection('loc_treatment', 'loc_boiler', {})).toBeUndefined();
+  expect(graph.directConnection('loc_boiler', 'loc_hall', {})).toBeDefined();
+  expect(graph.isAccessible('loc_hall', {}, closing)).toEqual({ ok: true });
+});
 
 function means(crime: Crime) {
   const { itemTag, itemId } = crime.requires.means;
