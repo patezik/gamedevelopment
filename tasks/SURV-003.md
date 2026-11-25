@@ -1,7 +1,7 @@
 ---
 id: SURV-003
 title: "Угрозы: нападение виновника, опасные локации, исход столкновения"
-status: review
+status: done
 priority: P1
 complexity: M
 phase: 7
