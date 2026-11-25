@@ -283,7 +283,9 @@ export const deductionRulesSchema = z.array(
   }),
 );
 
-export const textTemplatesSchema = z.record(id, z.array(text).min(1));
+/** Keys may use camelCase: `testimony_<Question['type']>_<kind>` is built by the knowledge module. */
+const textKey = z.string().regex(/^[a-z][A-Za-z0-9_-]*$/);
+export const textTemplatesSchema = z.record(textKey, z.array(text).min(1));
 
 export const phoneTemplatesSchema = z.array(
   z.strictObject({
