@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **142** · todo: 47 · in_progress: 12 · review: 0 · done: 82 · blocked: 1
+Всего задач: **142** · todo: 47 · in_progress: 11 · review: 1 · done: 82 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -174,7 +174,7 @@
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
-| [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | in_progress | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
+| [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | review | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
 | [TIME-005](TIME-005.md) | Дедлайны, критические события, пропущенные события, условия завершения | P0 | M | todo | — | [TIME-003](TIME-003.md), [ENG-006](ENG-006.md) |
 
 ## Фаза 7 · M7 — MVP (9)
