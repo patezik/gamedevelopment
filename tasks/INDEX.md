@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **142** · todo: 42 · in_progress: 9 · review: 0 · done: 90 · blocked: 1
+Всего задач: **143** · todo: 43 · in_progress: 8 · review: 0 · done: 91 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -20,11 +20,11 @@
 |---|---|
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
+| [CNT-005](CNT-005.md) Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | 3 |
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
-| [CNT-005](CNT-005.md) Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | 2 |
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 2 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 2 |
@@ -147,7 +147,7 @@
 | [SRV-009](SRV-009.md) | Диагностика: структурированные логи, debug-истина по флагу | P1 | S | done | claude-diag-1 | [SRV-001](SRV-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (23)
+## Фаза 6 · M6 — Vertical slice (24)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -158,8 +158,9 @@
 | [ENG-005](ENG-005.md) | Блокировка взаимодействий и арбитраж действий desktop/phone | P1 | S | done | claude-qa | [ENG-003](ENG-003.md) |
 | [ENG-006](ENG-006.md) | Действие accuse, концовки и TruthRecap | P0 | M | in_progress | claude-qa | [INV-005](INV-005.md), [ENG-003](ENG-003.md) |
 | [ENG-007](ENG-007.md) | Действие markSuspicion и проекция персон интереса и отметок в caseBoard | P0 | S | done | claude-qa | [ENG-003](ENG-003.md), [INV-003](INV-003.md) |
+| [ENG-009](ENG-009.md) | Проекция реплик NPC и стоимости предъявления в PlayerView | P0 | M | todo | — | [ENG-003](ENG-003.md), [CNT-005](CNT-005.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
-| [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | in_progress | egor-codex-gdt-005 | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
+| [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | done | egor-codex-gdt-005 | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | done | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
 | [GDT-007](GDT-007.md) | Оверлей фиксации улики: показ QR, ожидание скана, результат | P0 | S | done | egor-codex-gdt-007 | [GDT-004](GDT-004.md), [SRV-006](SRV-006.md) |
 | [GDT-008](GDT-008.md) | Доска дела: улики, показания, противоречия, персоны интереса, хронология | P0 | L | done | egor-claude-gdt-008 | [GDT-002](GDT-002.md), [INV-003](INV-003.md), [INV-004](INV-004.md) |
