@@ -13,6 +13,8 @@ extends Control
 ## it follows the GameStore autoload (or the store passed to [method bind_store]). Route params:
 ## `{"back": "<screen>"}` shows a back button, `{"preview": "start|mid|capture|end|large"}` renders a
 ## fixture without a session server (as the scene does when run on its own).
+## "Обвинить…" opens the `accusation` screen (GDT-009) with a way back to this board; it is hidden
+## without a view and once the game is over.
 
 const GameStoreScript = preload("res://src/autoload/game_store.gd")
 const BackendScript = preload("res://src/autoload/backend.gd")
@@ -106,6 +108,7 @@ var _origin: Variant = null
 @onready var _status: Label = %Status
 @onready var _error: Label = %Error
 @onready var _back: Button = %Back
+@onready var _accuse: Button = %Accuse
 @onready var _filter_option: OptionButton = %Filter
 @onready var _tabs: TabContainer = %Tabs
 @onready var _sections: Array[VBoxContainer] = [%Clues, %Statements, %Contradictions, %Persons, %Timeline]
@@ -135,6 +138,7 @@ func bind_store(store: GameStoreScript) -> void:
 func _ready() -> void:
 	_back.visible = not _text(_params.get(PARAM_BACK)).is_empty()
 	_back.pressed.connect(_on_back_pressed)
+	_accuse.pressed.connect(open_accusation)
 	_filter_option.item_selected.connect(_on_filter_selected)
 	_tabs.tab_changed.connect(_on_tab_changed)
 	set_process(false)
@@ -223,6 +227,19 @@ func mark_suspicion(character_id: String, level: String, note: Variant = null) -
 	return _store.request_action(action)
 
 
+## Opens the `accusation` screen; its back button returns to this board with the same params.
+func open_accusation() -> Error:
+	var router: Node = get_node_or_null(^"/root/SceneRouter")
+	if not router is SceneRouterScript:
+		return ERR_UNCONFIGURED
+	var params: Dictionary = {"back": "case_board", "backParams": _params.duplicate(true)}
+	if is_preview():
+		# The accusation previews PlayerView fixtures only (no "large" board fixture).
+		var known: bool = PreviewFixtures.NAMES.has(_preview_name)
+		params[PARAM_PREVIEW] = _preview_name if known else PreviewFixtures.DEFAULT_NAME
+	return (router as SceneRouterScript).goto(&"accusation", params)
+
+
 ## Picks what to show: an explicit preview, the store's view, the standalone preview or nothing.
 func _refresh() -> void:
 	var requested: String = _text(_params.get(PARAM_PREVIEW))
@@ -252,6 +269,7 @@ func _show(view: Dictionary) -> void:
 		push_error("CaseBoard: view with the server-only field '%s' is not shown" % leaked)
 		view = ReadOnly.empty()
 	_view = view
+	_accuse.visible = not view.is_empty() and not view.has("ending")
 	_learn_names(view)
 	_characters = _known_characters(view)
 	if not _characters.has(_filter):

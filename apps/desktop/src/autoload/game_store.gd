@@ -25,7 +25,7 @@ signal action_failed(code: String, message: String)
 signal action_resolved(request_id: String, ok: bool, code: String, message: String)
 ## A server `error` that names no request (for example UNAUTHORIZED during the handshake).
 signal error_received(code: String, message: String)
-## The Backend connection stage changed; OFFLINE also clears the store (the session ended).
+## The Backend connection stage changed; OFFLINE also clears the current session's view.
 signal connection_state_changed(state: BackendScript.ConnectionState)
 
 ## Peer status before the first `peer.status` of a session.
@@ -102,6 +102,12 @@ func get_phone_status() -> String:
 
 func get_connection_state() -> BackendScript.ConnectionState:
 	return _connection_state
+
+
+## The session the Backend is in (`welcome.sessionId`); empty without one. Screens bind
+## session-scoped state (an accusation in flight) to it.
+func get_session_id() -> String:
+	return _backend.get_session_id() if _backend != null and is_instance_valid(_backend) else ""
 
 
 func is_online() -> bool:
@@ -255,7 +261,7 @@ func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 		return
 	_connection_state = state
 	if state == BackendScript.ConnectionState.OFFLINE:
-		# Backend goes OFFLINE only on disconnect_session(): the session is over or replaced.
+		# An explicit disconnect clears the local projection, even when the client rejoins the same game.
 		reset()
 	connection_state_changed.emit(state)
 

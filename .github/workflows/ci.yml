@@ -47,7 +47,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE: ${{ github.event.before }}
           NODE_PATHS: '^(packages/|apps/(server|mobile)/|apps/desktop/src/net/protocol_constants\.gd$|tools/|content/|\.github/workflows/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.mjs$|vitest\.config\.ts$|\.nvmrc$)'
-          GODOT_PATHS: '^(apps/desktop/|packages/protocol/|tools/test-godot\.mjs$|\.github/workflows/ci\.yml$|package\.json$|\.nvmrc$)'
+          GODOT_PATHS: '^(apps/desktop/|apps/server/|packages/(protocol|core)/|content/scenarios/|tools/test-godot\.mjs$|\.github/workflows/ci\.yml$|package(-lock)?\.json$|\.nvmrc$)'
         run: |
           report_match() {
             if grep -qE "$2" <<< "$changed_paths"; then
@@ -88,15 +88,54 @@ jobs:
       - run: npm run typecheck
       - run: npm run content:check
       - run: npm test -- --coverage
-      - name: Scheduler performance without coverage
-        run: node packages/core/test/performance/scheduler.ts
+
+  # QA-002: separate job so benchmarks run without coverage and do not lengthen the node job.
+  perf:
+    name: Performance budgets
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run bench
+      - name: Verify that an intentional scheduler slowdown fails the budget
+        if: success() || failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          benchmark=packages/core/test/performance/scheduler.ts
+          trap 'git restore -- "$benchmark"' EXIT
+          python3 - "$benchmark" <<'PY'
+          import pathlib
+          import sys
+
+          benchmark = pathlib.Path(sys.argv[1])
+          source = benchmark.read_text()
+          marker = '  const elapsedMs ='
+          assert source.count(marker) == 1
+          delay = '  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 210);\n'
+          benchmark.write_text(source.replace(marker, delay + marker))
+          PY
+          if node "$benchmark" > scheduler-regression.log 2>&1; then
+            cat scheduler-regression.log
+            echo 'The scheduler budget accepted the injected slowdown'
+            exit 1
+          fi
+          cat scheduler-regression.log
+          grep -E 'AssertionError.*scheduler 100k events took .*budget 200 ms' scheduler-regression.log
 
   godot:
     name: Godot tests
     needs: changes
     if: needs.changes.outputs.godot == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 6
     env:
       GODOT_VERSION: 4.7.2-stable
     steps:
@@ -104,6 +143,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          cache: npm
+      # The live accusation tests run the real session server (tsx, fastify, ws).
+      - run: npm ci
       - uses: actions/cache@v6
         id: cache-godot
         with:

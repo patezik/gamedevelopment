@@ -1,8 +1,5 @@
 # Настройка окружения
 
-> Статус: документ описывает целевое окружение. Команды, отмеченные «после FND-…», появятся
-> после выполнения соответствующих задач. Проверка документа на чистой машине — задача FND-010.
-
 ## 1. Требования
 
 | Инструмент | Версия | Зачем |
@@ -12,19 +9,36 @@
 | npm | 11.x (идёт с Node 24) | workspaces |
 | Godot | 4.7.2-stable (стандартная сборка, не .NET) | desktop-клиент |
 | Expo Go | версия для Expo SDK 58 на телефоне | запуск мобильного приложения |
-| Аккаунт Expo | бесплатный | Expo Go требует входа (`npx expo login`) |
+| Аккаунт Expo | бесплатный | один аккаунт в Expo CLI и Expo Go для физического iPhone |
 
 Телефон и компьютер должны быть в **одной локальной сети** (без изоляции клиентов, как в гостевых
 Wi-Fi).
 
 ## 2. Первый запуск
 
-```bash
-git clone <repo-url> hollow-signal
+Команды в руководстве выполняются из корня клона, если не указано иначе.
+
+**Windows (PowerShell)**
+
+```powershell
+git clone https://github.com/patezik/gamedevelopment.git hollow-signal
 cd hollow-signal
-npm ci                      # установка зависимостей всех workspaces
-npm run tasks:check         # проверка задач (работает сразу)
-npm run docs:check          # проверка ссылок документации (работает сразу)
+npm.cmd ci
+npm.cmd run tasks:check
+npm.cmd run docs:check
+```
+
+Используйте `npm.cmd` и `npx.cmd` вместо `npm` и `npx`, если PowerShell блокирует запуск
+`npm.ps1` или `npx.ps1`. Менять политику выполнения скриптов для этого не требуется.
+
+**macOS и Linux (терминал)**
+
+```bash
+git clone https://github.com/patezik/gamedevelopment.git hollow-signal
+cd hollow-signal
+npm ci
+npm run tasks:check
+npm run docs:check
 ```
 
 ## 3. Команды
@@ -35,15 +49,46 @@ npm run docs:check          # проверка ссылок документац
 | `npm run tasks:index` | обновить `tasks/INDEX.md` | сейчас |
 | `npm run tasks:check` | валидация задач | сейчас |
 | `npm run docs:check` | проверка относительных ссылок в Markdown | сейчас |
-| `npm run lint` / `typecheck` / `test` | проверки TS-кода (на пустом наборе пакетов завершаются с кодом 0) | сейчас |
+| `npm run lint` / `npm run typecheck` / `npm test` | ESLint, TypeScript и Vitest (включая сервер) | сейчас |
 | `npm run format` / `format:check` | форматирование Prettier (Markdown не форматируется) | сейчас |
-| `npm run dev -w @hs/server` | Session Server на `0.0.0.0:7420` с перезапуском при изменениях | сейчас |
+| `npm run dev:server` | Session Server на `0.0.0.0:7420` с перезапуском при изменениях | сейчас |
 | `npm run start -w @hs/server` | Session Server без режима наблюдения | сейчас |
-| `npm run dev:mobile` | `npx expo start` в `apps/mobile` | после FND-006, FND-010 |
+| `npm run dev:mobile` | Expo CLI и Metro для Expo Go в `apps/mobile` | сейчас |
+| `npm run test:all` | Vitest, Jest в `@hs/mobile` и GUT последовательно, с остановкой при ошибке (`GODOT_BIN`) | сейчас |
 | `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | сейчас |
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
-| `npm run protocol:gen` / `protocol:check` | регенерация схем и GDScript-констант | после FND-004, PROTO-003 |
+| `npm run protocol:gen` / `npm run protocol:check` | регенерация и проверка схем и GDScript-констант | сейчас |
 | `npm run content:check` | валидация данных сценариев и ссылок между файлами | сейчас |
+
+Из корня запустите `npm run dev:server` (`npm.cmd run dev:server` в PowerShell) и проверьте
+`http://localhost:7420/api/v1/health` в браузере или во втором терминале. Остановите процесс
+через Ctrl+C. `npm run start -w @hs/server` запускает тот же сервер без наблюдения за файлами.
+Ответ health подтверждает запуск сервера. Создание полноценной игровой сессии зависит от SRV-002.
+
+### Конфигурация сервера
+
+Сервер читает переменные процесса. При запуске через npm файлы `.env` автоматически не загружаются.
+С настройками по умолчанию файл не нужен. Чтобы загрузить файл явно, скопируйте
+[`.env.example`](../../.env.example) в `.env`, настройте значения и из корня выполните:
+
+```bash
+node --env-file=.env apps/server/src/server.ts
+```
+
+Например, для смены порта в режиме разработки задайте его в терминале запуска:
+
+```powershell
+$env:HS_PORT = '7421'
+npm.cmd run dev:server
+# После остановки сервера:
+Remove-Item Env:HS_PORT
+```
+
+```bash
+HS_PORT=7421 npm run dev:server
+```
+
+При другом порте подставьте его в URL проверки и при подключении с телефона.
 
 ## 4. Godot
 
@@ -54,13 +99,25 @@ npm run docs:check          # проверка ссылок документац
 
 Запустите тесты из корня репозитория. Команда сама импортирует проект и запускает GUT.
 
+**Windows (PowerShell)**
+
 ```powershell
 $env:GODOT_BIN = 'C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe'
 npm.cmd run test:godot
 ```
 
+**macOS** (если приложение находится в `/Applications/Godot.app`)
+
 ```bash
-GODOT_BIN=/path/to/godot npm run test:godot
+export GODOT_BIN=/Applications/Godot.app/Contents/MacOS/Godot
+npm run test:godot
+```
+
+**Linux** (подставьте путь к распакованному исполняемому файлу)
+
+```bash
+export GODOT_BIN=/path/to/godot
+npm run test:godot
 ```
 
 ### Встроенный сервер (Node SEA)
@@ -90,13 +147,15 @@ node apps/server/build/smoke.mjs   # /health и завершение при ги
 
 ## 5. Мобильное приложение
 
-```bash
-npx expo login               # один раз
-npm run dev:mobile           # покажет QR Expo Go — это QR разработки, не игровой
-```
+Для проверки на физическом iPhone выполните из корня `npx expo login` (`npx.cmd expo login`
+в PowerShell) и войдите в тот же аккаунт в Expo Go. Подключите телефон к той же сети Wi-Fi.
+См. [инструкцию Expo](https://docs.expo.dev/get-started/start-developing/#open-the-app-on-your-device).
 
-Для первого прототипа отсканируйте QR Expo Go камерой iPhone. Игровой QR привязки
-сканируется уже **внутри** нашего приложения (см. [qr-mechanics.md](../mobile/qr-mechanics.md)).
+В отдельном терминале выполните `npm run dev:mobile` (`npm.cmd run dev:mobile` в PowerShell).
+Metro покажет локальный адрес `exp://...` и QR разработки. Отсканируйте QR штатной камерой iPhone,
+откройте ссылку в Expo Go и при запросе разрешите доступ к локальной сети. Дождитесь загрузки
+стартового экрана. Игровой QR привязки сканируется внутри приложения
+(см. [qr-mechanics.md](../mobile/qr-mechanics.md)).
 
 ## 6. Сеть и брандмауэр
 
@@ -120,7 +179,7 @@ npm run dev:mobile           # покажет QR Expo Go — это QR разр�
   рекомендован. Используйте его, если рекомендованный адрес неверный (две сети, VPN без признаков).
 
 Проверить адрес можно с телефона: откройте в его браузере `http://<адрес>:7420/api/v1/health`
-(телефон и компьютер в одной сети). Если страница открылась, привязка по этому адресу сработает.
+(телефон и компьютер в одной сети). Ответ подтверждает, что телефон видит HTTP-сервер по этому адресу.
 
 ### Брандмауэр
 
@@ -135,11 +194,20 @@ npm run dev:mobile           # покажет QR Expo Go — это QR разр�
   подключения для `node`.
 - **Linux (firewalld, например Fedora):** `sudo firewall-cmd --add-port=7420/tcp` (до перезагрузки)
   или с `--permanent`, затем `sudo firewall-cmd --reload`.
-- Если задан другой `HS_PORT`, откройте его вместо 7420.
+- Если задан другой `HS_PORT`, используйте его вместо 7420. Для Expo Go с телефона также нужен
+  доступ к порту Metro (по умолчанию 8081, фактический порт указан в URL `exp://...`).
 - Гостевой Wi-Fi и «изоляция клиентов» на роутере запрещают устройствам видеть друг друга: нужна
   обычная домашняя сеть.
 
 ## 7. Частые проблемы
+
+- При `EADDRINUSE` проверьте, какой процесс использует порт, или запустите сервер с другим
+  `HS_PORT` по примеру в разделе 3.
+- Если `test:godot` сообщает об отсутствии `GODOT_BIN` или `ENOENT`, задайте путь к исполняемому файлу
+  в текущем терминале. В Windows укажите `*_console.exe`, в macOS — бинарник внутри `Godot.app`.
+  Из того же терминала можно запустить `npm run test:all`.
+- Если QR Expo Go открывается, но загрузка встаёт, проверьте доступ к Metro по Wi-Fi, разрешение
+  «Локальная сеть» для Expo Go в iOS и профиль сети брандмауэра. После смены Wi-Fi перезапустите Metro.
 
 | Симптом | Причина | Решение |
 |---------|---------|---------|
