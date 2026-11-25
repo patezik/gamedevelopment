@@ -118,6 +118,12 @@
 `QR_INVALID`, `QR_WRONG_SESSION`, `QR_EXPIRED`, `QR_ALREADY_USED`, `QR_PRECONDITION_FAILED`,
 `SAVE_NOT_FOUND`, `SAVE_DESYNC`, `GENERATION_UNSOLVABLE`, `RATE_LIMITED`, `INTERNAL`.
 
+`ACTION_BLOCKED` — действие отклонено из-за открытого диалога, допроса или звонка. Причину несёт
+`DispatchResult.blockedReason` Game Core (`dialogue_open`, `interrogation_open`, `call_ringing`,
+`call_active`); это внутреннее поле движка, в протокол оно не пробрасывается: клиент видит только код
+`ACTION_BLOCKED`. Чтобы клиент не предлагал такие действия, `availableActions` их исключает (во время
+допроса нет `move`, `rest`, `pickLock`).
+
 ## 6. Представления
 
 Схемы — `packages/protocol/src/views` (`PlayerView`, `PhoneView` и вложенные типы), JSON Schema —

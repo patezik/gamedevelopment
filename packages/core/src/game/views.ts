@@ -20,6 +20,7 @@ import {
   readableDocuments,
   type DesktopActionType,
 } from './actions/index.ts';
+import { blockReason } from './interaction.ts';
 import type { Investigation } from './investigation.ts';
 
 export interface PlayerViewState {
@@ -69,8 +70,10 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
   const present = new Set(presentAt(investigation, locationId, minute));
   const modifiers = currentModifiers(desktop, investigation, locationId, minute);
   const availableActions: PlayerView['availableActions'] = [];
+  const dialogue =
+    desktop.interaction && (desktop.interaction.interrogation ? 'interrogation' : 'talk');
   const offer = (action: Extract<OfferedAction, { type: DesktopActionType }>, label: string) => {
-    if (remainingMinutes <= 0) return;
+    if (remainingMinutes <= 0 || blockReason(action.type, { dialogue })) return;
     const context = action.type === 'rest' ? { minutes: action.minutes } : { modifiers };
     const { min, max } = resolveActionCost(action.type, context, actionCosts);
     availableActions.push({ action, label, costPreview: { min, max } });
@@ -88,7 +91,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
       actionCosts,
       modifiers,
     );
-    if (remainingMinutes > 0 && !blockedReason) {
+    if (remainingMinutes > 0 && !blockedReason && !blockReason('move', { dialogue })) {
       availableActions.push({
         action: { type: 'move', locationId: to },
         label: name,
