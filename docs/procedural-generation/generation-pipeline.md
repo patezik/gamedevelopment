@@ -37,7 +37,7 @@ message, diagnostics? }`), следующие стадии и `accepts` не з�
 | 9 | **TestimonyGen** | знания, секреты | `LiePolicy` каждого, банк тем | Ложь только при мотиве скрывать |
 | 10 | **RedHerrings** | секреты невиновных | дополнительные следы их (реальных) проступков | Это истинные события, не фальшивки |
 | 11 | **Validation** | расследование | `ValidationReport` | [validation.md](../investigation/validation.md); при ошибке — ремонт/перегенерация |
-| 12 | **Packaging** | всё | `Investigation` + `investigationHash` + `GenerationReport` | Сериализуемый объект для сервера |
+| 12 | **Packaging** | всё | `Investigation` + `investigationHash` + `GenerationReport` + серверный payload (GEN-013) | Сериализуемый объект для сервера; payload — только в памяти сервера |
 
 WorldGen проверяет достижимость из старта по направленным связям, считая доступными все
 существующие ключи. Доступность по времени и фактическое получение ключей проверяются при
@@ -419,9 +419,21 @@ simulatedEvents, encounters }` — серверная диагностика, н
    `<seed>#N` с первой стадии (стратегии 3–4 из [validation.md §4](../investigation/validation.md)
    сведены в одну; стратегии 1–2, меняющие готовое дело, не реализованы). Максимум 8 попыток.
 
-Результат: `{ ok: true, investigation, investigationHash, report }` или
+Результат: `{ ok: true, investigation, investigationHash, report, server }` или
 `{ ok: false, error: 'GENERATION_UNSOLVABLE', report }`. `report.validations[]` хранит для каждой
 попытки найденные проверками ошибки и предупреждения (`checkId`, `code`, `message`).
+
+**Серверный результат (GEN-013).** `server: ServerGenerationPayload` — закрытые данные принятой
+попытки для настройки портов движка без повторной генерации: `attempt` (номер принятой попытки),
+`startLocationId`, `clues`, `requiredClueIds`, `knowledge` и `liePolicies` (по каждому персонажу
+каста), `testimony` (с `veracity`), `statements` (те же без `veracity`) и скомпилированные
+`deductionRules`. Шлюз запоминает попытку, которую он пропустил (вместе с её `Investigation` и
+контекстом проверок), и результат собирается из **тех же объектов**, что проверялись; данные
+отклонённых попыток и повтора `V-DETERMINISM` в него не попадают, `investigationHash` не меняется.
+При неудаче поля `server` нет. Payload называет истину (обязательные улики, правдивость показаний,
+политики лжи), поэтому не попадает в `PlayerView`/`PhoneView`, тела REST, логи и вывод `hs-gen`
+(даже с `--debug-truth`) и не пишется в сохранения. Подключение к портам `GameEngine` на сервере —
+отдельная задача; `AccusationPort.hallucinatedClueIds` и `incident` генератор не формирует.
 
 **Состояние на GEN-011.** Все 8 попыток отклоняются у обоих поставляемых сценариев
 (`_test_minimal`, `sanatorium_winter`) по `V-CULPRIT-PROVABLE`: ни один `supports` следов и ни одно
