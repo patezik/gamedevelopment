@@ -264,3 +264,60 @@ func test_live_several_accused_unchanged_in_both_phases_then_an_ending() -> void
 		return
 	assert_eq(ending.get_ending_id(), "partial")
 	assert_true(ending.has_recap(), "the TruthRecap comes with the ending")
+
+func test_live_unknown_survives_manual_reconnect_and_returning_to_the_game() -> void:
+	var live: bool = _pipe != null and await _connect("a")
+	assert_true(live, "a live session")
+	if not live:
+		return
+	await _know_the_cook()
+	var screen: Accusation = _screen()
+	await _reach_final(screen, [INNOCENT] as Array[String])
+	_command({"cmd": "drop", "type": "action.result", "close": true})
+	screen.get_final_dialog().confirmed.emit()
+	await wait_until(func() -> bool: return screen.get_stage() == Accusation.Stage.UNKNOWN, WAIT_SECONDS)
+	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
+	assert_eq(_confirm_true_count(_received("a")), 1, "the first accusation was executed")
+
+	assert_true(await _connect("a"), "explicit reconnect to the same session")
+	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
+	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE)
+	assert_true(await _connect("b"), "switch to another game")
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
+	assert_true(await _connect("a"), "return to the game with an unknown result")
+	screen.free()
+	screen = _screen()
+	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
+	screen.set_accused([INNOCENT])
+	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE)
+	assert_eq(_confirm_true_count(_received("a")), 1)
+	assert_eq(_received("b"), [])
+
+
+func test_live_probe_times_out_and_ignores_its_late_result() -> void:
+	var live: bool = _pipe != null and await _connect("a")
+	assert_true(live, "a live session")
+	if not live:
+		return
+	var screen: Accusation = _screen()
+	screen.set_accused([CULPRIT])
+	assert_eq(screen.request_accusation(), OK)
+	_command({"cmd": "hold", "type": "action.result"})
+	screen.get_first_dialog().confirmed.emit()
+	assert_eq(screen.get_stage(), Accusation.Stage.PROBING)
+	await wait_until(func() -> bool: return screen.get_stage() == Accusation.Stage.EDITING, WAIT_SECONDS)
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING, "the probe timed out")
+	assert_true(_store.is_online())
+	assert_true(screen.can_go_back())
+	assert_eq(screen.get_accused(), [CULPRIT] as Array[String], "the player can try again")
+
+	watch_signals(_store)
+	_command({"cmd": "release"})
+	await wait_until(func() -> bool: return get_signal_emit_count(_store, "action_resolved") == 1, WAIT_SECONDS)
+	assert_signal_emitted(_store, "action_resolved")
+	assert_false(screen.get_final_dialog().visible)
+	screen.get_final_dialog().confirmed.emit()
+	assert_eq(_confirm_true_count(_received("a")), 0)
+
+	await _reach_final(screen, [CULPRIT] as Array[String])
+	assert_eq(_confirm_true_count(_received("a")), 0)

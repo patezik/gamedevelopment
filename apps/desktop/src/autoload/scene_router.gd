@@ -35,6 +35,8 @@ const CURTAIN_LAYER: int = 128
 
 ## A requested transition.
 class Route:
+	## False once the route has been canceled or its mount has started.
+	var pending_mount: bool = true
 	var screen: StringName
 	var path: String
 	var params: Dictionary
@@ -117,6 +119,17 @@ func goto_terminal(screen: StringName, params: Dictionary = {}) -> Error:
 	return error
 
 
+## Cancels a terminal transition that belongs to a game the client has left.
+func cancel_terminal(screen: StringName) -> void:
+	if _terminal.is_empty() or _terminal != screen:
+		return
+	_terminal = &""
+	if _active != null and _active.screen == screen:
+		_active.pending_mount = false
+	if _queued != null and _queued.screen == screen:
+		_queued = null
+
+
 ## Opens [param screen] with [param params] (plain data only: no Objects at any depth; the screen
 ## gets a read-only deep copy). Returns OK when the transition started or was queued,
 ## ERR_BUSY when the same destination with the same params is already pending,
@@ -139,7 +152,7 @@ func goto(screen: StringName, params: Dictionary = {}) -> Error:
 	var route: Route = Route.new(screen, str(_screens[screen]), frozen)
 	if _active != null:
 		var pending: Route = _queued if _queued != null else _active
-		if pending.screen == route.screen and pending.params == route.params:
+		if pending.pending_mount and pending.screen == route.screen and pending.params == route.params:
 			return ERR_BUSY
 		_queued = route
 		return OK
@@ -154,7 +167,9 @@ func _run(first: Route) -> void:
 	await _fade_to(1.0)
 	# Requests that arrived while the curtain was closing are mounted behind it right away.
 	while true:
-		_mount(_active)
+		if _active.pending_mount:
+			_active.pending_mount = false
+			_mount(_active)
 		if _queued == null:
 			break
 		_active = _queued

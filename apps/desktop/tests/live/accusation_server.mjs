@@ -9,6 +9,8 @@
 //     {"cmd": "drop", "type": "action.result" | "view.update", "close": bool}
 //        drops the next server message of that type to the desktop; with close, the socket is
 //        terminated right after (the client reconnects and resumes)
+//     {"cmd": "hold", "type": "action.result"} / {"cmd": "release"}
+//        holds the next matching message until released on the same live socket
 //     {"cmd": "report"} -> {"a": {...}, "b": {...}}: per session, the accuse requests the engine
 //        received ({confirm, caseFile, ok}) and the ending the engine is in
 //     {"cmd": "quit"}
@@ -98,6 +100,7 @@ const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), { pairing, gateway 
 
 // Fault injection on the server's sockets.
 const faults = [];
+const held = [];
 const originalSend = WebSocket.prototype.send;
 WebSocket.prototype.send = function send(data, ...rest) {
   const text = typeof data === 'string' ? data : data.toString('utf8');
@@ -110,6 +113,7 @@ WebSocket.prototype.send = function send(data, ...rest) {
   const index = faults.findIndex((fault) => fault.type === type);
   if (index >= 0) {
     const [fault] = faults.splice(index, 1);
+    if (fault.hold) held.push(() => originalSend.call(this, data, ...rest));
     if (fault.close) setImmediate(() => this.terminate());
     return undefined;
   }
@@ -141,6 +145,12 @@ for await (const line of createInterface({ input: process.stdin })) {
   const command = JSON.parse(line);
   if (command.cmd === 'drop') {
     faults.push({ type: command.type, close: Boolean(command.close) });
+    process.stdout.write(JSON.stringify({ ok: true }) + '\n');
+  } else if (command.cmd === 'hold') {
+    faults.push({ type: command.type, hold: true });
+    process.stdout.write(JSON.stringify({ ok: true }) + '\n');
+  } else if (command.cmd === 'release') {
+    for (const send of held.splice(0)) send();
     process.stdout.write(JSON.stringify({ ok: true }) + '\n');
   } else if (command.cmd === 'report') {
     process.stdout.write(JSON.stringify(report()) + '\n');

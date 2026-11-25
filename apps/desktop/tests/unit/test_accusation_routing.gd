@@ -32,6 +32,7 @@ func before_each() -> void:
 	add_child_autofree(_backend)
 	_store = get_node(^"/root/GameStore") as GameStoreScript
 	_store.bind_backend(_backend)
+	_backend.set_session_id("session-a")
 	_backend.change_state(BackendScript.ConnectionState.ONLINE)
 	_router = get_node(^"/root/SceneRouter") as SceneRouterScript
 	_host = Control.new()
@@ -251,3 +252,71 @@ func test_a_second_session_shows_its_own_ending_without_the_old_recap() -> void:
 	await _settle()
 	assert_eq(_router.get_current_screen(), &"ending")
 	assert_eq((_screen() as Ending).get_ending_id(), "madness")
+
+func test_switching_sessions_during_terminal_fade_drops_the_old_ending() -> void:
+	var watcher: Node = EndingWatcher.new()
+	add_child_autofree(watcher)
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	_router.goto(&"exploration")
+	await _settle()
+	_router.fade_seconds = 0.1
+	_publish(EndingFixtures.view_for("death").duplicate(true))
+	assert_eq(_router.get_terminal_screen(), &"ending", "A's ending is fading in")
+	watch_signals(_router)
+
+	_backend.change_state(BackendScript.ConnectionState.OFFLINE)
+	_backend.set_session_id("session-b")
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_version = 0
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	assert_eq(_router.goto(&"exploration"), OK, "B's route must be available")
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"exploration")
+	assert_signal_emit_count(_router, "screen_changed", 1, "the old ending never mounts")
+	assert_false(watcher.call(&"has_shown_ending") as bool)
+
+
+func test_switching_sessions_discards_a_terminal_route_queued_behind_another_screen() -> void:
+	var watcher: Node = EndingWatcher.new()
+	add_child_autofree(watcher)
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	_router.goto(&"exploration")
+	await _settle()
+	_router.fade_seconds = 0.1
+	assert_eq(_router.goto(&"case_board"), OK)
+	_publish(EndingFixtures.view_for("death").duplicate(true))
+	assert_eq(_router.get_terminal_screen(), &"ending", "A's ending is queued")
+
+	_backend.change_state(BackendScript.ConnectionState.OFFLINE)
+	_backend.set_session_id("session-b")
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_version = 0
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"case_board", "the queued ending never mounts")
+	assert_eq(_router.get_terminal_screen(), &"")
+	assert_false(watcher.call(&"has_shown_ending") as bool)
+
+
+func test_new_ending_during_old_fade_in_releases_the_terminal_lock() -> void:
+	var watcher: Node = EndingWatcher.new()
+	add_child_autofree(watcher)
+	_publish(Fixtures.load_view("mid").duplicate(true))
+	_router.goto(&"exploration")
+	await _settle()
+	_router.fade_seconds = 0.2
+	_publish(EndingFixtures.view_for("death").duplicate(true))
+	await wait_until(func() -> bool: return _router.get_current_screen() == &"ending", 2.0)
+	assert_true(_router.is_transitioning(), "A's ending mounted but its fade-in is still running")
+
+	_backend.change_state(BackendScript.ConnectionState.OFFLINE)
+	_backend.set_session_id("session-b")
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_version = 0
+	_publish(EndingFixtures.view_for("madness").duplicate(true))
+	await _settle()
+	assert_eq((_screen() as Ending).get_ending_id(), "madness")
+	assert_eq(_router.get_terminal_screen(), &"")
+	assert_eq(_router.goto(&"case_board", {"back": "ending"}), OK)
+	await _settle()
+	assert_eq(_router.get_current_screen(), &"case_board")

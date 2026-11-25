@@ -84,6 +84,8 @@ const PREVIEW_FAILED_TEXT: String = "Предпросмотр недоступе
 const NEED_ACCUSED_TEXT: String = "Выберите хотя бы одного обвиняемого."
 const NEED_TARGET_TEXT: String = "Укажите, против кого был мотив, или не указывайте мотив."
 const PROBING_TEXT: String = "Запрос подтверждения у сервера…"
+const PROBE_TIMEOUT_TEXT: String = "Подтверждение не получено. Попробуйте ещё раз."
+const PROBE_TIMEOUT_SECONDS: float = 5.0
 const SUBMITTING_TEXT: String = "Обвинение предъявлено. Ожидание решения…"
 const CONTINUED_TEXT: String = "Обвинение не закрыло дело. Расследование продолжается."
 const ENDED_TEXT: String = "Игра окончена."
@@ -148,6 +150,7 @@ var _target_option: OptionButton
 var _accuse: Button
 var _first_confirm: ConfirmationDialog
 var _final_confirm: ConfirmationDialog
+var _probe_timer: Timer
 
 
 ## Called by SceneRouter before _ready. A screen that never gets params was run on its own.
@@ -368,6 +371,7 @@ func _on_first_confirmed() -> void:
 		_fail(GameStoreScript.ERROR_NOT_CONNECTED, "")
 		return
 	_probe_id = _store.get_last_action_request_id()
+	_probe_timer.start()
 
 
 func _on_final_confirmed() -> void:
@@ -400,7 +404,7 @@ func _on_confirm_canceled() -> void:
 func _on_action_resolved(request_id: String, ok: bool, code: String, message: String) -> void:
 	if _probe_id.is_empty() or request_id != _probe_id:
 		return
-	_probe_id = ""
+	_clear_probe()
 	if _stage != Stage.PROBING:
 		return
 	if not _same_session():
@@ -430,13 +434,27 @@ func _on_ledger_continued() -> void:
 
 
 func _fail(code: String, message: String) -> void:
-	_probe_id = ""
-	_file = {}
-	_first_confirm.hide()
-	_final_confirm.hide()
 	var text: String = str(ERROR_TEXT.get(code, ERROR_FALLBACK_TEXT % code))
 	if not message.is_empty():
 		text += " " + message
+	_cancel_confirmation(text)
+
+
+func _on_probe_timeout() -> void:
+	if _stage == Stage.PROBING:
+		_cancel_confirmation(PROBE_TIMEOUT_TEXT)
+
+
+func _clear_probe() -> void:
+	_probe_id = ""
+	_probe_timer.stop()
+
+
+func _cancel_confirmation(text: String) -> void:
+	_clear_probe()
+	_file = {}
+	_first_confirm.hide()
+	_final_confirm.hide()
 	if _stage != Stage.ENDED:
 		_set_stage(Stage.EDITING)
 	_error.text = text
@@ -458,7 +476,7 @@ func _same_session() -> bool:
 func _forget_session() -> void:
 	_first_confirm.hide()
 	_final_confirm.hide()
-	_probe_id = ""
+	_clear_probe()
 	_file = {}
 	_session = _store.get_session_id() if _store != null else ""
 	_accused.clear()
@@ -494,12 +512,7 @@ func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 		return
 	if _stage == Stage.CONFIRMING or _stage == Stage.PROBING or _stage == Stage.FINAL:
 		# A probe answered on the lost connection is not trusted for the next one.
-		_first_confirm.hide()
-		_final_confirm.hide()
-		_probe_id = ""
-		_file = {}
-		_set_stage(Stage.EDITING)
-		_error.text = CONNECTION_LOST_TEXT
+		_cancel_confirmation(CONNECTION_LOST_TEXT)
 	else:
 		_render_status()
 		_sync_controls()
@@ -558,7 +571,7 @@ func _show(view: Dictionary) -> void:
 	if view.has("ending"):
 		_first_confirm.hide()
 		_final_confirm.hide()
-		_probe_id = ""
+		_clear_probe()
 		_file = {}
 		_set_stage(Stage.ENDED)
 		if not is_preview():
@@ -622,6 +635,12 @@ func _prune_claims() -> void:
 
 
 func _build_ui() -> void:
+	_probe_timer = Timer.new()
+	_probe_timer.one_shot = true
+	_probe_timer.wait_time = PROBE_TIMEOUT_SECONDS
+	_probe_timer.timeout.connect(_on_probe_timeout)
+	add_child(_probe_timer)
+
 	var background: ColorRect = ColorRect.new()
 	background.color = Color(0.07, 0.06, 0.07, 1.0)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE

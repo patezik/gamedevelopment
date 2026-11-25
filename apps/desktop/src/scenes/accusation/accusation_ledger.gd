@@ -1,7 +1,7 @@
 extends Node
-## AccusationLedger: what became of the one irreversible request of the current session, the
-## `accuse` with `confirm: true` (ENG-006). It outlives the Accusation screen, so leaving and
-## reopening the screen cannot clear an accusation whose outcome is not known.
+## Tracks the unresolved `accuse` with `confirm: true` (ENG-006) for each game joined by this
+## client. It outlives the screen and the connection. Only a correlated result and an ensuing view,
+## a rejection, or an ending can resolve an attempt.
 ##
 ## Outcomes ([enum Outcome]):
 ## - NONE — nothing irreversible is in flight; the player may accuse.
@@ -17,9 +17,9 @@ extends Node
 ##   §4.4 and the protocol gap recorded in PROTO-005).
 ## - ENDED — the view carries `ending`.
 ##
-## A refusal (`ok: false` for our request) returns to NONE. A new session — the connection goes
-## OFFLINE or the `sessionId` changes — returns to NONE and forgets the request: a late answer of
-## the previous session cannot touch the new one. Nothing is ever re-sent automatically.
+## A refusal (`ok: false` for our request) returns to NONE. Welcome's `sessionId` selects which
+## attempt to show. A disconnect cannot discard an unresolved attempt, even if the player joins
+## another game before returning. Nothing is re-sent automatically.
 
 const GameStoreScript = preload("res://src/autoload/game_store.gd")
 const BackendScript = preload("res://src/autoload/backend.gd")
@@ -44,13 +44,22 @@ var result_timeout_seconds: float = RESULT_TIMEOUT_SECONDS
 ## back; a new accusation still waits for that view).
 var view_timeout_seconds: float = VIEW_TIMEOUT_SECONDS
 
+
+class Attempt:
+	var outcome: Outcome = Outcome.SENT
+	var request_id: String
+	var file: Dictionary
+	var elapsed: float = 0.0
+	var stalled: bool = false
+
+	func _init(sent_file: Dictionary, sent_request_id: String) -> void:
+		file = sent_file.duplicate(true)
+		request_id = sent_request_id
+
+
 var _store: GameStoreScript = null
-var _outcome: Outcome = Outcome.NONE
-var _request_id: String = ""
 var _session_id: String = ""
-var _file: Dictionary = {}
-var _elapsed: float = 0.0
-var _stalled: bool = false
+var _attempts: Dictionary[String, Attempt] = {}
 
 
 ## The ledger under [param root] bound to [param store], created (and added deferred) if missing.
@@ -85,13 +94,13 @@ func bind_store(store: GameStoreScript) -> void:
 		_store.action_resolved.disconnect(_on_action_resolved)
 		_store.connection_state_changed.disconnect(_on_connection_state_changed)
 	_store = store
-	_reset(false)
+	_attempts.clear()
+	_session_id = ""
 	if _store != null:
+		_session_id = _store.get_session_id()
 		_store.view_changed.connect(_on_view_changed)
 		_store.action_resolved.connect(_on_action_resolved)
 		_store.connection_state_changed.connect(_on_connection_state_changed)
-		if _store.has_view() and _store.get_view().has("ending"):
-			_set_outcome(Outcome.ENDED)
 
 
 func get_store() -> GameStoreScript:
@@ -99,116 +108,118 @@ func get_store() -> GameStoreScript:
 
 
 func get_outcome() -> Outcome:
-	_check_session()
-	return _outcome
+	if not _is_current_session():
+		return Outcome.NONE
+	if _store.get_view().has("ending"):
+		return Outcome.ENDED
+	var attempt: Attempt = _attempts.get(_session_id)
+	return attempt.outcome if attempt != null else Outcome.NONE
 
 
 ## True when a new accusation may be sent in this session.
 func can_accuse() -> bool:
-	return get_outcome() == Outcome.NONE
+	return _is_current_session() and get_outcome() == Outcome.NONE
 
 
 ## True when EXECUTED waited [member view_timeout_seconds] without a view.
 func is_stalled() -> bool:
-	return _stalled
+	var attempt: Attempt = _current_attempt()
+	return attempt != null and attempt.stalled
 
 
 ## The case file of the request in flight or with an unknown outcome; empty otherwise.
 func get_file() -> Dictionary:
-	return _file.duplicate(true)
+	var attempt: Attempt = _current_attempt()
+	return attempt.file.duplicate(true) if attempt != null else {}
 
 
 func get_request_id() -> String:
-	return _request_id
+	var attempt: Attempt = _current_attempt()
+	return attempt.request_id if attempt != null else ""
 
 
 ## Records that `accuse` with `confirm: true` for [param file] left as [param request_id].
 ## Refused (false) unless the outcome is NONE.
 func begin(file: Dictionary, request_id: String) -> bool:
-	if not can_accuse() or request_id.is_empty() or _store == null:
+	if not can_accuse() or request_id.is_empty():
 		return false
-	_file = file.duplicate(true)
-	_request_id = request_id
-	_session_id = _store.get_session_id()
-	_set_outcome(Outcome.SENT)
+	_attempts[_session_id] = Attempt.new(file, request_id)
+	changed.emit(Outcome.SENT)
 	return true
 
 
 ## Moves the timeouts on by [param delta] seconds (called every frame; tests call it directly).
 func advance(delta: float) -> void:
-	if _outcome == Outcome.SENT:
-		_elapsed += delta
-		if _elapsed >= result_timeout_seconds:
-			_set_outcome(Outcome.UNKNOWN)
-	elif _outcome == Outcome.EXECUTED and not _stalled:
-		_elapsed += delta
-		if _elapsed >= view_timeout_seconds:
-			_stalled = true
-			changed.emit(_outcome)
+	var attempt: Attempt = _current_attempt()
+	if attempt == null:
+		return
+	if attempt.outcome == Outcome.SENT:
+		attempt.elapsed += delta
+		if attempt.elapsed >= result_timeout_seconds:
+			_set_outcome(attempt, Outcome.UNKNOWN)
+	elif attempt.outcome == Outcome.EXECUTED and not attempt.stalled:
+		attempt.elapsed += delta
+		if attempt.elapsed >= view_timeout_seconds:
+			attempt.stalled = true
+			changed.emit(Outcome.EXECUTED)
 
 
 func _on_action_resolved(request_id: String, ok: bool, code: String, message: String) -> void:
-	if not _check_session() or request_id != _request_id or _request_id.is_empty():
+	var attempt: Attempt = _current_attempt()
+	if attempt == null or request_id != attempt.request_id:
 		return
-	if _outcome != Outcome.SENT and _outcome != Outcome.UNKNOWN:
+	if attempt.outcome != Outcome.SENT and attempt.outcome != Outcome.UNKNOWN:
 		return
 	if ok:
 		# Executed: the next view on this connection is the state after it.
-		_set_outcome(Outcome.EXECUTED)
+		_set_outcome(attempt, Outcome.EXECUTED)
 	else:
-		_reset(true)
+		_attempts.erase(_session_id)
+		changed.emit(Outcome.NONE)
 		refused.emit(code, message)
 
 
 func _on_view_changed(view: Dictionary, _state_version: int) -> void:
-	if not _check_session():
+	if not _is_current_session():
 		return
 	if view.has("ending"):
-		_set_outcome(Outcome.ENDED)
-	elif _outcome == Outcome.EXECUTED:
+		if _attempts.erase(_session_id):
+			changed.emit(Outcome.ENDED)
+		return
+	var attempt: Attempt = _current_attempt()
+	if attempt != null and attempt.outcome == Outcome.EXECUTED:
 		# Only a view after an accepted result is proof that the game went on.
-		_reset(true)
+		_attempts.erase(_session_id)
+		changed.emit(Outcome.NONE)
 		continued.emit()
 
 
 func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
+	if state == BackendScript.ConnectionState.ONLINE:
+		var joined_id: String = _store.get_session_id()
+		if joined_id != _session_id:
+			_session_id = joined_id
+			changed.emit(get_outcome())
+		return
+	# Backend clears its ID before emitting OFFLINE, so use the known ID of the lost connection.
+	var attempt: Attempt = _attempts.get(_session_id)
+	if attempt != null and attempt.outcome == Outcome.SENT:
+		_set_outcome(attempt, Outcome.UNKNOWN)
 	if state == BackendScript.ConnectionState.OFFLINE:
-		# The session is over or replaced.
-		_reset(_outcome != Outcome.NONE)
-	elif state != BackendScript.ConnectionState.ONLINE and _outcome == Outcome.SENT:
-		# The result of the request cannot come over the next connection.
-		_set_outcome(Outcome.UNKNOWN)
-	elif state == BackendScript.ConnectionState.ONLINE:
-		_check_session()
+		_session_id = ""
+		changed.emit(Outcome.NONE)
 
 
-## False (after forgetting everything) when the store is in another session than the request.
-func _check_session() -> bool:
-	if _outcome == Outcome.NONE or _store == null:
-		return true
-	var current: String = _store.get_session_id()
-	if current.is_empty() or current == _session_id:
-		return true
-	_reset(true)
-	return false
+func _is_current_session() -> bool:
+	return _store != null and not _session_id.is_empty() and _store.get_session_id() == _session_id
 
 
-func _set_outcome(outcome: Outcome) -> void:
-	_outcome = outcome
-	_elapsed = 0.0
-	_stalled = false
-	if outcome == Outcome.ENDED or outcome == Outcome.NONE:
-		_request_id = ""
-		_file = {}
+func _current_attempt() -> Attempt:
+	return _attempts.get(_session_id) if _is_current_session() else null
+
+
+func _set_outcome(attempt: Attempt, outcome: Outcome) -> void:
+	attempt.outcome = outcome
+	attempt.elapsed = 0.0
+	attempt.stalled = false
 	changed.emit(outcome)
-
-
-func _reset(notify: bool) -> void:
-	_outcome = Outcome.NONE
-	_request_id = ""
-	_session_id = ""
-	_file = {}
-	_elapsed = 0.0
-	_stalled = false
-	if notify:
-		changed.emit(_outcome)

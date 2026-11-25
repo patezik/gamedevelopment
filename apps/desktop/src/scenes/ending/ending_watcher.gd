@@ -8,7 +8,8 @@ extends Node
 ## button or Escape pressed during the fade can displace it, and it counts the ending as shown only
 ## when SceneRouter actually mounted it (`screen_changed`). If the request was refused or failed,
 ## the next view, event or screen change asks again. Once shown, the player may open the case
-## board on purpose; the watcher does not pull them back. A new session (OFFLINE) starts over.
+## board on purpose; the watcher does not pull them back. Leaving the game cancels any pending
+## ending transition, and the new game can start navigating immediately.
 ## It decides nothing about the ending: the view says which one it is.
 ##
 ## Installed once on the scene root by bootstrap ([method install]), next to HorrorFx and the debug
@@ -24,6 +25,8 @@ const ENDING_SCREEN: StringName = &"ending"
 
 var _store: GameStoreScript = null
 var _router: SceneRouterScript = null
+## The session that produced the current view.
+var _view_session_id: String = ""
 ## True once SceneRouter mounted the ending of the current session.
 var _shown: bool = false
 
@@ -75,8 +78,10 @@ func bind_store(store: GameStoreScript) -> void:
 		_store.event_received.disconnect(_on_event_received)
 		_store.connection_state_changed.disconnect(_on_connection_state_changed)
 	_store = store
-	_shown = false
+	_reset_ending()
+	_view_session_id = ""
 	if _store != null:
+		_view_session_id = _store.get_session_id()
 		_store.view_changed.connect(_on_view_changed)
 		_store.event_received.connect(_on_event_received)
 		_store.connection_state_changed.connect(_on_connection_state_changed)
@@ -99,9 +104,7 @@ func has_shown_ending() -> bool:
 
 
 func _check() -> void:
-	if _shown or _store == null or _router == null or not _store.has_view():
-		return
-	if not _store.get_view().has("ending"):
+	if _shown or _router == null or not _has_current_ending():
 		return
 	if _router.get_current_screen() == ENDING_SCREEN and not _router.is_transitioning():
 		_shown = true
@@ -112,6 +115,10 @@ func _check() -> void:
 
 
 func _on_view_changed(_view: Dictionary, _state_version: int) -> void:
+	var current: String = _store.get_session_id()
+	if current != _view_session_id:
+		_reset_ending()
+		_view_session_id = current
 	_check()
 
 
@@ -121,7 +128,7 @@ func _on_event_received(event: Dictionary) -> void:
 
 
 func _on_screen_changed(screen: StringName, _params: Dictionary) -> void:
-	if screen == ENDING_SCREEN and _store != null and _store.get_view().has("ending"):
+	if screen == ENDING_SCREEN and _has_current_ending():
 		_shown = true
 	else:
 		_check()
@@ -129,4 +136,21 @@ func _on_screen_changed(screen: StringName, _params: Dictionary) -> void:
 
 func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 	if state == BackendScript.ConnectionState.OFFLINE:
-		_shown = false
+		_reset_ending()
+		_view_session_id = ""
+	elif state == BackendScript.ConnectionState.ONLINE and _store.get_session_id() != _view_session_id:
+		_reset_ending()
+
+
+func _has_current_ending() -> bool:
+	return (
+		_store != null
+		and _store.get_session_id() == _view_session_id
+		and _store.get_view().has("ending")
+	)
+
+
+func _reset_ending() -> void:
+	_shown = false
+	if _router != null:
+		_router.cancel_terminal(ENDING_SCREEN)
