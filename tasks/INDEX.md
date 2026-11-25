@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **150** · todo: 37 · in_progress: 10 · review: 0 · done: 103 · blocked: 0
+Всего задач: **150** · todo: 37 · in_progress: 9 · review: 1 · done: 103 · blocked: 0
 
 ## Готовы к взятию сейчас
 
@@ -48,7 +48,7 @@
 | [FND-007](FND-007.md) | Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) | P0 | S | done | codex-desktop | — |
 | [FND-008](FND-008.md) | GUT 9.7.x, headless-запуск тестов Godot и CI-job | P0 | M | done | codex-desktop | [FND-007](FND-007.md), [FND-003](FND-003.md) |
 | [FND-009](FND-009.md) | Каркасы пакетов @hs/core, @hs/generator, @hs/validator | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
-| [FND-010](FND-010.md) | Оркестрация разработки и проверка setup.md на чистой машине | P1 | S | in_progress | egor-codex-fnd-010 | [FND-005](FND-005.md), [FND-006](FND-006.md), [FND-008](FND-008.md) |
+| [FND-010](FND-010.md) | Оркестрация разработки и проверка setup.md на чистой машине | P1 | S | review | egor-codex-fnd-010 | [FND-005](FND-005.md), [FND-006](FND-006.md), [FND-008](FND-008.md) |
 
 ## Фаза 2 · M2 — Core runtime (24)
 
