@@ -49,6 +49,10 @@
 | Пакет | Версия | Expo Go | Зачем |
 |-------|--------|---------|-------|
 | expo-router | SDK 58 (58.0.x) | Да | Навигация |
+| expo-constants, expo-linking, expo-status-bar | SDK 58 (58.0.x), MIT | Да | Зависимости каркаса Expo Router и системная строка |
+| react, react-dom | 19.3.0, MIT | Да (React) | Единая версия React для React Native и зависимостей Expo Router |
+| react-native-safe-area-context, react-native-screens | 5.11.x / 4.30.x, MIT | Да | Безопасная область и нативная навигация |
+| react-native-gesture-handler, react-native-worklets | 3.3.x / 0.13.x, MIT | Да | Версии нативных зависимостей Expo Router, совместимые с Expo Go |
 | expo-camera | SDK 58 (58.0.x) | Да | Камера, сканирование QR (`CameraView`) |
 | expo-secure-store | SDK 58 | Да | Хранение `deviceToken` |
 | @react-native-async-storage/async-storage | версия SDK 58 | Да | Настройки |
@@ -59,8 +63,11 @@
 | zod | 4.6.x | Да (чистый JS) | Валидация входящих сообщений |
 | jest-expo | 58.0.x | — (dev) | Тесты |
 | @testing-library/react-native | 14.x | — (dev) | Тесты компонентов |
+| jest, @types/jest, @types/react | 30.5.x / 30.0.x / 19.3.x, MIT | — (dev) | Раннер и типы для smoke-теста и TSX |
 
 Нативных модулей вне Expo Go нет. Решение при появлении такой необходимости — [ADR 0007](adr/0007-mobile-stack.md).
+Корневые npm `overrides` удерживают React и нативные зависимости Expo Router в версиях SDK 58,
+чтобы npm не устанавливал рядом другую копию для транзитивных зависимостей.
 
 ## 4. Godot
 
@@ -80,8 +87,8 @@
 ## 6. Проверка совместимости
 
 - Expo Go: все пакеты раздела 3 входят в Expo SDK или являются чистым JS.
-- Expo Go для SDK 58 в магазинах: ожидается после 15.10.2026; Android получает нужную версию
-  через Expo CLI. Fallback — SDK 57 (см. ADR 0007, FND-006).
+- Expo Go для SDK 58: [App Store](https://apps.apple.com/us/app/expo-go/id982107779)
+  указывает поддержку в версии 58.0.5. Сборки для Android доступны на [странице Expo Go](https://expo.dev/go).
 - Expo Go требует входа в Expo-аккаунт для режима разработки (изменение 2026 г.).
 - Node.js 24 удовлетворяет требованиям Vitest 5 (`^22.12 || ^24 || >=26`) и Expo SDK 58 (≥ 24.3).
 - typescript-eslint 8.72 требует TypeScript `<6.1` — отсюда выбор TS 6.0.

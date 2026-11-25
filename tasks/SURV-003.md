@@ -1,7 +1,7 @@
 ---
 id: SURV-003
 title: "Угрозы: нападение виновника, опасные локации, исход столкновения"
-status: todo
+status: done
 priority: P1
 complexity: M
 phase: 7
@@ -9,8 +9,8 @@ milestone: M7
 area: survival
 depends_on: [SURV-001, SIM-006]
 modules: ["packages/core/src/survival/threats.ts", "packages/core/src/simulation/goals/confront-player.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-qc
+claimed_at: "2026-11-25T07:45:31Z"
 ---
 
 # SURV-003 — Угрозы: нападение виновника, опасные локации, исход столкновения
@@ -50,8 +50,8 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Нападение всегда оставляет улику.
-- [ ] Детерминизм исходов.
+- [x] Нападение всегда оставляет улику.
+- [x] Детерминизм исходов.
 - [ ] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию

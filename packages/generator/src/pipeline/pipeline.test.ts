@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { loadScenarioFromDir } from '@hs/core/content';
 import { createRng } from '@hs/core/rng';
 import { expect, test } from 'vitest';
-import { runPipeline, type Stage } from './index.ts';
+import { GenerationRejection, runPipeline, type Stage } from './index.ts';
 
 const content = loadScenarioFromDir(
   fileURLToPath(new URL('../../../../content/scenarios/_test_minimal/', import.meta.url)),
@@ -49,4 +49,75 @@ test('retries validation with deterministic attempt seeds up to the configured l
     ok: false,
     error: 'GENERATION_UNSOLVABLE',
   });
+});
+
+test('a GenerationRejection ends the attempt; other errors propagate', () => {
+  const ran: string[] = [];
+  const gate: Stage<number, number> = {
+    name: 'gate',
+    generate(value, { rng }) {
+      // Attempt 1 is rejected, attempt 2 passes.
+      if (rng.nextU32() === createRng('winter#1').fork('gen/gate').nextU32()) {
+        throw new GenerationRejection('TEST_REJECTED', 'nothing fits', { value });
+      }
+      return value;
+    },
+  };
+  const after: Stage<number, string> = {
+    name: 'after',
+    generate(value) {
+      ran.push(String(value));
+      return String(value);
+    },
+  };
+  const result = runPipeline([draw, gate, after], 'snow', {
+    seed: 'winter',
+    content,
+    maxAttempts: 8,
+    now: () => 0,
+  });
+  expect(result.ok).toBe(true);
+  expect(result.report.attempts.map(({ accepted }) => accepted)).toEqual([false, true]);
+  const rejected = result.report.attempts.filter(({ rejection }) => rejection);
+  for (const { accepted, rejection, timingsMs } of rejected) {
+    expect(accepted).toBe(false);
+    expect(rejection).toMatchObject({
+      stage: 'gate',
+      code: 'TEST_REJECTED',
+      message: 'nothing fits',
+    });
+    expect(rejection?.diagnostics).toHaveProperty('value');
+    expect(Object.keys(timingsMs)).toEqual(['draw', 'gate']);
+  }
+  expect(ran).toHaveLength(1);
+
+  const broken: Stage<number, number> = {
+    name: 'broken',
+    generate() {
+      throw new RangeError('defect');
+    },
+  };
+  expect(() =>
+    runPipeline([draw, broken], 'snow', { seed: 'winter', content, now: () => 0 }),
+  ).toThrow('defect');
+});
+
+test('replays one numbered attempt and tells `accepts` which attempt it checks', () => {
+  const options = { seed: 'winter', content, now: () => 0 };
+  const seen: number[] = [];
+  const full = runPipeline([draw], 'snow', {
+    ...options,
+    accepts: (_value, attempt) => {
+      seen.push(attempt);
+      return attempt === 3;
+    },
+  });
+  const replay = runPipeline([draw], 'snow', { ...options, firstAttempt: 3, maxAttempts: 1 });
+  if (!full.ok || !replay.ok) throw new Error('Expected both runs to succeed');
+  expect(seen).toEqual([1, 2, 3]);
+  expect(replay.output).toBe(full.output);
+  expect(replay.report.attempts.map(({ number, seed }) => [number, seed])).toEqual([
+    [3, 'winter#3'],
+  ]);
+  expect(() => runPipeline([draw], 'snow', { ...options, firstAttempt: 0 })).toThrow(RangeError);
 });

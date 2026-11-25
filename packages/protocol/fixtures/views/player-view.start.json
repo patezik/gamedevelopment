@@ -42,6 +42,44 @@
       }
     ]
   },
+  "knownMap": {
+    "locations": [
+      {
+        "id": "loc_lobby",
+        "name": "Вестибюль санатория",
+        "visited": true
+      },
+      {
+        "id": "loc_corridor",
+        "name": "Главный коридор",
+        "visited": false
+      },
+      {
+        "id": "loc_garden",
+        "name": "Зимний сад",
+        "visited": false
+      },
+      {
+        "id": "loc_basement",
+        "name": "Лестница в подвал",
+        "visited": false
+      }
+    ],
+    "links": [
+      {
+        "from": "loc_lobby",
+        "to": "loc_corridor"
+      },
+      {
+        "from": "loc_lobby",
+        "to": "loc_garden"
+      },
+      {
+        "from": "loc_lobby",
+        "to": "loc_basement"
+      }
+    ]
+  },
   "presentCharacters": [
     {
       "id": "ch_nurse",

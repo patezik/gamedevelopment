@@ -36,6 +36,26 @@
       }
     ]
   },
+  "knownMap": {
+    "locations": [
+      {
+        "id": "loc_infirmary",
+        "name": "Процедурная",
+        "visited": true
+      },
+      {
+        "id": "loc_corridor",
+        "name": "Главный коридор",
+        "visited": false
+      }
+    ],
+    "links": [
+      {
+        "from": "loc_infirmary",
+        "to": "loc_corridor"
+      }
+    ]
+  },
   "presentCharacters": [
     {
       "id": "ch_doctor",

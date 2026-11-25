@@ -1,0 +1,155 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scenes/hud/hud.gd" id="1_hud"]
+
+[node name="Hud" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_hud")
+
+[node name="Bar" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 96.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="Bar"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 12
+
+[node name="Row" type="HBoxContainer" parent="Bar/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 32
+
+[node name="Time" type="VBoxContainer" parent="Bar/Margin/Row"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ClockLabel" type="Label" parent="Bar/Margin/Row/Time"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "—"
+
+[node name="Details" type="HBoxContainer" parent="Bar/Margin/Row/Time"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="PeriodLabel" type="Label" parent="Bar/Margin/Row/Time/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "—"
+
+[node name="RemainingLabel" type="Label" parent="Bar/Margin/Row/Time/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Осталось: —"
+
+[node name="Vitals" type="HBoxContainer" parent="Bar/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="Health" type="VBoxContainer" parent="Bar/Margin/Row/Vitals"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HealthLabel" type="Label" parent="Bar/Margin/Row/Vitals/Health"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Здоровье —"
+
+[node name="HealthBar" type="ProgressBar" parent="Bar/Margin/Row/Vitals/Health"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+max_value = 10.0
+step = 1.0
+show_percentage = false
+
+[node name="Sanity" type="VBoxContainer" parent="Bar/Margin/Row/Vitals"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="SanityLabel" type="Label" parent="Bar/Margin/Row/Vitals/Sanity"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Рассудок —"
+
+[node name="SanityBar" type="ProgressBar" parent="Bar/Margin/Row/Vitals/Sanity"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+max_value = 10.0
+step = 1.0
+show_percentage = false
+
+[node name="Fatigue" type="VBoxContainer" parent="Bar/Margin/Row/Vitals"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="FatigueLabel" type="Label" parent="Bar/Margin/Row/Vitals/Fatigue"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Усталость —"
+
+[node name="FatigueBar" type="ProgressBar" parent="Bar/Margin/Row/Vitals/Fatigue"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+step = 1.0
+show_percentage = false
+
+[node name="Static" type="VBoxContainer" parent="Bar/Margin/Row/Vitals"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StaticLabel" type="Label" parent="Bar/Margin/Row/Vitals/Static"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Static —"
+
+[node name="StaticBar" type="ProgressBar" parent="Bar/Margin/Row/Vitals/Static"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+step = 1.0
+show_percentage = false
+
+[node name="Phone" type="VBoxContainer" parent="Bar/Margin/Row"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PhoneLabel" type="Label" parent="Bar/Margin/Row/Phone"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Телефон: нет данных"
+
+[node name="BatteryLabel" type="Label" parent="Bar/Margin/Row/Phone"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Заряд: —"

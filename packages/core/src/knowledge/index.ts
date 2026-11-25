@@ -1,4 +1,4 @@
-export { KnowledgeStore, type Belief } from './store.ts';
+export { KnowledgeStore, recallBelief, type Belief } from './store.ts';
 export {
   answer,
   buildLiePolicy,

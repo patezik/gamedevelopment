@@ -95,7 +95,7 @@ npx expo login               # один раз
 npm run dev:mobile           # покажет QR Expo Go — это QR разработки, не игровой
 ```
 
-Отсканируйте QR Expo Go камерой (iOS) или из приложения Expo Go (Android). Игровой QR привязки
+Для первого прототипа отсканируйте QR Expo Go камерой iPhone. Игровой QR привязки
 сканируется уже **внутри** нашего приложения (см. [qr-mechanics.md](../mobile/qr-mechanics.md)).
 
 ## 6. Сеть и брандмауэр

@@ -147,6 +147,21 @@ export const EndingView = z.strictObject({
 });
 export type EndingView = z.infer<typeof EndingView>;
 
+/** A location the player knows: stood in (`visited`) or saw listed as an exit. */
+export const KnownLocationView = z.strictObject({ id, name: text, visited: z.boolean() });
+export type KnownLocationView = z.infer<typeof KnownLocationView>;
+
+/** A link the player was shown as an exit of a visited location. */
+export const KnownLinkView = z.strictObject({ from: id, to: id });
+export type KnownLinkView = z.infer<typeof KnownLinkView>;
+
+/** What the player has seen of the map; never the world graph. */
+export const KnownMapView = z.strictObject({
+  locations: z.array(KnownLocationView),
+  links: z.array(KnownLinkView),
+});
+export type KnownMapView = z.infer<typeof KnownMapView>;
+
 export const PlayerView = z.strictObject({
   clock: z.strictObject({
     t: minutes,
@@ -163,6 +178,7 @@ export const PlayerView = z.strictObject({
     hotspots: z.array(HotspotView),
     exits: z.array(ExitView),
   }),
+  knownMap: KnownMapView.optional(),
   presentCharacters: z.array(CharacterView),
   availableActions: z.array(
     z.strictObject({

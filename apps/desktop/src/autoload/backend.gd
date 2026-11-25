@@ -22,6 +22,7 @@ var _state: ConnectionState = ConnectionState.OFFLINE
 var _socket: WebSocketPeer
 var _socket_url: String
 var _token: String
+var _session_id: String
 var _retry: int
 var _remaining: float
 var _last_received: float
@@ -29,6 +30,7 @@ var _heartbeat: float
 var _last_seq: int = -1
 var _state_version: int
 var _request_id: int
+var _last_action_request_id: String = ""
 var _random: RandomNumberGenerator = RandomNumberGenerator.new()
 var _http: HTTPRequest
 var _active_rest: RestCall
@@ -62,6 +64,33 @@ func request_rest(
 	return call.id
 
 
+## Drops a REST call that has not started. An active call completes with its original request ID.
+func cancel_queued_rest(request_id: int) -> void:
+	for index: int in range(_rest_queue.size()):
+		if _rest_queue[index].id == request_id:
+			_rest_queue.remove_at(index)
+			return
+
+
+## Requests the server matrix using the authenticated session from welcome. Returns -1 before
+## a session is available. Screens match the returned ID against rest_completed.
+func request_evidence_qr(token_id: String) -> int:
+	if _session_id.is_empty() or token_id.is_empty() or not _socket_url.ends_with("/ws"):
+		return -1
+	var origin: String = _socket_url.trim_suffix("/ws")
+	if origin.begins_with("wss://"):
+		origin = "https://" + origin.substr(6)
+	elif origin.begins_with("ws://"):
+		origin = "http://" + origin.substr(5)
+	else:
+		return -1
+	return request_rest(
+		"%s/api/v1/sessions/%s/evidence-qr/%s" % [
+			origin, _session_id.uri_encode(), token_id.uri_encode(),
+		], HTTPClient.METHOD_GET, "", _token
+	)
+
+
 func connect_session(url: String, token: String) -> void:
 	disconnect_session()
 	_socket_url = url
@@ -75,6 +104,7 @@ func disconnect_session() -> void:
 	_socket = null
 	_socket_url = ""
 	_token = ""
+	_session_id = ""
 	_last_seq = -1
 	_state_version = 0
 	_retry = 0
@@ -84,7 +114,15 @@ func disconnect_session() -> void:
 func send_action(action: Dictionary) -> Error:
 	if _state != ConnectionState.ONLINE:
 		return ERR_UNCONFIGURED
-	return _send(ProtocolConstants.MSG_ACTION_REQUEST, {"action": action})
+	var result: Error = _send(ProtocolConstants.MSG_ACTION_REQUEST, {"action": action})
+	if result == OK:
+		_last_action_request_id = _message_id()
+	return result
+
+
+## Read immediately after a successful send_action to correlate its action.result.
+func get_last_action_request_id() -> String:
+	return _last_action_request_id
 
 
 func _process(delta: float) -> void:
@@ -165,6 +203,9 @@ func _receive(packet: PackedByteArray) -> void:
 			return
 		if Envelope.counter(payload.get("protocolVersion")) != ProtocolConstants.PROTOCOL_VERSION:
 			return
+		var session_id: Variant = payload.get("sessionId")
+		if session_id is String:
+			_session_id = session_id
 		_retry = 0
 		_set_state(ConnectionState.ONLINE)
 	var sequence: int = Envelope.counter(message.get("seq"))
@@ -182,12 +223,16 @@ func _receive(packet: PackedByteArray) -> void:
 	message_received.emit(message)
 
 
+func _message_id() -> String:
+	return "desktop-%d" % _request_id
+
+
 func _send(kind: String, payload: Dictionary) -> Error:
 	_request_id += 1
 	var message: Dictionary = {
 		"v": ProtocolConstants.PROTOCOL_VERSION,
 		"type": kind,
-		"id": "desktop-%d" % _request_id,
+		"id": _message_id(),
 		"payload": payload,
 	}
 	if _last_seq >= 0:

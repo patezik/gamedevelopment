@@ -11,6 +11,7 @@ import type { Rng, RngState } from '../rng/index.ts';
 import { TickPhase, type Calendar, type TickContext, type TimeSystem } from '../time/index.ts';
 import type { EntityRef, Fact, TruthModel } from '../truth/index.ts';
 import type { Actor, ItemRegistry, LocationGraph } from '../world/index.ts';
+import { FOCUS_STEP_MINUTES, type SimulationLod } from './lod.ts';
 import { recordObservations, type Observer, type PerceptibleEvent } from './perception.ts';
 
 const MINUTES_PER_DAY = 1440;
@@ -47,6 +48,8 @@ interface AgentState {
   readonly knowledge: KnowledgeStore;
   readonly priority: number;
   readonly overrides: readonly ScheduleOverride[];
+  /** Exclusive end of this character's actions: the runner's end or an earlier exit. */
+  readonly endAt: GameMinutes;
   location: string;
   activity?: Activity;
   block: RoutineBlock;
@@ -67,6 +70,13 @@ export interface SimulationRunnerOptions {
   readonly stressAt?: (id: string, minute: GameMinutes) => number;
   /** Known minutes of item updates that will be written before the Simulation phase. */
   readonly itemChangeMinutes?: readonly GameMinutes[];
+  /** Detail levels: `focus` agents stay in steps of at most 5 minutes (ADR 0013). */
+  readonly lod?: Pick<SimulationLod, 'level'>;
+  /**
+   * Minutes from which a character no longer acts or observes, e.g. a death. Steps end there and
+   * no transition arrives later; the caller records what happens to the character at that minute.
+   */
+  readonly exits?: ReadonlyMap<string, GameMinutes>;
   /** Exclusive end of the interval owned by this runner. Use the same calendar as TimeSystem. */
   readonly endAt: GameMinutes;
 }
@@ -80,6 +90,7 @@ export class SimulationRunner {
   readonly #truth: TruthModel;
   readonly #endAt: GameMinutes;
   readonly #stressAt: NonNullable<SimulationRunnerOptions['stressAt']>;
+  readonly #lod: SimulationRunnerOptions['lod'];
 
   constructor({
     time,
@@ -94,6 +105,8 @@ export class SimulationRunner {
     knowledge,
     stressAt = () => 0,
     itemChangeMinutes = [],
+    lod,
+    exits = new Map(),
     endAt,
   }: SimulationRunnerOptions) {
     const start = time.now();
@@ -110,7 +123,13 @@ export class SimulationRunner {
     this.#truth = truth;
     this.#endAt = endAt;
     this.#stressAt = stressAt;
+    this.#lod = lod;
 
+    const known = new Set(characters.map(({ id }) => id));
+    for (const [id, minute] of exits) {
+      if (!known.has(id)) throw new RangeError(`Exit for unknown character: ${id}`);
+      if (!Number.isSafeInteger(minute)) throw new RangeError(`Invalid exit minute for ${id}`);
+    }
     const agentRng = rng.fork('sim').fork('agent');
     const sorted = characters.toSorted((a, b) => (a.id < b.id ? -1 : Number(a.id > b.id)));
     for (const [priority, input] of sorted.entries()) {
@@ -156,6 +175,7 @@ export class SimulationRunner {
         overrides: ownOverrides,
         rng: agentRng.fork(id),
         knowledge: knowledge?.get(id) ?? new KnowledgeStore(),
+        endAt: Math.max(start, Math.min(endAt, exits.get(id) ?? endAt)),
         nextBoundary: start,
       });
     }
@@ -200,7 +220,7 @@ export class SimulationRunner {
     const observers: Observer[] = [];
     for (const id of present) {
       const agent = this.#agents.get(id);
-      if (!agent) continue;
+      if (!agent || t >= agent.endAt) continue;
       const { character, knowledge, rng } = agent;
       observers.push({
         id,
@@ -228,7 +248,7 @@ export class SimulationRunner {
     const { now } = context;
     const { character, overrides, priority, activity } = agent;
     const step = activity?.step;
-    if (now === this.#endAt) {
+    if (now >= agent.endAt) {
       delete agent.activity;
       return;
     }
@@ -251,7 +271,7 @@ export class SimulationRunner {
   #nextBoundary(agent: AgentState, now: GameMinutes): GameMinutes {
     const { hh, mm } = this.#calendar.toDisplay(now);
     const minute = hh * 60 + mm;
-    let next = this.#endAt;
+    let next = agent.endAt;
     for (const { to } of agent.character.routine) {
       const delta = (to - minute + MINUTES_PER_DAY) % MINUTES_PER_DAY;
       next = Math.min(next, now + (delta || MINUTES_PER_DAY));
@@ -268,7 +288,7 @@ export class SimulationRunner {
     if (previousStep?.kind === 'move') agent.location = previousStep.destination;
     const { character, priority, nextBoundary, block } = agent;
     const { now } = context;
-    const step = this.#planStep(agent, now);
+    const step = this.#limitDetail(agent, this.#planStep(agent, now), now);
     const event = this.#recordStep(character.id, step);
     agent.activity = { block, step };
     context.schedule({ at: now, kind: OBSERVATION_EVENT, priority, payload: event });
@@ -280,6 +300,14 @@ export class SimulationRunner {
     });
   }
 
+  /** A `focus` agent's stay is cut into short steps; the presence it records is unchanged. */
+  #limitDetail(agent: AgentState, step: ActivityStep, now: GameMinutes): ActivityStep {
+    if (step.kind !== 'stay' || step.to - now <= FOCUS_STEP_MINUTES) return step;
+    return this.#lod?.level(agent.character.id, agent.location, now) === 'focus'
+      ? { ...step, to: now + FOCUS_STEP_MINUTES }
+      : step;
+  }
+
   #planStep(agent: AgentState, now: GameMinutes): ActivityStep {
     const { location, block, nextBoundary } = agent;
     const stay = { kind: 'stay', location, from: now, to: nextBoundary } as const;
@@ -287,7 +315,7 @@ export class SimulationRunner {
     const { actor, nextChange } = this.#accessAt(agent.character, now);
     const hop = this.#world.nextTimedStep(location, block.location, actor, now);
     const stayUntil = Math.min(nextBoundary, nextChange);
-    if (!hop || hop.arriveAt > this.#endAt) return { ...stay, to: stayUntil };
+    if (!hop || hop.arriveAt > agent.endAt) return { ...stay, to: stayUntil };
     if (hop.departAt > now) return { ...stay, to: Math.min(stayUntil, hop.departAt) };
     return {
       kind: 'move',

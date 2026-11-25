@@ -1,0 +1,488 @@
+[
+  {
+    "id": "msg_npc_tip_presence_1",
+    "kind": "message",
+    "event": "npc_tip_presence",
+    "template": "Не знаю, важно ли это, но около {time} я видел{me_f}, как {who} заходил{who_f} в «{where}». Решил{me_f}, что вам стоит знать."
+  },
+  {
+    "id": "msg_npc_tip_presence_2",
+    "kind": "message",
+    "event": "npc_tip_presence",
+    "template": "Пишу, пока не передумал{me_f}. {who} был{who_f} в «{where}» примерно в {time}. Больше я никому не говорил{me_f}."
+  },
+  {
+    "id": "msg_npc_tip_presence_3",
+    "kind": "message",
+    "event": "npc_tip_presence",
+    "template": "Вы спрашивали, кто где был. Так вот: в {time} в «{where}» был{who_f} {who}. Я видел{me_f} сам{me_f}."
+  },
+  {
+    "id": "msg_npc_tip_presence_4",
+    "kind": "message",
+    "event": "npc_tip_presence",
+    "template": "Может, это ерунда, но около {time} в «{where}» был{who_f} {who}, я заметил{me_f} краем глаза. Проверьте, если сочтёте нужным."
+  },
+  {
+    "id": "msg_npc_tip_item_1",
+    "kind": "message",
+    "event": "npc_tip_item",
+    "template": "«{item}» — я видел{me_f} эту вещь около {time}. Её держал{who_f} в руках {who}."
+  },
+  {
+    "id": "msg_npc_tip_item_2",
+    "kind": "message",
+    "event": "npc_tip_item",
+    "template": "Насчёт «{item}»: в {time} эту вещь брал{who_f} {who}. Куда потом дел{who_f} — не знаю."
+  },
+  {
+    "id": "msg_npc_tip_item_3",
+    "kind": "message",
+    "event": "npc_tip_item",
+    "template": "Вы ведь интересуетесь вещью «{item}»? Около {time} с ней был{who_f} {who}. Это всё, что я видел{me_f}."
+  },
+  {
+    "id": "msg_npc_tip_item_4",
+    "kind": "message",
+    "event": "npc_tip_item",
+    "template": "Не уверен{me_f}, что это важно. Около {time} «{item}» видели не на своём месте, а рядом был{who_f} {who}."
+  },
+  {
+    "id": "msg_npc_tip_place_1",
+    "kind": "message",
+    "event": "npc_tip_place",
+    "template": "Если хотите что-то найти, загляните в «{where}». Больше ничего сказать не могу."
+  },
+  {
+    "id": "msg_npc_tip_place_2",
+    "kind": "message",
+    "event": "npc_tip_place",
+    "template": "Я бы на вашем месте осмотрел{me_f} «{where}». Мне там сегодня стало не по себе, а почему — объяснить не могу."
+  },
+  {
+    "id": "msg_npc_tip_place_3",
+    "kind": "message",
+    "event": "npc_tip_place",
+    "template": "Говорят, вы ищете следы. Тогда вам в «{where}». Только не говорите, от кого узнали."
+  },
+  {
+    "id": "msg_npc_tip_place_4",
+    "kind": "message",
+    "event": "npc_tip_place",
+    "template": "Загляните в «{where}», пока там никого нет. Я бы сходил{me_f} сам{me_f}, но боюсь."
+  },
+  {
+    "id": "msg_npc_rumor_presence_1",
+    "kind": "message",
+    "event": "npc_rumor_presence",
+    "template": "Слышал{me_f} от других: {who} будто бы был{who_f} в «{where}» около {time}. Сам{me_f} не видел{me_f}, так что за что купил{me_f}, за то и продаю."
+  },
+  {
+    "id": "msg_npc_rumor_presence_2",
+    "kind": "message",
+    "event": "npc_rumor_presence",
+    "template": "Тут все шепчутся, что около {time} {who} ходил{who_f} в «{where}». Не знаю, правда ли."
+  },
+  {
+    "id": "msg_npc_rumor_presence_3",
+    "kind": "message",
+    "event": "npc_rumor_presence",
+    "template": "По санаторию гуляет разговор: в «{where}» около {time} был{who_f} {who}. Откуда пошло — понятия не имею."
+  },
+  {
+    "id": "msg_npc_rumor_presence_4",
+    "kind": "message",
+    "event": "npc_rumor_presence",
+    "template": "Мне передали, а я передаю вам: {who} в {time} был{who_f} в «{where}». Проверять не мне."
+  },
+  {
+    "id": "msg_npc_rumor_relation_1",
+    "kind": "message",
+    "event": "npc_rumor_relation",
+    "template": "Знаете, что тут говорят? {a} и {b} — {relation}. Может, вам это пригодится."
+  },
+  {
+    "id": "msg_npc_rumor_relation_2",
+    "kind": "message",
+    "event": "npc_rumor_relation",
+    "template": "Слух, не больше: {a} и {b} — {relation}. Только не ссылайтесь на меня."
+  },
+  {
+    "id": "msg_npc_rumor_relation_3",
+    "kind": "message",
+    "event": "npc_rumor_relation",
+    "template": "Все шепчутся, будто {a} и {b} — {relation}. Сам{me_f} я в это не лезу."
+  },
+  {
+    "id": "msg_npc_rumor_relation_4",
+    "kind": "message",
+    "event": "npc_rumor_relation",
+    "template": "Вам наверняка не скажут, а я скажу: {a} и {b} — {relation}. Так говорят."
+  },
+  {
+    "id": "msg_npc_rumor_vague_1",
+    "kind": "message",
+    "event": "npc_rumor_vague",
+    "template": "Тут шепчутся, что дорогу не расчистят до самого приезда полиции. Все нервничают. Присматривайтесь к людям, но и себя берегите."
+  },
+  {
+    "id": "msg_npc_rumor_vague_2",
+    "kind": "message",
+    "event": "npc_rumor_vague",
+    "template": "Говорят, в такую же метель здесь уже случалась беда, ещё во времена профилактория. Старожилы не любят об этом вспоминать."
+  },
+  {
+    "id": "msg_npc_rumor_vague_3",
+    "kind": "message",
+    "event": "npc_rumor_vague",
+    "template": "По корпусу ползут слухи, один нелепее другого. Я уже не знаю, чему верить. А вы?"
+  },
+  {
+    "id": "msg_npc_rumor_vague_4",
+    "kind": "message",
+    "event": "npc_rumor_vague",
+    "template": "Говорят, старая радиоточка в холле ночью сама начинает шипеть. Я бы не поверил{me_f}, если бы не слышал{me_f} похожее прошлой зимой."
+  },
+  {
+    "id": "msg_npc_threat_1",
+    "kind": "message",
+    "event": "npc_threat",
+    "template": "Хватит задавать вопросы. Вы гость. Ведите себя как гость."
+  },
+  {
+    "id": "msg_npc_threat_2",
+    "kind": "message",
+    "event": "npc_threat",
+    "template": "Вы роетесь не в своём деле. Метель кончится не скоро, а коридоры здесь длинные и тёмные."
+  },
+  {
+    "id": "msg_npc_threat_3",
+    "kind": "message",
+    "event": "npc_threat",
+    "template": "Остановитесь, пока не поздно. Это первое и последнее предупреждение."
+  },
+  {
+    "id": "msg_npc_threat_4",
+    "kind": "message",
+    "event": "npc_threat",
+    "template": "Не ходите ночью одни. Это не совет."
+  },
+  {
+    "id": "msg_npc_threat_5",
+    "kind": "message",
+    "event": "npc_threat",
+    "template": "Положите телефон и отдыхайте. Так будет лучше для всех."
+  },
+  {
+    "id": "msg_npc_request_meet_1",
+    "kind": "message",
+    "event": "npc_request_meet",
+    "template": "Нам нужно поговорить, но не при всех. Приходите в «{where}» к {time}. Я буду ждать."
+  },
+  {
+    "id": "msg_npc_request_meet_2",
+    "kind": "message",
+    "event": "npc_request_meet",
+    "template": "Можете подойти в «{where}» около {time}? Есть кое-что, что я не хотел{me_f} говорить при других."
+  },
+  {
+    "id": "msg_npc_request_meet_3",
+    "kind": "message",
+    "event": "npc_request_meet",
+    "template": "Давайте встретимся в «{where}» в {time}. Если не придёте, я пойму, что вам неинтересно."
+  },
+  {
+    "id": "msg_npc_request_meet_4",
+    "kind": "message",
+    "event": "npc_request_meet",
+    "template": "Я буду в «{where}» к {time}. Найдите меня там, пожалуйста. Это не телефонный разговор."
+  },
+  {
+    "id": "msg_npc_request_item_1",
+    "kind": "message",
+    "event": "npc_request_item",
+    "template": "Если вам попадётся «{item}», не трогайте и не уносите. Просто скажите мне, где видели."
+  },
+  {
+    "id": "msg_npc_request_item_2",
+    "kind": "message",
+    "event": "npc_request_item",
+    "template": "Простите за странную просьбу: не встречалась ли вам вещь «{item}»? Я ищу её с утра."
+  },
+  {
+    "id": "msg_npc_request_item_3",
+    "kind": "message",
+    "event": "npc_request_item",
+    "template": "Пожалуйста, если найдёте «{item}», дайте мне знать. Я объясню потом, обещаю."
+  },
+  {
+    "id": "msg_npc_request_item_4",
+    "kind": "message",
+    "event": "npc_request_item",
+    "template": "Я потерял{me_f} «{item}». Если увидите, напишите сюда, хорошо?"
+  },
+  {
+    "id": "msg_npc_request_discretion_1",
+    "kind": "message",
+    "event": "npc_request_discretion",
+    "template": "Я вам ничего не писал{me_f}, договорились? Удалите эту переписку."
+  },
+  {
+    "id": "msg_npc_request_discretion_2",
+    "kind": "message",
+    "event": "npc_request_discretion",
+    "template": "Прошу вас, не говорите никому, что мы общались. Здесь всё слышно сквозь стены."
+  },
+  {
+    "id": "msg_npc_request_discretion_3",
+    "kind": "message",
+    "event": "npc_request_discretion",
+    "template": "Не упоминайте меня в разговорах с остальными. Я и так жалею, что во всё это ввязываюсь."
+  },
+  {
+    "id": "msg_npc_request_discretion_4",
+    "kind": "message",
+    "event": "npc_request_discretion",
+    "template": "Если будете расспрашивать других, не называйте моего имени. Мне здесь ещё жить до конца метели."
+  },
+  {
+    "id": "msg_contact_shared_1",
+    "kind": "message",
+    "event": "contact_shared",
+    "template": "Это я. Вы просили номер — вот он. Пишите, если что."
+  },
+  {
+    "id": "msg_contact_shared_2",
+    "kind": "message",
+    "event": "contact_shared",
+    "template": "Сохраните мой номер. Звоните, только если действительно нужно."
+  },
+  {
+    "id": "msg_contact_shared_3",
+    "kind": "message",
+    "event": "contact_shared",
+    "template": "Проверка связи. Если сообщение дошло, значит, хоть что-то здесь работает."
+  },
+  {
+    "id": "msg_contact_shared_4",
+    "kind": "message",
+    "event": "contact_shared",
+    "template": "Это мой номер. Связь тут скверная, так что если не отвечу — значит, не дошло."
+  },
+  {
+    "id": "msg_interrogated_calm_1",
+    "kind": "message",
+    "event": "interrogated_calm",
+    "template": "Спасибо за разговор. Если вспомню что-то ещё, напишу."
+  },
+  {
+    "id": "msg_interrogated_calm_2",
+    "kind": "message",
+    "event": "interrogated_calm",
+    "template": "Надеюсь, наш разговор был вам полезен. Обращайтесь, если понадоблюсь."
+  },
+  {
+    "id": "msg_interrogated_calm_3",
+    "kind": "message",
+    "event": "interrogated_calm",
+    "template": "Подумал{me_f} над вашими вопросами. Нового ничего, но вы можете спрашивать ещё."
+  },
+  {
+    "id": "msg_interrogated_calm_4",
+    "kind": "message",
+    "event": "interrogated_calm",
+    "template": "Вы задаёте правильные вопросы. Жаль, что у меня мало ответов."
+  },
+  {
+    "id": "msg_interrogated_nervous_1",
+    "kind": "message",
+    "event": "interrogated_nervous",
+    "template": "Простите, я сегодня был{me_f} рассеян{me_f}. Отвечал{me_f} сбивчиво — это от усталости, не берите в голову."
+  },
+  {
+    "id": "msg_interrogated_nervous_2",
+    "kind": "message",
+    "event": "interrogated_nervous",
+    "template": "Можно я больше не буду ничего рассказывать? Мне от этих разговоров плохо."
+  },
+  {
+    "id": "msg_interrogated_nervous_3",
+    "kind": "message",
+    "event": "interrogated_nervous",
+    "template": "Вы ведь не думаете, что я... Нет. Неважно. Простите."
+  },
+  {
+    "id": "msg_interrogated_nervous_4",
+    "kind": "message",
+    "event": "interrogated_nervous",
+    "template": "Мне не по себе после нашего разговора. Скажите, вы всех так расспрашиваете?"
+  },
+  {
+    "id": "msg_interrogated_hostile_1",
+    "kind": "message",
+    "event": "interrogated_hostile",
+    "template": "Больше не подходите ко мне с вашими вопросами."
+  },
+  {
+    "id": "msg_interrogated_hostile_2",
+    "kind": "message",
+    "event": "interrogated_hostile",
+    "template": "Если ещё раз начнёте меня допрашивать, я буду говорить только в присутствии полиции."
+  },
+  {
+    "id": "msg_interrogated_hostile_3",
+    "kind": "message",
+    "event": "interrogated_hostile",
+    "template": "Вы не следователь. Уже нет. Не забывайте об этом."
+  },
+  {
+    "id": "msg_interrogated_hostile_4",
+    "kind": "message",
+    "event": "interrogated_hostile",
+    "template": "Я ответил{me_f} на всё, на что был{me_f} обязан{me_f}. Остальное вас не касается."
+  },
+  {
+    "id": "msg_incident_discovered_1",
+    "kind": "message",
+    "event": "incident_discovered",
+    "template": "Вы уже знаете? В «{where}» нашли тело. Это {who}. Все собираются в холле."
+  },
+  {
+    "id": "msg_incident_discovered_2",
+    "kind": "message",
+    "event": "incident_discovered",
+    "template": "Простите, что так рано. Беда: в «{where}» обнаружено тело. Это {who}. Вас просят подойти."
+  },
+  {
+    "id": "msg_incident_discovered_3",
+    "kind": "message",
+    "event": "incident_discovered",
+    "template": "Не знаю, как о таком писать. {who}... В «{where}». Все ждут вас в холле."
+  },
+  {
+    "id": "msg_incident_discovered_4",
+    "kind": "message",
+    "event": "incident_discovered",
+    "template": "Администрация просит вас помочь: в «{where}» обнаружено тело. Это {who}. До приезда полиции, кроме вас, некому."
+  },
+  {
+    "id": "msg_secondary_incident_1",
+    "kind": "message",
+    "event": "secondary_incident",
+    "template": "Ещё одна беда. {who}, «{where}»... Приходите скорее."
+  },
+  {
+    "id": "msg_secondary_incident_2",
+    "kind": "message",
+    "event": "secondary_incident",
+    "template": "Это повторилось. В «{where}» — {who}. Я не знаю, что делать."
+  },
+  {
+    "id": "msg_secondary_incident_3",
+    "kind": "message",
+    "event": "secondary_incident",
+    "template": "Срочно в «{where}». Там {who}. Кажется, всё кончено."
+  },
+  {
+    "id": "msg_secondary_incident_4",
+    "kind": "message",
+    "event": "secondary_incident",
+    "template": "Снова. {who}, «{where}». Пожалуйста, сделайте что-нибудь, пока это не случилось с кем-то ещё."
+  },
+  {
+    "id": "msg_blackout_1",
+    "kind": "message",
+    "event": "blackout",
+    "template": "Свет погас во всём корпусе. У вас есть фонарь? Вроде бы один хранился у стойки администратора."
+  },
+  {
+    "id": "msg_blackout_2",
+    "kind": "message",
+    "event": "blackout",
+    "template": "Электричество пропало. Без света здесь быстро станет холодно. Берегите заряд телефона."
+  },
+  {
+    "id": "msg_blackout_3",
+    "kind": "message",
+    "event": "blackout",
+    "template": "Темно, хоть глаз выколи. Я сижу у себя и никуда не пойду. И вы не ходите одни."
+  },
+  {
+    "id": "msg_blackout_4",
+    "kind": "message",
+    "event": "blackout",
+    "template": "На кухне были свечи, я видел{me_f} коробку. Если нужно — берите, пока не разобрали."
+  },
+  {
+    "id": "msg_night_1",
+    "kind": "message",
+    "event": "night",
+    "template": "Не спится. В коридоре кто-то ходит, а может, это ветер. Вы не спите?"
+  },
+  {
+    "id": "msg_night_2",
+    "kind": "message",
+    "event": "night",
+    "template": "Заприте на ночь дверь. Я свою уже закрыл{me_f} на ключ."
+  },
+  {
+    "id": "msg_night_3",
+    "kind": "message",
+    "event": "night",
+    "template": "Тут ночью такая тишина, что слышно, как гудят провода. Или это не провода."
+  },
+  {
+    "id": "msg_night_4",
+    "kind": "message",
+    "event": "night",
+    "template": "Простите, что пишу так поздно. Просто хотелось знать, что кто-то ещё не спит."
+  },
+  {
+    "id": "msg_static_50_1",
+    "kind": "message",
+    "event": "static_50",
+    "template": "ты тоже это слышишь"
+  },
+  {
+    "id": "msg_static_50_2",
+    "kind": "message",
+    "event": "static_50",
+    "template": "...не отвечай. не отвечай. не отвеч"
+  },
+  {
+    "id": "msg_static_50_3",
+    "kind": "message",
+    "event": "static_50",
+    "template": "Абонент недоступен. Абонент недоступен. Абонент рядом."
+  },
+  {
+    "id": "msg_static_50_4",
+    "kind": "message",
+    "event": "static_50",
+    "template": "снег не кончится. снег не кончится. снег не"
+  },
+  {
+    "id": "msg_static_75_1",
+    "kind": "message",
+    "event": "static_75",
+    "template": "почему ты не спишь"
+  },
+  {
+    "id": "msg_static_75_2",
+    "kind": "message",
+    "event": "static_75",
+    "template": "я за стеной. я всегда за стеной"
+  },
+  {
+    "id": "msg_static_75_3",
+    "kind": "message",
+    "event": "static_75",
+    "template": "сигнал. сигнал. сигнал. си"
+  },
+  {
+    "id": "msg_static_75_4",
+    "kind": "message",
+    "event": "static_75",
+    "template": "посмотри на обои"
+  }
+]
