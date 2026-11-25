@@ -220,6 +220,18 @@ wariness (шкала 0–1) и `KnowledgeStore`; истину цели не чи
 - Обвинение невиновного → реакции (см. [investigation-model.md](../investigation/investigation-model.md) §6).
 - Исчезновение/смерть персонажа → `SeekInformation`, изменение планов, рост стресса.
 
+Реализация — `PlayerReactions` и цель `AvoidPlayer` (`packages/core/src/simulation/reactions.ts`):
+
+- `onPlayerAction(PlayerActionObserved)`: wariness растёт только у тех, у кого `topicSensitivity > 0`
+  (тема в `LiePolicy.conceal`); у спрошенного — на полную чувствительность, у свидетелей и
+  услышавших — на `BYSTANDER_FACTOR` (0.5). Прирост добавляется к базовому состоянию через `applyTo`.
+- `applyConsequences(ConsequenceRef[])` выполняет итоги обвинения: `refuses_to_talk` (обвиняемый и
+  `closeTo` отказываются говорить; `refuseWhenAccused` оборачивает `TestimonyPort`), `trust_falls`
+  (`trust` −0.2), `culprit_freed` (wariness 0.6 → `ConcealEvidence`), `culprit_destroys_evidence` (wariness 1).
+- `onCharacterGone` — стресс близким (смерть 0.2, исчезновение 0.15) и тема для `SeekInformation`
+  (`missingTopics`).
+- `AvoidPlayer`: при wariness > 0.6 и игроке рядом персонаж уходит в `refuge`; смелые — реже.
+
 ## 6. Детерминизм и производительность
 
 - RNG: подпоток `sim/agent/<characterId>`; порядок обработки — по ключу Scheduler.
