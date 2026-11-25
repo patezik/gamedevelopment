@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Hollow Signal",
+    "slug": "hollow-signal",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "Камера нужна, чтобы сканировать игровые QR-коды."
+      }
+    },
+    "android": {
+      "permissions": ["android.permission.CAMERA"],
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "plugins": ["expo-router"]
+  }
+}

@@ -2,17 +2,20 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **144** · todo: 39 · in_progress: 9 · review: 0 · done: 95 · blocked: 1
+Всего задач: **145** · todo: 40 · in_progress: 9 · review: 0 · done: 96 · blocked: 0
 
 ## Готовы к взятию сейчас
 
+- [MOB-001](MOB-001.md) — Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар (P0, M)
+- [FND-010](FND-010.md) — Оркестрация разработки и проверка setup.md на чистой машине (P1, S)
+- [INT-007](INT-007.md) — Профиль Expo Development Build (EAS) как резерв к Expo Go (P1, M)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 
 ## Критический путь
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[FND-006](FND-006.md) → [MOB-001](MOB-001.md) → [MOB-002](MOB-002.md) → [MOB-003](MOB-003.md) → [MOB-005](MOB-005.md) → [MOB-006](MOB-006.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[MOB-001](MOB-001.md) → [MOB-002](MOB-002.md) → [MOB-003](MOB-003.md) → [MOB-005](MOB-005.md) → [MOB-006](MOB-006.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -21,15 +24,15 @@
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
 | [GEN-011](GEN-011.md) generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | 4 |
 | [CNT-005](CNT-005.md) Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | 3 |
-| [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
+| [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
+| [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
-| [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 2 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
-| [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 2 |
 | [MOB-001](MOB-001.md) Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | 2 |
 | [MOB-005](MOB-005.md) Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | 2 |
 | [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
+| [SRV-002](SRV-002.md) REST: создание сессии и список сценариев | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -40,7 +43,7 @@
 | [FND-003](FND-003.md) | CI: Node-задачи (lint, typecheck, test, coverage) с фильтрами путей | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
 | [FND-004](FND-004.md) | Пакет @hs/protocol: конверт, ErrorCode, версия, экспорт JSON Schema | P0 | M | done | claude-protocol-1 | [FND-001](FND-001.md) |
 | [FND-005](FND-005.md) | Каркас apps/server: Fastify 5, конфигурация, /health, логирование | P0 | M | done | codex-foundation | [FND-001](FND-001.md), [FND-004](FND-004.md) |
-| [FND-006](FND-006.md) | Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | P0 | M | blocked | codex-mobile | [FND-001](FND-001.md), [FND-004](FND-004.md) |
+| [FND-006](FND-006.md) | Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | P0 | M | done | codex-mobile | [FND-001](FND-001.md), [FND-004](FND-004.md) |
 | [FND-007](FND-007.md) | Каркас Godot-проекта apps/desktop (Godot 4.7.2, строгий GDScript) | P0 | S | done | codex-desktop | — |
 | [FND-008](FND-008.md) | GUT 9.7.x, headless-запуск тестов Godot и CI-job | P0 | M | done | codex-desktop | [FND-007](FND-007.md), [FND-003](FND-003.md) |
 | [FND-009](FND-009.md) | Каркасы пакетов @hs/core, @hs/generator, @hs/validator | P0 | S | done | claude-foundation-1 | [FND-001](FND-001.md) |
@@ -221,10 +224,11 @@
 | [QA-004](QA-004.md) | Совместимость сохранений между версиями генератора и политика миграций | P1 | M | done | egor-codex-qa-004 | [SAVE-001](SAVE-001.md), [SRV-007](SRV-007.md) |
 | [QA-005](QA-005.md) | Доступность: снижение эффектов, размер текста, цветовая слепота, субтитры | P2 | M | todo | — | [GDT-010](GDT-010.md), [MOB-011](MOB-011.md) |
 
-## Фаза 11 · M11 — Release candidate (4)
+## Фаза 11 · M11 — Release candidate (5)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
+| [MOB-012](MOB-012.md) | Поддержка companion-приложения на Android после первого прототипа | P2 | M | todo | — | [INT-003](INT-003.md), [INT-007](INT-007.md) |
 | [REL-001](REL-001.md) | Экспорт Godot (Windows, Linux, macOS) и артефакты CI | P1 | M | todo | — | [INT-005](INT-005.md) |
 | [REL-002](REL-002.md) | Сборка companion-приложения для магазинов (EAS Build/Submit) | P1 | M | todo | — | [INT-007](INT-007.md) |
 | [REL-003](REL-003.md) | Политика приватности и тексты разрешений | P1 | S | todo | — | [MOB-004](MOB-004.md) |
