@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **162** · todo: 32 · in_progress: 9 · review: 5 · done: 115 · blocked: 1
+Всего задач: **163** · todo: 32 · in_progress: 9 · review: 5 · done: 116 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -101,12 +101,13 @@
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | done | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
-## Фаза 4 · M4 — Solvable investigations (26)
+## Фаза 4 · M4 — Solvable investigations (27)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [CNT-004](CNT-004.md) | MVP-сценарий: правила следов и правила дедукции | P0 | M | todo | — | [EVD-001](EVD-001.md), [INV-002](INV-002.md), [CNT-003](CNT-003.md) |
 | [CNT-007](CNT-007.md) | Тюнинг MVP-пресета до порогов seed sweep | P0 | M | todo | — | [VAL-007](VAL-007.md), [VAL-004](VAL-004.md), [VAL-005](VAL-005.md), [VAL-006](VAL-006.md), [CNT-004](CNT-004.md), [SIM-005](SIM-005.md) |
+| [CNT-013](CNT-013.md) | Точки осмотра для физических следов в locations.json | P0 | M | done | claude-qv | [CNT-002](CNT-002.md), [EVD-001](EVD-001.md), [GEN-014](GEN-014.md) |
 | [EVD-001](EVD-001.md) | Движок правил следов: TraceRule → Trace, закон сохранения улик | P0 | M | done | egor-claude-evd-001 | [TRUTH-002](TRUTH-002.md), [WORLD-002](WORLD-002.md), [CNT-001](CNT-001.md) |
 | [EVD-002](EVD-002.md) | Улики (Clue): поддерживаемые утверждения, условия обнаружения, точки интереса | P0 | M | done | codex-engine-27 | [EVD-001](EVD-001.md) |
 | [EVD-003](EVD-003.md) | Режим фиксации улик телефоном и порт EvidenceTokenPort | P0 | S | done | codex-engine-27 | [EVD-002](EVD-002.md) |
