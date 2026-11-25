@@ -8,6 +8,7 @@ import { TickPhase, createActionCostTable } from '../../time/index.ts';
 import type { Fact } from '../../truth/index.ts';
 import { GameEngine, type DispatchResult, type EnginePorts } from '../engine.ts';
 import { deserializeInvestigation, type Investigation } from '../investigation.ts';
+import { renderDialogueLine, type TextTemplates } from '../dialogue-text.ts';
 import { gameReplayRuntime } from '../save.ts';
 import type { GameEvent, PlayerActionObserved } from './index.ts';
 
@@ -42,7 +43,12 @@ function manor(honesty = 0.5): Investigation {
   return {
     ...base,
     characters: base.characters.map((c) =>
-      c.id === bursar ? { ...c, personality: { ...c.personality, honesty } } : c,
+      c.id === bursar
+        ? {
+            ...c,
+            personality: { ...c.personality, honesty },
+          }
+        : c,
     ),
   };
 }
@@ -80,7 +86,7 @@ function cluesOf(investigation: Investigation): Clue[] {
 }
 
 /** The bursar saw themself in the study and would rather say archive, or else the hall. */
-function testimony(): NonNullable<EnginePorts['testimony']> {
+function testimony(oneVersion = false): NonNullable<EnginePorts['testimony']> {
   const knowledge = new KnowledgeStore();
   knowledge.add({
     proposition: at(bursar, study, -120, 0),
@@ -94,7 +100,7 @@ function testimony(): NonNullable<EnginePorts['testimony']> {
     protect: [replaces],
     alternatives: [
       { replaces, proposition: at(bursar, archive, -120, 0) },
-      { replaces, proposition: at(bursar, hall, -120, 0) },
+      ...(oneVersion ? [] : [{ replaces, proposition: at(bursar, hall, -120, 0) }]),
     ],
   };
   const speaker = { id: bursar, personality: { honesty: 0.5 } } as never;
@@ -104,6 +110,7 @@ function testimony(): NonNullable<EnginePorts['testimony']> {
 
 interface Setup {
   honesty?: number;
+  oneVersion?: boolean;
   startLocationId?: string;
   inventory?: PackItem[];
   startVitals?: Vitals;
@@ -118,7 +125,7 @@ function setup(options: Setup = {}) {
   const ports: EnginePorts = {
     startLocationId: options.startLocationId ?? study,
     clues,
-    testimony: testimony(),
+    testimony: testimony(options.oneVersion),
     evidenceTokens: {
       issue: (clueId) => {
         issued.push(clueId);
@@ -619,5 +626,106 @@ describe('determinism and secrecy', () => {
       { type: 'accuse', caseFile: { accusedIds: [bursar], evidence: [] }, confirm: true },
       'ACTION_NOT_AVAILABLE',
     );
+  });
+});
+
+describe('NPC lines and presentation cost (ENG-009)', () => {
+  const variants = (text: string) => [text, `${text}.`, `${text}!`, `${text}?`];
+  const texts: TextTemplates = new Map([
+    ['testimony_whereWereYou_at', variants('{who} sat in {where} from {from} to {to}')],
+    ['testimony_whatIsThis_at', variants('{who} left this in {where}')],
+    ['testimony_unknown', variants('Nothing to say')],
+    ['rebuttal_admit', variants('Fine, you are right')],
+    ['rebuttal_change', variants('I mixed it up')],
+    ['rebuttal_refuse', variants('I will say nothing more')],
+  ]);
+
+  function rebutted(options: Setup) {
+    const context = setup({ ...options, ports: { texts } });
+    const { engine } = context;
+    engine.dispatch('desktop', { type: 'examineLocation' });
+    engine.dispatch('desktop', { type: 'examineHotspot', hotspotId: 'hs_desk' });
+    const talk = engine.dispatch('desktop', {
+      type: 'talk',
+      characterId: bursar,
+      topicId: 'where:-120:0',
+    });
+    const [found] = ofType(talk, 'ContradictionFound');
+    const action = {
+      type: 'interrogate',
+      characterId: bursar,
+      subject: { type: 'contradiction', contradictionId: found!.contradictionId },
+    } as const;
+    return { ...context, action };
+  }
+
+  const history = (engine: GameEngine) =>
+    engine
+      .playerView()
+      .interaction!.history.filter(({ speaker }) => speaker === 'other')
+      .map(({ text }) => text);
+
+  test('admission, change of version and refusal read as different NPC lines', () => {
+    const lines = [
+      { options: { honesty: 0.5 }, reaction: 'admit', lead: 'Fine, you are right' },
+      { options: { honesty: 0.4 }, reaction: 'change', lead: 'I mixed it up' },
+      {
+        options: { honesty: 0.4, oneVersion: true },
+        reaction: 'refuse',
+        lead: 'I will say nothing',
+      },
+    ].map(({ options, reaction, lead }) => {
+      const { engine, action } = rebutted(options);
+      const result = engine.dispatch('desktop', action);
+      expect(ofType(result, 'InterrogationReaction')[0]?.reaction).toBe(reaction);
+      const other = history(engine);
+      expect(other[1]).toContain(lead);
+      return other.slice(1);
+    });
+    // The refusal says nothing else, the others follow with the restated testimony.
+    expect(lines.map((line) => line.length)).toEqual([2, 2, 1]);
+    expect(new Set(lines.map(([first]) => first)).size).toBe(3);
+    expect(lines[0]![1]).toContain('Study');
+  });
+
+  test('statements are filled from the speaker proposition and read the same for a lie', () => {
+    const { engine } = rebutted({ honesty: 0.4 });
+    const [first] = history(engine);
+    expect(first).toMatch(/^Morgan Pike sat in .+ from \d\d:\d\d to \d\d:\d\d/);
+    const json = JSON.stringify(engine.playerView());
+    for (const key of FORBIDDEN_VIEW_KEYS) expect(json).not.toContain(`"${key}"`);
+    expect(json).not.toContain('"lie"');
+    expect(json).not.toContain('"mistaken"');
+  });
+
+  test('presenting is offered with the price the server charges', () => {
+    const { engine, action } = rebutted({ honesty: 0.5 });
+    const mud = engine.playerView().caseBoard.clues[0]!;
+    const offered = engine
+      .playerView()
+      .availableActions.filter(({ action: offer }) => offer.type === 'interrogate');
+    expect(offered.map(({ action: offer }) => offer)).toEqual([
+      { type: 'interrogate', characterId: bursar, subject: { type: 'evidence', clueId: mud.id } },
+      action,
+    ]);
+    for (const { action: offer, costPreview } of offered) {
+      const result = engine.dispatch('desktop', offer);
+      expect(result).toMatchObject({ ok: true });
+      expect(costPreview).toEqual({ min: 20, max: 20 });
+      expect(result.minutesSpent).toBe(costPreview.min);
+    }
+  });
+
+  test('a history without templates or statement ids keeps its keys', () => {
+    const { investigation } = setup();
+    const context = { investigation, templates: texts, statements: new Map() };
+    const line = (text: string) => ({ speaker: 'other' as const, text, at: 0 });
+    expect(renderDialogueLine(line('testimony_none'), 0, bursar, context)).toBe('Nothing to say');
+    // An old line has no statement to fill the placeholders from.
+    expect(renderDialogueLine(line('testimony_whatIsThis_at'), 0, bursar, context)).toBe(
+      'testimony_whatIsThis_at',
+    );
+    expect(renderDialogueLine(line('testimony_none'), 0, bursar, undefined)).toBe('testimony_none');
+    expect(renderDialogueLine({ ...line('Hi'), speaker: 'player' }, 0, bursar, context)).toBe('Hi');
   });
 });
