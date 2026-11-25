@@ -1,7 +1,7 @@
 ---
 id: SURV-005
 title: "Галлюцинации на телефоне и проверка V-HALLUCINATION"
-status: todo
+status: in_progress
 priority: P1
 complexity: M
 phase: 7
@@ -9,8 +9,8 @@ milestone: M7
 area: survival
 depends_on: [SURV-002, PHONE-001, VAL-001]
 modules: ["packages/core/src/survival/hallucinations.ts", "packages/validator/src/checks/hallucination.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-qj
+claimed_at: "2026-11-25T13:20:31Z"
 ---
 
 # SURV-005 — Галлюцинации на телефоне и проверка V-HALLUCINATION
