@@ -396,14 +396,59 @@ simulatedEvents, encounters }` — серверная диагностика, н
 ссылается на реальное событие истины невиновного, инварианты истины чисты, обязательные улики
 не тронуты, проступков 1–3, ложь только из политики; 30 входов `_test_minimal`.
 
+### Validation и Packaging (GEN-011)
+
+`generateInvestigation({ scenarioId, seed }, content, options?)` собирает цепочку стадий 1–10
+(`worldGen` → `CastGen` → … → `redHerrings`; мир `GeneratedWorld` проносится рядом со значением до
+`IncidentSelection`) и запускает её через `runPipeline` с предикатом `accepts` — шлюзом валидации
+(ADR 0006). Для каждой попытки, дошедшей до шлюза:
+
+1. **Packaging** (`packageInvestigation`): `InvestigationBuilder` с миром после предыстории
+   (`worldState`), персонажами, `relationshipsAtStart`, истиной (с проступками RedHerrings) и секретами
+   `{ id, fact, knownBy }`.
+2. Контекст проверок: `clues`, `requiredClueIds`, `minQrShare`, `deductionRules` (скомпилированные),
+   `startLocationId`, показания `testimony` — ответы каждого персонажа на вопросы «где вы были в окне
+   инцидента», «о себе», «что знаете о X» (для каждого X) в минуту 0; `statements` — те же без `veracity`.
+   `historyStartMinutes` — минимум из начала предыстории пресета и самого раннего события: события
+   `SocialGen` и `ConflictGen` (отношения, секреты, мотивы) лежат за годы до симулируемой предыстории.
+3. Проверки `GENERATION_CHECKS` = `V-TRUTH-INV`, `V-TIMELINE`, `V-PHONE-REQUIRED`, солвер
+   (`V-REACHABLE`, `V-CULPRIT-PROVABLE`, `V-UNIQUE`), `V-LIES-BREAKABLE`, `V-TESTIMONY`. Если ошибок
+   нет, добавляется `V-DETERMINISM`: попытка повторяется (`runPipeline` с `firstAttempt`) и
+   `investigationHash` двух прогонов сравнивается. Список проверок можно заменить опцией `checks`.
+4. Ошибка проверки отклоняет попытку; следующая попытка — это **ремонт перегенерацией** с подсидом
+   `<seed>#N` с первой стадии (стратегии 3–4 из [validation.md §4](../investigation/validation.md)
+   сведены в одну; стратегии 1–2, меняющие готовое дело, не реализованы). Максимум 8 попыток.
+
+Результат: `{ ok: true, investigation, investigationHash, report }` или
+`{ ok: false, error: 'GENERATION_UNSOLVABLE', report }`. `report.validations[]` хранит для каждой
+попытки найденные проверками ошибки и предупреждения (`checkId`, `code`, `message`).
+
+**Состояние на GEN-011.** Все 8 попыток отклоняются у обоих поставляемых сценариев
+(`_test_minimal`, `sanatorium_winter`) по `V-CULPRIT-PROVABLE`: ни один `supports` следов и ни одно
+правило `deduction-rules.json` не доказывает `motive` (правило `motive_from_secret` требует фактов
+`knows`/`about`, которых нет ни у улик, ни у показаний), а `_test_minimal` не имеет и правил для
+`opportunity`. Это вопрос [OQ-20](../planning/open-questions.md). До его решения сервер получает
+`GENERATION_UNSOLVABLE`; тесты и `hs-gen` принимают набор проверок без солвера через `checks`.
+
+### CLI `hs-gen`
+
+```bash
+node --experimental-transform-types packages/generator/bin/hs-gen.ts --scenario _test_minimal --seed 42 [--debug-truth]
+```
+
+Без `--debug-truth` печатает только публичное: `ok`, `scenarioId`, `seed`, `generatorVersion`,
+`attempts`, `investigationHash`; при неудаче — `error` и коды причин каждой попытки (без текстов,
+они называют персонажей). С `--debug-truth` добавляет снимок всего `Investigation` (с истиной) и
+`GenerationReport`. Код выхода: 0 — успех, 1 — `GENERATION_UNSOLVABLE`, 2 — ошибка аргументов.
+
 ## 4. Отчёт генерации
 
-`GenerationReport { seed, generatorVersion, attempts: AttemptReport[], timingsMs: Record<stage, number>,
-feasibleCulpritCount, chosen: { victimArchetype, culpritArchetype, template, motiveType } }` —
+`InvestigationReport { seed, generatorVersion, attempts: AttemptReport[], validations: AttemptValidation[],
+feasibleCulpritCount?, chosen?: { victimArchetype, culpritArchetype, template, motiveType } }` —
 **не** отдаётся клиентам (содержит истину), сохраняется в отчётах sweep и debug-логах.
-Сейчас `runPipeline` заполняет `seed`, `generatorVersion` и `attempts` (с `rejection` отклонённых
-попыток); `feasibleCulpritCount` и `chosen` выдаёт IncidentSelection в `IncidentReport`, их перенос
-в `GenerationReport` — задача стадии Packaging.
+`runPipeline` заполняет `seed`, `generatorVersion` и `attempts` (с `rejection` отклонённых попыток,
+длительностью стадий в `timingsMs`); `generateInvestigation` добавляет `validations` и, для принятого
+дела, `feasibleCulpritCount` и `chosen` из `IncidentReport`.
 
 ## 5. Расширяемость
 

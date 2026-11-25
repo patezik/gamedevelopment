@@ -83,7 +83,9 @@ export interface PipelineOptions<Output> {
   readonly content: ScenarioContent;
   readonly logger?: GenerationLogger;
   readonly maxAttempts?: number;
-  readonly accepts?: (output: Output) => boolean;
+  /** Number of the first attempt (default 1); `generateInvestigation` replays one attempt with it. */
+  readonly firstAttempt?: number;
+  readonly accepts?: (output: Output, attempt: number) => boolean;
   readonly now: () => number;
 }
 
@@ -108,10 +110,14 @@ export function runPipeline<const Stages extends Pipeline>(
     logger = silentLogger,
     accepts = () => true,
     maxAttempts = DEFAULT_MAX_ATTEMPTS,
+    firstAttempt = 1,
     now,
   } = options;
   if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1) {
     throw new RangeError('maxAttempts must be a positive safe integer');
+  }
+  if (!Number.isSafeInteger(firstAttempt) || firstAttempt < 1) {
+    throw new RangeError('firstAttempt must be a positive safe integer');
   }
   const names = stages.map(({ name }) => name);
   if (names.some((name) => !name.trim()) || new Set(names).size !== names.length) {
@@ -120,7 +126,7 @@ export function runPipeline<const Stages extends Pipeline>(
 
   const attempts: AttemptReport[] = [];
   const report: GenerationReport = { seed, generatorVersion: GENERATOR_VERSION, attempts };
-  for (let number = 1; number <= maxAttempts; number++) {
+  for (let number = firstAttempt; number < firstAttempt + maxAttempts; number++) {
     const attemptSeed = `${seed}#${number}`;
     const root = createRng(attemptSeed);
     const timings = new Map<string, number>();
@@ -155,7 +161,7 @@ export function runPipeline<const Stages extends Pipeline>(
       continue;
     }
     const output = value as PipelineOutput<Stages>;
-    const accepted = accepts(output);
+    const accepted = accepts(output, number);
     attempts.push({ number, seed: attemptSeed, timingsMs: Object.fromEntries(timings), accepted });
     if (accepted) return { ok: true, output, report };
   }

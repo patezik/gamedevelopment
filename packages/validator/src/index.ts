@@ -16,6 +16,7 @@ export {
   liesBreakableCheck,
   testimonyCheck,
   determinismCheck,
+  hallucinationCheck,
   investigationHash,
   phoneRequiredCheck,
   timelineCheck,
