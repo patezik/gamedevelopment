@@ -13,6 +13,7 @@ extends Control
 
 const GameStoreScript = preload("res://src/autoload/game_store.gd")
 const BackendScript = preload("res://src/autoload/backend.gd")
+const SceneRouterScript = preload("res://src/autoload/scene_router.gd")
 const CostFormat = preload("res://src/ui/cost_format.gd")
 const KnownMap = preload("res://src/ui/known_map.gd")
 const LocationMap = preload("res://src/ui/location_map.gd")
@@ -27,6 +28,7 @@ const META_BLOCKED: StringName = &"blocked"
 
 const UNTITLED_TEXT: String = "Без названия"
 const NO_VIEW_TEXT: String = "Нет данных о локации: ожидание состояния от сервера."
+const DIALOGUE_WAIT_TEXT: String = "Ожидание ответа собеседника…"
 const PREVIEW_TEXT: String = "Предпросмотр без сервера: фикстура %s"
 const PREVIEW_FAILED_TEXT: String = "Предпросмотр недоступен: фикстура «%s» не загружена."
 const NO_HOTSPOTS_TEXT: String = "Ничего примечательного."
@@ -66,6 +68,9 @@ var _preview_failed: bool = false
 var _view: Dictionary = ReadOnly.empty()
 var _known_map: KnownMap = KnownMap.new()
 var _pending: bool = false
+var _dialogue_target: String = ""
+var _dialogue_request_id: String = ""
+var _dialogue_accepted: bool = false
 var _confirm_action: Dictionary = {}
 var _action_buttons: Array[Button] = []
 
@@ -96,11 +101,13 @@ func bind_store(store: GameStoreScript) -> void:
 	if _store != null and is_instance_valid(_store):
 		_store.view_changed.disconnect(_on_view_changed)
 		_store.action_failed.disconnect(_on_action_failed)
+		_store.action_resolved.disconnect(_on_dialogue_result)
 		_store.connection_state_changed.disconnect(_on_connection_state_changed)
 	_store = store
 	if _store != null:
 		_store.view_changed.connect(_on_view_changed)
 		_store.action_failed.connect(_on_action_failed)
+		_store.action_resolved.connect(_on_dialogue_result)
 		_store.connection_state_changed.connect(_on_connection_state_changed)
 	if is_node_ready():
 		_refresh()
@@ -188,6 +195,7 @@ func _render() -> void:
 	var hotspots: Array[Dictionary] = _dicts(location.get("hotspots"))
 	var characters: Array[Dictionary] = _dicts(_view.get("presentCharacters"))
 	var exits: Array[Dictionary] = _dicts(location.get("exits"))
+	var partner: String = _text(_dict(_view.get("interaction")).get("characterId"))
 	var hotspot_ids: Array[String] = _ids(hotspots, "id")
 	var character_ids: Array[String] = _ids(characters, "id")
 	var exit_ids: Array[String] = _ids(exits, "locationId")
@@ -224,11 +232,20 @@ func _render() -> void:
 			caption += EXAMINED_SUFFIX
 		_add_row(_hotspots, caption, _grouped(by_hotspot, _text(hotspot.get("id"))))
 	for character: Dictionary in characters:
+		var character_id: String = _text(character.get("id"))
 		var caption: String = _text(character.get("name"))
 		var demeanor: String = _text(character.get("demeanor"))
 		if not demeanor.is_empty():
 			caption += " — " + demeanor
-		_add_row(_characters, caption, _grouped(by_character, _text(character.get("id"))))
+		var row: HBoxContainer = _add_row(
+			_characters, caption, _grouped(by_character, character_id)
+		)
+		if not partner.is_empty() and character_id == partner:
+			var resume: Button = Button.new()
+			resume.text = "Продолжить разговор"
+			resume.pressed.connect(_resume_dialogue.bind(character_id))
+			row.add_child(resume)
+			_action_buttons.append(resume)
 	for exit: Dictionary in exits:
 		_add_exit_row(exit, _grouped(by_exit, _text(exit.get("locationId"))))
 	for entry: Dictionary in general:
@@ -241,7 +258,7 @@ func _render() -> void:
 	_update_buttons()
 
 
-func _add_row(container: Container, caption: String, entries: Array[Dictionary]) -> void:
+func _add_row(container: Container, caption: String, entries: Array[Dictionary]) -> HBoxContainer:
 	var row: HBoxContainer = HBoxContainer.new()
 	var label: Label = Label.new()
 	label.text = caption
@@ -251,6 +268,7 @@ func _add_row(container: Container, caption: String, entries: Array[Dictionary])
 	for entry: Dictionary in entries:
 		row.add_child(_make_action_button(entry, ""))
 	container.add_child(row)
+	return row
 
 
 func _add_exit_row(exit: Dictionary, moves: Array[Dictionary]) -> void:
@@ -329,27 +347,76 @@ func _send(action: Dictionary) -> void:
 	_pending = true
 	_update_buttons()
 	# A refusal comes back as action_failed (even synchronously); a success as view_changed.
-	_store.request_action(action)
+	if _store.request_action(action) != OK:
+		return
+	var kind: String = _text(action.get("type"))
+	if kind == ProtocolConstants.ACTION_TALK or kind == ProtocolConstants.ACTION_INTERROGATE:
+		_dialogue_target = _text(action.get("characterId"))
+		_dialogue_request_id = _store.get_last_action_request_id()
+		if not _dialogue_request_id.is_empty():
+			_status.text = DIALOGUE_WAIT_TEXT
+
+
+func _resume_dialogue(character_id: String) -> void:
+	if not _pending:
+		_open_dialogue(character_id)
+
+
+func _open_dialogue(character_id: String) -> void:
+	var router: SceneRouterScript = get_node_or_null(^"/root/SceneRouter") as SceneRouterScript
+	if router == null:
+		return
+	var params: Dictionary = {"characterId": character_id}
+	if is_preview():
+		params["preview"] = _preview_name
+	router.goto(&"dialogue", params)
 
 
 func _on_view_changed(view: Dictionary, _state_version: int) -> void:
-	_pending = false
+	var open_partner: String = ""
+	if _dialogue_request_id.is_empty() or _dialogue_accepted:
+		if _text(_dict(view.get("interaction")).get("characterId")) == _dialogue_target:
+			open_partner = _dialogue_target
+		_clear_pending()
 	_preview_name = ""
 	_preview_failed = false
 	_error.text = ""
 	_show(view)
+	if not open_partner.is_empty():
+		_open_dialogue(open_partner)
 
 
 func _on_action_failed(code: String, message: String) -> void:
-	_pending = false
+	if not _dialogue_request_id.is_empty():
+		return
+	_clear_pending()
 	_show_error(code, message)
 	_update_buttons()
+
+
+func _on_dialogue_result(request_id: String, ok: bool, code: String, message: String) -> void:
+	if _dialogue_request_id.is_empty() or request_id != _dialogue_request_id:
+		return
+	if ok:
+		_dialogue_accepted = true
+	else:
+		_clear_pending()
+		_on_action_failed(code, message)
+
+
+func _clear_pending() -> void:
+	_pending = false
+	_dialogue_target = ""
+	_dialogue_request_id = ""
+	_dialogue_accepted = false
+	if _status.text == DIALOGUE_WAIT_TEXT:
+		_status.text = ""
 
 
 func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 	if state == BackendScript.ConnectionState.ONLINE:
 		return
-	_pending = false
+	_clear_pending()
 	if state == BackendScript.ConnectionState.OFFLINE and not is_preview():
 		# The session is over: GameStore forgot the view, the map of that session goes too.
 		_known_map.clear()
@@ -366,6 +433,8 @@ func _show_error(code: String, message: String) -> void:
 
 
 func _update_buttons() -> void:
+	if not _dialogue_request_id.is_empty():
+		_status.text = DIALOGUE_WAIT_TEXT
 	for button: Button in _action_buttons:
 		if is_instance_valid(button):
 			var blocked: bool = button.get_meta(META_BLOCKED, false)
