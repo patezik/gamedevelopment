@@ -120,8 +120,10 @@ test('an open interrogation holds the hero: no move, rest or pickLock offered; a
   expect(offered(engine)).toContain('move');
   expect(offered(engine)).toContain('rest');
 
-  const snapshot = JSON.parse(JSON.stringify(engine.snapshot()));
-  snapshot.desktop.interaction.interrogation = true;
+  const snapshot = structuredClone(engine.snapshot());
+  const { interaction } = snapshot.desktop ?? {};
+  if (!interaction) throw new Error('no open dialogue');
+  interaction.interrogation = true;
   const held = GameEngine.restore(snapshot, tinyManor(), { startLocationId });
   const types = offered(held);
   for (const blocked of ['move', 'rest', 'pickLock']) expect(types).not.toContain(blocked);
