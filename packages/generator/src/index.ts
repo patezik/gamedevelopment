@@ -102,4 +102,5 @@ export {
   type GenerationRequest,
   type GenerationResult,
   type InvestigationReport,
+  type ServerGenerationPayload,
 } from './generate.ts';
