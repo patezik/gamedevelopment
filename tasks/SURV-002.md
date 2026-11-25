@@ -1,7 +1,7 @@
 ---
 id: SURV-002
 title: "Static: глобальная эскалация, пороги, влияние на события сценария"
-status: review
+status: done
 priority: P0
 complexity: M
 phase: 7
