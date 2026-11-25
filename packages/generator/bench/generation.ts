@@ -22,6 +22,11 @@ for (const id of ['_test_minimal', 'sanatorium_winter']) {
       }),
     );
   }).sort((a, b) => a - b);
-  checkBudget(`generate ${id} (median of ${SEEDS})`, times[SEEDS >> 1]!, BUDGET_MS);
+  const midpoint = Math.floor(times.length / 2);
+  const median =
+    times.length % 2 === 0
+      ? (times[midpoint - 1]! + times[midpoint]!) / 2
+      : times[midpoint]!;
+  checkBudget(`generate ${id} (median of ${SEEDS})`, median, BUDGET_MS);
   console.log(`  max ${times.at(-1)!.toFixed(2)} ms`);
 }
