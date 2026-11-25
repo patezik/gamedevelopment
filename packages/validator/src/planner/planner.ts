@@ -20,6 +20,9 @@ const WIDTH = 8;
 // Includes replay of prefixes. A deterministic work limit also bounds cases where every action
 // is free or none of the available actions can produce the missing evidence.
 const MAX_DISPATCHES = 256;
+// The same action after new knowledge may still yield a new clue or reply, but usually repeats
+// one. It ranks with a return to a visited location, so it cannot crowd useful moves out of the beam.
+const REPEATED = 4;
 
 interface Branch {
   engine: GameEngine;
@@ -28,11 +31,14 @@ interface Branch {
   coverage: number;
   /** Last minute this branch tried an action with the same evidence. */
   attempts: ReadonlyMap<string, number>;
+  /** Serialized actions already on the path. */
+  done: ReadonlySet<string>;
 }
 
 interface Candidate {
   parent: Branch;
   action: PlayerAction;
+  id: string;
   key: string;
   priority: number;
   earliest: number;
@@ -97,20 +103,22 @@ function candidates(branch: Branch, budget: number): Candidate[] {
   for (const { action, min } of offers(view)) {
     const earliest = view.clock.t + min;
     if (earliest > budget) continue;
-    const key = JSON.stringify([
-      view.location.id,
-      view.caseBoard.clues.length,
-      view.caseBoard.statements.length,
-      action,
-    ]);
+    const id = JSON.stringify(action);
+    const key = `${view.location.id}|${view.caseBoard.clues.length}|${view.caseBoard.statements.length}|${id}`;
     const previous = branch.attempts.get(key);
     if (previous === view.clock.t) continue;
     result.push({
       parent: branch,
       action,
+      id,
       key,
       earliest,
-      priority: previous === undefined ? priority(action, view) : 7,
+      priority:
+        previous !== undefined
+          ? 7
+          : action.type !== 'move' && branch.done.has(id)
+            ? REPEATED
+            : priority(action, view),
       sibling: 0,
     });
   }
@@ -171,7 +179,14 @@ function search(
   const clueScores = new Map<string, number>();
   let dispatches = 0;
   let beam: Branch[] = [
-    { engine: root, path: [], view: root.playerView(), coverage: 0, attempts: new Map() },
+    {
+      engine: root,
+      path: [],
+      view: root.playerView(),
+      coverage: 0,
+      attempts: new Map(),
+      done: new Set(),
+    },
   ];
   while (beam.length > 0) {
     const edges = beam
@@ -186,7 +201,7 @@ function search(
       );
     const consumed = new Set<Branch>();
     const next: Branch[] = [];
-    for (const { parent, action, key } of edges) {
+    for (const { parent, action, id, key } of edges) {
       // Transfer the parent's engine to its first child. Siblings replay into fresh engines AND
       // fresh simulation ports: snapshots alone do not contain testimony, callbacks or token state.
       let engine = parent.engine;
@@ -221,7 +236,8 @@ function search(
         }
       }
       const attempts = new Map(parent.attempts).set(key, parent.view.clock.t);
-      next.push({ engine, path, view, coverage, attempts });
+      const done = new Set(parent.done).add(id);
+      next.push({ engine, path, view, coverage, attempts, done });
       if (next.length === WIDTH) break;
     }
     beam = next;

@@ -1,12 +1,19 @@
-import { GameEngine, serializeInvestigation } from '@hs/core/game';
+import { GameEngine, serializeInvestigation, type Investigation } from '@hs/core/game';
 import { compileDeductionRules, evaluateClaims, PlayerKnowledge } from '@hs/core/investigation';
 import type { Clue } from '@hs/core/evidence';
 import { createActionCostTable } from '@hs/core/time';
 import { buildLiePolicy, KnowledgeStore } from '@hs/core/knowledge';
+import { TruthModel } from '@hs/core/truth';
 import { expect, it } from 'vitest';
 import { tinyManor } from '../../../core/test/fixtures/tiny-manor.ts';
 import { clue } from '../../test/mutations.ts';
-import { GENERATION_CHECKS, solve, timeFeasibleCheck, validateInvestigation } from '../index.ts';
+import {
+  GENERATION_CHECKS,
+  solve,
+  timeFeasibleCheck,
+  validateInvestigation,
+  type SolutionPath,
+} from '../index.ts';
 
 const rules = compileDeductionRules([
   { id: 'motive_debt', establishes: 'motive($c)', requires: ['debt($c)'] },
@@ -204,4 +211,81 @@ it('waits for a witness and obtains a statement by asking a visible dialogue top
   });
   expect(proof.find((c) => c.kind === 'opportunity')?.support.statementIds).toHaveLength(1);
   expect(solve(inv, { ...settings, timeBudget: 34 })).toBeNull(); // earliest possible second reply at 35
+});
+
+function proven(inv: Investigation, path: SolutionPath, caseClues: readonly Clue[]) {
+  const engine = GameEngine.create(inv, { startLocationId, clues: caseClues });
+  for (const action of path) expect(engine.dispatch('desktop', action).ok).toBe(true);
+  const knowledge = PlayerKnowledge.restore(engine.snapshot().desktop?.knowledge);
+  return evaluateClaims(knowledge, rules, {
+    clues: new Map(caseClues.map((c) => [c.id, c])),
+    incident,
+  })
+    .map((c) => `${c.subject}:${c.kind}`)
+    .sort();
+}
+
+it('requires a complete proof for every culprit of a shared crime', () => {
+  const inv = manor(60);
+  const truth = new TruthModel(
+    { ...inv.truth.incident, culpritIds: ['ch_bursar', 'ch_cook'] },
+    inv.truth.events(),
+  );
+  const shared = { ...inv, truth } as Investigation;
+  // The bursar's proof is complete after the hall and the study; the cook's needs the pantry too.
+  expect(solve(shared, { ...options, timeBudget: 42 })).toBeNull();
+  const caseClues = [
+    ...clues,
+    document(
+      'note',
+      ['debt(ch_cook)', 'has_key(ch_cook)', 'presence(ch_cook,loc_study,-12)'],
+      'loc_pantry',
+    ),
+  ];
+  expect(solve(shared, { ...options, clues: caseClues, timeBudget: 36 })).toBeNull();
+  // A larger budget must not lose the 37-minute route (re-reading a document used to crowd it out).
+  for (let timeBudget = 37; timeBudget <= 60; timeBudget++) {
+    expect(solve(shared, { ...options, clues: caseClues, timeBudget })).toHaveLength(6);
+  }
+  const path = solve(shared, { ...options, clues: caseClues, timeBudget: 42 });
+  expect(path).not.toBeNull();
+  expect(path!.some((a) => a.type === 'read' && a.documentId === 'note')).toBe(true);
+  expect(proven(shared, path!, caseClues)).toEqual([
+    'ch_bursar:means',
+    'ch_bursar:motive',
+    'ch_bursar:opportunity',
+    'ch_cook:means',
+    'ch_cook:motive',
+    'ch_cook:opportunity',
+  ]);
+});
+
+it('rejects a proof whose last action ends the scenario', () => {
+  // Two reads at 9 and one move at 3: the last clue is found exactly at minute 21.
+  const createSimulationPorts = () => ({
+    actionCosts: createActionCostTable({ read: { base: 9 } }),
+  });
+  const settings = { ...options, createSimulationPorts, timeBudget: 21 };
+  expect(solve(manor(21), settings)).toBeNull(); // The game is over: no accusation is possible.
+  const path = solve(manor(22), settings);
+  expect(path).not.toBeNull();
+  const engine = GameEngine.create(manor(22), {
+    ...createSimulationPorts(),
+    startLocationId,
+    clues,
+  });
+  for (const action of path!) expect(engine.dispatch('desktop', action).ok).toBe(true);
+  expect(engine.playerView().clock.t).toBe(21);
+});
+
+it('does not repeat a free action at the same minute and exhausts the search instead of its work limit', () => {
+  // Reading is free and the opportunity clue is missing. Moves and waiting still spend the budget.
+  const context = {
+    ...options,
+    clues: clues.slice(0, 1),
+    createSimulationPorts: () => ({ actionCosts: createActionCostTable({ read: { base: 0 } }) }),
+  };
+  expect(timeFeasibleCheck.run(manor(10), context).map((f) => f.code)).toEqual([
+    'TIME_PATH_NOT_FOUND',
+  ]);
 });
