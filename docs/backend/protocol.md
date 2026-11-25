@@ -100,7 +100,7 @@
 | `pickLock` | `targetId` |
 | `rest`, `wait` | `minutes` — положительное целое |
 | `accuse` | `caseFile: { accusedIds, motive?, means?, opportunity?, evidence }, confirm`; `confirm` — логическое значение |
-| `markSuspicion` | `characterId, level, note?`; `level` — неотрицательное целое |
+| `markSuspicion` | `characterId, level, note?`; `level` — неотрицательное целое: индекс в `SUSPICION_LEVELS` (`0` = `none`, `1` = `possible`, `2` = `prime`); другое число или неизвестный `characterId` — `ACTION_INVALID`; время не тратится |
 | `call` | `contactId` |
 | `answerCall` | `callId` |
 | `callChoice` | `choiceId` |
