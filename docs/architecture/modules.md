@@ -536,7 +536,10 @@ golden-снимки для 5 seed; распределение виновнико
 ```ts
 interface Check { id: string; severity: "error" | "warning"; run(inv: Investigation): CheckResult }
 function validateInvestigation(inv: Investigation, opts?): ValidationReport;
-function solve(inv: Investigation, opts: { timeBudget: GameMinutes }): SolutionPath | null;
+function solve(inv: Investigation, opts: { timeBudget: GameMinutes }): SolutionPath | null;   // планировщик по времени, VAL-003
+// Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
+function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
+// Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE
 // CLI: hs-sweep --scenario sanatorium_winter --count 1000 --from 0 --out reports/
 ```
 **Зависимости:** `@hs/core` (без `@hs/generator`, чтобы не было цикла; sweep-CLI живёт в

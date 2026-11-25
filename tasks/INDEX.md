@@ -2,11 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **141** · todo: 53 · in_progress: 9 · review: 0 · done: 78 · blocked: 1
+Всего задач: **141** · todo: 53 · in_progress: 8 · review: 0 · done: 79 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [GEN-008](GEN-008.md) — Стадия HistorySimulation: симуляция предыстории с исполнением плана (P0, L)
+- [VAL-003](VAL-003.md) — Планировщик по времени: V-TIME-FEASIBLE и SolutionPath (P0, L)
+- [VAL-004](VAL-004.md) — Проверки V-LIES-BREAKABLE и V-TESTIMONY (P0, M)
 - [ENG-004](ENG-004.md) — Действия телефона: звонки, сообщения, браузер, файлы, заметки, фиксация улик (P0, L)
 - [ENG-006](ENG-006.md) — Действие accuse, концовки и TruthRecap (P0, M)
 - [GDT-005](GDT-005.md) — Диалог и допрос: темы, ответы, предъявление улик и противоречий (P0, M)
@@ -30,12 +32,12 @@
 | [ENG-006](ENG-006.md) Действие accuse, концовки и TruthRecap | 3 |
 | [FND-006](FND-006.md) Bootstrap apps/mobile: Expo SDK 58, Expo Router, TypeScript, jest-expo | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
-| [VAL-002](VAL-002.md) Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [CNT-005](CNT-005.md) Текстовые шаблоны (RU): описания, показания, ложь, реакции, документы | 2 |
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 2 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 2 |
+| [MOB-001](MOB-001.md) Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -119,7 +121,7 @@
 | [SIM-005](SIM-005.md) | Цели ConcealEvidence, SpreadRumor, ProtectSelf, MeetCharacter, SeekInformation | P0 | L | done | claude-w5 | [SIM-004](SIM-004.md), [SIM-003](SIM-003.md), [EVD-001](EVD-001.md) |
 | [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | done | claude-w5 | [SIM-003](SIM-003.md) |
 | [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | done | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
-| [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | in_progress | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
+| [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | done | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
 | [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | todo | — | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | todo | — | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | todo | — | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
