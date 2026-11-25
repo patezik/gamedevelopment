@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **162** · todo: 33 · in_progress: 9 · review: 4 · done: 115 · blocked: 1
+Всего задач: **163** · todo: 34 · in_progress: 9 · review: 4 · done: 115 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -28,7 +28,7 @@
 
 | Задача | Блокирует напрямую |
 |---|---|
-| [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
+| [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 4 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
 | [SRV-013](SRV-013.md) Штатная сборка Session Server с WebSocket и QR | 3 |
@@ -215,7 +215,7 @@
 | [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | done | claude-qj | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
 | [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | todo | — | [TIME-005](TIME-005.md), [ENG-010](ENG-010.md), [SRV-012](SRV-012.md) |
 
-## Фаза 8 · M8 — Content expansion (9)
+## Фаза 8 · M8 — Content expansion (10)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -227,6 +227,7 @@
 | [ENG-008](ENG-008.md) | portraitRef персонажей: вариант портрета по архетипу | P2 | S | todo | — | [CNT-010](CNT-010.md) |
 | [GDT-012](GDT-012.md) | Иллюстрации локаций и портреты на экранах desktop | P1 | M | todo | — | [CNT-010](CNT-010.md) |
 | [GEN-012](GEN-012.md) | Соучастники: инциденты с несколькими виновниками | P2 | L | todo | — | [GEN-011](GEN-011.md), [INV-005](INV-005.md) |
+| [MOB-013](MOB-013.md) | Полировка звука уведомлений на физическом iPhone | P2 | S | todo | — | [INT-003](INT-003.md), [MOB-005](MOB-005.md) |
 | [PLAN-001](PLAN-001.md) | Декомпозиция бэклога фаз 8–11 по итогам MVP | P1 | M | todo | — | [INT-003](INT-003.md) |
 
 ## Фаза 9 · M9 — Integrated build (4)
