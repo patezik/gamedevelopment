@@ -22,6 +22,8 @@ const SCREENS: Dictionary = {
 	&"exploration": "res://src/scenes/exploration/exploration.tscn",
 	&"dialogue": "res://src/scenes/dialogue/dialogue.tscn",
 	&"case_board": "res://src/scenes/case_board/case_board.tscn",
+	&"accusation": "res://src/scenes/accusation/accusation.tscn",
+	&"ending": "res://src/scenes/ending/ending.tscn",
 }
 const DEFAULT_FADE_SECONDS: float = 0.25
 ## Optional method of a screen's root node, called with the params before the node enters the
