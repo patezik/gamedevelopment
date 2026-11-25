@@ -2,11 +2,10 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **145** · todo: 40 · in_progress: 9 · review: 0 · done: 96 · blocked: 0
+Всего задач: **145** · todo: 39 · in_progress: 10 · review: 0 · done: 96 · blocked: 0
 
 ## Готовы к взятию сейчас
 
-- [MOB-001](MOB-001.md) — Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар (P0, M)
 - [FND-010](FND-010.md) — Оркестрация разработки и проверка setup.md на чистой машине (P1, S)
 - [INT-007](INT-007.md) — Профиль Expo Development Build (EAS) как резерв к Expo Go (P1, M)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
@@ -132,7 +131,7 @@
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | todo | — | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md) |
-| [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | todo | — | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
+| [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | in_progress | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | todo | — | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
 | [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | todo | — | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
 | [MOB-004](MOB-004.md) | Приложение Camera: сканирование QR улик и обработка ошибок | P0 | M | todo | — | [MOB-003](MOB-003.md), [SRV-006](SRV-006.md) |
