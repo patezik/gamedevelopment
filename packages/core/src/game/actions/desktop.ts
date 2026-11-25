@@ -492,7 +492,7 @@ function requirePresent(env: ActionEnv, characterId: string): void {
   if (!presentAt(env.investigation, env.locationId, env.now).includes(characterId)) notAvailable();
 }
 
-function announceContradictions(
+export function announceContradictions(
   state: DesktopState,
   clues: readonly Clue[],
   at: number,
