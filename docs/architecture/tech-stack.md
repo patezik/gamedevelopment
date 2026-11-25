@@ -59,11 +59,12 @@
 | react-native-reanimated | версия SDK 58 | Да | Анимации, эффекты глитча |
 | zustand | 5.0.x | Да (чистый JS) | Состояние |
 | zod | 4.6.x | Да (чистый JS) | Валидация входящих сообщений |
+| expo-dev-client | SDK 58 (58.0.x), MIT | Нет (только в Development Build) | Dev-клиент профиля `development` в EAS ([INT-007](../../tasks/INT-007.md)); в Expo Go не используется, в тестах не импортируется |
 | jest-expo | 58.0.x | — (dev) | Тесты |
 | @testing-library/react-native | 14.x | — (dev) | Тесты компонентов |
 | jest, @types/jest, @types/react | 30.5.x / 30.0.x / 19.3.x, MIT | — (dev) | Раннер и типы для smoke-теста и TSX |
 
-Нативных модулей вне Expo Go нет. Решение при появлении такой необходимости — [ADR 0007](adr/0007-mobile-stack.md).
+Нативных модулей вне Expo Go в коде приложения нет (`expo-dev-client` нужен только сборке `development`). EAS CLI (`eas-cli`, MIT) ставится глобально разработчиком и не входит в зависимости репозитория. Решение при появлении такой необходимости — [ADR 0007](adr/0007-mobile-stack.md).
 Корневые npm `overrides` удерживают React и нативные зависимости Expo Router в версиях SDK 58,
 чтобы npm не устанавливал рядом другую копию для транзитивных зависимостей.
 

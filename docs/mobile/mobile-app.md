@@ -150,3 +150,35 @@ npm test -w @hs/mobile
 Установите Expo Go с поддержкой SDK 58 и отсканируйте QR разработки из терминала. Телефон и
 компьютер должны быть в одной сети. Expo Go требует входа в Expo-аккаунт. Для стартового экрана
 сервер игры не требуется.
+
+## 9. Development Build (EAS) — резерв к Expo Go
+
+Expo Go годится только для разработки на модулях Expo SDK ([ADR 0007](../architecture/adr/0007-mobile-stack.md)).
+Для нативных модулей вне Expo Go и для релиза проект собирается в собственное приложение. Профили —
+`apps/mobile/eas.json`:
+
+| Профиль | Назначение | Распространение |
+|---------|-----------|-----------------|
+| `development` | Development Build с `expo-dev-client` (меню разработчика, Metro по сети) | internal (ad hoc iOS, APK Android) |
+| `preview` | Сборка без dev-клиента для проверки на устройствах | internal, Android — `apk` |
+| `production` | Релизная сборка; публикация в магазинах — REL-002 | store, `autoIncrement` |
+
+Каналы (`channel`) разведены, чтобы обновления одного профиля не попадали в другой.
+
+Подготовка (один раз): Expo-аккаунт, `npm i -g eas-cli`, `eas login`, затем `eas init` в `apps/mobile`
+(привязка проекта; `projectId` попадёт в `app.json`). Для сборки нужны идентификаторы приложения
+`ios.bundleIdentifier` и `android.package` в `app.json`. Они не заданы намеренно: зависят от
+финального названия (OQ-05) и фиксируются до REL-002. Для iPhone в `development` и `preview` нужны
+платный Apple Developer аккаунт и регистрация устройства (`eas device:create`).
+
+Сборка и установка из `apps/mobile`:
+
+```bash
+eas build --profile development --platform ios       # или android
+# установите по ссылке или QR из вывода EAS; на iPhone — после eas device:create
+npm run start:dev-client -w @hs/mobile                # Metro для dev-клиента, запуск по QR из терминала
+```
+
+Возврат к Expo Go — `npm run start -w @hs/mobile`; код приложения от режима не зависит. Приёмка
+INT-007 на iPhone (лог или скриншот запущенной development-сборки) выполняется вручную владельцем
+устройства и аккаунта.
