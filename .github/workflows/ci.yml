@@ -96,6 +96,8 @@ jobs:
     if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Informational until the baseline is collected on CI (QA-002 review): noisy runners must not block merges.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
