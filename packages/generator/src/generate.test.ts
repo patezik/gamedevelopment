@@ -1,13 +1,21 @@
 import { fileURLToPath } from 'node:url';
 import { loadScenarioFromDir } from '@hs/core/content';
-import { serializeInvestigation, deserializeInvestigation } from '@hs/core/game';
 import {
+  serializeInvestigation,
+  deserializeInvestigation,
+  type Investigation,
+} from '@hs/core/game';
+import { compileDeductionRules } from '@hs/core/investigation';
+import type { Question } from '@hs/core/knowledge';
+import {
+  collectTestimony,
   phoneRequiredCheck,
   testimonyCheck,
   timelineCheck,
   truthInvariantsCheck,
   investigationHash,
   type Check,
+  type ValidationContext,
 } from '@hs/validator';
 import { expect, test } from 'vitest';
 import { runCli } from './cli.ts';
@@ -16,6 +24,7 @@ import {
   GENERATOR_VERSION,
   generateInvestigation,
   type GenerationResult,
+  type ServerGenerationPayload,
 } from './index.ts';
 
 const scenarios = new URL('../../../content/scenarios/', import.meta.url);
@@ -129,6 +138,8 @@ test('GENERATION_UNSOLVABLE: every attempt is rejected with the reasons of the f
   expect(result.report.attempts).toHaveLength(8);
   expect(result.report.attempts.every(({ accepted }) => !accepted)).toBe(true);
   expect(result.report.validations).toHaveLength(8);
+  // A failed generation keeps its contract: no server payload of any attempt.
+  expect(Object.keys(result).sort()).toEqual(['error', 'ok', 'report']);
   for (const { ok, findings } of result.report.validations) {
     expect(ok).toBe(false);
     const codes = findings.map(({ code }) => code);
@@ -222,6 +233,11 @@ test('hs-gen without --debug-truth prints no truth, with it prints the investiga
   for (const secret of ['culprit', 'truth', 'veracity', 'hallucination', 'motive']) {
     expect(plain.stdout).not.toContain(secret);
   }
+  // The server payload of GEN-013 stays out of the public output.
+  for (const key of ['server', 'clues', 'requiredClueIds', 'liePolicies', 'testimony', 'rules']) {
+    expect(plain.stdout).not.toContain(key);
+  }
+  for (const { id } of direct.server.clues) expect(plain.stdout).not.toContain(id);
 
   const debug = run('--debug-truth');
   const parsed = JSON.parse(debug.stdout) as Record<string, unknown>;
@@ -230,6 +246,9 @@ test('hs-gen without --debug-truth prints no truth, with it prints the investiga
   expect(JSON.stringify(parsed.investigation)).toContain('culpritIds');
   expect(JSON.stringify(parsed.investigation)).toContain(culprit);
   expect(parsed.report).toMatchObject({ seed: '4' });
+  expect(Object.keys(parsed).sort()).toEqual(
+    [...Object.keys(JSON.parse(plain.stdout) as object), 'investigation', 'report'].sort(),
+  );
 });
 
 test('hs-gen on an unsolvable case exits 1 with codes only, and 2 on bad arguments', () => {
@@ -248,4 +267,134 @@ test('hs-gen on an unsolvable case exits 1 with codes only, and 2 on bad argumen
   expect(runCli(['--scenario', '_test_minimal', '--seed']).code).toBe(2);
   expect(runCli(['--scenario', '_test_minimal', '--seed', '1', '--nope']).code).toBe(2);
   expect(runCli(['--scenario', 'missing_scenario', '--seed', '1']).code).toBe(2);
+});
+
+interface Gated {
+  readonly investigation: Investigation;
+  readonly context: ValidationContext;
+}
+
+/** Test gate: records what each attempt was checked with; rejects the first attempt if asked. */
+function recording(seen: Gated[], rejectFirst: boolean): Check {
+  return {
+    id: 'V-RECORD',
+    description: 'Test gate: records the investigation and context of every attempt',
+    run: (investigation, context) => {
+      seen.push({ investigation, context });
+      return rejectFirst && seen.length === 1
+        ? [{ severity: 'error', code: 'FIRST_REJECTED', message: 'first', eventIds: [] }]
+        : [];
+    },
+  };
+}
+
+/** The question bank of the gate (`questionsFor` in generate.ts). */
+function questionsFor(investigation: Investigation): Question[] {
+  return [
+    { type: 'whereWereYou', interval: investigation.truth.incident.window },
+    { type: 'aboutYourself' },
+    ...investigation.characters.map(({ id }) => ({
+      type: 'whatDoYouKnowAbout' as const,
+      characterId: id,
+    })),
+  ];
+}
+
+/** Testimony drawn again from the payload's own memories and lie policies. */
+function testimonyOf(server: ServerGenerationPayload, investigation: Investigation) {
+  const witnesses = investigation.characters.map((character) => ({
+    character,
+    knowledge: server.knowledge.get(character.id)!,
+    policy: server.liePolicies.get(character.id)!,
+  }));
+  return collectTestimony(witnesses, questionsFor(investigation), 0);
+}
+
+function canonical(server: ServerGenerationPayload): string {
+  return JSON.stringify({
+    ...server,
+    knowledge: [...server.knowledge].map(([id, store]) => [id, store.serialize()]),
+    liePolicies: [...server.liePolicies],
+  });
+}
+
+/** Every field of the payload is the object the gate checked in `gated` (the accepted attempt). */
+function expectPayloadOf(result: GenerationResult & { ok: true }, gated: Gated) {
+  const { server, investigation } = result;
+  const { context } = gated;
+  expect(investigation).toBe(gated.investigation);
+  expect(result.investigationHash).toBe(investigationHash(gated.investigation));
+  expect(server.startLocationId).toBe(context.startLocationId);
+  expect(server.clues).toBe(context.clues);
+  expect(server.requiredClueIds).toBe(context.requiredClueIds);
+  expect(server.testimony).toBe(context.testimony);
+  expect(server.statements).toBe(context.statements);
+  expect(server.deductionRules).toBe(context.deductionRules);
+  // Memories and policies give exactly the testimony the gate checked.
+  expect(testimonyOf(server, investigation)).toEqual(context.testimony);
+}
+
+test('GEN-013: an accepted case carries the server payload the gate checked', () => {
+  const seen: Gated[] = [];
+  const result = accepted(
+    generateInvestigation(req('7'), minimal, { checks: [...STRUCTURAL, recording(seen, false)] }),
+  );
+  expect(seen).toHaveLength(1);
+  expect(result.server.attempt).toBe(1);
+  expectPayloadOf(result, seen[0]!);
+
+  const { server, investigation } = result;
+  const clueIds = new Set(server.clues.map(({ id }) => id));
+  expect(server.requiredClueIds.length).toBeGreaterThan(0);
+  expect(server.requiredClueIds.every((id) => clueIds.has(id))).toBe(true);
+  const cast = investigation.characters.map(({ id }) => id).sort();
+  expect([...server.knowledge.keys()].sort()).toEqual(cast);
+  expect([...server.liePolicies.keys()].sort()).toEqual(cast);
+  expect(server.testimony.length).toBeGreaterThan(0);
+  expect(server.statements.map(({ id }) => id)).toEqual(server.testimony.map(({ id }) => id));
+  expect(server.statements.some((statement) => 'veracity' in statement)).toBe(false);
+  expect(server.deductionRules).toEqual(compileDeductionRules(minimal.deductionRules));
+});
+
+test('GEN-013: after a rejected first attempt the payload is the accepted attempt', () => {
+  const run = () => {
+    const seen: Gated[] = [];
+    let clockReads = 0;
+    const result = accepted(
+      generateInvestigation(req('0'), minimal, {
+        checks: [...STRUCTURAL, recording(seen, true)],
+        now: () => clockReads++,
+      }),
+    );
+    return { seen, result, clockReads };
+  };
+  const { seen, result, clockReads } = run();
+  expect(result.report.attempts.map(({ number }) => number)).toEqual([1, 2]);
+  // Two clock reads per stage: attempts 1 and 2 plus the V-DETERMINISM replay of attempt 2, and
+  // no further generation to build the payload.
+  const stages = Object.keys(result.report.attempts[0]!.timingsMs).length;
+  expect(stages).toBe(10);
+  expect(clockReads).toBe(2 * stages * 3);
+  expect(result.report.validations[0]).toMatchObject({
+    attempt: 1,
+    ok: false,
+    findings: [expect.objectContaining({ code: 'FIRST_REJECTED' })],
+  });
+  expect(seen).toHaveLength(2);
+  expect(result.server.attempt).toBe(2);
+  expectPayloadOf(result, seen[1]!);
+
+  // The rejected attempt generated another case; none of its data is in the payload.
+  const rejected = seen[0]!;
+  expect(result.investigationHash).not.toBe(investigationHash(rejected.investigation));
+  expect(result.server.clues).not.toEqual(rejected.context.clues);
+  expect(result.server.testimony).not.toEqual(rejected.context.testimony);
+  expect(testimonyOf(result.server, result.investigation)).not.toEqual(
+    rejected.context.testimony,
+  );
+
+  // Deterministic: a second run gives the same payload and hash.
+  const again = run().result;
+  expect(again.investigationHash).toBe(result.investigationHash);
+  expect(canonical(again.server)).toBe(canonical(result.server));
 });
