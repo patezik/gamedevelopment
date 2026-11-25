@@ -1,0 +1,132 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/scenes/case_board/case_board.gd" id="1_case_board"]
+
+[node name="CaseBoard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_case_board")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.08, 0.09, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 32
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Back" type="Button" parent="Margin/Layout/Header"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "← Назад"
+
+[node name="Title" type="Label" parent="Margin/Layout/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Доска дела"
+
+[node name="FilterLabel" type="Label" parent="Margin/Layout/Header"]
+modulate = Color(1, 1, 1, 0.7)
+layout_mode = 2
+text = "Персонаж:"
+
+[node name="Filter" type="OptionButton" parent="Margin/Layout/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Status" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Error" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.4, 1)
+autowrap_mode = 3
+
+[node name="Tabs" type="TabContainer" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CluesTab" type="ScrollContainer" parent="Margin/Layout/Tabs"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Clues" type="VBoxContainer" parent="Margin/Layout/Tabs/CluesTab"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="StatementsTab" type="ScrollContainer" parent="Margin/Layout/Tabs"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Statements" type="VBoxContainer" parent="Margin/Layout/Tabs/StatementsTab"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ContradictionsTab" type="ScrollContainer" parent="Margin/Layout/Tabs"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Contradictions" type="VBoxContainer" parent="Margin/Layout/Tabs/ContradictionsTab"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="PersonsTab" type="ScrollContainer" parent="Margin/Layout/Tabs"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Persons" type="VBoxContainer" parent="Margin/Layout/Tabs/PersonsTab"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="TimelineTab" type="ScrollContainer" parent="Margin/Layout/Tabs"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Timeline" type="VBoxContainer" parent="Margin/Layout/Tabs/TimelineTab"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
