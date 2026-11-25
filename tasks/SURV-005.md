@@ -1,7 +1,7 @@
 ---
 id: SURV-005
 title: "Галлюцинации на телефоне и проверка V-HALLUCINATION"
-status: review
+status: done
 priority: P1
 complexity: M
 phase: 7
