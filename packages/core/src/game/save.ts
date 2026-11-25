@@ -64,15 +64,15 @@ export type Regenerate<Engine extends ReplayEngine> = (
 
 export class SaveDesyncError extends Error {
   readonly code = 'SAVE_DESYNC';
-
   /** Sequence of the first affected action. Zero identifies the initial state. */
-  constructor(
-    readonly atAction: number,
-    message: string,
-    options?: ErrorOptions,
-  ) {
+  readonly atAction: number;
+
+  // An explicit field instead of a parameter property: `npm start` runs the server
+  // under Node type stripping, which rejects parameter properties.
+  constructor(atAction: number, message: string, options?: ErrorOptions) {
     super(`SAVE_DESYNC at action ${atAction}: ${message}`, options);
     this.name = 'SaveDesyncError';
+    this.atAction = atAction;
   }
 }
 
