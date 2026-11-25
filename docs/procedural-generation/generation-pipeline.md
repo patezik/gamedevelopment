@@ -348,6 +348,54 @@ simulatedEvents, encounters }` — серверная диагностика, н
 
 Выход `EvidenceWorld` = `HistoryWorld` + `traces`, `clues`, `requiredClueIds`.
 
+### TestimonyGen
+
+`testimonyGen: Stage<EvidenceWorld, TestimonyWorld>` (GEN-010) не использует случайность.
+
+1. Копирует хранилища знаний (вход не меняется) и записывает в них секреты: каждый `SocialSecret`
+   попадает в хранилище тех, кто в `knownBy` (субъект — `observed`, собеседник — `told`). До этой
+   стадии секреты в хранилищах не лежали, а скрывать можно только то, что знаешь (KNOW-002).
+2. Строит `LieMotive` каждого персонажа: его собственные секреты (защищается факт секрета,
+   запасной ответ — отрицание: то же `state` со значением `false`) и, для виновника, «вину» —
+   его `did` ключевых событий (запасной ответ — «просто был там»: `did stay` в ту же минуту и в том
+   же месте), мотив и обладание средством.
+3. `buildLiePolicy` даёт `LiePolicy`: скрывается только известное, подделка — только при
+   `honesty < 0.75`. Персонаж без мотива получает пустую политику.
+
+Выход `TestimonyWorld` = `EvidenceWorld` + `knowledge` (с секретами), `lieMotives`,
+`liePolicies` (на каждого персонажа), `testimonyReport { concealing, lying, honest, secretBeliefs }`.
+Свидетельские следы (`testimonial`) этой стадией не потребляются: показания по ним строит
+`answer`; отдельные записи в `Investigation` — задача Packaging.
+
+### RedHerrings
+
+`redHerrings: Stage<TestimonyWorld, RedHerringWorld>` (GEN-010). Для 1–3 секретов невиновных
+(`about` не виновник и не жертва; не более одного проступка на персонажа) добавляет в истину
+**настоящее** событие проступка и выводит его следы и улики:
+
+- глагол — из правил следов без условия `when`, чьи следы лежат в месте события, без `requires` и
+  утверждают только `presence(...)` (в sanatorium и `_test_minimal` — `hide`, `destroy`): проступок
+  не даёт ни `means`, ни `opportunity`, поэтому не связывает невиновного с инцидентом;
+- время и место — свободная минута `at`-пребывания персонажа внутри предыстории, не ближе
+  `INCIDENT_MARGIN_MINUTES` (60) к окну инцидента и не в месте ключевых событий; событие — на
+  том же месте, где персонаж был по истине (инварианты `checkTruthInvariants` сохраняются);
+- события не входят в `keyEventIds`, их улики не входят в `requiredClueIds`;
+- проступок становится воспоминанием персонажа (`did`), который он скрывает; при `honesty < 0.75` он
+  говорит «просто был там» (`did stay`), иначе молчит. Политика персонажа пересобирается.
+
+Вход не изменяется: `truth` — копия с добавленными событиями. Если ни у одного невиновного нет
+подходящего пребывания (короткие сценарии: `_test_minimal` идёт 60 минут), проступков 0 и стадия
+не отклоняет попытку.
+
+Выход `RedHerringWorld` = `TestimonyWorld` + `truth`, `traces`, `clues` (с добавленными),
+`redHerrings: { secretId, characterId, eventId, traceIds, clueIds }[]` и
+`redHerringReport { count, clues, traces }` — число ложных следов (`clues`) для серверных отчётов.
+
+Проверки: `npx vitest run packages/generator/test/properties/testimony-red-herrings.prop.test.ts` —
+60 входов `sanatorium_winter` (общий кэш `test/support/evidence.ts`, около 6 с): каждый ложный след
+ссылается на реальное событие истины невиновного, инварианты истины чисты, обязательные улики
+не тронуты, проступков 1–3, ложь только из политики; 30 входов `_test_minimal`.
+
 ## 4. Отчёт генерации
 
 `GenerationReport { seed, generatorVersion, attempts: AttemptReport[], timingsMs: Record<stage, number>,
