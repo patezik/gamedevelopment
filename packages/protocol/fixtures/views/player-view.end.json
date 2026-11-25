@@ -14,6 +14,16 @@
     "hotspots": [],
     "exits": []
   },
+  "knownMap": {
+    "locations": [
+      {
+        "id": "loc_lobby",
+        "name": "Вестибюль санатория",
+        "visited": true
+      }
+    ],
+    "links": []
+  },
   "presentCharacters": [],
   "availableActions": [],
   "vitals": {

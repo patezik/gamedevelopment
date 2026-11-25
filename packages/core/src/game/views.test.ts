@@ -33,6 +33,27 @@ test('desktop payloads validate and omit the server solution and unseen characte
   }
 });
 
+test('known map holds visited locations and the exits shown, nothing else', () => {
+  const engine = GameEngine.create(tinyManor(), { startLocationId });
+  const first = engine.playerView().knownMap;
+  expect(first?.locations.filter(({ visited }) => visited).map(({ id }) => id)).toEqual([
+    startLocationId,
+  ]);
+  const exitIds = engine.playerView().location.exits.map(({ locationId }) => locationId);
+  expect(first?.locations.map(({ id }) => id).sort()).toEqual([startLocationId, ...exitIds].sort());
+  expect(first?.links.every(({ from }) => from === startLocationId)).toBe(true);
+
+  expect(engine.dispatch('desktop', { type: 'move', locationId: 'loc_study' }).ok).toBe(true);
+  const second = engine.playerView().knownMap;
+  const visited = second?.locations.filter(({ visited: seen }) => seen).map(({ id }) => id);
+  expect(visited?.sort()).toEqual(['loc_hall', 'loc_study']);
+  expect(second?.links).toContainEqual({ from: 'loc_hall', to: 'loc_study' });
+  expect(second?.links).toContainEqual({ from: 'loc_study', to: 'loc_archive' });
+  const restored = GameEngine.restore(engine.snapshot(), tinyManor(), { startLocationId });
+  expect(restored.playerView().knownMap).toEqual(second);
+  expect(restored.stateHash()).toBe(engine.stateHash());
+});
+
 test('clock and action previews reflect the engine, including locked exits and expiration', () => {
   const fixture = tinyManor();
   const investigation = { ...fixture, world: { ...fixture.world, durationMinutes: 25 } };

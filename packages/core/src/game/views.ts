@@ -188,6 +188,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
       hotspots,
       exits,
     },
+    knownMap: knownMapOf(investigation, locationId),
     presentCharacters: people.map(({ id, name }) => ({ id, name, portraitRef: '', demeanor: '' })),
     availableActions,
     vitals: { ...desktop.vitals.vitals },
@@ -207,6 +208,36 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
         },
       }),
   };
+}
+
+function knownMapOf(investigation: Investigation, locationId: string): PlayerView['knownMap'] {
+  const { locations } = investigation.world;
+  const visited = new Set<string>();
+  for (const event of investigation.truth.events()) {
+    if (event.verb !== 'move' || !event.actorIds.includes('player')) continue;
+    visited.add(event.location);
+    for (const target of event.targets) {
+      if (target.kind === 'location') visited.add(target.id);
+    }
+  }
+  visited.add(locationId);
+  const known = new Map<string, { id: string; name: string; visited: boolean }>();
+  const links: { from: string; to: string }[] = [];
+  const add = (id: string, visit: boolean) => {
+    const entry = known.get(id);
+    if (entry) entry.visited ||= visit;
+    else known.set(id, { id, name: locations.describe(id).name, visited: visit });
+  };
+  for (const id of visited) add(id, true);
+  for (const from of visited) {
+    for (const { to } of locations.describe(from).connections) {
+      if (to === from) continue;
+      add(to, false);
+      links.push({ from, to });
+    }
+  }
+
+  return { locations: [...known.values()], links };
 }
 
 function caseBoard(desktop: DesktopState, clues: readonly Clue[]): PlayerView['caseBoard'] {

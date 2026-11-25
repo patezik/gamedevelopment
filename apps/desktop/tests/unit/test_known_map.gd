@@ -106,3 +106,22 @@ func test_location_map_draws_one_box_per_known_location() -> void:
 	_map.clear()
 	widget.show_map(_map)
 	assert_eq(widget.location_boxes().size(), 0)
+
+
+func test_known_map_field_restores_history_the_client_did_not_observe() -> void:
+	var view: Dictionary = _view("loc_corridor", "Коридор", [["loc_lobby", "Холл"]])
+	view["knownMap"] = {
+		"locations": [
+			{"id": "loc_corridor", "name": "Коридор", "visited": true},
+			{"id": "loc_lobby", "name": "Холл", "visited": true},
+			{"id": "loc_cellar", "name": "Подвал", "visited": false},
+		],
+		"links": [{"from": "loc_lobby", "to": "loc_cellar"}, {"from": "loc_corridor", "to": "loc_lobby"}],
+	}
+	_map.observe(view)
+
+	assert_true(_map.is_visited("loc_lobby"))
+	assert_false(_map.is_visited("loc_cellar"))
+	assert_true(_map.has_link("loc_cellar", "loc_lobby"))
+	assert_true(_map.has_link("loc_corridor", "loc_lobby"))
+	assert_eq(_map.current(), "loc_corridor")
