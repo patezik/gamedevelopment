@@ -21,6 +21,24 @@ export {
   type VitalsStep,
 } from './vitals.ts';
 export {
+  DEFAULT_STATIC_ENDING,
+  STATIC_DELTAS,
+  STATIC_GROWTH_MINUTES,
+  STATIC_LIMITS,
+  STATIC_THRESHOLDS,
+  StaticTimer,
+  applyStaticDelta,
+  createStaticState,
+  isOverwhelmed,
+  restoreStaticState,
+  staticLevel,
+  tickStatic,
+  type StaticEvent,
+  type StaticState,
+  type StaticStep,
+  type StaticThreshold,
+} from './static.ts';
+export {
   INVENTORY_SLOTS,
   InventoryError,
   PHONE_POWER,
