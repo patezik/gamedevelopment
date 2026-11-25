@@ -14,7 +14,17 @@
     "apps/mobile",
     "tools/*"
   ],
+  "overrides": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native-gesture-handler": "~3.3.0",
+    "react-native-reanimated": "4.7.1",
+    "react-native-worklets": "0.13.0"
+  },
   "scripts": {
+    "dev:server": "npm run dev -w @hs/server",
+    "dev:mobile": "npm run start -w @hs/mobile",
+    "test:all": "npm test && npm test -w @hs/mobile && npm run test:godot",
     "lint": "eslint .",
     "typecheck": "tsc",
     "test": "vitest run",
@@ -27,6 +37,7 @@
     "docs:check": "node tools/docs/check-links.mjs",
     "protocol:gen": "npm run protocol:gen -w @hs/protocol",
     "protocol:check": "npm run protocol:check -w @hs/protocol",
+    "bench": "node packages/core/test/performance/scheduler.ts && node packages/core/test/performance/simulation.ts && node --experimental-transform-types packages/generator/test/performance/history-sim.ts && node --experimental-transform-types packages/generator/bench/generation.ts",
     "content:check": "node tools/check-content.mjs"
   },
   "devDependencies": {

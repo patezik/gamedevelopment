@@ -1,11 +1,23 @@
 import type { Check } from '../check.ts';
 import { determinismCheck, investigationHash } from './determinism.ts';
+import { hallucinationCheck } from './hallucination.ts';
 import { phoneRequiredCheck } from './phone-required.ts';
+import {
+  liesBreakableCheck,
+  testimonyCheck,
+  collectTestimony,
+  TESTIMONY_CHECKS,
+} from './testimony.ts';
 import { timelineCheck } from './timeline.ts';
 import { truthInvariantsCheck } from './truth-invariants.ts';
 
 export {
+  TESTIMONY_CHECKS,
+  collectTestimony,
+  liesBreakableCheck,
+  testimonyCheck,
   determinismCheck,
+  hallucinationCheck,
   investigationHash,
   phoneRequiredCheck,
   timelineCheck,
@@ -17,5 +29,6 @@ export const DEFAULT_CHECKS: readonly Check[] = [
   truthInvariantsCheck,
   timelineCheck,
   phoneRequiredCheck,
+  hallucinationCheck,
   determinismCheck,
 ];

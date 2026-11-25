@@ -15,6 +15,12 @@ const names = readdirSync(dir)
 const playerFiles = names.filter((file) => file.startsWith('player-view.'));
 const phoneFiles = names.filter((file) => file.startsWith('phone-view.'));
 const player = (stage: string): PlayerView => PlayerView.parse(load(`player-view.${stage}.json`));
+
+it('PlayerView accepts an older payload without knownMap', () => {
+  const { knownMap, ...olderView } = player('start');
+  expect(knownMap).toBeDefined();
+  expect(PlayerView.safeParse(olderView).success).toBe(true);
+});
 const phone = (stage: string): PhoneView => PhoneView.parse(load(`phone-view.${stage}.json`));
 
 /** Every object in a JSON value, with the path to it. */

@@ -21,6 +21,24 @@ export {
   type VitalsStep,
 } from './vitals.ts';
 export {
+  DEFAULT_STATIC_ENDING,
+  STATIC_DELTAS,
+  STATIC_GROWTH_MINUTES,
+  STATIC_LIMITS,
+  STATIC_THRESHOLDS,
+  StaticTimer,
+  applyStaticDelta,
+  createStaticState,
+  isOverwhelmed,
+  restoreStaticState,
+  staticLevel,
+  tickStatic,
+  type StaticEvent,
+  type StaticState,
+  type StaticStep,
+  type StaticThreshold,
+} from './static.ts';
+export {
   INVENTORY_SLOTS,
   InventoryError,
   PHONE_POWER,
@@ -45,3 +63,26 @@ export {
   type PackItem,
   type PhonePower,
 } from './inventory.ts';
+export {
+  ATTACK_VERB,
+  THREAT,
+  attackEvent,
+  canAttack,
+  escapeChance,
+  exploreHazard,
+  resolveThreat,
+  type AttackSetting,
+  type PlayerAttacked,
+  type ThreatResolution,
+  type ThreatTarget,
+} from './threats.ts';
+export {
+  HALLUCINATION_MAX_ACTIVE,
+  HALLUCINATION_STATIC_FROM,
+  clearHallucinations,
+  hallucinationChance,
+  hallucinationIds,
+  rollHallucination,
+  type HallucinationInput,
+  type HallucinationPool,
+} from './hallucinations.ts';

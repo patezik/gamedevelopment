@@ -37,3 +37,12 @@ export {
   type CostRule,
   type TravelTimeProvider,
 } from './action-cost.ts';
+export {
+  ScenarioEvents,
+  type CriticalEventConfig,
+  type DeadlineConfig,
+  type MissedEffect,
+  type ScenarioEvent,
+  type ScenarioEventsConfig,
+  type ScenarioEventsPorts,
+} from './scenario-events.ts';

@@ -1,7 +1,7 @@
 [
   {
     "id": "visitor_relative",
-    "type": "relative",
+    "type": "sibling",
     "fromArchetypes": ["visitor"],
     "toArchetypes": ["visitor"],
     "secrets": [

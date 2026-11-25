@@ -9,4 +9,6 @@ export {
   type Secret,
 } from './investigation.ts';
 export { GameEngine, type DispatchResult, type EnginePorts, type GameSnapshot } from './engine.ts';
+export { type AccusationPort } from './actions/accuse.ts';
+export { endingOf, endingView, type EndingId } from './ending.ts';
 export { projectPlayerView, type PlayerViewState } from './views.ts';

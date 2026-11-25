@@ -19,6 +19,7 @@
     "./simulation": "./src/simulation/index.ts",
     "./simulation/goals": "./src/simulation/goals/index.ts",
     "./time": "./src/time/index.ts",
+    "./text": "./src/text/index.ts",
     "./truth": "./src/truth/index.ts",
     "./truth/facts": "./src/truth/facts.ts",
     "./world": "./src/world/index.ts"

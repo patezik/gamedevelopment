@@ -34,6 +34,7 @@ describe('an unbroken investigation', () => {
       ['V-TRUTH-INV', true],
       ['V-TIMELINE', true],
       ['V-PHONE-REQUIRED', true],
+      ['V-HALLUCINATION', true],
       ['V-DETERMINISM', true],
     ]);
   });

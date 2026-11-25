@@ -76,7 +76,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -88,8 +88,47 @@ jobs:
       - run: npm run typecheck
       - run: npm run content:check
       - run: npm test -- --coverage
-      - name: Scheduler performance without coverage
-        run: node packages/core/test/performance/scheduler.ts
+
+  # QA-002: separate job so benchmarks run without coverage and do not lengthen the node job.
+  perf:
+    name: Performance budgets
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run bench
+      - name: Verify that an intentional scheduler slowdown fails the budget
+        if: success() || failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          benchmark=packages/core/test/performance/scheduler.ts
+          trap 'git restore -- "$benchmark"' EXIT
+          python3 - "$benchmark" <<'PY'
+          import pathlib
+          import sys
+
+          benchmark = pathlib.Path(sys.argv[1])
+          source = benchmark.read_text()
+          marker = '  const elapsedMs ='
+          assert source.count(marker) == 1
+          delay = '  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 210);\n'
+          benchmark.write_text(source.replace(marker, delay + marker))
+          PY
+          if node "$benchmark" > scheduler-regression.log 2>&1; then
+            cat scheduler-regression.log
+            echo 'The scheduler budget accepted the injected slowdown'
+            exit 1
+          fi
+          cat scheduler-regression.log
+          grep -E 'AssertionError.*scheduler 100k events took .*budget 200 ms' scheduler-regression.log
 
   godot:
     name: Godot tests

@@ -1,7 +1,7 @@
 ---
 id: TIME-005
 title: "Дедлайны, критические события, пропущенные события, условия завершения"
-status: todo
+status: done
 priority: P0
 complexity: M
 phase: 6
@@ -9,8 +9,8 @@ milestone: M6
 area: time
 depends_on: [TIME-003, ENG-006]
 modules: ["packages/core/src/time/scenario-events.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-qh
+claimed_at: "2026-11-25T12:53:19Z"
 ---
 
 # TIME-005 — Дедлайны, критические события, пропущенные события, условия завершения
@@ -33,6 +33,7 @@ claimed_at: null
 ## Out of Scope
 
 - Static (SURV-002).
+- Подключение планировщика событий к игровым сессиям и сохранениям ([TIME-006](TIME-006.md)).
 
 ## Зависимости
 
@@ -49,9 +50,9 @@ claimed_at: null
 
 ## Критерии приёмки
 
-- [ ] Обязательные тесты 6 и 7 из time-system.md §8.
-- [ ] Дедлайн ровно в момент конца сценария даёт исход time_up.
-- [ ] `npm run tasks:check` и проверки CI зелёные.
+- [x] Обязательные тесты 6 и 7 из time-system.md §8.
+- [x] Дедлайн ровно в момент конца сценария даёт исход time_up.
+- [x] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию
 

@@ -27,3 +27,80 @@ export {
   type MotiveReport,
   type MotiveTypeStats,
 } from './stages/conflict-gen.ts';
+export {
+  assessIncidents,
+  DEFAULT_CULPRIT_GAMMA,
+  FEASIBILITY_CRITERIA,
+  INCIDENT_NO_FEASIBLE_CULPRIT,
+  incidentSelection,
+  OPPORTUNITY_SATURATION_MINUTES,
+  SCORE_WEIGHTS,
+  selectIncident,
+  WORLD_OWNER_ABSENT,
+  type Acquisition,
+  type FeasibilityCriterion,
+  type FeasibleCulprit,
+  type IncidentAssessment,
+  type IncidentOption,
+  type IncidentPlan,
+  type IncidentReport,
+  type IncidentSelectionInput,
+  type IncidentTemplateStats,
+  type IncidentWorld,
+  type Opportunity,
+} from './stages/incident-selection.ts';
+export {
+  ACQUIRE_MINUTES,
+  DEVIATION_REASONS,
+  PLOT_INFEASIBLE,
+  plotPlanning,
+  SCHEDULE_DEVIATION_PROPERTY,
+  verifyPlot,
+  type PlannedAlibi,
+  type PlannedIncident,
+  type PlotPlan,
+  type PlotStepPlan,
+  type PlotWorld,
+  type ScheduleDeviation,
+} from './stages/plot-planning.ts';
+export {
+  DEATH_VERB,
+  HISTORY_PLOT_FRUSTRATED,
+  historySimulation,
+  LETHAL_INCIDENT_TYPES,
+  type ExecutedStep,
+  type HistoryAttempt,
+  type HistoryReport,
+  type HistoryWorld,
+} from './stages/history-sim.ts';
+export {
+  EVIDENCE_KEY_EVENT_UNCOVERED,
+  evidenceGen,
+  type EvidenceWorld,
+} from './stages/evidence-gen.ts';
+export {
+  exactPattern,
+  testimonyGen,
+  type TestimonyReport,
+  type TestimonyWorld,
+} from './stages/testimony-gen.ts';
+export {
+  INCIDENT_MARGIN_MINUTES,
+  MAX_RED_HERRINGS,
+  MIN_RED_HERRINGS,
+  redHerrings,
+  type RedHerring,
+  type RedHerringReport,
+  type RedHerringWorld,
+} from './stages/red-herrings.ts';
+export {
+  GENERATION_CHECKS,
+  generateInvestigation,
+  packageInvestigation,
+  type AttemptValidation,
+  type GenerateOptions,
+  type GenerationRequest,
+  type GenerationResult,
+  type InvestigationReport,
+  type ServerGenerationPayload,
+} from './generate.ts';

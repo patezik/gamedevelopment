@@ -1,0 +1,13 @@
+{
+  "rows": {
+    "scheduler 100k events": 0.23,
+    "60 min x 8 NPC, background": 0.000567,
+    "60 min x 8 NPC, focus": 0.00136,
+    "24 h history x 8 NPC": 0.00287,
+    "3 days history x 8 NPC": 0.00906,
+    "history _test_minimal (median of 20)": 0.00289,
+    "history sanatorium_winter (median of 20)": 0.0595,
+    "generate _test_minimal (median of 8)": 0.138,
+    "generate sanatorium_winter (median of 8)": 0.941
+  }
+}

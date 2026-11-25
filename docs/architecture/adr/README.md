@@ -34,3 +34,4 @@ ADR фиксирует значимое архитектурное решени�
 | [0017](0017-trace-conservation-and-payload.md) | Следы: закон сохранения улик, полезная нагрузка и уничтожение | Accepted |
 | [0018](0018-tls-pinning-and-relay.md) | TLS с pinning отпечатка через QR привязки и облачный ретранслятор (спайк INT-008) | Accepted |
 | [0019](0019-save-generator-compatibility.md) | Совместимость сохранений по версии генератора | Proposed |
+| [0020](0020-player-known-map.md) | Известная игроку карта в PlayerView | Proposed |
