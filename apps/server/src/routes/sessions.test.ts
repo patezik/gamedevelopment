@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { loadScenarioFromDir } from '@hs/core/content';
 import type { Investigation } from '@hs/core/game';
 import { GENERATION_CHECKS, generateInvestigation, type GenerationResult } from '@hs/generator';
+import { errorCodes } from 'fastify';
 import { describe, expect, test, vi } from 'vitest';
 import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
 import { buildApp } from '../app.ts';
@@ -622,6 +623,39 @@ describe('late failures leave nothing behind (P1)', () => {
     }
   });
 
+  test.each([
+    ['incomplete payload', () => 'hs1:pair:'],
+    ['invalid host', (code: string) => `hs1:pair:user@pc.local:7420:${code}`],
+    ['wildcard host', (code: string) => `hs1:pair:0.0.0.0:7420:${code}`],
+    ['IPv6 literal', (code: string) => `hs1:pair:[::1]:7420:${code}`],
+    ['invalid port', (code: string) => `hs1:pair:pc.local:65536:${code}`],
+    ['zero port', (code: string) => `hs1:pair:pc.local:0:${code}`],
+    ['extra field', (code: string) => `hs1:pair:pc.local:7420:${code}:extra`],
+    ['different code', (code: string) => `hs1:pair:pc.local:7420:${code.startsWith('0') ? '1' : '0'}${code.slice(1)}`],
+  ] as const)('rolls back both indexes and the hash for %s', async (_name, payload) => {
+    const { app, sessions, pairing, createCode, create } = boot();
+    const actualCreate = PairingService.prototype.createCode.bind(pairing);
+    createCode.mockImplementationOnce((session) => {
+      const result = actualCreate(session);
+      return { ...result, qrPayload: payload(result.code) };
+    });
+    try {
+      const response = await create({ scenarioId: 'sanatorium_winter', seed: 'qr-dto' });
+      expect(response.statusCode).toBe(500);
+      expect(ErrorResponse.parse(response.json()).error.code).toBe('INTERNAL');
+      const session = createCode.mock.calls[0]![0];
+      const issued = createCode.mock.results[0]!.value as { code: string };
+      expect(sessions.get(session.id)).toBeUndefined();
+      expect(await leftovers(app, pairing, session, issued.code)).toEqual({
+        sessionCode: undefined,
+        pairByCode: 'PAIRING_CODE_INVALID',
+        desktopHash: undefined,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
   test('a seed source that breaks the seed contract: 500 before generation', async () => {
     const { app, generated, createId, create } = boot({ createSeed: () => 'bad seed#1' });
     try {
@@ -707,9 +741,12 @@ describe('pairing address (P3)', () => {
     eth0: [nic('192.168.1.10', 'a4:83:e7:00:00:01')],
     wlan0: [nic('192.168.2.10', 'a4:83:e7:00:00:02')],
   };
-  const payloadHost = (env: Record<string, string>) => {
+  const payloadHost = (
+    env: Record<string, string>,
+    networkInterfaces: () => typeof interfaces = () => interfaces,
+  ) => {
     const config = readConfig({ HS_LOG_LEVEL: 'silent', ...env });
-    const services = createSessionServices(config, { networkInterfaces: () => interfaces });
+    const services = createSessionServices(config, { networkInterfaces });
     const session = new Session(
       randomUUID(),
       { dispatch: () => ({ ok: false, error: 'INTERNAL', minutesSpent: 0, events: [] }) },
@@ -722,10 +759,16 @@ describe('pairing address (P3)', () => {
     expect(payloadHost({ HS_HOST: '192.168.2.10', HS_PORT: '7421' })).toBe('192.168.2.10:7421');
   });
 
-  test('HS_PUBLIC_HOST still wins over the bind', () => {
-    expect(payloadHost({ HS_HOST: '192.168.2.10', HS_PUBLIC_HOST: 'game-pc.lan' })).toBe(
-      'game-pc.lan:7420',
-    );
+  test.each([
+    [{ HS_HOST: '192.168.2.10' }, '192.168.2.10:7420'],
+    [{ HS_HOST: 'pc.local' }, 'pc.local:7420'],
+    [{ HS_HOST: '::1', HS_PUBLIC_HOST: 'game-pc.lan' }, 'game-pc.lan:7420'],
+  ] as const)('skips network discovery with an explicit pairing address %o', (env, address) => {
+    const discover = vi.fn(() => {
+      throw new Error('unexpected discovery');
+    });
+    expect(payloadHost(env, discover)).toBe(address);
+    expect(discover).not.toHaveBeenCalled();
   });
 
   test('a wildcard bind takes the recommended candidate of GET /network', async () => {
@@ -739,16 +782,51 @@ describe('pairing address (P3)', () => {
         .candidates.find((candidate) => candidate.recommended)!.address;
       expect(payloadHost({})).toBe(`${recommended}:7420`);
       expect(payloadHost({ HS_HOST: '::' })).toBe(`${recommended}:7420`);
+      expect(payloadHost({ HS_HOST: '0000:0:0:0:0:0:0:0000' })).toBe(`${recommended}:7420`);
     } finally {
       await app.close();
     }
   });
 
-  test('an IPv6 bind cannot go into the QR and falls back to the LAN candidates', () => {
-    expect(pairingHost({ host: 'fe80::1', publicHost: undefined }, interfaces)).toBe(
-      '192.168.1.10',
-    );
-    expect(pairingHost({ host: '0.0.0.0', publicHost: undefined }, {})).toBe('127.0.0.1');
+  test('the IPv4 wildcard without LAN candidates keeps its loopback fallback', () => {
+    expect(pairingHost({ host: '0.0.0.0', publicHost: undefined }, () => ({}))).toBe('127.0.0.1');
+  });
+
+  test('an IPv6-only bind gives a safe refusal over a real listener', async ({ skip }) => {
+    const config = readConfig({ HS_HOST: '::1', HS_LOG_LEVEL: 'silent' });
+    const discover = vi.fn(() => interfaces);
+    const { pairing } = createSessionServices(config, { networkInterfaces: discover });
+    // Drive the production pairing service with a case that can reach session preparation.
+    const createId = vi.fn(randomUUID);
+    const sessions = new SessionManager(fixtureProvider(), { createId });
+    const app = buildApp(config, { pairing, sessions: { scenarios, sessions, pairing } });
+    const createCode = vi.spyOn(pairing, 'createCode');
+    try {
+      let origin: string;
+      try {
+        origin = await app.listen({ host: config.host, port: 0 });
+      } catch (error) {
+        if (['EADDRNOTAVAIL', 'EAFNOSUPPORT'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+          return skip();
+        }
+        throw error;
+      }
+      const response = await fetch(origin + '/api/v1/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioId: 'sanatorium_winter', seed: 'ipv6' }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      expect(response.status).toBe(500);
+      expect(ErrorResponse.parse(await response.json()).error.code).toBe('INTERNAL');
+      expect(discover).not.toHaveBeenCalled();
+      const session = createCode.mock.calls[0]![0];
+      expect(sessions.get(createId.mock.results[0]!.value as string)).toBeUndefined();
+      expect(session.tokenHash('desktop')).toBeUndefined();
+      expect(pairing.activeCode(session)).toBeUndefined();
+    } finally {
+      await app.close();
+    }
   });
 });
 
@@ -836,6 +914,39 @@ describe('error classes (P5)', () => {
         expect(response.statusCode).toBe(status);
         expect(ErrorResponse.parse(response.json()).error.code).toBe('INVALID_MESSAGE');
       }
+      expect(createId).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
+  });
+
+  test.each([
+    ['null', null],
+    ['missing rejection reason', undefined],
+    ['a non-Error string', 'case-detail-marker'],
+    ['parser-shaped Error', Object.assign(new Error('case-detail-marker'), {
+      code: 'FST_ERR_CTP_INVALID_JSON_BODY', statusCode: 400,
+    })],
+    ['parser error thrown by the provider', new errorCodes.FST_ERR_CTP_INVALID_JSON_BODY()],
+  ] as const)('keeps an internal failure safe for %s', async (_name, reason) => {
+    const logs = captureLogs();
+    const provider = {
+      create: () =>
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- exercise untyped failures.
+        Promise.reject(reason),
+    };
+    const { app, create, createId } = boot({ provider, logStream: logs.stream });
+    try {
+      const response = await create({ scenarioId: 'sanatorium_winter', seed: 'error' });
+      expect(response.statusCode).toBe(500);
+      expect(ErrorResponse.parse(response.json()).error).toEqual({
+        code: 'INTERNAL', message: 'Internal error',
+      });
+      expect(logs.entries().filter(({ msg }) => msg === 'request failed')).toEqual([
+        expect.objectContaining({ errorCode: 'INTERNAL' }),
+      ]);
+      expect(response.body).not.toContain('case-detail-marker');
+      expect(logs.text()).not.toContain('case-detail-marker');
       expect(createId).not.toHaveBeenCalled();
     } finally {
       await app.close();

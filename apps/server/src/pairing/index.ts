@@ -111,8 +111,8 @@ export class PairingService {
   discardCode(session: Session): void {
     const code = this.#sessionCodes.get(session.id);
     if (code === undefined) return;
-    if (this.#codes.get(code)?.session === session) this.#codes.delete(code);
-    this.#sessionCodes.delete(session.id);
+    const entry = this.#codes.get(code);
+    if (entry?.session === session) this.#removeCode(code, entry);
   }
 
   /** The session's latest pairing code (it may have expired), without issuing a new one. */

@@ -94,6 +94,28 @@ test('limits IPs in a sliding window and invalidates a code after 20 attributabl
     .toBe('PAIRING_CODE_INVALID');
 });
 
+test('discardCode from an old session leaves both indexes of its replacement intact', async () => {
+  const { session: oldSession } = setup();
+  const current = new Session(oldSession.id, oldSession.engine, () => 0);
+  const service = new PairingService({ get: () => current }, {
+    host: () => 'game-pc.local', port: 7420,
+  });
+  const oldCode = service.createCode(oldSession);
+  const newCode = service.createCode(current);
+
+  service.discardCode(oldSession);
+  expect(service.activeCode(current)).toEqual(newCode);
+  const body = { deviceName: 'Phone', appVersion: '0.0.0', protocolVersion: PROTOCOL_VERSION };
+  await expect(service.pair({ ...body, code: oldCode.code }, '127.0.0.1')).rejects.toMatchObject({
+    code: 'PAIRING_CODE_INVALID',
+  });
+  await expect(service.pair({ ...body, code: newCode.code }, '127.0.0.1')).resolves.toMatchObject({
+    sessionId: current.id,
+  });
+  expect(current.status).toBe('active');
+  expect(oldSession.tokenHash('phone')).toBeUndefined();
+});
+
 test('createCode changes nothing when the host lookup throws; discardCode forgets the code', async () => {
   const session = new Session('atomic-session', {
     dispatch: () => ({ ok: false, error: 'INTERNAL', minutesSpent: 0, events: [] }),

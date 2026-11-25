@@ -217,6 +217,7 @@ const REPLACEABLE: ReadonlySet<SessionStatus> = new Set([
 
 export class SessionManager {
   readonly #sessions = new Map<string, Session>();
+  readonly #creating = new Set<string>();
   readonly #provider: InvestigationProvider;
   readonly #now: () => number;
   readonly #createId: () => string;
@@ -232,20 +233,31 @@ export class SessionManager {
 
   /**
    * `prepare` runs synchronously on the new session before it is registered (tokens, pairing
-   * code, the answer): if it throws, the manager never holds the session and the error propagates.
+   * code, the answer). If it fails, the manager never holds the session. The callback owns the
+   * cleanup of any state it changed outside the manager.
    */
   async create(
     scenarioId: string,
     seed: string,
-    prepare?: (session: Session) => void,
+    prepare?: (session: Session) => undefined,
   ): Promise<Session> {
     const { investigation, ports } = await this.#provider.create(scenarioId, seed);
     const id = this.#createId();
-    if (this.#sessions.has(id)) throw new Error('Duplicate session ID');
-    const session = new Session(id, this.#createEngine(investigation, ports, id), this.#now);
-    prepare?.(session);
-    this.#sessions.set(id, session);
-    return session;
+    if (this.#sessions.has(id) || this.#creating.has(id)) throw new Error('Duplicate session ID');
+    this.#creating.add(id);
+    try {
+      const session = new Session(id, this.#createEngine(investigation, ports, id), this.#now);
+      const prepared: unknown = prepare?.(session);
+      if (prepared !== undefined) {
+        // Observe a rejecting Promise from an untyped caller without publishing the session.
+        void Promise.resolve(prepared).catch(() => undefined);
+        throw new TypeError('Session prepare must finish synchronously and return undefined');
+      }
+      this.#sessions.set(id, session);
+      return session;
+    } finally {
+      this.#creating.delete(id);
+    }
   }
 
   /**
@@ -253,6 +265,8 @@ export class SessionManager {
    * this ID is not replaced; one that is suspended, finished, faulted or disposed is.
    */
   async adopt(id: string, engine: SessionEngine): Promise<Session> {
+    // A synchronous prepare callback can reenter the manager before create publishes the session.
+    if (this.#creating.has(id)) throw new SessionIdInUseError();
     const existing = this.#sessions.get(id);
     if (existing && !REPLACEABLE.has(await existing.refreshLifetime())) {
       throw new SessionIdInUseError();

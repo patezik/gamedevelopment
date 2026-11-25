@@ -1,6 +1,7 @@
 import { ErrorCode } from '@hs/protocol';
-import type { FastifyInstance } from 'fastify';
+import { errorCodes, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { isPairingHost } from '../config/index.ts';
 import { issueToken, type PairingService } from '../pairing/index.ts';
 import type { SessionManager } from '../sessions/index.ts';
 import {
@@ -26,16 +27,36 @@ export const CreateSessionRequest = z.strictObject({
 /** `GET /api/v1/scenarios` answer. */
 export const ScenarioList = z.array(ScenarioSummary);
 
+const PAIRING_PAYLOAD = /^hs1:pair:([^:]+):([0-9]{1,5}):([0-9A-HJKMNP-TV-Z]{6})$/;
+
 /** `POST /api/v1/sessions` answer: what the desktop needs to start and pair, never the case. */
 export const CreateSessionResponse = z.strictObject({
   sessionId: z.uuid(),
   seed: Seed,
   desktopToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
-  pairing: z.strictObject({
-    code: z.string().regex(/^[0-9A-HJKMNP-TV-Z]{6}$/),
-    expiresAt: z.int().positive(),
-    qrPayload: z.string().startsWith('hs1:pair:'),
-  }),
+  pairing: z
+    .strictObject({
+      code: z.string().regex(/^[0-9A-HJKMNP-TV-Z]{6}$/),
+      expiresAt: z.int().positive(),
+      qrPayload: z.string(),
+    })
+    .refine(
+      ({ code, qrPayload }) => {
+        const match = PAIRING_PAYLOAD.exec(qrPayload);
+        if (!match) return false;
+        const [, host, port, payloadCode] = match;
+        const portNumber = Number(port);
+        return (
+          host !== undefined &&
+          host !== '0.0.0.0' &&
+          isPairingHost(host) &&
+          portNumber >= 1 &&
+          portNumber <= 65535 &&
+          payloadCode === code
+        );
+      },
+      { path: ['qrPayload'], message: 'Invalid pairing payload' },
+    ),
 });
 
 /** Error answer of every REST endpoint: `{ error: { code, message } }`. */
@@ -59,18 +80,22 @@ function failure(code: ErrorCode, message: string) {
   return { error: { code, message } };
 }
 
-/**
- * Fastify's own refusals of a request body, with their statuses: empty or malformed JSON (400),
- * bad `Content-Length` (400), body over the limit (413), unsupported content type (415). Only these
- * are the client's fault; any other error, whatever `statusCode` it carries, is a server defect.
- */
-const BODY_ERRORS: ReadonlyMap<string, number> = new Map([
-  ['FST_ERR_CTP_EMPTY_JSON_BODY', 400],
-  ['FST_ERR_CTP_INVALID_JSON_BODY', 400],
-  ['FST_ERR_CTP_INVALID_CONTENT_LENGTH', 400],
-  ['FST_ERR_CTP_BODY_TOO_LARGE', 413],
-  ['FST_ERR_CTP_INVALID_MEDIA_TYPE', 415],
-]);
+/** Body-parser failures occur before the route handler. */
+const BODY_ERRORS = [
+  [errorCodes.FST_ERR_CTP_EMPTY_JSON_BODY, 400],
+  [errorCodes.FST_ERR_CTP_INVALID_JSON_BODY, 400],
+  [errorCodes.FST_ERR_CTP_INVALID_CONTENT_LENGTH, 400],
+  [errorCodes.FST_ERR_CTP_BODY_TOO_LARGE, 413],
+  [errorCodes.FST_ERR_CTP_INVALID_MEDIA_TYPE, 415],
+] as const;
+
+function internalError(request: FastifyRequest, reply: FastifyReply) {
+  request.log.error(
+    { method: request.method, route: request.routeOptions.url, errorCode: 'INTERNAL' },
+    'request failed',
+  );
+  return reply.code(500).send(failure('INTERNAL', 'Internal error'));
+}
 
 /** A broken internal contract (the seed source, the answer): the request fails as `INTERNAL`. */
 class SessionContractError extends Error {
@@ -104,35 +129,21 @@ export function registerSessionRoutes(
 
   app.register(
     (routes, _options, done) => {
-      routes.setErrorHandler((error, request, reply) => {
-        if (error instanceof ScenarioNotFoundError) {
-          return reply.code(404).send(failure('SCENARIO_NOT_FOUND', error.message));
-        }
-        if (error instanceof GenerationUnsolvableError) {
-          return reply.code(422).send(failure('GENERATION_UNSOLVABLE', error.message));
-        }
-        const { code, status, statusCode } = error as {
-          code?: unknown;
-          status?: unknown;
-          statusCode?: unknown;
-        };
-        const bodyStatus = typeof code === 'string' ? BODY_ERRORS.get(code) : undefined;
-        if (bodyStatus !== undefined && statusCode === bodyStatus) {
-          return reply.code(bodyStatus).send(failure('INVALID_MESSAGE', 'Invalid request'));
-        }
-        // The request log skips errors that carry a client status; this one is a server defect.
-        // Neither the log nor the answer gets its text: it may name the case.
-        const carried = [status, statusCode].find((value) => typeof value === 'number');
-        if (typeof carried === 'number' && carried < 500) {
-          request.log.error(
-            { method: request.method, route: request.routeOptions.url, errorCode: 'INTERNAL' },
-            'request failed',
-          );
+      routes.setErrorHandler((error, _request, reply) => {
+        const refusal = BODY_ERRORS.find(([BodyError]) => error instanceof BodyError);
+        if (refusal) {
+          return reply.code(refusal[1]).send(failure('INVALID_MESSAGE', 'Invalid request'));
         }
         return reply.code(500).send(failure('INTERNAL', 'Internal error'));
       });
 
-      routes.get('/scenarios', () => scenarios.list());
+      routes.get('/scenarios', (request, reply) => {
+        try {
+          return scenarios.list();
+        } catch {
+          return internalError(request, reply);
+        }
+      });
 
       routes.post('/sessions', async (request, reply) => {
         const body = CreateSessionRequest.safeParse(request.body);
@@ -140,29 +151,41 @@ export function registerSessionRoutes(
           return reply.code(400).send(failure('INVALID_MESSAGE', 'Invalid session request'));
         }
         const { scenarioId } = body.data;
-        if (!scenarios.has(scenarioId)) throw new ScenarioNotFoundError();
-        const seed = body.data.seed ?? createSeed();
-        if (!Seed.safeParse(seed).success) throw new SessionContractError('seed');
-        // Generation runs before the session exists, and the session is registered only once its
-        // token, pairing code and answer are ready: any failure leaves nothing behind.
         let created: z.infer<typeof CreateSessionResponse> | undefined;
-        await sessions.create(scenarioId, seed, (session) => {
-          try {
-            const answer = CreateSessionResponse.safeParse({
-              sessionId: session.id,
-              seed,
-              desktopToken: issueToken(session, 'desktop'),
-              pairing: pairing.createCode(session),
-            });
-            if (!answer.success) throw new SessionContractError('answer');
-            created = answer.data;
-          } catch (error) {
-            pairing.discardCode(session);
-            session.clearTokenHash('desktop');
-            throw error;
+        try {
+          if (!scenarios.has(scenarioId)) throw new ScenarioNotFoundError();
+          const seed = body.data.seed ?? createSeed();
+          if (!Seed.safeParse(seed).success) throw new SessionContractError('seed');
+          // Register only after preparing the credentials and validating the DTO.
+          await sessions.create(scenarioId, seed, (session) => {
+            try {
+              const answer = CreateSessionResponse.safeParse({
+                sessionId: session.id,
+                seed,
+                desktopToken: issueToken(session, 'desktop'),
+                pairing: pairing.createCode(session),
+              });
+              if (!answer.success) throw new SessionContractError('answer');
+              created = answer.data;
+            } catch (error) {
+              session.clearTokenHash('desktop');
+              pairing.discardCode(session);
+              throw error;
+            }
+          });
+        } catch (error) {
+          if (error instanceof ScenarioNotFoundError) {
+            return reply.code(404).send(failure('SCENARIO_NOT_FOUND', 'Scenario not found'));
           }
-        });
-        // The answer carries the desktop token and the pairing code.
+          if (error instanceof GenerationUnsolvableError) {
+            return reply
+              .code(422)
+              .send(failure('GENERATION_UNSOLVABLE', 'No solvable investigation for this scenario and seed'));
+          }
+          return internalError(request, reply);
+        }
+
+        // HTTP serialization and delivery happen after the session is registered.
         reply.header('Cache-Control', 'no-store');
         return reply.code(201).send(created);
       });

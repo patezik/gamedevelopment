@@ -1,12 +1,13 @@
 import { randomInt } from 'node:crypto';
 import { readdirSync } from 'node:fs';
+import { isIPv6 } from 'node:net';
 import os from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadScenarioFromDir, type ScenarioContent } from '@hs/core/content';
 import { generateInvestigation, type GenerationResult } from '@hs/generator';
 import { z } from 'zod';
-import type { ServerConfig } from '../config/index.ts';
+import { isPairingHost, type ServerConfig } from '../config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from '../config/network.ts';
 import { PairingService } from '../pairing/index.ts';
 import { SessionManager, type InvestigationProvider } from '../sessions/index.ts';
@@ -235,22 +236,18 @@ export function createReadableSeed(): string {
   return groups.join('-');
 }
 
-/** Bind addresses that mean "every interface": the phone needs one concrete address instead. */
-const WILDCARD_HOSTS = new Set(['0.0.0.0', '::', '0:0:0:0:0:0:0:0']);
-
-/**
- * The host the pairing QR names: `HS_PUBLIC_HOST` first; otherwise an explicit `HS_HOST` bind (the
- * server listens only there); otherwise, for a wildcard bind, the best LAN candidate of
- * `GET /network`. An IPv6 bind cannot be written into `hs1:pair:<host>:<port>:<code>` and falls back
- * to the LAN candidates as well.
- */
+/** Pairing advertises an explicit address or discovers one for an IPv4/dual-stack wildcard. */
 export function pairingHost(
-  config: Pick<ServerConfig, 'host' | 'publicHost'>,
-  interfaces: NetworkInterfaces,
+  { host, publicHost }: Pick<ServerConfig, 'host' | 'publicHost'>,
+  networkInterfaces: () => NetworkInterfaces,
 ): string {
-  if (config.publicHost !== undefined) return config.publicHost;
-  if (!WILDCARD_HOSTS.has(config.host) && !config.host.includes(':')) return config.host;
-  return listNetworkCandidates(interfaces)[0]?.address ?? '127.0.0.1';
+  if (publicHost !== undefined) return publicHost;
+  const ipv6Wildcard = isIPv6(host) && URL.parse(`http://[${host}]`)?.hostname === '[::]';
+  if (host === '0.0.0.0' || ipv6Wildcard) {
+    return listNetworkCandidates(networkInterfaces())[0]?.address ?? '127.0.0.1';
+  }
+  if (isPairingHost(host)) return host;
+  throw new Error('The bind address needs an explicit reachable HS_PUBLIC_HOST for pairing');
 }
 
 export interface SessionServicesOptions {
@@ -273,7 +270,7 @@ export function createSessionServices(
   const provider = new GeneratorInvestigationProvider(scenarios);
   const sessions = new SessionManager(provider);
   const pairing = new PairingService(sessions, {
-    host: () => pairingHost(config, networkInterfaces()),
+    host: () => pairingHost(config, networkInterfaces),
     port: config.port,
   });
   return { pairing, sessions: { scenarios, sessions, pairing, generation: provider } };
