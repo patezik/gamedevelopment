@@ -41,3 +41,18 @@ export {
   uniqueCheck,
   type Solution,
 } from './solver/index.ts';
+export {
+  DEFAULT_SWEEP_THRESHOLDS,
+  aggregateSweep,
+  entropyBits,
+  evaluateThresholds,
+  renderSweepMarkdown,
+  sweepRecord,
+  type Distribution,
+  type SweepGeneration,
+  type SweepParams,
+  type SweepRecord,
+  type SweepReport,
+  type SweepThresholds,
+  type SweepTiming,
+} from './sweep/sweep.ts';

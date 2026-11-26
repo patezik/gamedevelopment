@@ -6,6 +6,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "bin": {
+    "hs-sweep": "./bin/hs-sweep.ts"
+  },
   "dependencies": {
     "@hs/core": "*"
   }

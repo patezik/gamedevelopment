@@ -620,7 +620,8 @@ function solutionSource(action: PlayerAction): 'desktop' | 'phone'; // роль 
 // Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
 function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
 // Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE
-// CLI: hs-sweep --scenario sanatorium_winter --count 1000 --from 0 --out reports/
+// CLI: hs-sweep --scenario sanatorium_winter --count 1000 --from 0 --out reports/ (VAL-007)
+// aggregateSweep(records, params, timing, thresholds?) -> SweepReport; sweepRecord(seed, result); renderSweepMarkdown(report)
 ```
 **Зависимости:** `@hs/core` (без `@hs/generator`, чтобы не было цикла; sweep-CLI живёт в
 `packages/validator/bin` и импортирует генератор динамически). **Тесты:** валидатор отвергает
