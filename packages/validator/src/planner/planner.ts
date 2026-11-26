@@ -379,11 +379,11 @@ function search(investigation: Investigation, options: PlannerOptions): SearchRe
       let { coverage, focus } = parent;
       if (result.events.some((e) => PROGRESS.has(e.type))) {
         const { clues: found, statements } = view.caseBoard;
-        const known = JSON.stringify([found.map((c) => c.id), statements.map((s) => s.id)]);
-        const score = scores.get(known) ?? proofScore(engine, deductionRules, context, culprits);
+        const learned = JSON.stringify([found.map((c) => c.id), statements.map((s) => s.id)]);
+        const score = scores.get(learned) ?? proofScore(engine, deductionRules, context, culprits);
         if (score === 'solved') return path;
         ({ coverage, focus } = score);
-        scores.set(known, score);
+        scores.set(learned, score);
       }
       const attempts = new Map(parent.attempts).set(key, parent.view.clock.t);
       const done = new Set(parent.done).add(id);
