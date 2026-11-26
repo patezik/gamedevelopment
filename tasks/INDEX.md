@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **167** · todo: 29 · in_progress: 12 · review: 1 · done: 124 · blocked: 1
+Всего задач: **167** · todo: 29 · in_progress: 11 · review: 1 · done: 125 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -226,7 +226,7 @@
 | [CNT-011](CNT-011.md) | Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона | P2 | M | todo | — | [GDT-010](GDT-010.md) |
 | [CNT-012](CNT-012.md) | Полный набор арта sanatorium_winter: пластины локаций и портреты | P2 | L | todo | — | [CNT-010](CNT-010.md) |
 | [ENG-008](ENG-008.md) | portraitRef персонажей: вариант портрета по архетипу | P2 | S | todo | — | [CNT-010](CNT-010.md) |
-| [GDT-012](GDT-012.md) | Иллюстрации локаций и портреты на экранах desktop | P1 | M | in_progress | egor-claude-gdt-012 | [CNT-010](CNT-010.md) |
+| [GDT-012](GDT-012.md) | Иллюстрации локаций и портреты на экранах desktop | P1 | M | done | egor-claude-gdt-012 | [CNT-010](CNT-010.md) |
 | [GEN-012](GEN-012.md) | Соучастники: инциденты с несколькими виновниками | P2 | L | todo | — | [GEN-011](GEN-011.md), [INV-005](INV-005.md) |
 | [MOB-013](MOB-013.md) | Полировка звука уведомлений на физическом iPhone | P2 | S | todo | — | [INT-003](INT-003.md), [MOB-005](MOB-005.md) |
 | [PLAN-001](PLAN-001.md) | Декомпозиция бэклога фаз 8–11 по итогам MVP | P1 | M | todo | — | [INT-003](INT-003.md) |
