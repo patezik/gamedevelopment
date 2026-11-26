@@ -177,7 +177,7 @@ export class SaveService {
 
   /**
    * Rebuilds the game by replaying the save and checking every hash. The result is not yet the
-   * writer of the save: call `claim()` once a session hosts it.
+   * writer of the save: call `claim()` when committing the replacement session.
    */
   async restore(saveId: string): Promise<RecordingEngine> {
     const text = isSaveId(saveId) ? await this.#store.read(saveId) : undefined;

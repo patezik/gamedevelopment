@@ -64,7 +64,7 @@ apps/server/src/
 | `POST /pair` | код привязки | `{ code, deviceName, appVersion, protocolVersion }` → `{ sessionId, deviceToken, wsPath }` | `PAIRING_CODE_INVALID`, `PAIRING_CODE_EXPIRED`, `PAIRING_RATE_LIMITED`, `PROTOCOL_MISMATCH` |
 | `DELETE /sessions/:id/device` | desktop | отвязать телефон | |
 | `GET /saves` | — (локальный сервер) | `[{ saveId, scenarioId, seed, updatedAt, gameTime }]`, новые первыми; `updatedAt` — ISO-время последней записи, `gameTime` — прошедшие игровые минуты (`null`, если файл метаданных потерян). Повреждённые и посторонние файлы в список не попадают | |
-| `POST /saves/:saveId/load` | — | → `{ sessionId, desktopToken, pairing }`; `sessionId` равен `saveId`. Ответ с `Cache-Control: no-store` | `SAVE_NOT_FOUND` (404, в том числе неверный формат id), `SAVE_DESYNC` (422, с `error.atAction`), `ACTION_NOT_AVAILABLE` (409, сессия с этим id ещё идёт) |
+| `POST /saves/:saveId/load` | — | → `{ sessionId, desktopToken, pairing }`; `sessionId` равен `saveId`. Ответ с `Cache-Control: no-store` | `SAVE_NOT_FOUND` (404, в том числе неверный формат id), `SAVE_DESYNC` (422, с `error.atAction`), `ACTION_NOT_AVAILABLE` (409, сессия с этим id ещё идёт или уже загружается), `INTERNAL` (500) |
 | `GET /sessions/:id/debug/truth` | desktop + `HS_DEBUG_TRUTH=1` | `{ sessionId, scenarioId, seed, generatorVersion, minute, truth }`: журнал истины целиком | 404 если флаг выключен (маршрута нет); `UNAUTHORIZED`, `SESSION_NOT_FOUND`, 501 если движок сессии нельзя осмотреть |
 | `GET /sessions/:id/debug/export` | desktop + `HS_DEBUG_TRUTH=1` | репро-пакет `{ format: "hollow-signal-repro", exportedAt, server, session, scenarioId, seed, generatorVersion, stateHash, snapshot }` | как у `debug/truth` |
 
@@ -177,8 +177,16 @@ DEVICE_REVOKED обработчику шлюза (SRV-004).
   [ADR 0019](../architecture/adr/0019-save-generator-compatibility.md). При успехе создаётся сессия с `sessionId = saveId`
   (дальнейшие действия дописываются в тот же файл: одно сохранение на прохождение), выдаются новый
   desktop-токен и код привязки; статус сессии `created`, телефон привязывается заново. Если сессия с
-  этим id ещё идёт (`created`/`active`), загрузка отклоняется (409); приостановленную, завершённую или
-  сбойную сессию загрузка заменяет, а её старый движок после этого писать в файл не может.
+  этим id ещё идёт (`created`/`active`), загрузка отклоняется (409). Загрузка может заменить
+  приостановленную, завершённую, сбойную или удалённую по TTL сессию.
+- **Смена сессии при загрузке (SRV-014).** Менеджер резервирует `saveId` на время загрузки.
+  Второй запрос с тем же ID получает 409. При замене чтение журнала ждёт завершения уже
+  поставленных в очередь действий и их записей. Восстановленный движок, desktop-токен, код
+  привязки и проверенный DTO готовятся до фиксации. Затем в одном синхронном шаге менеджер
+  публикует сессию, право записи переходит к новому движку, а старые токены и код отзываются.
+  Если подготовка завершается ошибкой, прежняя сессия, её credentials и право записи сохраняются.
+  Неожиданный сбой возвращает `500 INTERNAL`, в ответ и журнал попадает только безопасное
+  описание. Сериализация и доставка HTTP-ответа происходят после фиксации.
 - **Не сохраняется** состояние порта улик (выпущенные QR-токены): оно живёт в памяти процесса и
   определяется провайдером; после загрузки ожидающий скан токен нужно выпустить заново.
 - Лог: имена файлов и содержимое сохранений не пишутся; ответы `/saves` не содержат токенов и истины.
