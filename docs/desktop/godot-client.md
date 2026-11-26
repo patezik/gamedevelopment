@@ -110,6 +110,13 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 `hello` с последним обработанным `seq` и версией представления. Таймеры подключения
 и heartbeat используют время работы клиента в процессе, отдельно от игровых часов.
 
+Отказ рукопожатия (`UNAUTHORIZED`, `PROTOCOL_MISMATCH`, `SESSION_CLOSED`, `DEVICE_REVOKED`) не
+ведёт к повторам: `Backend` вызывает `disconnect_session` (`OFFLINE`) и передаёт `error` через
+`message_received`. Пакеты, пришедшие до закрытия сокета, читаются до проверки закрытия. Godot
+отбрасывает кадры, пришедшие вместе с кадром закрытия, поэтому при закрытии в `HANDSHAKING` с кодом
+1008 `Backend` берёт код ошибки из причины закрытия, которую шлюз дублирует, и формирует `error`
+сам. Остальные причины (`HELLO_TIMEOUT`, `RATE_LIMITED`, обрыв) по-прежнему ведут к повтору.
+
 ### 3.1. GameStore
 
 `GameStore` — единственная клиентская копия `PlayerView`. Все словари, которые он отдаёт
@@ -124,7 +131,7 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | `peer_status_changed(desktop, phone)` | изменение `peer.status`; до первого сообщения сессии — `unknown` |
 | `action_failed(code, message)` | действие отвергнуто: локально (`ACTION_INVALID` — не действие desktop; `NOT_CONNECTED` — нет живого соединения), `action.result` с `ok: false` или `error` с `requestId` |
 | `action_resolved(request_id, ok, code, message)` | ответ сервера с идентификатором действия из `action.result` или `error` |
-| `error_received(code, message)` | `error` без `requestId` (например, `UNAUTHORIZED` при рукопожатии) |
+| `error_received(code, message)` | `error` без `requestId` или отказ рукопожатия (переход `HANDSHAKING → OFFLINE`, даже если шлюз указал `requestId` отклонённого `hello`), например `UNAUTHORIZED` |
 | `connection_state_changed(state)` | этап подключения `Backend`; `OFFLINE` (только после `disconnect_session`) очищает представление, версию и статус пиров |
 | `request_action(action) -> Error` | отправляет копию действия через `Backend.send_action`; исход решает сервер |
 | `get_last_action_request_id() -> String` | сразу после успешной отправки даёт идентификатор для сопоставления с ответом |

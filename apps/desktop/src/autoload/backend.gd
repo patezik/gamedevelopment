@@ -141,10 +141,25 @@ func _process(delta: float) -> void:
 
 	_socket.poll()
 	_last_received += delta
-	if _socket.get_ready_state() == WebSocketPeer.STATE_CLOSED or _last_received >= TIMEOUT_SECONDS:
+	# Packets queued before the server closed the socket (the `error` of a rejected `hello`)
+	# are delivered first; a handshake error disconnects without retries.
+	_read_packets()
+	if _socket == null:
+		return
+	var ready_state: WebSocketPeer.State = _socket.get_ready_state()
+	if ready_state == WebSocketPeer.STATE_CLOSED:
+		# Godot drops frames that arrive together with the close frame, so the `error` of a
+		# rejected `hello` can be lost; the gateway repeats its code as the close reason.
+		var rejection: String = _handshake_rejection(_socket.get_close_code(), _socket.get_close_reason())
+		if _state == ConnectionState.HANDSHAKING and not rejection.is_empty():
+			_reject_handshake(rejection, "")
+			return
 		_schedule_retry()
 		return
-	if _socket.get_ready_state() != WebSocketPeer.STATE_OPEN:
+	if _last_received >= TIMEOUT_SECONDS:
+		_schedule_retry()
+		return
+	if ready_state != WebSocketPeer.STATE_OPEN:
 		return
 	if _state == ConnectionState.CONNECTING:
 		_set_state(ConnectionState.HANDSHAKING)
@@ -158,16 +173,48 @@ func _process(delta: float) -> void:
 		if _send(ProtocolConstants.MSG_HELLO, hello) != OK:
 			_schedule_retry()
 			return
-	while _socket != null and _socket.get_available_packet_count() > 0:
-		var packet: PackedByteArray = _socket.get_packet()
-		if _socket.was_string_packet():
-			_receive(packet)
+		_read_packets()
+		if _socket == null:
+			return
 	if _state == ConnectionState.ONLINE:
 		_heartbeat += delta
 		if _heartbeat >= HEARTBEAT_SECONDS:
 			_heartbeat = 0.0
 			if _send(ProtocolConstants.MSG_PING, {}) != OK:
 				_schedule_retry()
+
+
+## The error code behind a close of the handshake that retrying cannot fix; empty when the
+## client should retry (timeouts, rate limits, a plain connection loss).
+func _handshake_rejection(close_code: int, reason: String) -> String:
+	if close_code != 1008:
+		return ""
+	if reason == "HELLO_REQUIRED":
+		return ProtocolConstants.ERROR_UNAUTHORIZED
+	var fatal: Array[String] = [
+		ProtocolConstants.ERROR_UNAUTHORIZED,
+		ProtocolConstants.ERROR_PROTOCOL_MISMATCH,
+		ProtocolConstants.ERROR_SESSION_CLOSED,
+		ProtocolConstants.ERROR_DEVICE_REVOKED,
+	]
+	return reason if fatal.has(reason) else ""
+
+
+func _reject_handshake(code: String, text: String) -> void:
+	disconnect_session()
+	message_received.emit({
+		"v": ProtocolConstants.PROTOCOL_VERSION,
+		"type": ProtocolConstants.MSG_ERROR,
+		"id": "",
+		"payload": {"code": code, "message": text},
+	})
+
+
+func _read_packets() -> void:
+	while _socket != null and _socket.get_available_packet_count() > 0:
+		var packet: PackedByteArray = _socket.get_packet()
+		if _socket != null and _socket.was_string_packet():
+			_receive(packet)
 
 
 func _open_socket() -> void:

@@ -49,6 +49,8 @@ var _resync_pending: bool = false
 var _desktop_status: String = PEER_UNKNOWN
 var _phone_status: String = PEER_UNKNOWN
 var _connection_state: BackendScript.ConnectionState = BackendScript.ConnectionState.OFFLINE
+## The last transition was HANDSHAKING -> OFFLINE: an `error` that follows rejects the `hello`.
+var _handshake_closed: bool = false
 
 
 func _ready() -> void:
@@ -67,6 +69,7 @@ func bind_backend(backend: BackendScript) -> void:
 			_backend.connection_state_changed.disconnect(_on_connection_state_changed)
 	_backend = backend
 	_connection_state = BackendScript.ConnectionState.OFFLINE
+	_handshake_closed = false
 	reset()
 	if _backend != null:
 		_backend.message_received.connect(_on_message_received)
@@ -246,8 +249,9 @@ func _on_error(payload: Dictionary) -> void:
 	var code: String = str(payload.get("code", ProtocolConstants.ERROR_INTERNAL))
 	var text: String = str(payload.get("message", ""))
 	# Once online the desktop sends only `ping` and `action.request`, so an error that names a
-	# request is a rejected action.
-	if payload.has("requestId"):
+	# request is a rejected action. Before that (the handshake closed: HANDSHAKING -> OFFLINE) it
+	# names the rejected `hello` and is a connection error.
+	if payload.has("requestId") and not _handshake_closed:
 		action_failed.emit(code, text)
 		action_resolved.emit(str(payload["requestId"]), false, code, text)
 	else:
@@ -266,6 +270,10 @@ func _on_peer_status(payload: Dictionary) -> void:
 func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 	if state == _connection_state:
 		return
+	_handshake_closed = (
+		_connection_state == BackendScript.ConnectionState.HANDSHAKING
+		and state == BackendScript.ConnectionState.OFFLINE
+	)
 	_connection_state = state
 	if state == BackendScript.ConnectionState.OFFLINE:
 		# An explicit disconnect clears the local projection, even when the client rejoins the same game.
