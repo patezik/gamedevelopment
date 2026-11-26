@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **169** · todo: 22 · in_progress: 12 · review: 2 · done: 132 · blocked: 1
+Всего задач: **169** · todo: 22 · in_progress: 11 · review: 3 · done: 132 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -123,7 +123,7 @@
 | [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | done | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
 | [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | done | claude-v1 | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | done | claude-qb | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
-| [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | in_progress | claude-x3 | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
+| [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | review | claude-x3 | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
 | [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | done | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
 | [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | review | claude-x3 | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
 | [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
