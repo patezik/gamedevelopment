@@ -2,11 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **165** · todo: 29 · in_progress: 13 · review: 2 · done: 120 · blocked: 1
+Всего задач: **166** · todo: 30 · in_progress: 12 · review: 2 · done: 121 · blocked: 1
 
 ## Готовы к взятию сейчас
 
+- [INT-001](INT-001.md) — Интеграция привязки: Godot ↔ сервер ↔ телефон (P0, S)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [GDT-013](GDT-013.md) — Backend: отказ рукопожатия не теряется, без бесконечного переподключения (P1, S)
 - [MOB-011](MOB-011.md) — Психологические эффекты ОС телефона: глитчи, искажения, обои (P1, M)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
@@ -17,7 +19,7 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[GDT-003](GDT-003.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[VAL-003](VAL-003.md) → [INT-002](INT-002.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -34,7 +36,7 @@
 | [CNT-007](CNT-007.md) Тюнинг MVP-пресета до порогов seed sweep | 1 |
 | [ENG-010](ENG-010.md) Проводка модулей выживания в GameEngine | 1 |
 | [ENG-014](ENG-014.md) Подключение симуляции NPC к GameEngine | 1 |
-| [GDT-003](GDT-003.md) Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | 1 |
+| [INT-001](INT-001.md) Интеграция привязки: Godot ↔ сервер ↔ телефон | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -129,13 +131,14 @@
 | [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | todo | — | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
 | [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
 
-## Фаза 5 · M5 — Phone linked (23)
+## Фаза 5 · M5 — Phone linked (24)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [GDT-001](GDT-001.md) | Autoload Backend: REST и WebSocketPeer, переподключение | P0 | M | done | codex-engine-27 | [FND-007](FND-007.md), [PROTO-003](PROTO-003.md) |
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
-| [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | in_progress | claude-g1 | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
+| [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | done | claude-g1 | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
+| [GDT-013](GDT-013.md) | Backend: отказ рукопожатия не теряется, без бесконечного переподключения | P1 | S | todo | — | [GDT-001](GDT-001.md), [GDT-002](GDT-002.md) |
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
