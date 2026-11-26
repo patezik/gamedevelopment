@@ -340,6 +340,12 @@ simulatedEvents, encounters }` — серверная диагностика, н
 2. Для следов `physical`/`document`/`digital` строится `ClueRule` по шаблону следа: документ
    читается (`read`, `documentId = template`), остальное осматривается (`examineHotspot`,
    `hotspotId = template`) в точке следа. `testimonial` улик не даёт (GEN-010).
+   Поэтому в `locations.json` у каждой локации, где может появиться физический след, есть точка осмотра
+   с `id`, равным шаблону следа (CNT-013): `missing_substance`, `missing_object`, `residue_in_cup`,
+   `blood_stain`, `wound_shape`, `tool_marks_on_valve`, `staging_inconsistency`,
+   `disturbed_hiding_place`, `burnt_remains`. Имя точки нейтральное (не выдаёт наличие следа), описание
+   у одного `id` общее для всех локаций. Новый физический шаблон требует такой точки в
+   `locations.json`; без неё улика недостижима, а `means` недоказуем.
    `deriveClues` (EVD-002) создаёт `clues`.
 3. `requiredClueIds` — улики событий `IncidentRecord.keyEventIds`. Если у какого-то ключевого события
    улики нет, стадия бросает `GenerationRejection('EVIDENCE_KEY_EVENT_UNCOVERED')`.
