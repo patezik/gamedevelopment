@@ -269,6 +269,8 @@ static func _add_label(container: Container, text: String) -> Label:
 	var label: Label = Label.new()
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if container is GridContainer:
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	container.add_child(label)
 	return label
 
