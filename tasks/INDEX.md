@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **159** · todo: 40 · in_progress: 10 · review: 1 · done: 107 · blocked: 1
+Всего задач: **159** · todo: 40 · in_progress: 9 · review: 1 · done: 108 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -108,7 +108,7 @@
 | [GEN-010](GEN-010.md) | Стадии TestimonyGen и RedHerrings | P0 | M | done | claude-qf | [GEN-009](GEN-009.md), [KNOW-002](KNOW-002.md) |
 | [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | done | claude-qg | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
 | [GEN-013](GEN-013.md) | Серверный результат генерации: улики, показания и правила дедукции | P0 | M | done | egor-claude-gen-013 | [GEN-011](GEN-011.md) |
-| [GEN-014](GEN-014.md) | Генерация проходит шлюз: мотив, возможность, оправдание по средству и доступу | P0 | L | in_progress | claude-qp | [GEN-011](GEN-011.md), [VAL-002](VAL-002.md), [VAL-004](VAL-004.md), [INV-002](INV-002.md) |
+| [GEN-014](GEN-014.md) | Генерация проходит шлюз: мотив, возможность, оправдание по средству и доступу | P0 | L | done | claude-qp | [GEN-011](GEN-011.md), [VAL-002](VAL-002.md), [VAL-004](VAL-004.md), [INV-002](INV-002.md) |
 | [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | done | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
 | [INV-002](INV-002.md) | Утверждения (Claims) и правила дедукции | P0 | L | done | claude-w1 | [INV-001](INV-001.md) |
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | done | egor-claude-inv-003 | [INV-002](INV-002.md) |

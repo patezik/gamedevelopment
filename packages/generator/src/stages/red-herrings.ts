@@ -12,7 +12,7 @@ import { TruthModel, type TruthEvent, type TruthEventInput } from '@hs/core/trut
 import type { Fact } from '@hs/core/truth/facts';
 import type { Stage } from '../pipeline/index.ts';
 import { ruleFor } from './evidence-gen.ts';
-import { exactPattern, idleAlternative, type TestimonyWorld } from './testimony-gen.ts';
+import { IDLE_VERB, exactPattern, idleAlternative, type TestimonyWorld } from './testimony-gen.ts';
 
 type CharacterId = Character['id'];
 
@@ -65,7 +65,8 @@ function compare(a: string, b: string): number {
 function misdeedVerbs(rules: ScenarioContent['traceRules']): string[] {
   const verbs = new Set<string>();
   for (const rule of rules) {
-    if (rule.when !== undefined) continue;
+    // A plain stay is no misdeed: its traces only record who was where (alibi evidence).
+    if (rule.when !== undefined || rule.verb === IDLE_VERB) continue;
     const usable = rule.produces.every(
       (spec) =>
         spec.kind === 'testimonial' ||

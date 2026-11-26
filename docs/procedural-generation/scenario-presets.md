@@ -94,6 +94,12 @@ content/scenarios/<scenarioId>/
 
 ## 5. Правило следа (`trace-rules.json`)
 
+В `supports` подставляются `$actor`, `$location`, `$t` (начало события) и `$span` (интервал
+`начало..конец` события, не короче минуты; GEN-014, [OQ-23](../planning/open-questions.md)):
+`presence($actor,$location,$span)` в правиле глагола `stay` даёт запись о нахождении на весь
+интервал и оправдание невиновного (`_test_minimal`: `visitor_register`; `sanatorium_winter`:
+`duty_log_entry`). Глагол `stay` не считается проступком для красных селёдок.
+
 ```json
 { "verb": "take", "when": { "targetTag": "poison" }, "produces": [
   { "kind": "physical", "at": "$location", "template": "missing_vial", "supports": ["means($actor)"], "captureMode": "qr", "decaysAfter": null },
@@ -165,6 +171,12 @@ content/scenarios/<scenarioId>/
 | `archetypes.json` | `id`, `title`, `names`, `personality`, `routine`, `access`, `biography` |
 | `relationships.json` | `id`, `type` и необязательные `fromArchetypes`, `toArchetypes`, `constraints`, `secrets` |
 | `deduction-rules.json` | `id`, `establishes`, `requires` и необязательный `excludes`. Утверждения записываются строками |
+
+Утверждения в `establishes`: `presence`, `opportunity`, `means`, `motive`, `alibi`, `no_means`,
+`no_access`, `contradiction` (виды `no_means` и `no_access` — GEN-014, OQ-19). Правило может
+выводить `means($c)` из ссылки `means($c)`, которую даёт улика: ссылка не равна установленному
+утверждению, пока правило её не подтвердит. Мотив выводится из показания `testimony($w,motive($c,$v))`
+(правило `motive_from_testimony`); `knows`/`about` остаются для следов секретов.
 
 У `lighting` четыре ключа `morning`, `day`, `evening`, `night` со значениями `bright`, `dim`
 или `dark`. Связь содержит `to` и `minutes`. У замка `locked` можно указать ключ `itemId`.
