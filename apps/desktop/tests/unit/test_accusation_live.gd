@@ -163,6 +163,26 @@ func _confirm_true_count(entries: Array) -> int:
 # --- regressions -------------------------------------------------------------------------------
 
 
+func test_unknown_token_gives_one_unauthorized_error_and_no_reconnect_loop() -> void:
+	var states: Array = []
+	var errors: Array = []
+	var failures: Array = []
+	_store.connection_state_changed.connect(func(state: int) -> void: states.append(state))
+	_store.error_received.connect(func(code: String, _text: String) -> void: errors.append(code))
+	_store.action_failed.connect(func(code: String, _text: String) -> void: failures.append(code))
+	_backend.connect_session(str(_info.get("url", "")), "token-the-server-never-issued")
+	await wait_until(func() -> bool: return not errors.is_empty(), WAIT_SECONDS)
+	assert_eq(errors, [ProtocolConstants.ERROR_UNAUTHORIZED])
+	assert_eq(failures, [], "a rejected hello is not a rejected action")
+	assert_eq(_store.get_connection_state(), BackendScript.ConnectionState.OFFLINE)
+	# The old loop reconnected within a second; give it time to show up.
+	await wait_seconds(3.0)
+	assert_eq(errors.size(), 1, "no retries")
+	assert_eq(_store.get_connection_state(), BackendScript.ConnectionState.OFFLINE)
+	var retrying: int = states.count(BackendScript.ConnectionState.RETRYING)
+	assert_eq(retrying, 0, "never RETRYING after the rejection")
+
+
 func test_live_lost_result_of_an_executed_accusation_is_recovered_by_a_retry() -> void:
 	var live: bool = _pipe != null and await _connect("a")
 	assert_true(live, "a live session")
