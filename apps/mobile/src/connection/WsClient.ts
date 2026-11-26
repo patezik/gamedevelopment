@@ -7,6 +7,7 @@ import {
 import type { PairedDevice } from '../pairing/pairClient';
 import { useConnectionStore } from '../stores/connectionStore';
 import { usePhoneStore } from '../stores/phoneStore';
+import { useQrStore } from '../stores/qrStore';
 
 export const PING_INTERVAL_MS = 10_000;
 /** The gateway closes a socket silent for 30 s; the client gives up on a dead link the same way. */
@@ -75,6 +76,15 @@ export class WsClient {
   stop(): void {
     this.running = false;
     this.teardown();
+  }
+
+  /** Sends `qr.scan`. False when the link is not up (nothing is queued: the player rescans). */
+  sendQrScan(raw: string): boolean {
+    if (!this.running || !this.welcomed || !this.socket) {
+      return false;
+    }
+    this.send('qr.scan', { raw });
+    return true;
   }
 
   /** App went to the background: the OS kills sockets anyway, so close cleanly without retries. */
@@ -217,8 +227,13 @@ export class WsClient {
       case 'error':
         this.onServerError(message.payload.code, message.payload.message);
         return;
+      case 'qr.result': {
+        const { ok, error, clueRef } = message.payload;
+        useQrStore.getState().setResult({ ok, error, clueRef });
+        return;
+      }
       default:
-        // pong, peer.status, action.result, qr.result: nothing to do at this layer.
+        // pong, peer.status, action.result: nothing to do at this layer.
         return;
     }
   }
@@ -242,6 +257,8 @@ export class WsClient {
 
   private onClosed(): void {
     this.clearTimers();
+    // A scan in flight loses its answer with the socket: the player rescans.
+    useQrStore.getState().reset();
     this.socket = null;
     if (!this.running) {
       return;
@@ -298,6 +315,7 @@ export class WsClient {
 
   private teardown(): void {
     this.clearTimers();
+    useQrStore.getState().reset();
     const socket = this.socket;
     this.socket = null;
     if (socket) {
