@@ -29,6 +29,7 @@ import {
   ActionCostError,
   Calendar,
   DEFAULT_ACTION_COSTS,
+  TickPhase,
   TimeSystem,
   resolveActionCost,
   type ActionCostTable,
@@ -110,6 +111,10 @@ export interface EnginePorts {
   /** The phone call state for arbitration (ENG-005); no phone in the engine yet means no call. */
   readonly callState?: () => 'ringing' | 'active' | undefined;
 }
+
+const NIGHTFALL = 'survival.nightFall';
+const NIGHT_HOUR = 22;
+const MINUTES_PER_DAY = 24 * 60;
 
 const DESKTOP_ACTIONS: readonly string[] = [
   'examineLocation',
@@ -205,6 +210,43 @@ export class GameEngine {
       this.#time.schedule({
         kind: 'survival.staticTick',
         at: (Math.floor(now / STATIC_GROWTH_MINUTES) + 1) * STATIC_GROWTH_MINUTES,
+        priority: 0,
+        payload: null,
+      });
+    }
+    this.#wireNightfall(now);
+  }
+
+  /**
+   * +3 Static once per game night (survival-horror.md section 3): at the moment the clock enters
+   * `night` (22:00). A night already in progress at the start or after a restore is not counted
+   * again; the next one is found from the clock, so the grid needs no saved state.
+   */
+  #wireNightfall(now: number): void {
+    const timers = this.#static;
+    if (!timers) return;
+    const calendar = new Calendar(this.investigation.world.locations.startDateTime);
+    this.#time.registerHandler(NIGHTFALL, {
+      phase: TickPhase.Timers,
+      handle: (event, context) => {
+        timers.apply(STATIC_DELTAS.night, event.at, 'night');
+        if (isOverwhelmed(timers.state())) return { interrupt: 'static' };
+        context.schedule({
+          kind: NIGHTFALL,
+          at: event.at + MINUTES_PER_DAY,
+          priority: 0,
+          payload: null,
+        });
+        return undefined;
+      },
+    });
+    const { hh, mm } = calendar.toDisplay(now);
+    const untilNight =
+      ((((NIGHT_HOUR - hh) * 60 - mm) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+    if (!isOverwhelmed(timers.state())) {
+      this.#time.schedule({
+        kind: NIGHTFALL,
+        at: now + (untilNight === 0 ? MINUTES_PER_DAY : untilNight),
         priority: 0,
         payload: null,
       });

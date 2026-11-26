@@ -92,4 +92,77 @@ describe('Static in the engine (ENG-010)', () => {
     waitHours(restored, 1);
     expect(restored.staticLevel()).toBe(1);
   });
+
+  describe('night (+3 once per game night at 22:00)', () => {
+    const nightEvents = (events: readonly { type: string }[]) =>
+      events.filter(
+        (e) => e.type === 'StaticChanged' && (e as { cause?: string }).cause === 'night',
+      );
+
+    test('adds 3 once when the clock enters the night, not before, not twice', () => {
+      const engine = GameEngine.create(tinyManor(), withStatic());
+      expect(nightEvents(waitHours(engine, 13))).toHaveLength(0); // up to 21:00
+      expect(engine.staticLevel()).toBe(13);
+      const entering = waitHours(engine, 1); // 21:00 to 22:00
+      expect(nightEvents(entering)).toMatchObject([{ at: 840, cause: 'night' }]);
+      expect(engine.staticLevel()).toBe(14 + 3);
+      expect(nightEvents(waitHours(engine, 5))).toHaveLength(0);
+      expect(engine.staticLevel()).toBe(19 + 3);
+    });
+
+    test('is off without ports.static', () => {
+      const engine = GameEngine.create(tinyManor(), base);
+      expect(nightEvents(waitHours(engine, 15))).toHaveLength(0);
+      expect(engine.staticLevel()).toBe(0);
+    });
+
+    test('a restore before nightfall still gets it; a restore after it does not repeat it', () => {
+      const investigation = tinyManor();
+      const ports = withStatic();
+      const engine = GameEngine.create(investigation, ports);
+      waitHours(engine, 13);
+      const before = GameEngine.restore(engine.snapshot(), investigation, ports);
+      waitHours(engine, 2);
+      waitHours(before, 2);
+      expect(before.staticLevel()).toBe(engine.staticLevel());
+      expect(before.staticLevel()).toBe(15 + 3);
+      expect(before.stateHash()).toBe(engine.stateHash());
+      const after = GameEngine.restore(engine.snapshot(), investigation, ports);
+      waitHours(engine, 3);
+      waitHours(after, 3);
+      expect(after.staticLevel()).toBe(18 + 3);
+      expect(after.staticLevel()).toBe(engine.staticLevel());
+    });
+
+    test('a restore exactly at 22:00 does not count the same night again', () => {
+      const investigation = tinyManor();
+      const ports = withStatic();
+      const engine = GameEngine.create(investigation, ports);
+      waitHours(engine, 14);
+      expect(engine.staticLevel()).toBe(17);
+      const restored = GameEngine.restore(engine.snapshot(), investigation, ports);
+      expect(nightEvents(waitHours(restored, 4))).toHaveLength(0);
+      expect(restored.staticLevel()).toBe(21);
+    });
+
+    test('Static 100 from the night interrupts a long wait at 22:00', () => {
+      const engine = GameEngine.create(tinyManor(), withStatic(83));
+      for (const minutes of [120, 120, 120, 120, 120, 120, 105]) {
+        expect(engine.dispatch('desktop', { type: 'wait', minutes }).ok).toBe(true);
+      }
+      expect(engine.playerView().clock.t).toBe(825);
+      expect(engine.dispatch('desktop', { type: 'rest', minutes: 120 })).toMatchObject({
+        ok: true,
+        outcome: 'madness',
+      });
+      expect(engine.playerView().clock.t).toBe(840);
+    });
+
+    test('can push Static to 100 and end the game with madness', () => {
+      const engine = GameEngine.create(tinyManor(), withStatic(85));
+      const results = Array.from({ length: 56 }, () => wait(engine));
+      expect(results.at(-1)).toMatchObject({ ok: true, outcome: 'madness' });
+      expect(engine.staticLevel()).toBe(100);
+    });
+  });
 });
