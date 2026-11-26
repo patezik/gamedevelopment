@@ -2,14 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **167** · todo: 26 · in_progress: 12 · review: 1 · done: 127 · blocked: 1
+Всего задач: **167** · todo: 25 · in_progress: 13 · review: 1 · done: 127 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [VAL-005](VAL-005.md) — Проверки V-REDUNDANCY и V-CLEANUP (P0, M)
 - [VAL-007](VAL-007.md) — Seed sweep CLI hs-sweep и отчёты (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
-- [REL-003](REL-003.md) — Политика приватности и тексты разрешений (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
 - [ENG-008](ENG-008.md) — portraitRef персонажей: вариант портрета по архетипу (P2, S)
@@ -257,5 +256,5 @@
 | [MOB-012](MOB-012.md) | Поддержка companion-приложения на Android после первого прототипа | P2 | M | todo | — | [INT-003](INT-003.md), [INT-007](INT-007.md) |
 | [REL-001](REL-001.md) | Экспорт Godot (Windows, Linux, macOS) и артефакты CI | P1 | M | todo | — | [INT-005](INT-005.md) |
 | [REL-002](REL-002.md) | Сборка companion-приложения для магазинов (EAS Build/Submit) | P1 | M | todo | — | [INT-007](INT-007.md) |
-| [REL-003](REL-003.md) | Политика приватности и тексты разрешений | P1 | S | todo | — | [MOB-004](MOB-004.md) |
+| [REL-003](REL-003.md) | Политика приватности и тексты разрешений | P1 | S | in_progress | egor-claude-rel-003 | [MOB-004](MOB-004.md) |
 | [REL-004](REL-004.md) | Версионирование, CHANGELOG и релизный процесс | P2 | S | done | codex-small-1 | [FND-003](FND-003.md) |
