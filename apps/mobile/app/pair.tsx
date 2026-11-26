@@ -91,7 +91,8 @@ export default function PairScreen() {
       {!manual && permission && !permission.granted ? (
         <View style={styles.block}>
           <Text style={styles.text}>
-            Камера нужна только чтобы сканировать QR привязки на экране игры.
+            Камера нужна только чтобы сканировать QR на экране игры: привязку телефона и игровые
+            улики.
           </Text>
           {permission.canAskAgain ? (
             <Pressable accessibilityRole="button" style={styles.button} onPress={requestPermission}>
