@@ -9,6 +9,7 @@ const Format = preload("res://src/scenes/new_game/new_game_format.gd")
 const FakeSessionBackend = preload("res://tests/unit/support/fake_session_backend.gd")
 const FakeRouter = preload("res://tests/unit/support/fake_router.gd")
 
+const SETTINGS_SCRATCH: String = "user://test_new_game_settings.cfg"
 const SESSION_ID: String = "49a4ae5c-4174-416f-94c5-b8a7380636e5"
 const TOKEN: String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJ0123456"
 const SCENARIOS: Array = [
@@ -19,9 +20,12 @@ const SCENARIOS: Array = [
 var backend: FakeSessionBackend
 var router: FakeRouter
 var screen: NewGame
+var _saved_config_path: String
 
 
 func before_each() -> void:
+	_saved_config_path = Settings.config_path
+	Settings.config_path = SETTINGS_SCRATCH
 	PairingSession.clear()
 	backend = FakeSessionBackend.new()
 	add_child_autofree(backend)
@@ -30,6 +34,8 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	Settings.config_path = _saved_config_path
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_SCRATCH))
 	PairingSession.clear()
 
 
@@ -178,6 +184,52 @@ func test_the_interface_language_is_sent_to_the_server() -> void:
 	var body: Dictionary = JSON.parse_string(str(backend.bodies[_posts()[0].id]))
 	assert_eq(str(body.get("locale")), "en")
 	Settings._apply_locale(saved)
+
+
+func test_language_picker_lists_supported_locales_with_native_names() -> void:
+	_open_ready()
+	var picker: OptionButton = _node("Language") as OptionButton
+	assert_eq(picker.item_count, Settings.SUPPORTED_LOCALES.size())
+	assert_eq(picker.get_item_text(0), "Русский")
+	assert_eq(picker.get_item_text(1), "English")
+	assert_eq(picker.get_item_text(picker.selected), Localization.text("language." + Settings.get_locale()))
+
+
+func test_picking_english_sets_the_locale_redraws_and_is_sent_and_saved() -> void:
+	var saved: String = Settings.get_locale()
+	Settings.set_locale("ru")
+	_open_ready()
+	var picker: OptionButton = _node("Language") as OptionButton
+	assert_eq(_text("LanguageHeading"), "Язык")
+	picker.select(1)
+	picker.item_selected.emit(1)
+	assert_eq(Settings.get_locale(), "en")
+	assert_eq(TranslationServer.get_locale(), "en")
+	assert_eq(_text("LanguageHeading"), "Language")
+	assert_eq(picker.selected, 1)
+	var config: ConfigFile = ConfigFile.new()
+	assert_eq(config.load(Settings.config_path), OK)
+	assert_eq(str(config.get_value(Settings.SECTION_GENERAL, Settings.KEY_LOCALE, "")), "en")
+	assert_true(screen.create_session())
+	var body: Dictionary = JSON.parse_string(str(backend.bodies[_posts()[0].id]))
+	assert_eq(str(body.get("locale")), "en")
+	Settings.set_locale(saved)
+
+
+func test_picking_russian_again_restores_the_locale() -> void:
+	var saved: String = Settings.get_locale()
+	Settings.set_locale("en")
+	_open_ready()
+	var picker: OptionButton = _node("Language") as OptionButton
+	assert_eq(picker.selected, 1)
+	picker.select(0)
+	picker.item_selected.emit(0)
+	assert_eq(Settings.get_locale(), "ru")
+	assert_eq(_text("LanguageHeading"), "Язык")
+	assert_true(screen.create_session())
+	var body: Dictionary = JSON.parse_string(str(backend.bodies[_posts()[0].id]))
+	assert_eq(str(body.get("locale")), "ru")
+	Settings.set_locale(saved)
 
 
 func test_an_entered_seed_is_validated_and_sent() -> void:
