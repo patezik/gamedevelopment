@@ -176,7 +176,7 @@ func test_the_interface_language_is_sent_to_the_server() -> void:
 	Settings._apply_locale("en")
 	assert_true(screen.create_session())
 	var body: Dictionary = JSON.parse_string(str(backend.bodies[_posts()[0].id]))
-	assert_eq(body.get("locale"), "en")
+	assert_eq(str(body.get("locale")), "en")
 	Settings._apply_locale(saved)
 
 
