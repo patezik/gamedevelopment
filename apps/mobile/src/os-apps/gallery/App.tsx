@@ -33,17 +33,14 @@ export function GalleryApp({ view }: OsAppProps) {
             accessibilityRole="button"
             accessibilityLabel={`Снимок: ${item.title}`}
             onPress={() => setOpenId(item.id)}
+            style={styles.thumbnail}
           >
-            <PhotoPreview>
-              <EvidenceCard
-                imageRef={item.imageRef}
-                title={item.title}
-                size={THUMB}
-                fontScale={scale}
-                showTitle={false}
-              />
+            <PhotoPreview size={THUMB}>
+              <EvidenceCard imageRef={item.imageRef} size={THUMB} />
             </PhotoPreview>
-            <Text style={[styles.title, { fontSize: 14 * scale }]}>{item.title}</Text>
+            <Text numberOfLines={3} style={[styles.title, { fontSize: 14 * scale }]}>
+              {item.title}
+            </Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -132,6 +129,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   empty: { color: '#b4c2ba', textAlign: 'center', marginTop: 24 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 12 },
+  thumbnail: { width: THUMB, gap: 4 },
   viewer: { flex: 1, backgroundColor: '#131717f2', padding: 12, gap: 6 },
   zoomPane: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   title: { color: '#f0eee5', fontWeight: '700' },

@@ -34,27 +34,20 @@ export function cardStyleFor(imageRef: string): CardStyle {
 
 export interface EvidenceCardProps {
   imageRef: string;
-  title: string;
+  title?: string;
   /** Edge of the square card in px. */
   size: number;
   fontScale?: number;
-  showTitle?: boolean;
 }
 
-export function EvidenceCard({
-  imageRef,
-  title,
-  size,
-  fontScale = 1,
-  showTitle = true,
-}: EvidenceCardProps) {
+export function EvidenceCard({ imageRef, title, size, fontScale = 1 }: EvidenceCardProps) {
   const style = cardStyleFor(imageRef);
   return (
     <View
       testID={`card-${imageRef}`}
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={title}
+      {...(title === undefined
+        ? {}
+        : { accessible: true, accessibilityRole: 'image' as const, accessibilityLabel: title })}
       style={[styles.card, { width: size, height: size, backgroundColor: style.background }]}
     >
       {Array.from({ length: style.stripes }, (_, i) => (
@@ -69,7 +62,7 @@ export function EvidenceCard({
           ]}
         />
       ))}
-      {showTitle && (
+      {title !== undefined && (
         <Text
           numberOfLines={3}
           style={[styles.title, { fontSize: Math.max(11, size / 9) * fontScale }]}

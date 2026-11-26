@@ -1,6 +1,6 @@
 import { PhoneView } from '@hs/protocol';
 import fixture from '@hs/protocol/fixtures/views/phone-view.glitch.json';
-import { act, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 import { cancelAnimation, withRepeat, withTiming } from 'react-native-reanimated';
 import OsLayout from '../app/os/_layout';
@@ -129,6 +129,50 @@ test('reducing effects clears distortion immediately and keeps the original phot
   expect(screen.queryByTestId('photo-preview-distortion', hidden)).toBeNull();
   expect(screen.getByText(base.gallery[0]!.title)).toBeTruthy();
 });
+
+test.each([false, true])(
+  'the gallery at level 100 keeps names, metadata and viewer controls with reduceEffects=%s',
+  async (reduceEffects) => {
+    mockAppId = 'gallery';
+    useDisplayStore.getState().setReduceEffects(reduceEffects);
+    const photo = {
+      id: 'preview',
+      title: 'Снимок тропы',
+      imageRef: 'lake.png',
+      takenAt: 96,
+      caption: 'Тропа к озеру',
+    };
+    usePhoneStore.getState().applyUpdate(1, {
+      ...initialView,
+      gallery: [photo],
+      effects: { glitchLevel: 100 },
+    });
+    await render(<OsLayout />);
+
+    const thumbnail = screen.getByRole('button', { name: 'Снимок: Снимок тропы' });
+    expect(within(thumbnail).getByText(photo.title)).toBeTruthy();
+    const distortion = within(thumbnail).queryByTestId('photo-preview-distortion', hidden);
+    if (reduceEffects) {
+      expect(distortion).toBeNull();
+    } else {
+      expect(distortion).toBeTruthy();
+      expect(within(distortion!).queryByText(photo.title, hidden)).toBeNull();
+      expect(within(distortion!).queryByLabelText(photo.title, hidden)).toBeNull();
+    }
+
+    await fireEvent.press(thumbnail);
+    const image = screen.getByRole('image', { name: photo.title });
+    expect(image).toHaveStyle({ width: 280, height: 280 });
+    expect(within(image).queryByTestId('photo-preview-distortion', hidden)).toBeNull();
+    expect(screen.getByText('Время: 1:36')).toBeTruthy();
+    expect(screen.getByText('Место: Тропа к озеру')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Увеличить' }));
+    expect(screen.getByText('×1.5')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Закрыть' }));
+    expect(screen.queryByText('Время: 1:36')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Снимок: Снимок тропы' })).toBeTruthy();
+  },
+);
 
 test('honours system Reduce Motion on mount and follows changes while the OS is open', async () => {
   jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockResolvedValue(true);
