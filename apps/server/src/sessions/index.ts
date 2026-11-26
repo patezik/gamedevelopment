@@ -169,7 +169,8 @@ export class Session {
     publish: (engine: Engine) => Session,
   ): Promise<Session> {
     return this.#enqueue(async () => {
-      this.#refreshLifetime();
+      // Only an active session can become eligible here. Leave finished-session expiry to sweep.
+      if (this.#status === 'active') this.#refreshLifetime();
       if (!REPLACEABLE.has(this.#status)) throw new SessionIdInUseError();
       const replacement = publish(await restore());
       this.#dispose();
