@@ -5,7 +5,7 @@ import {
   type EnginePorts,
   type Investigation,
 } from '@hs/core/game';
-import type { ErrorCode, PlayerAction } from '@hs/protocol';
+import type { ErrorCode, PlayerAction, PlayerView, PhoneView } from '@hs/protocol';
 
 const EVENT_LIMIT = 200;
 const DESKTOP_GRACE_MS = 60_000;
@@ -25,6 +25,8 @@ export interface InvestigationProvider {
 }
 
 export interface SessionEngine {
+  playerView?(): PlayerView;
+  phoneView?(): PhoneView | undefined;
   dispatch(role: SessionRole, action: PlayerAction): DispatchResult | Promise<DispatchResult>;
 }
 

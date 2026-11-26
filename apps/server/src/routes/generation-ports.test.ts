@@ -46,6 +46,7 @@ describe('GeneratorInvestigationProvider ports (SRV-012)', () => {
     expect(ports.clues).toBe(result.server.clues);
     expect(ports.accusation?.rules).toBe(result.server.deductionRules);
     expect(ports.startVitals).toEqual(content.preset.survival.startVitals);
+    expect(ports.texts).toEqual(new Map(Object.values(content.text.ru!).flatMap(Object.entries)));
     const [character] = result.investigation.characters;
     const witness = ports.testimony?.witness(character!.id);
     expect(witness?.knowledge).toBe(result.server.knowledge.get(character!.id));

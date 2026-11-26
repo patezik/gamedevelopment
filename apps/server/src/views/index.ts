@@ -47,3 +47,36 @@ export class ViewCache {
     return view;
   }
 }
+
+/** Use only public engine projections, including when a session was restored from a save. */
+export const engineView: ViewSource = (session, role) =>
+  role === 'desktop' ? session.engine.playerView?.() : session.engine.phoneView?.();
+
+/** Allowlist: raw domain payloads (including truth and hallucination markers) never go on the wire. */
+export const engineEvents: EventSource = (session, role, result) => {
+  if (role !== 'phone') return [];
+  const view = session.engine.phoneView?.();
+  if (!view) return [];
+  const events: ClientEvent[] = [];
+  for (const raw of result.events) {
+    if (!raw || typeof raw !== 'object' || !('type' in raw)) continue;
+    if (raw.type === 'NotificationPosted' && 'notification' in raw) {
+      const notification = raw.notification;
+      if (!notification || typeof notification !== 'object' || !('id' in notification)) continue;
+      const visible = view.notifications.find(({ id }) => id === notification.id);
+      if (visible) events.push({ type: 'notification', notificationId: visible.id });
+    } else if (raw.type === 'CallStarted' && 'call' in raw) {
+      const call = raw.call;
+      if (!call || typeof call !== 'object' || !('callId' in call)) continue;
+      if (view.activeCall?.state === 'ringing' && view.activeCall.callId === call.callId) {
+        events.push({ type: 'incomingCall', callId: view.activeCall.callId });
+      }
+    } else if (raw.type === 'EvidenceCaptured' && 'clueId' in raw) {
+      const visible = session.engine
+        .playerView?.()
+        .caseBoard.clues.find(({ id, captured }) => id === raw.clueId && captured);
+      if (visible) events.push({ type: 'scanResult', ok: true, clueRef: visible.id });
+    }
+  }
+  return events;
+};
