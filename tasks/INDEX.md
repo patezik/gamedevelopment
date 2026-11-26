@@ -2,11 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **159** · todo: 36 · in_progress: 10 · review: 2 · done: 110 · blocked: 1
+Всего задач: **159** · todo: 36 · in_progress: 10 · review: 1 · done: 111 · blocked: 1
 
 ## Готовы к взятию сейчас
 
+- [MOB-004](MOB-004.md) — Приложение Camera: сканирование QR улик и обработка ошибок (P0, M)
+- [MOB-005](MOB-005.md) — Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) (P0, S)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [MOB-007](MOB-007.md) — Приложение Messages: переписки, шаблонные ответы, неизвестные отправители (P0, M)
+- [MOB-009](MOB-009.md) — Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения (P1, M)
+- [MOB-010](MOB-010.md) — Приложения Browser и Settings (P1, S)
 - [PROTO-005](PROTO-005.md) — Исход необратимого действия после переподключения: признак совершённого обвинения (P1, S)
 - [PROTO-006](PROTO-006.md) — REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot (P2, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
@@ -22,7 +27,6 @@
 
 | Задача | Блокирует напрямую |
 |---|---|
-| [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
@@ -34,6 +38,7 @@
 | [SRV-012](SRV-012.md) Порты дела и стартовые данные пресета для GameEngine | 2 |
 | [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
 | [CNT-003](CNT-003.md) MVP-сценарий: шаблоны преступлений и правила мотивов | 1 |
+| [CNT-004](CNT-004.md) MVP-сценарий: правила следов и правила дедукции | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -137,7 +142,7 @@
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
-| [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | review | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
+| [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | done | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
 | [MOB-004](MOB-004.md) | Приложение Camera: сканирование QR улик и обработка ошибок | P0 | M | todo | — | [MOB-003](MOB-003.md), [SRV-006](SRV-006.md) |
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | todo | — | [MOB-003](MOB-003.md) |
 | [PHONE-001](PHONE-001.md) | Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | P0 | L | done | claude-w3 | [INV-001](INV-001.md), [PROTO-002](PROTO-002.md) |
