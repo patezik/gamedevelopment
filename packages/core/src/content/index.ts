@@ -15,6 +15,7 @@ export {
   locationsSchema,
   motivesSchema,
   phoneTemplatesSchema,
+  portraitRefOf,
   presetSchema,
   relationshipsSchema,
   TRACE_LOCATION_PLACEHOLDERS,

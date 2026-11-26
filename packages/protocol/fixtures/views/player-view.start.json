@@ -84,13 +84,13 @@
     {
       "id": "ch_nurse",
       "name": "Дежурная медсестра",
-      "portraitRef": "portrait_nurse_01",
+      "portraitRef": "nurse.f1",
       "demeanor": "напряжена"
     },
     {
       "id": "ch_guest_1",
       "name": "Мужчина в сером пальто",
-      "portraitRef": "portrait_guest_03",
+      "portraitRef": "",
       "demeanor": "спокоен"
     }
   ],

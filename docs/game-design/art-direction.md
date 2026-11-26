@@ -181,8 +181,8 @@ World of Horror: у нас полутона, перспектива и цвет 
 
 Варианты внешности — по архетипу: `<archetype>.<variant>`, где вариант — буква и номер
 (`m1`, `f1`): сгенерированные персонажи одного архетипа бывают разного пола и возраста
-(пулы имён в `archetypes.json`). Выбор варианта для персонажа — задача
-[ENG-008](../../tasks/ENG-008.md).
+(пулы имён в `archetypes.json`). Вариант персонажа задаёт таблица `portraits` архетипа по имени
+([scenario-presets.md §6](../procedural-generation/scenario-presets.md), ENG-008).
 
 ### 6.3. Рамка и совместимость с досье
 
@@ -400,8 +400,9 @@ godot --path apps/desktop res://tests/manual/art_preview.tscn -- --plate=loc_hal
   эталоны перегенерируются (`npm run art:reference`).
 - Exploration показывает пластины и портреты ([GDT-012](../../tasks/GDT-012.md),
   [godot-client.md §4.1](../desktop/godot-client.md)); без арта — плейсхолдер и силуэт.
-- `portraitRef` в представлениях пока пустой; выбор варианта портрета персонажа —
-  [ENG-008](../../tasks/ENG-008.md).
+- `portraitRef` заполняется по таблице `portraits` архетипа (ENG-008); в `sanatorium_winter`
+  варианты указаны только для эталонов `head_doctor.m1` и `nurse.f1`, остальные персонажи
+  получают пустую строку до [CNT-012](../../tasks/CNT-012.md).
 - Полный набор арта `sanatorium_winter` — [CNT-012](../../tasks/CNT-012.md), после решения OQ-08.
 - Шрифты интерфейса, анимация, звук (CNT-011) и мобильное приложение этим документом не
   регулируются.

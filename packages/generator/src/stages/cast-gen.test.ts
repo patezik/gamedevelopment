@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { characterSchema, validateRoutine } from '@hs/core/characters';
-import { loadScenarioFromDir, type ScenarioContent } from '@hs/core/content';
+import { loadScenarioFromDir, portraitRefOf, type ScenarioContent } from '@hs/core/content';
 import { expect, test } from 'vitest';
 import { castGen, runPipeline } from '../index.ts';
 
@@ -82,4 +82,31 @@ test('finds a feasible assignment when mandatory name pools overlap and respects
   }
   first.names = ['Анна Иванова'];
   expect(() => generate('impossible', scenario)).toThrow(/quotas/);
+});
+
+test('ENG-008: portraitRef follows the name, is deterministic and absent without a variant', () => {
+  const seen = new Set<string>();
+  let without = 0;
+  for (let seed = 0; seed < 300; seed++) {
+    const cast = generate(String(seed));
+    expect(generate(String(seed)).map(({ portraitRef }) => portraitRef)).toEqual(
+      cast.map(({ portraitRef }) => portraitRef),
+    );
+    for (const character of cast) {
+      const archetype = content.archetypes.find(({ id }) => id === character.archetypeId)!;
+      const listed = Object.entries(archetype.portraits ?? {}).find(([, names]) =>
+        names.includes(character.name),
+      );
+      if (listed) {
+        expect(character.portraitRef).toBe(`${archetype.id}.${listed[0]}`);
+        seen.add(character.portraitRef!);
+      } else {
+        expect(character).not.toHaveProperty('portraitRef');
+        without++;
+      }
+      expect(character.portraitRef).toBe(portraitRefOf(archetype, character.name));
+    }
+  }
+  expect([...seen].sort()).toEqual(['head_doctor.m1', 'nurse.f1']);
+  expect(without).toBeGreaterThan(0);
 });

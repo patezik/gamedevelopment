@@ -208,7 +208,7 @@ interface PlayerView {
 interface PhoneView {
   status: { time; battery; signal };
   apps: { id; badge; enabled }[];
-  contacts: { id; name; number; portraitRef? }[];                       // неизвестный номер: name показывает номер или пуст
+  contacts: { id; name; number; portraitRef? }[];                       // неизвестный номер: name показывает номер или пуст; сервер всегда передаёт portraitRef ("" без портрета)
   threads: { id; contactId; messages: { id; from: "me"|"them"; text; at; read }[];
              availableReplies: { id; text }[]; unread; typing? }[];
   callLog: { id; contactId; direction: "incoming"|"outgoing"|"missed"; at; durationMinutes }[];
@@ -244,6 +244,14 @@ interface PhoneView {
   опциональны в схеме для совместимости со старыми снимками. `PhoneView` не получает их даже
   после конца игры. См. [ADR 0021](../architecture/adr/0021-ending-recap.md).
 - Запертый файл не несёт `content` (проверяется схемой): содержимое приходит только после `unlockFile`.
+- **`portraitRef`** (`presentCharacters[]`, `contacts[]`) — `<archetype_id>.<variant>`, например
+  `head_doctor.m1` ([art-direction.md §7.2](../game-design/art-direction.md)): `snake_case` id
+  архетипа до 64 символов, точка, буква и цифры. Пустая строка — варианта нет, клиент показывает
+  силуэт. Вариант выбирает CastGen по имени персонажа из таблицы `portraits` архетипа
+  ([scenario-presets.md §6](../procedural-generation/scenario-presets.md)), до выбора жертвы и
+  виновника и без RNG, поэтому портрет не зависит от истины (ENG-008). Контакт телефона получает
+  `portraitRef` персонажа с тем же id или `""`; поле есть у каждого контакта, в том числе у
+  галлюцинаторного, и не отличает его.
 
 ## 7. Последовательности
 

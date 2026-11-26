@@ -160,7 +160,8 @@ func test_cache_holds_the_location_its_neighbours_and_portraits_only() -> void:
 	for path: String in library.cached_paths():
 		assert_true(path in [HALL_DIM, HALL_BRIGHT, DOCTOR], "%s belongs to the screen" % path)
 
-	_publish(_view("loc_lobby", "bright"))
+	# Nobody with a portrait is present in the lobby (the fixture's own refs are real since ENG-008).
+	_publish(_view("loc_lobby", "bright", ["", ""] as Array[String]))
 	assert_eq(library.cached_paths(), [] as Array[String], "left location and portraits released")
 
 

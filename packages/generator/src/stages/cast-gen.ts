@@ -1,6 +1,6 @@
 import { validateRoutine, type Character, type Personality } from '@hs/core/characters';
 import { PERSONALITY_TRAITS } from '@hs/core/common';
-import type { ScenarioContent } from '@hs/core/content';
+import { portraitRefOf, type ScenarioContent } from '@hs/core/content';
 import type { Rng } from '@hs/core/rng';
 import type { Stage } from '../pipeline/index.ts';
 
@@ -155,10 +155,14 @@ export const castGen: Stage<unknown, Character[]> = {
         1 - personality.conscientiousness,
         character.fork('routine'),
       );
+      // ENG-008: the portrait follows the name (a lookup, no RNG). CastGen runs before
+      // IncidentSelection, so appearance is fixed before anyone becomes a victim or culprit.
+      const portraitRef = portraitRefOf(archetype, name.text);
       return {
         id,
         name: name.text,
         archetypeId: archetype.id,
+        ...(portraitRef && { portraitRef }),
         age: 45,
         socialStatus: archetype.id,
         personality,

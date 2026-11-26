@@ -1,6 +1,7 @@
 export {
   characterSchema,
   deserializeCharacter,
+  PORTRAIT_REF,
   serializeCharacter,
   type AccessGrant,
   type BiographyFact,

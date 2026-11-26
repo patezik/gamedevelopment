@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { loadScenarioFromDir } from '@hs/core/content';
+import { loadScenarioFromDir, portraitRefOf } from '@hs/core/content';
 import { expect, test } from 'vitest';
 import { generateInvestigation } from './index.ts';
 
@@ -57,3 +57,17 @@ test('sanatorium_winter: every hotspot clue of seeds 2, 3, 6, 7 can be examined 
   // The means of the poisoning is a required physical clue in these seeds.
   expect(required).toBeGreaterThan(0);
 }, 30_000);
+
+test('ENG-008: portraitRef of the generated cast depends on the name only, never on the truth', () => {
+  // Use an accepted poisoning and staged fall from the CNT-003 seed corpus.
+  for (const seed of ['2', '3']) {
+    const result = generateInvestigation({ scenarioId: 'sanatorium_winter', seed }, sanatorium);
+    expect(result.ok, seed).toBe(true);
+    if (!result.ok) continue;
+    for (const { archetypeId, name, portraitRef } of result.investigation.characters) {
+      const archetype = sanatorium.archetypes.find(({ id }) => id === archetypeId)!;
+      // The victim and the culprit get the same lookup as everyone else.
+      expect(portraitRef, name).toBe(portraitRefOf(archetype, name));
+    }
+  }
+});
