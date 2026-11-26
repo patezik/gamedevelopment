@@ -21,7 +21,12 @@ export type TraceCaptureMode = 'auto' | 'qr';
 /** Concealment verbs: each needs an unconditional rule with a secondary trace (ADR 0017). */
 export const CONCEALMENT_VERBS: readonly string[] = Object.freeze(['hide', 'destroy', 'stage']);
 /** Placeholders a `supports` entry may use; they are bound when the trace is derived. */
-export const SUPPORT_PLACEHOLDERS: readonly string[] = Object.freeze(['$actor', '$location', '$t']);
+export const SUPPORT_PLACEHOLDERS: readonly string[] = Object.freeze([
+  '$actor',
+  '$location',
+  '$t',
+  '$span',
+]);
 const DESTROY_VERB = 'destroy';
 
 export interface Trace {
@@ -29,7 +34,7 @@ export interface Trace {
   readonly kind: TraceKind;
   readonly sourceEventId: EventId;
   readonly template: string;
-  /** Claim references with `$actor`, `$location` and `$t` bound to the source event. */
+  /** Claim references with `$actor`, `$location`, `$t` and `$span` bound to the source event. */
   readonly supports: readonly string[];
   readonly captureMode: TraceCaptureMode;
   readonly location?: string;
@@ -251,10 +256,11 @@ function itemExists(items: ItemTagSource, itemId: string): boolean {
   }
 }
 
-const BOUND_PLACEHOLDER = /\$(actor|location|t)(?![A-Za-z0-9_])/g;
+const BOUND_PLACEHOLDER = /\$(actor|location|t|span)(?![A-Za-z0-9_])/g;
 
 /**
- * Binds `$location` and `$t` (the event start) and expands an entry with `$actor` once per
+ * Binds `$location`, `$t` (the event start) and `$span` (the interval `start..end` the event
+ * lasts, at least one minute) and expands an entry with `$actor` once per
  * distinct actor; without actors such an entry is dropped instead of keeping a placeholder.
  */
 function bindSupports(supports: readonly string[], event: TruthEvent): string[] {
@@ -262,7 +268,13 @@ function bindSupports(supports: readonly string[], event: TruthEvent): string[] 
   const bound = supports.flatMap((support) =>
     (support.includes('$actor') ? actors : ['']).map((actor) =>
       support.replace(BOUND_PLACEHOLDER, (_, name: string) =>
-        name === 'actor' ? actor : name === 'location' ? event.location : String(event.t),
+        name === 'actor'
+          ? actor
+          : name === 'location'
+            ? event.location
+            : name === 'span'
+              ? `${event.t}..${event.t + Math.max(1, event.duration)}`
+              : String(event.t),
       ),
     ),
   );

@@ -28,8 +28,14 @@ const rulesFile = (scenario: string): object[] =>
   JSON.parse(
     readFileSync(`content/scenarios/${scenario}/deduction-rules.json`, 'utf8'),
   ) as object[];
+/** The means rule these tests combine with the sanatorium rules (not a shipped file). */
+const MEANS_FROM_LOG = {
+  id: 'means_from_log',
+  establishes: 'means($actor)',
+  requires: ['access_to_record($actor)'],
+};
 const [opportunityRule, , motiveRule] = rulesFile('sanatorium_winter') as [object, object, object];
-const rules = compileDeductionRules([opportunityRule, ...rulesFile('_test_minimal'), motiveRule]);
+const rules = compileDeductionRules([opportunityRule, MEANS_FROM_LOG, motiveRule]);
 
 const keyEvent = investigation.truth.incident.keyEventIds[0]!;
 const clueSpecs = [
