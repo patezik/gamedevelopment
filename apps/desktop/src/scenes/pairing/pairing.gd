@@ -339,13 +339,18 @@ func _refresh() -> void:
 		_code.text = _session.code
 		_expiry.text = Format.expiry_text(_session.expires_at, _now())
 		_qr_status.text = PAIRED_TEXT if paired else _qr_text()
-		_qr_status.add_theme_color_override(&"font_color", OK_COLOR if paired else Color(1, 1, 1, 1))
+		if paired:
+			_qr_status.add_theme_color_override(&"font_color", OK_COLOR)
+		else:
+			_qr_status.remove_theme_color_override(&"font_color")
 		_qr.visible = _qr.texture != null and not paired
 		_code_box.visible = not paired
 		_refresh_address_hint()
 
 	var state: BackendScript.ConnectionState = _store.get_connection_state()
-	_connection.text = Format.connection_text(state) if here else Format.connection_text(BackendScript.ConnectionState.OFFLINE)
+	if not here:
+		state = BackendScript.ConnectionState.OFFLINE
+	_connection.text = Format.connection_text(state)
 	_phone.text = Format.phone_text(_store.get_phone_status() if here else "")
 	_reconnect.visible = live and state == BackendScript.ConnectionState.OFFLINE
 	_new_code.visible = live and _qr_state != "refreshing"
