@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **169** · todo: 24 · in_progress: 12 · review: 0 · done: 132 · blocked: 1
+Всего задач: **169** · todo: 24 · in_progress: 11 · review: 1 · done: 132 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -182,7 +182,7 @@
 | [GDT-008](GDT-008.md) | Доска дела: улики, показания, противоречия, персоны интереса, хронология | P0 | L | done | egor-claude-gdt-008 | [GDT-002](GDT-002.md), [INV-003](INV-003.md), [INV-004](INV-004.md) |
 | [GDT-009](GDT-009.md) | Экран обвинения и экраны концовок с разбором истины | P0 | M | done | egor-claude-gdt-009 | [GDT-008](GDT-008.md), [ENG-006](ENG-006.md) |
 | [GDT-011](GDT-011.md) | Debug-панель: seed, время, просмотр истины в debug-режиме | P2 | S | done | egor-claude-gdt-011 | [GDT-002](GDT-002.md), [SRV-009](SRV-009.md) |
-| [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | in_progress | claude-i2 | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
+| [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | review | claude-i2 | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
 | [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | done | claude-n1 | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
 | [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | done | claude-n2 | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
