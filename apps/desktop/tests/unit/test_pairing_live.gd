@@ -3,11 +3,11 @@ extends GutTest
 ## SRV-002 (createSessionServices: the shipped catalog, the real generator with its full gate, the
 ## pairing routes) started by tests/live/pairing_server.mjs.
 ##
-## - production: the routes `npm start` serves today. There is no pairing-qr route and the gateway
-##   does not know the issued tokens, so the screen falls back to the code and address, the desktop
-##   never comes online and start stays disabled.
-## - adapter: a test adapter adds what SRV-013 will assemble (the gateway over the same sessions and
-##   the pairing-qr route); a scripted phone pairs with the code shown on screen.
+## - production: the routes `npm start` serves (SRV-013): the gateway over the same sessions and the
+##   pairing-qr route. The QR is shown, the desktop comes online and start stays disabled until a
+##   phone pairs.
+## - adapter: the same routes through the test adapter; a scripted phone pairs with the code shown on
+##   screen.
 ## Needs Node and the repository's node_modules (tsx), like `npm run test:godot` itself.
 
 const BackendScript = preload("res://src/autoload/backend.gd")
@@ -144,7 +144,7 @@ func _open_pairing() -> Pairing:
 # --- tests -------------------------------------------------------------------------------------
 
 
-func test_production_rest_creates_a_session_and_pairing_falls_back_to_the_code() -> void:
+func test_production_rest_creates_a_session_and_pairing_shows_the_qr_and_comes_online() -> void:
 	if not _start_server("production"):
 		return
 	assert_true(await _create_session(str(_info.get("seed"))), "201 through the full gate")
@@ -156,22 +156,22 @@ func test_production_rest_creates_a_session_and_pairing_falls_back_to_the_code()
 	assert_eq(session.qr_host, "127.0.0.1", "HS_HOST of the harness")
 	var pairing: Pairing = _open_pairing()
 	await wait_until(func() -> bool: return pairing.get_qr_state() != "loading", WAIT_SECONDS)
-	assert_eq(pairing.get_qr_state(), PairingFormat.QR_UNAVAILABLE, "no pairing-qr route before SRV-013")
+	assert_eq(pairing.get_qr_state(), PairingFormat.QR_SHOWN, "the shipped server serves pairing-qr (SRV-013)")
 	assert_eq(_text("Code"), session.code)
 	var choice: OptionButton = _node("AddressChoice") as OptionButton
 	await wait_until(func() -> bool: return choice.item_count == 3, WAIT_SECONDS)
 	assert_eq(choice.item_count, 3, "the QR host and the two LAN candidates of GET /network")
 	assert_eq(_text("AddressHint"), Pairing.LOCAL_ONLY_HINT % "127.0.0.1")
-	# The production gateway does not know the token of this REST yet (SRV-013). It refuses the
-	# hello and closes the socket; Backend loses that error and keeps reconnecting (GDT-013).
-	# Either way the desktop never comes online here, so the investigation cannot start.
+	# The shipped gateway knows the issued desktop token: the desktop comes online, the phone is
+	# not paired yet, so the investigation cannot start.
 	await wait_until(
-		func() -> bool: return _store.get_connection_state() == BackendScript.ConnectionState.RETRYING,
+		func() -> bool: return _store.get_connection_state() == BackendScript.ConnectionState.ONLINE,
 		WAIT_SECONDS
 	)
-	assert_ne(_store.get_connection_state(), BackendScript.ConnectionState.ONLINE)
-	assert_eq(_store.get_phone_status(), "unknown")
-	assert_eq(_text("Phone"), PairingFormat.PHONE_UNKNOWN_TEXT)
+	assert_eq(_store.get_connection_state(), BackendScript.ConnectionState.ONLINE)
+	await wait_until(func() -> bool: return _store.get_phone_status() == "unpaired", WAIT_SECONDS)
+	assert_eq(_store.get_phone_status(), "unpaired")
+	assert_eq(_text("Phone"), "Телефон не привязан")
 	assert_true((_node("Start") as Button).disabled)
 	# The pairing-code route of SRV-002 replaces the code with the desktop token.
 	var old_code: String = session.code
