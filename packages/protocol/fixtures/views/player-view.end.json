@@ -102,6 +102,8 @@
     "endingId": "solved",
     "title": "Раскрытие",
     "text": "Вы доказали мотив, средство и возможность. Полиция уводит виновного, а сигнал в трубках наконец стихает.",
+    "seed": "sanatorium-42",
+    "scenarioId": "sanatorium_winter",
     "proven": {
       "motive": true,
       "means": true,
@@ -113,6 +115,20 @@
         {
           "id": "ch_doctor",
           "name": "Доктор Белов"
+        }
+      ],
+      "timeline": [
+        {
+          "at": -20,
+          "location": "Процедурная",
+          "participants": ["Доктор Белов"],
+          "text": "Ключ взят."
+        },
+        {
+          "at": 0,
+          "location": "Оранжерея",
+          "participants": ["Доктор Белов", "Нина Орлова"],
+          "text": "Состоялась встреча."
         }
       ]
     }

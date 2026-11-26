@@ -543,8 +543,9 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   (в них есть `characterId` виновных) уходит только в серверный порт
   `simulation.onAccusation`, не в `events` и не в `PlayerView`. `endingOf` определяет концовку:
   вердикт, затем `death`/`madness` по показателям, затем `time_up` по часам; после неё любое
-  действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` с `recap` (`TruthRecap`:
-  `responsible` — единственная проекция истины клиенту) появляется только когда игра окончена.
+  действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` появляется только после
+  окончания игры. ENG-012 добавляет в него `seed` и `scenarioId`. `recap` содержит ответственных
+  и хронологию ключевых событий ([ADR 0021](adr/0021-ending-recap.md)).
 - **SRV-012**: `AccusationPort.incident` — значение или функция `(PlayerKnowledge) => incident | undefined`, вызываемая в момент обвинения; сервер собирает порты в `apps/server/src/sessions/scenario-ports.ts` ([backend.md](../backend/backend.md)).
 - **Блокировка взаимодействия (ENG-005, `game/interaction.ts`):** `blockReason(action, context)` —
   чистая матрица открытого диалога (`talk` или `interrogation`) и состояния звонка

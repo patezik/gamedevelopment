@@ -1,6 +1,6 @@
 extends Control
 ## Ending screen (godot-client.md §4.5, game-design.md §5): which of the six endings the game
-## reached, its text, what the accusation proved, the TruthRecap and the run's statistics.
+## reached, its text, what the accusation proved, the TruthRecap, the seed and run statistics.
 ##
 ## Everything shown is the `ending` of the PlayerView in GameStore, which the server adds only once
 ## the game is over (ENG-006), plus counts the same view carries. The TruthRecap is the one place
@@ -28,6 +28,7 @@ const PREVIEW_TEXT: String = "Предпросмотр без сервера: к
 const PREVIEW_FAILED_TEXT: String = "Предпросмотр недоступен: концовка «%s» не загружена."
 const PROVEN_TITLE: String = "Обвинение"
 const RECAP_TITLE: String = "Что произошло на самом деле"
+const TIMELINE_TITLE: String = "Хронология"
 const RESPONSIBLE_TEXT: String = "Ответственны: %s"
 const NO_RECAP_TEXT: String = "Разбор истины недоступен."
 const STATS_TITLE: String = "Статистика"
@@ -178,6 +179,11 @@ func _show(view: Dictionary) -> void:
 		var names: Array = recap["responsible"]
 		if not names.is_empty():
 			_add_label(_recap, RESPONSIBLE_TEXT % ", ".join(PackedStringArray(names)))
+		var timeline: PackedStringArray = EndingFormat.timeline_rows(ending)
+		if not timeline.is_empty():
+			_heading(_recap, TIMELINE_TITLE)
+			for event: String in timeline:
+				_add_label(_recap, event)
 
 	var stats_title: Label = _add_label(_stats, STATS_TITLE)
 	stats_title.add_theme_font_size_override(&"font_size", 24)

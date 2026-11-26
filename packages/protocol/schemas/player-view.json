@@ -1218,6 +1218,13 @@
         "text": {
           "type": "string"
         },
+        "seed": {
+          "type": "string"
+        },
+        "scenarioId": {
+          "type": "string",
+          "minLength": 1
+        },
         "proven": {
           "type": "object",
           "properties": {
@@ -1260,6 +1267,38 @@
                 "required": [
                   "id",
                   "name"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "timeline": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "at": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "participants": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "at",
+                  "location",
+                  "participants",
+                  "text"
                 ],
                 "additionalProperties": false
               }

@@ -27,6 +27,16 @@ const TEXTS: Readonly<Record<EndingId, { title: string; text: string }>> = {
   madness: { title: 'Сигнал победил', text: 'Рассудок оставил вас. Сигнал победил.' },
 };
 
+const RECAP_EVENT_TEXT = new Map([
+  ['take', 'Предмет взят.'],
+  ['hide', 'Предмет спрятан.'],
+  ['poison', 'Произошло отравление.'],
+  ['strike', 'Нанесён удар.'],
+  ['stage', 'Происшествие инсценировано.'],
+  ['tamper', 'Произошло вмешательство.'],
+  ['die', 'Персонаж погиб.'],
+]);
+
 /**
  * The ending the game is in, or `undefined` while it goes on. The accusation that ended the game
  * comes first; then the vitals (death before madness); then Static at 100; then the clock.
@@ -46,26 +56,44 @@ export function endingOf(
 }
 
 /**
- * `EndingView` with the `TruthRecap`. This is the only projection of the truth to a client, and
- * it exists only for an ended game: callers pass an ending only when `endingOf` returned one.
+ * The terminal desktop projection. Call only when `endingOf` returns an ending:
+ * the run identity and recap must stay server-side while the investigation is active.
  */
 export function endingView(
   endingId: EndingId,
-  investigation: Pick<Investigation, 'characters' | 'truth'>,
+  investigation: Pick<Investigation, 'characters' | 'truth' | 'world' | 'seed' | 'scenarioId'>,
   verdict: Verdict | undefined,
 ): EndingView {
   const names = new Map(investigation.characters.map(({ id, name }) => [id, name]));
-  const responsible = investigation.truth.incident.culpritIds.map((id) => ({
-    id,
-    name: names.get(id) ?? id,
-  }));
+  const nameOf = (id: string) => (id === 'player' ? 'Следователь' : (names.get(id) ?? id));
+  const { truth, world, seed, scenarioId } = investigation;
+  const responsible = truth.incident.culpritIds.map((id) => ({ id, name: nameOf(id) }));
+  const keyEvents = new Set(truth.incident.keyEventIds);
+  const timeline = truth
+    .events()
+    .filter(({ id }) => keyEvents.has(id))
+    .map(({ t, location, actorIds, targets, verb }) => {
+      const participants = new Set(actorIds);
+      for (const target of targets) {
+        if (target.kind === 'character') participants.add(target.id);
+      }
+      return {
+        at: t,
+        location: world.locations.describe(location).name,
+        participants: [...participants].map(nameOf),
+        text: RECAP_EVENT_TEXT.get(verb) ?? 'Ключевое событие.',
+      };
+    });
   return {
     endingId,
     ...TEXTS[endingId],
+    seed,
+    scenarioId,
     ...(verdict && { proven: { ...verdict.proven } }),
     recap: {
       summary: `Ответственны: ${responsible.map(({ name }) => name).join(', ')}.`,
       responsible,
+      timeline,
     },
   };
 }
