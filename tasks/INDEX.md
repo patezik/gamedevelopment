@@ -2,13 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **166** · todo: 28 · in_progress: 13 · review: 1 · done: 123 · blocked: 1
+Всего задач: **167** · todo: 26 · in_progress: 12 · review: 1 · done: 127 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [INT-001](INT-001.md) — Интеграция привязки: Godot ↔ сервер ↔ телефон (P0, S)
+- [VAL-005](VAL-005.md) — Проверки V-REDUNDANCY и V-CLEANUP (P0, M)
+- [VAL-007](VAL-007.md) — Seed sweep CLI hs-sweep и отчёты (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
-- [GDT-013](GDT-013.md) — Backend: отказ рукопожатия не теряется, без бесконечного переподключения (P1, S)
 - [REL-003](REL-003.md) — Политика приватности и тексты разрешений (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
@@ -19,15 +19,14 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[VAL-003](VAL-003.md) → [INT-002](INT-002.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
 | Задача | Блокирует напрямую |
 |---|---|
-| [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
+| [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 4 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
-| [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
 | [CNT-003](CNT-003.md) MVP-сценарий: шаблоны преступлений и правила мотивов | 1 |
@@ -37,6 +36,7 @@
 | [ENG-014](ENG-014.md) Подключение симуляции NPC к GameEngine | 1 |
 | [INT-001](INT-001.md) Интеграция привязки: Godot ↔ сервер ↔ телефон | 1 |
 | [INT-002](INT-002.md) E2E-бот: прохождение расследования через реальный сервер по SolutionPath | 1 |
+| [INT-004](INT-004.md) Баланс MVP: стоимости действий, длительность, кривые Static и показателей | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -124,7 +124,7 @@
 | [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | done | claude-w5 | [SIM-003](SIM-003.md) |
 | [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | done | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
 | [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | done | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
-| [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | in_progress | claude-v1 | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
+| [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | done | claude-v1 | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | done | claude-qb | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | todo | — | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
 | [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | done | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
@@ -138,8 +138,8 @@
 | [GDT-001](GDT-001.md) | Autoload Backend: REST и WebSocketPeer, переподключение | P0 | M | done | codex-engine-27 | [FND-007](FND-007.md), [PROTO-003](PROTO-003.md) |
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | done | claude-g1 | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
-| [GDT-013](GDT-013.md) | Backend: отказ рукопожатия не теряется, без бесконечного переподключения | P1 | S | todo | — | [GDT-001](GDT-001.md), [GDT-002](GDT-002.md) |
-| [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
+| [GDT-013](GDT-013.md) | Backend: отказ рукопожатия не теряется, без бесконечного переподключения | P1 | S | in_progress | claude-x3 | [GDT-001](GDT-001.md), [GDT-002](GDT-002.md) |
+| [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | in_progress | claude-i1 | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
 | [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | done | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
@@ -182,14 +182,14 @@
 | [GDT-008](GDT-008.md) | Доска дела: улики, показания, противоречия, персоны интереса, хронология | P0 | L | done | egor-claude-gdt-008 | [GDT-002](GDT-002.md), [INV-003](INV-003.md), [INV-004](INV-004.md) |
 | [GDT-009](GDT-009.md) | Экран обвинения и экраны концовок с разбором истины | P0 | M | done | egor-claude-gdt-009 | [GDT-008](GDT-008.md), [ENG-006](ENG-006.md) |
 | [GDT-011](GDT-011.md) | Debug-панель: seed, время, просмотр истины в debug-режиме | P2 | S | done | egor-claude-gdt-011 | [GDT-002](GDT-002.md), [SRV-009](SRV-009.md) |
-| [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | todo | — | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
-| [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | in_progress | claude-n1 | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
+| [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | in_progress | claude-i2 | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
+| [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | done | claude-n1 | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
 | [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | in_progress | claude-n2 | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | done | claude-m2 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
-| [PROTO-005](PROTO-005.md) | Исход необратимого действия после переподключения: признак совершённого обвинения | P1 | S | in_progress | claude-p1 | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
+| [PROTO-005](PROTO-005.md) | Исход необратимого действия после переподключения: признак совершённого обвинения | P1 | S | done | claude-p1 | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
 | [SRV-010](SRV-010.md) | Проводка texts, проекций и событий в Session Server | P0 | M | done | codex-srv-010 | [SRV-005](SRV-005.md), [ENG-009](ENG-009.md), [PHONE-001](PHONE-001.md), [SRV-012](SRV-012.md) |
 | [SRV-012](SRV-012.md) | Порты дела и стартовые данные пресета для GameEngine | P0 | L | done | claude-qt | [SRV-002](SRV-002.md), [GEN-013](GEN-013.md), [ENG-003](ENG-003.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [CNT-006](CNT-006.md) |
@@ -216,7 +216,7 @@
 | [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | done | claude-qj | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
 | [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | todo | — | [TIME-005](TIME-005.md), [ENG-010](ENG-010.md), [SRV-012](SRV-012.md) |
 
-## Фаза 8 · M8 — Content expansion (9)
+## Фаза 8 · M8 — Content expansion (10)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -226,8 +226,9 @@
 | [CNT-011](CNT-011.md) | Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона | P2 | M | todo | — | [GDT-010](GDT-010.md) |
 | [CNT-012](CNT-012.md) | Полный набор арта sanatorium_winter: пластины локаций и портреты | P2 | L | todo | — | [CNT-010](CNT-010.md) |
 | [ENG-008](ENG-008.md) | portraitRef персонажей: вариант портрета по архетипу | P2 | S | todo | — | [CNT-010](CNT-010.md) |
-| [GDT-012](GDT-012.md) | Иллюстрации локаций и портреты на экранах desktop | P1 | M | in_progress | egor-claude-gdt-012 | [CNT-010](CNT-010.md) |
+| [GDT-012](GDT-012.md) | Иллюстрации локаций и портреты на экранах desktop | P1 | M | done | egor-claude-gdt-012 | [CNT-010](CNT-010.md) |
 | [GEN-012](GEN-012.md) | Соучастники: инциденты с несколькими виновниками | P2 | L | todo | — | [GEN-011](GEN-011.md), [INV-005](INV-005.md) |
+| [MOB-013](MOB-013.md) | Полировка звука уведомлений на физическом iPhone | P2 | S | todo | — | [INT-003](INT-003.md), [MOB-005](MOB-005.md) |
 | [PLAN-001](PLAN-001.md) | Декомпозиция бэклога фаз 8–11 по итогам MVP | P1 | M | todo | — | [INT-003](INT-003.md) |
 
 ## Фаза 9 · M9 — Integrated build (4)

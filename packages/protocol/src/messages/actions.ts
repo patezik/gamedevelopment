@@ -31,6 +31,8 @@ export const PlayerAction = z.discriminatedUnion('type', [
       evidence: z.array(id),
     }),
     confirm: z.boolean(),
+    /** Stable ID of an irreversible accusation; the gateway requires it with `confirm: true` (ADR 0022). */
+    operationId: id.optional(),
   }),
   z.strictObject({
     type: z.literal('markSuspicion'),

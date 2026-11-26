@@ -474,6 +474,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     | RestAction | WaitAction | CallAction | MessageAction | BrowseAction | OpenFileAction | CaptureEvidenceAction | AccuseAction;
   class GameEngine {
     static create(inv: Investigation, ports: EnginePorts): GameEngine;
+    static prepareStart(inv: Investigation): (ports: EnginePorts) => GameEngine;
     dispatch(source: "desktop" | "phone", a: PlayerAction): DispatchResult;
     playerView(): PlayerView; phoneView(): PhoneView;   // проекции без истины
     snapshot(): GameSnapshot; static restore(s: GameSnapshot, inv: Investigation, ports): GameEngine;
@@ -611,7 +612,11 @@ golden-снимки для 5 seed; распределение виновнико
 ```ts
 interface Check { id: string; severity: "error" | "warning"; run(inv: Investigation): CheckResult }
 function validateInvestigation(inv: Investigation, opts?): ValidationReport;
-function solve(inv: Investigation, opts: { timeBudget: GameMinutes }): SolutionPath | null;   // планировщик по времени, VAL-003
+type SolutionPath = readonly PlayerAction[];
+function solve(inv: Investigation, opts: PlannerOptions): SolutionPath | null;
+function solutionSource(action: PlayerAction): 'desktop' | 'phone'; // роль для воспроизведения шага
+// PlannerOptions: timeBudget, clues, deductionRules; необязательные startLocationId, knownIncident и createSimulationPorts.
+// timeFeasibleCheck — отдельная проверка планировщика.
 // Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
 function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
 // Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE

@@ -62,8 +62,8 @@ interface OsAppManifest {
 | Приложение | Данные (`PhoneView`) | Действия |
 |------------|----------------------|----------|
 | Camera | — | сканирование QR → `qr.scan` |
-| Contacts | `contacts` | открыть контакт → позвонить / написать |
-| Calls | `callLog`, `activeCall` | `call`, `answerCall`, `callChoice` (выбор реплики во время звонка) |
+| Contacts | `contacts` | карточка контакта → `call` и переход в Calls / переход в Messages; звонок недоступен при активном звонке |
+| Calls | `callLog`, `activeCall` | `call`, `answerCall`, `callChoice` (реплики NPC и варианты игрока; завершение звонка сервером). Журнал: пропущенные выделены, номер вне контактов показан как «Неизвестный номер» |
 | Messages | `threads` | `message` (шаблонные ответы из `availableReplies`) |
 | Gallery | `gallery` (снимки улик, сюжетные фото) | просмотр, увеличение, метаданные |
 | Files | `files` (документы, скрытые/зашифрованные) | `openFile`, `unlockFile(password)` |

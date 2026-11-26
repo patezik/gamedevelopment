@@ -166,9 +166,9 @@ func test_renders_location_hotspots_characters_and_exits() -> void:
 	assert_eq(_label(screen, "LocationName").text, "Вестибюль санатория")
 	assert_string_contains(_label(screen, "LocationDescription").text, "Холодный свет")
 	assert_eq(_label(screen, "Lighting").text, "Светло")
-	var background: ColorRect = _part(screen, "Background") as ColorRect
-	assert_eq(background.color, Exploration._placeholder_color("loc_lobby", "bright"))
-	assert_ne(background.color, Exploration._placeholder_color("loc_corridor", "bright"))
+	var placeholder: ColorRect = _part(screen, "PlatePlaceholder") as ColorRect
+	assert_eq(placeholder.color, Exploration._placeholder_color("loc_lobby", "bright"))
+	assert_ne(placeholder.color, Exploration._placeholder_color("loc_corridor", "bright"))
 
 	var hotspots: Node = _part(screen, "Hotspots")
 	assert_eq(hotspots.get_child_count(), 2)

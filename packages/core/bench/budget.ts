@@ -40,8 +40,13 @@ export function calibrationMs(): number {
   return calibration;
 }
 
-/** Throws when `ms` exceeds the budget or regresses over the baseline by more than 20 %. */
-export function checkBudget(name: string, ms: number, budgetMs: number): void {
+/** Throws when `ms` exceeds the budget or regresses over the baseline by more than `tolerance` (20 % by default). */
+export function checkBudget(
+  name: string,
+  ms: number,
+  budgetMs: number,
+  tolerance: number = TOLERANCE,
+): void {
   const relative = ms / calibrationMs();
   const update = process.env['BENCH_UPDATE'] === '1';
   const baseline = readBaseline();
@@ -58,7 +63,7 @@ export function checkBudget(name: string, ms: number, budgetMs: number): void {
   if (update) return;
   assert.ok(stored !== undefined, `${name}: no baseline; run with BENCH_UPDATE=1`);
   assert.ok(
-    relative <= stored * (1 + TOLERANCE),
-    `${name}: relative time ${relative.toPrecision(3)} is over baseline ${stored} by more than ${TOLERANCE * 100}%`,
+    relative <= stored * (1 + tolerance),
+    `${name}: relative time ${relative.toPrecision(3)} is over baseline ${stored} by more than ${tolerance * 100}%`,
   );
 }

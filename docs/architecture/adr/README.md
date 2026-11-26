@@ -36,3 +36,4 @@ ADR фиксирует значимое архитектурное решени�
 | [0019](0019-save-generator-compatibility.md) | Совместимость сохранений по версии генератора | Proposed |
 | [0020](0020-player-known-map.md) | Известная игроку карта в PlayerView | Proposed |
 | [0021](0021-ending-recap.md) | Хронология и seed в итоговом PlayerView | Proposed |
+| [0022](0022-accusation-operation-outcome.md) | Исход необратимого обвинения после переподключения | Accepted |
