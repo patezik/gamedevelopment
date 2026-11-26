@@ -12,6 +12,7 @@ import {
   AVOID_WARINESS_THRESHOLD,
   BYSTANDER_FACTOR,
   type ReactionPorts,
+  type ReactionsSnapshot,
 } from './index.ts';
 
 const personality = (value: number): Personality =>
@@ -149,4 +150,32 @@ test('timid characters flee more eagerly than brave ones', () => {
   const timid = state({ wariness: 0.8, personality: { ...personality(0.5), courage: 0 } });
   const brave = state({ wariness: 0.8, personality: { ...personality(0.5), courage: 1 } });
   expect(scoreAvoidPlayer(timid, true)).toBeGreaterThan(scoreAvoidPlayer(brave, true));
+});
+
+test('snapshot and restore carry the whole memory of the player', () => {
+  const source = new PlayerReactions({
+    topicSensitivity: () => 0.8,
+    closeTo: (id) => (id === 'ch_a' ? ['ch_c'] : []),
+  });
+  source.onPlayerAction({
+    witnessIds: ['ch_b'],
+    heardByIds: [],
+    characterId: 'ch_b',
+    topicId: 't',
+  });
+  source.applyConsequences([
+    { kind: 'refuses_to_talk', characterId: 'ch_a' },
+    { kind: 'trust_falls' },
+    { kind: 'culprit_freed', characterId: 'ch_b' },
+  ]);
+  source.onCharacterGone('ch_a', 'death');
+  const saved = JSON.parse(JSON.stringify(source.snapshot())) as ReactionsSnapshot;
+  const copy = new PlayerReactions({ topicSensitivity: () => 0, closeTo: () => [] });
+  copy.restore(saved);
+  expect(copy.snapshot()).toEqual(source.snapshot());
+  expect(copy.wariness('ch_b')).toBe(source.wariness('ch_b'));
+  expect(copy.refuses('ch_c')).toBe(true);
+  expect(copy.isFreed('ch_b')).toBe(true);
+  expect(copy.trust).toBe(source.trust);
+  expect(copy.missingTopics()).toEqual(source.missingTopics());
 });
