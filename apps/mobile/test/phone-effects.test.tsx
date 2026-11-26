@@ -137,6 +137,7 @@ test('honours system Reduce Motion on mount and follows changes while the OS is 
   expect(screen.queryByTestId('os-static', hidden)).toBeNull();
   await act(() => motionChanged(false));
   expect(screen.getByTestId('os-static', hidden)).toBeTruthy();
+  expect(withRepeat).toHaveBeenCalledWith(expect.any(Number), -1, false, undefined, 'never');
   await act(() => motionChanged(true));
   expect(screen.queryByTestId('os-static', hidden)).toBeNull();
 });
@@ -189,13 +190,17 @@ test('switching from an affected screen to camera keeps scanning at full intensi
   const { rerender } = await render(<OsLayout />);
   expect(screen.getByTestId('os-static', hidden)).toBeTruthy();
   expect(withRepeat).toHaveBeenCalledTimes(1);
+  expect(StyleSheet.flatten(screen.getByTestId('os-effect-surface').props.style).transform).toEqual(
+    [{ translateX: 0 }],
+  );
 
   mockAppId = 'camera';
   await rerender(<OsLayout />);
   expect(screen.queryByTestId('os-static', hidden)).toBeNull();
-  expect(
-    StyleSheet.flatten(screen.getByTestId('os-effect-surface').props.style),
-  ).not.toHaveProperty('transform');
+  expect(StyleSheet.flatten(screen.getByTestId('os-effect-surface').props.style)).toHaveProperty(
+    'transform',
+    undefined,
+  );
   expect(cancelAnimation).toHaveBeenCalledTimes(1);
   expect(mockOnScan).toBeDefined();
   const raw = 'hs1:ev:01234567:AAAAAAAAAAAAAAAA:AAAAAAAAAAAAAAAAAAAAAA';

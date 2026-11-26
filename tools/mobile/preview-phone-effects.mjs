@@ -6,7 +6,7 @@ import fixture from '@hs/protocol/fixtures/views/phone-view.glitch.json' with { 
 import QRCode from 'qrcode';
 import { WebSocket, WebSocketServer } from 'ws';
 
-const port = Number(process.env.HS_PHONE_EFFECTS_PORT ?? 7421);
+const port = 7421;
 const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const code = Array.from(randomBytes(6), (byte) => alphabet[byte % alphabet.length]).join('');
 const deviceToken = randomUUID();

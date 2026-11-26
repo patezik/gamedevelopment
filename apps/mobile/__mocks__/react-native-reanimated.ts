@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { View } from 'react-native';
 
 export default { View };
+export const ReduceMotion = { Never: 'never' } as const;
 export const useSharedValue = (initial: number) => useRef({ value: initial }).current;
 export const useAnimatedStyle = <Style>(updater: () => Style) => updater();
 export const withTiming = jest.fn((target: number) => target);

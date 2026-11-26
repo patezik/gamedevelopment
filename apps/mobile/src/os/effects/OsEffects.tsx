@@ -3,6 +3,7 @@ import { usePathname } from 'expo-router';
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { StyleSheet, View, type DimensionValue } from 'react-native';
 import Animated, {
+  ReduceMotion,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
@@ -47,7 +48,10 @@ export function OsEffects({
   const reduceMotion = useReduceMotion();
   const level = reduceEffects || reduceMotion || path === '/os/camera' ? 0 : effects.glitchLevel;
   const shift = useSharedValue(0);
-  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shift.value }] }));
+  const shakeStyle = useAnimatedStyle(() => ({
+    // Removing an animated style would leave its last transform on the native view.
+    transform: level > 0 ? [{ translateX: shift.value }] : undefined,
+  }));
 
   useEffect(() => {
     if (level === 0) return;
@@ -60,6 +64,10 @@ export function OsEffects({
         withTiming(0, { duration: 130 }),
       ),
       -1,
+      false,
+      undefined,
+      // The live preference above already gates the loop and cancels it on change.
+      ReduceMotion.Never,
     );
     return () => {
       cancelAnimation(shift);
@@ -70,7 +78,7 @@ export function OsEffects({
   return (
     <GlitchLevel.Provider value={level}>
       <View style={styles.viewport}>
-        <Animated.View testID="os-effect-surface" style={[styles.screen, level > 0 && shakeStyle]}>
+        <Animated.View testID="os-effect-surface" style={[styles.screen, shakeStyle]}>
           {children}
         </Animated.View>
         {level > 0 && (
