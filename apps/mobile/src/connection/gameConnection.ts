@@ -2,6 +2,7 @@ import { AppState } from 'react-native';
 import { clearPairing, loadPairing } from '../pairing/storage';
 import { useConnectionStore } from '../stores/connectionStore';
 import { usePhoneStore } from '../stores/phoneStore';
+import { useQrStore } from '../stores/qrStore';
 import { WsClient } from './WsClient';
 
 let client: WsClient | null = null;
@@ -47,6 +48,11 @@ export async function startGameConnection(opts: {
   created.start();
 }
 
+/** Sends a scanned evidence QR to the server; false when there is no live connection. */
+export function sendQrScan(raw: string): boolean {
+  return client?.sendQrScan(raw) ?? false;
+}
+
 /** Unpair or unmount: drops the socket, the subscription and the cached view. */
 export function stopGameConnection(): void {
   client?.stop();
@@ -54,5 +60,6 @@ export function stopGameConnection(): void {
   appStateSub?.remove();
   appStateSub = null;
   usePhoneStore.getState().clear();
+  useQrStore.getState().reset();
   useConnectionStore.getState().setStatus('unpaired');
 }
