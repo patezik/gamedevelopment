@@ -134,6 +134,14 @@ export class ItemRegistry {
     return { ...item, tags: [...item.tags] };
   }
 
+  idsOfKinds(kinds: ReadonlySet<string>): string[] {
+    const ids: string[] = [];
+    for (const [id, { item }] of this.records) {
+      if (kinds.has(item.kind)) ids.push(id);
+    }
+    return ids;
+  }
+
   locate(id: string, t: GameMinutes): ItemPlacement {
     requireMinute(t);
     if (t < this.initialMinute) {
