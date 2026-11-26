@@ -2,6 +2,7 @@ import {
   PROTOCOL_VERSION,
   parseServerMessage,
   type ErrorCode,
+  type PlayerAction,
   type ServerMessage,
 } from '@hs/protocol';
 import type { PairedDevice } from '../pairing/pairClient';
@@ -115,6 +116,24 @@ export class WsClient {
   private nextId(): string {
     this.idCounter += 1;
     return `m${this.idCounter}`;
+  }
+
+  /** Sends a phone `action.request`. False when the link is not up (nothing is queued). */
+  sendAction(action: PlayerAction): boolean {
+    return this.sendIfOnline('action.request', { action });
+  }
+
+  /** Sends `phone.ui` (does not affect the game). False when the link is not up. */
+  sendPhoneUi(kind: 'appOpened' | 'notificationRead', ref: string): boolean {
+    return this.sendIfOnline('phone.ui', { kind, ref });
+  }
+
+  private sendIfOnline(type: string, payload: Record<string, unknown>): boolean {
+    if (!this.running || !this.welcomed || !this.socket) {
+      return false;
+    }
+    this.send(type, payload);
+    return true;
   }
 
   private send(type: string, payload: Record<string, unknown>, withAck = false): void {
