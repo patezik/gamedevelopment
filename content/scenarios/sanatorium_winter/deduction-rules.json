@@ -22,7 +22,11 @@
   {
     "id": "contradiction_presence",
     "establishes": "contradiction($c)",
-    "requires": ["statement($c,presence($c,$l,$i))", "presence($c,$l2,$i)"]
+    "requires": [
+      "statement($c,presence($c,$l,$i))",
+      "presence($c,$l2,$i)",
+      "neq($l,$l2)"
+    ]
   },
   {
     "id": "means_from_trace",
