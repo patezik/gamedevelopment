@@ -113,6 +113,7 @@ func test_no_recap_before_the_game_is_over() -> void:
 	assert_eq(screen.get_ending_id(), "")
 	assert_false(screen.has_recap())
 	assert_string_contains(screen.get_status_text(), "не окончена")
+	assert_does_not_have(screen.get_texts(), "Seed")
 	for text: String in screen.get_texts():
 		assert_false(text.begins_with("Ответственны"), "nothing names the responsible before the end")
 
@@ -146,11 +147,32 @@ func test_timeline_shows_actual_time_location_participants_and_text_in_order() -
 	assert_true(texts.find(first) < texts.find(second))
 
 
+func test_empty_timeline_clears_event_rows_and_keeps_the_final_seed() -> void:
+	var screen: Ending = _live(EndingFixtures.view_for("solved"))
+	assert_has(screen.get_texts(), "Хронология")
+	var empty_view: Dictionary = EndingFixtures.view_for("time_up").duplicate(true)
+	var ending: Dictionary = empty_view["ending"]
+	var recap: Dictionary = ending["recap"]
+	recap["timeline"] = []
+	ending["seed"] = "empty-timeline-42"
+
+	assert_true(_store.set_view(empty_view, 2))
+	var texts: PackedStringArray = screen.get_texts()
+	assert_eq(screen.get_ending_id(), "time_up")
+	assert_true(screen.has_recap())
+	assert_has(texts, "Ответственны: Доктор Белов")
+	assert_has(texts, "empty-timeline-42")
+	assert_does_not_have(texts, "Хронология")
+	assert_does_not_have(texts, "За 20 мин до начала · Процедурная · Доктор Белов — Ключ взят.")
+	assert_does_not_have(texts, "sanatorium-42")
+
+
 func test_final_seed_and_timeline_clear_when_a_new_game_arrives() -> void:
 	var screen: Ending = _live(EndingFixtures.view_for("solved"))
 	assert_has(screen.get_texts(), "sanatorium-42")
 	assert_true(_store.set_view(PreviewFixtures.load_view("start"), 2))
 	assert_does_not_have(screen.get_texts(), "sanatorium-42")
+	assert_does_not_have(screen.get_texts(), "Seed")
 	assert_does_not_have(screen.get_texts(), "Хронология")
 	assert_false(screen.has_recap())
 

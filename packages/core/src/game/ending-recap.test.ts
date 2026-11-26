@@ -79,11 +79,44 @@ test('only the terminal desktop view reveals the exact seed and solution', () =>
   expect(restored.playerView().ending).toEqual(view.ending);
 });
 
+function appendOrder(truth: TruthModel) {
+  return truth.events().toSorted((a, b) => Number(a.id.slice(3)) - Number(b.id.slice(3)));
+}
+
+test('deadline reveals the seed even when the incident has no key events', () => {
+  const base = tinyManor('empty-recap-42');
+  const truth = new TruthModel(
+    { ...base.truth.incident, keyEventIds: [] },
+    appendOrder(base.truth),
+  );
+  const engine = GameEngine.create(
+    { ...base, truth, world: { ...base.world, durationMinutes: 16 } },
+    { startLocationId: 'loc_hall' },
+  );
+
+  expect(engine.dispatch('desktop', { type: 'wait', minutes: 15 }).ok).toBe(true);
+  const active = engine.playerView();
+  expect(active.clock.remainingMinutes).toBe(1);
+  expect(active.ending).toBeUndefined();
+  expect(wireView(active)).not.toContain(base.seed);
+
+  expect(engine.dispatch('desktop', { type: 'wait', minutes: 15 })).toMatchObject({
+    ok: true,
+    minutesSpent: 1,
+    outcome: 'time_expired',
+  });
+  const finished = engine.playerView();
+  expect(finished.ending).toMatchObject({
+    endingId: 'time_up',
+    seed: base.seed,
+  });
+  expect(finished.ending?.recap?.timeline).toEqual([]);
+  wireView(finished);
+});
+
 test('recap uses only key events, ordered by minute and then by event order', () => {
   const base = tinyManor('');
-  const history = base.truth
-    .events()
-    .toSorted((a, b) => Number(a.id.slice(3)) - Number(b.id.slice(3)));
+  const history = appendOrder(base.truth);
   const keyEventIds = [3, 1, 4].map((step) => `ev_${history.length + step}`);
   const truth = new TruthModel({ ...base.truth.incident, keyEventIds }, history);
   const event: TruthEventInput = {
