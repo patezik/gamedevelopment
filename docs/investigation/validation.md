@@ -254,7 +254,9 @@ npm run sweep -- --scenario sanatorium_winter --count 1000 --from 0
 
 **Пороги для CI:** PR — 1000 seed, неудач < 1 %, энтропия виновников ≥ 0,8 · log₂(N); ночной
 прогон — 20 000 seed. Проваленные seed добавляются в регрессионный корпус
-`packages/validator/regression-seeds.json` и проверяются в каждом PR.
+`packages/validator/regression-seeds.json` и проверяются в каждом PR. Пока порог неудач не выполнен, PR-джоб
+сравнивает отчёт с базовой линией `sweep-baseline.json` (`npm run sweep:check`); подробности и процесс —
+[testing-strategy.md §2.1](../testing/testing-strategy.md).
 
 ## 6. Мутационные тесты валидатора
 

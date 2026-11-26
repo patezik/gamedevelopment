@@ -1,0 +1,155 @@
+{
+  "scenarioId": "sanatorium_winter",
+  "seeds": [
+    {
+      "seed": "0",
+      "expect": "pass",
+      "note": "Baseline sample: generated when the corpus was created"
+    },
+    {
+      "seed": "1",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "2",
+      "expect": "pass",
+      "note": "Baseline sample: generated when the corpus was created"
+    },
+    {
+      "seed": "3",
+      "expect": "pass",
+      "note": "Baseline sample: generated when the corpus was created"
+    },
+    {
+      "seed": "4",
+      "expect": "pass",
+      "note": "Baseline sample: generated when the corpus was created"
+    },
+    {
+      "seed": "5",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "30",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "43",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "100",
+      "expect": "pass",
+      "note": "Baseline sample: generated when the corpus was created"
+    },
+    {
+      "seed": "223",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "245",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "248",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "260",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "377",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "403",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "408",
+      "expect": "fail",
+      "note": "IncidentSelection:INCIDENT_NO_FEASIBLE_CULPRIT"
+    },
+    {
+      "seed": "427",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "500",
+      "expect": "pass",
+      "note": "Baseline sample: generated when the corpus was created"
+    },
+    {
+      "seed": "520",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "681",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "687",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "843",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "852",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "932",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "935",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "940",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "960",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "962",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "967",
+      "expect": "fail",
+      "note": "V-UNIQUE:NOT_UNIQUE"
+    },
+    {
+      "seed": "999",
+      "expect": "pass",
+      "note": "Baseline sample: generated when the corpus was created"
+    }
+  ]
+}

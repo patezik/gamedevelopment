@@ -1,0 +1,57 @@
+# VAL-008: nightly seed sweep, 20 000 seeds. The report is an artifact; the job summary lists the
+# failed seeds that are not in the regression corpus yet (add them as in testing-strategy.md §2.1).
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Number of seeds
+        default: '20000'
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    name: Seed sweep (nightly)
+    runs-on: ubuntu-latest
+    # 20 000 seeds take about 32 minutes on 4 local cores; leave a margin for a slower runner.
+    timeout-minutes: 120
+    env:
+      SEED_COUNT: ${{ github.event.inputs.count || '20000' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The absolute MVP thresholds (failures < 1 %, entropy) stay on: a violation (exit code 1) is
+      # a warning here, not a failure, until CNT-007 brings the generator under the threshold.
+      # A crash or a bad argument (exit code 2) fails the job.
+      - name: Sweep
+        shell: bash
+        run: |
+          code=0
+          npm run sweep -- --scenario sanatorium_winter --count "$SEED_COUNT" --from 0 \
+            --workers 4 --out reports || code=$?
+          if [ "$code" -eq 1 ]; then
+            echo "::warning title=Sweep thresholds::MVP thresholds are not met, see the sweep report"
+          elif [ "$code" -ne 0 ]; then
+            exit "$code"
+          fi
+      - name: Compare with the baseline and list new failed seeds
+        run: >
+          npm run sweep:check -- --report "reports/sweep-sanatorium_winter-0-${SEED_COUNT}.json"
+          --summary "$GITHUB_STEP_SUMMARY"
+      - name: Upload the sweep reports
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightly-sweep-reports
+          path: reports/
+          if-no-files-found: error
+          retention-days: 30

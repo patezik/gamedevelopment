@@ -1,4 +1,4 @@
-# CI. The seed sweep job is added by VAL-008.
+# CI. The nightly 20 000-seed sweep lives in nightly.yml.
 name: CI
 
 on:
@@ -136,6 +136,40 @@ jobs:
           fi
           cat scheduler-regression.log
           grep -E 'AssertionError.*scheduler 100k events took .*budget 200 ms' scheduler-regression.log
+
+  # VAL-008: seed sweep of the sanatorium. A separate job so it runs in parallel with `node`.
+  # It fails on a regression against packages/validator/sweep-baseline.json, not on the absolute
+  # MVP threshold (failures < 1 %): that one is not met yet (CNT-007), see testing-strategy.md.
+  sweep:
+    name: Seed sweep
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # --max-failure-rate 1 turns off the absolute failure threshold only; the baseline check
+      # below is the gate. The exit code is still non-zero for a crash or a bad argument.
+      - name: Sweep 1000 seeds
+        run: >
+          npm run sweep -- --scenario sanatorium_winter --count 1000 --from 0 --workers 4
+          --out reports --max-failure-rate 1
+      - name: Compare with the baseline
+        run: >
+          npm run sweep:check -- --report reports/sweep-sanatorium_winter-0-1000.json
+          --summary "$GITHUB_STEP_SUMMARY"
+      - name: Upload the sweep reports
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sweep-reports
+          path: reports/
+          if-no-files-found: error
 
   godot:
     name: Godot tests
