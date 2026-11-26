@@ -24,6 +24,8 @@ import {
   clearHallucinations,
   costModifiers,
   hallucinationIds,
+  applyDelta,
+  VITALS_DELTAS,
   isOverwhelmed,
   rest,
   restoreStaticState,
@@ -850,6 +852,18 @@ export class GameEngine {
     }
     const resolved = plan.resolve({ at: elapsed.to, completed });
     events.push(...resolved);
+    // Finding the body (OQ-28, option B): sanity -2 is an assumption pending the owner's answer.
+    for (const event of resolved) {
+      if (event.type !== 'BodyFound') continue;
+      const found = applyDelta(
+        desktop.vitals,
+        VITALS_DELTAS.gruesomeFind,
+        elapsed.to,
+        'gruesomeFind',
+      );
+      desktop.vitals = found.state;
+      events.push(...found.events);
+    }
     if (this.#static) {
       for (const event of resolved) {
         if (event.type === 'ContradictionFound') {
@@ -858,6 +872,9 @@ export class GameEngine {
             elapsed.to,
             'contradictionRevealed',
           );
+        }
+        if (event.type === 'BodyFound') {
+          this.#static.apply(STATIC_DELTAS.gruesomeFind, elapsed.to, 'gruesomeFind');
         }
       }
       events.push(...this.#static.drain());
