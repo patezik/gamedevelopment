@@ -1,6 +1,7 @@
 import { Slot, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { sendPhoneAction } from '../../src/connection/gameConnection';
 import { NotificationCenter } from '../../src/os/NotificationCenter';
 import { usePhoneView } from '../../src/os/usePhoneView';
 
@@ -18,6 +19,9 @@ export default function OsLayout() {
       >
         <NotificationCenter
           view={view}
+          onAnswerCall={(callId) => {
+            sendPhoneAction({ type: 'answerCall', callId });
+          }}
           onOpenApp={(appId) => router.push({ pathname: '/os/[appId]', params: { appId } })}
         />
       </View>
