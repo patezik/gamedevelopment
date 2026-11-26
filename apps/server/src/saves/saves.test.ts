@@ -3,6 +3,7 @@ import { mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { createPhoneState } from '@hs/core/phone';
 import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
 import { buildApp } from '../app.ts';
 import { readConfig } from '../config/index.ts';
@@ -506,4 +507,23 @@ test('registerSaveRoutes only runs the cleanup hook once, when the app is ready'
   await app.ready();
   expect(calls).toBe(1);
   await app.close();
+});
+
+test('recording and restored engines expose real role projections', async () => {
+  const projectedProvider = {
+    create: (_scenarioId: string, seed: string) => ({
+      investigation: tinyManor(seed),
+      ports: { startLocationId: 'loc_hall', phone: { initial: createPhoneState() } },
+    }),
+  };
+  const { sessions, saves } = boot({}, { provider: projectedProvider });
+  const session = await sessions.create('tiny-manor', 'projections');
+  await play(session, 1);
+  const player = session.engine.playerView!();
+  const phone = session.engine.phoneView!();
+  expect(player.clock.t).toBe(15);
+  expect(phone?.status.time).toBe(player.clock.time);
+  const loaded = await saves.restore(session.id);
+  expect(loaded.playerView()).toEqual(player);
+  expect(loaded.phoneView()).toEqual(phone);
 });

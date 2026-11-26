@@ -40,8 +40,9 @@ apps/desktop/
 │   │   └── overlays/debug/       — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
 │   │   └── overlays/horror_fx/   — HorrorFx: шейдер искажения и шума по рассудку и Static (§7.2)
 │   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта)
-├── assets/                       — арт, шрифты, звук (стиль — CNT-008)
+├── assets/                       — арт, шрифты, звук; арт: art/ по [art-direction.md](../game-design/art-direction.md)
 └── tests/
+    ├── manual/art_preview.tscn   — ручной предпросмотр арта в масштабе показа (art-direction.md §9)
     ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture, экраны и smoke сцен
     │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, экран-заглушка)
     ├── manual/
@@ -201,7 +202,7 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | Элемент | Поля `PlayerView` |
 |---------|-------------------|
 | Заголовок, описание, освещение | `location.name`, `location.description`, `location.lighting` |
-| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (арт — CNT-010) |
+| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (стиль арта — [art-direction.md](../game-design/art-direction.md); показ пластин — GDT-012) |
 | Точки интереса | `location.hotspots[]` (`name`, отметка `examined`) |
 | Персонажи | `presentCharacters[]` (`name`, `demeanor`) |
 | Выходы | `location.exits[]` (`name`, `minutes`, `blockedReason`) |
@@ -467,6 +468,13 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 сигнал `reduce_visual_effects_changed(enabled)`. Нет файла — значения по умолчанию (выключено);
 нечитаемый файл или значение не того типа — значение по умолчанию и предупреждение. Экран настроек
 появится вместе с главным меню; до тех пор настройка меняется через API или файл.
+
+Язык интерфейса (QA-003): секция `general`, ключ `locale` (`ru` по умолчанию, `en`); `get_locale()`,
+`set_locale(locale)` (неподдерживаемый язык — `ERR_INVALID_PARAMETER`), сигнал `locale_changed(locale)`;
+значение также выставляется в `TranslationServer`. Строки — в `assets/i18n/strings.csv`
+(`key,ru,en`), их читает autoload `Localization` (`src/autoload/localization.gd`) и регистрирует как
+`Translation`; `Localization.text(key)` при отсутствии ключа в языке возвращает русский текст с
+предупреждением. Файл помечен `importer="keep"` (в `.translation` не импортируется).
 
 ### 7.2. HorrorFx
 

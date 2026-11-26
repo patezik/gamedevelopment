@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { AppFrame } from '../src/os/AppFrame';
 import { HomeGrid } from '../src/os/HomeGrid';
 import { StatusBar, signalBars } from '../src/os/StatusBar';
-import { OS_APPS } from '../src/os-apps/registry';
+import { OS_APPS, findApp } from '../src/os-apps/registry';
 
 const view = PhoneView.parse(fixture);
 
@@ -42,9 +42,9 @@ test('StatusBar shows game time and battery; signal maps to bars', async () => {
 
 test('AppFrame home button calls onHome and shows the app', async () => {
   const onHome = jest.fn();
-  const App = OS_APPS[0]!.component;
+  const App = findApp('files')!.component;
   await render(
-    <AppFrame status={view.status} title="Камера" onHome={onHome}>
+    <AppFrame status={view.status} title="Файлы" onHome={onHome}>
       <App view={view} />
     </AppFrame>,
   );

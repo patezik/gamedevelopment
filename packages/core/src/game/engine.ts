@@ -8,6 +8,12 @@ import {
   type EvidenceTokenPort,
   type PendingCapture,
 } from '../evidence/index.ts';
+import { createRng } from '../rng/index.ts';
+import {
+  SimulationRunner,
+  type PerceptibleEvent,
+  type SimulationSnapshot,
+} from '../simulation/index.ts';
 import { projectPhoneView, type PhoneEvent } from '../phone/index.ts';
 import {
   burnFlashlight,
@@ -29,6 +35,7 @@ import {
   ActionCostError,
   Calendar,
   DEFAULT_ACTION_COSTS,
+  TickPhase,
   TimeSystem,
   resolveActionCost,
   type ActionCostTable,
@@ -105,11 +112,23 @@ export interface EnginePorts {
     /** Ending at Static 100; default `madness`, the only ending the MVP preset assigns. */
     readonly endingAt100?: EndingId;
   };
+  /**
+   * Turns on the characters' routines (ENG-014): a `SimulationRunner` on the engine's clock moves
+   * everyone between locations by their schedules from minute 0, so they are present for `talk`
+   * and `interrogate`. The player's actions are observed by those present. Off by default: the
+   * state hash and old saves stay as they were. Routines only; goals and reactions (SIM-004..006)
+   * are not driven yet. Saves made with it replay only with it.
+   */
+  readonly npcSimulation?: true;
   /** The hero's phone (ENG-004): starting content and the simulation's answers to calls and messages. */
   readonly phone?: PhonePort;
   /** The phone call state for arbitration (ENG-005); no phone in the engine yet means no call. */
   readonly callState?: () => 'ringing' | 'active' | undefined;
 }
+
+const NIGHTFALL = 'survival.nightFall';
+const NIGHT_HOUR = 22;
+const MINUTES_PER_DAY = 24 * 60;
 
 const DESKTOP_ACTIONS: readonly string[] = [
   'examineLocation',
@@ -134,6 +153,8 @@ export interface GameSnapshot {
   readonly phone?: unknown;
   /** ENG-010 Static state; absent in older snapshots and in engines without `ports.static`. */
   readonly static?: StaticState;
+  /** ENG-014 state of the characters' routines; present only for engines with `npcSimulation`. */
+  readonly simulation?: SimulationSnapshot;
 }
 
 export interface DispatchResult {
@@ -151,6 +172,33 @@ function isPhonePlan(plan: { readonly type: string }): plan is PhonePlan {
   return isPhoneAction(plan.type);
 }
 
+/**
+ * Where each character stands when the clock starts, read from the truth: the place of their
+ * latest presence or arrival. Characters with no record are left to their routine.
+ */
+function lastKnownLocations(
+  truth: Investigation['truth'],
+  characters: readonly { readonly id: string }[],
+): Map<string, string> {
+  const events = truth.events();
+  const known = new Map<string, string>();
+  for (const { id } of characters) {
+    let end = -Infinity;
+    let place: string | undefined;
+    for (const { location, interval } of truth.presenceIntervals(id)) {
+      if (interval.to >= end) [end, place] = [interval.to, location];
+    }
+    for (const { verb, actorIds, targets, t, duration } of events) {
+      const arrival = targets.find(({ kind }) => kind === 'location');
+      if (verb === 'move' && actorIds.includes(id) && arrival && t + duration >= end) {
+        [end, place] = [t + duration, arrival.id];
+      }
+    }
+    if (place !== undefined) known.set(id, place);
+  }
+  return known;
+}
+
 function rejected(error: ErrorCode): DispatchResult {
   return { ok: false, error, minutesSpent: 0, events: [] };
 }
@@ -166,6 +214,8 @@ export class GameEngine {
   #phone: PhoneRuntime | undefined;
   #static: StaticTimer | undefined;
   #savedStatic: StaticState | undefined;
+  #npcs: SimulationRunner | undefined;
+  #savedNpcs: SimulationSnapshot | undefined;
 
   private constructor(
     investigation: Investigation,
@@ -190,6 +240,11 @@ export class GameEngine {
   /** Hands the clock to the simulation and starts Static; called once the desktop rules begin. */
   #wireTime(): void {
     this.ports.attachTime?.(this.#time);
+    this.#startStatic();
+    this.#startNpcs();
+  }
+
+  #startStatic(): void {
     const config = this.ports.static;
     if (!config || this.#static) return;
     const saved = this.#savedStatic;
@@ -209,6 +264,78 @@ export class GameEngine {
         payload: null,
       });
     }
+    this.#wireNightfall(now);
+  }
+
+  /**
+   * +3 Static once per game night (survival-horror.md section 3): at the moment the clock enters
+   * `night` (22:00). A night already in progress at the start or after a restore is not counted
+   * again; the next one is found from the clock, so the grid needs no saved state.
+   */
+  #wireNightfall(now: number): void {
+    const timers = this.#static;
+    if (!timers) return;
+    const calendar = new Calendar(this.investigation.world.locations.startDateTime);
+    this.#time.registerHandler(NIGHTFALL, {
+      phase: TickPhase.Timers,
+      handle: (event, context) => {
+        timers.apply(STATIC_DELTAS.night, event.at, 'night');
+        if (isOverwhelmed(timers.state())) return { interrupt: 'static' };
+        context.schedule({
+          kind: NIGHTFALL,
+          at: event.at + MINUTES_PER_DAY,
+          priority: 0,
+          payload: null,
+        });
+        return undefined;
+      },
+    });
+    const { hh, mm } = calendar.toDisplay(now);
+    const untilNight =
+      ((((NIGHT_HOUR - hh) * 60 - mm) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+    if (!isOverwhelmed(timers.state())) {
+      this.#time.schedule({
+        kind: NIGHTFALL,
+        at: now + (untilNight === 0 ? MINUTES_PER_DAY : untilNight),
+        priority: 0,
+        payload: null,
+      });
+    }
+  }
+
+  /** Characters follow their routines from the current minute; positions come from the truth. */
+  #startNpcs(): void {
+    if (!this.ports.npcSimulation || this.#npcs) return;
+    const { truth, characters, world, seed } = this.investigation;
+    const saved = this.#savedNpcs;
+    const dead = new Map<string, number>();
+    for (const fact of truth.facts({ kind: 'state' })) {
+      if (
+        fact.kind === 'state' &&
+        fact.entity.kind === 'character' &&
+        fact.property === 'alive' &&
+        fact.value === false
+      ) {
+        dead.set(
+          fact.entity.id,
+          Math.min(dead.get(fact.entity.id) ?? Infinity, fact.interval.from),
+        );
+      }
+    }
+    this.#npcs = new SimulationRunner({
+      time: this.#time,
+      calendar: new Calendar(world.locations.startDateTime),
+      world: world.locations,
+      items: world.items,
+      truth,
+      rng: createRng(seed).fork('engine'),
+      characters,
+      ...(saved ? { restore: saved } : { initialLocations: lastKnownLocations(truth, characters) }),
+      exits: new Map([...dead].filter(([id]) => characters.some((c) => c.id === id))),
+      endAt: world.durationMinutes,
+    });
+    // The first tick of the minute establishes presence before the first action.
+    if (!saved) this.#time.advance(0);
   }
 
   /** Current Static level for the simulation (TIME-006 `earlierIf.staticAtLeast`); 0 when off. */
@@ -280,6 +407,7 @@ export class GameEngine {
     );
     engine.#pendingCapture = snapshot.pendingCapture && { ...snapshot.pendingCapture };
     if (snapshot.static !== undefined) engine.#savedStatic = restoreStaticState(snapshot.static);
+    engine.#savedNpcs = snapshot.simulation;
     if (snapshot.desktop !== undefined) {
       engine.#desktop = DesktopState.restore(snapshot.desktop);
       engine.#wireTime();
@@ -572,22 +700,30 @@ export class GameEngine {
     const phonePlan = isPhonePlan(plan);
 
     // Using the phone is not an event of the world: the truth log and the witnesses ignore it.
-    if (!phonePlan)
-      this.investigation.truth.append({
+    let playerEvent: PerceptibleEvent | undefined;
+    if (!phonePlan) {
+      const event = {
         t: now,
-        duration: minutesSpent,
         verb:
           completed || plan.type === 'wait' || plan.type === 'rest'
             ? plan.verb
             : `attempt_${plan.verb}`,
         actorIds: ['player'],
         location: from,
+        visibility: 'public' as const,
+      };
+      const id = this.investigation.truth.append({
+        ...event,
+        duration: minutesSpent,
         targets: [...plan.targets],
         causes: [],
         facts: [],
         traceIds: [],
-        visibility: 'public',
       });
+      playerEvent = { ...event, id };
+    }
+    // Those present remember what the hero did in front of them (the presence is already in truth).
+    if (playerEvent && desktop) this.#npcs?.observe(playerEvent);
 
     if (!desktop) {
       // Before ENG-003 only move/wait spent time and recorded truth.
@@ -723,6 +859,7 @@ export class GameEngine {
       ...(this.#desktop && { desktop: this.#desktop.serialize() }),
       ...(this.#phone && { phone: this.#phone.serialize() }),
       ...(this.#static && { static: this.#static.state() }),
+      ...(this.#npcs && { simulation: this.#npcs.snapshot() }),
     };
   }
 

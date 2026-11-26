@@ -494,7 +494,20 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   simulation?: { onPlayerAction(e: PlayerActionObserved): void };   // SIM-006
   attachTime?: (time: TimeSystem) => void;              // обработчики фаз; прерывание отдыха
   static?: { start?: number; endingAt100?: EndingId };  // ENG-010: Static в движке; без порта выключен
+  npcSimulation?: true;                                 // ENG-014: расписания персонажей; выключено
   ```
+- **ENG-014** (рутины персонажей в движке): при `EnginePorts.npcSimulation` движок создаёт
+  `SimulationRunner` на своих `TimeSystem`, календаре, графе локаций, `ItemRegistry` и `TruthModel`
+  (`endAt` — конец сценария; подпоток `createRng(seed).fork('engine')`). Стартовые позиции берутся из
+  истины (последнее присутствие или прибытие), умершие до старта (`state alive = false`) передаются в
+  `exits`. Первый тик минуты 0 выполняется `TimeSystem.advance(0)` при подключении, поэтому
+  персонажи в комнатах и доступны для `talk`/`interrogate` до первого действия. Наблюдаемое
+  публичное действие игрока (не телефона) записывается в `KnowledgeStore` присутствующих через
+  `runner.observe`. `GameSnapshot.simulation` (`SimulationRunner.snapshot()`: локация, блок, шаг, RNG
+  и знания каждого агента) восстанавливается так, что дальнейшее состояние и хеш совпадают.
+  Снимок без `simulation` стартует с текущей минуты по истине. Без порта снимок и хеш не меняются.
+  Порт на сервере для новых дел не включён (OQ-27). Не подключены: цели NPC (SIM-004/005), реакции
+  и нападение (ENG-010, SIM-006), LOD по фокусу игрока, переопределения расписаний сценария (TIME-006).
 - **ENG-010** (Static в движке): при `EnginePorts.static` движок вешает `StaticTimer` на свои
   `TimeSystem` (рост +1 / 60 мин по часам, ровно по сетке часа и после `restore`), применяет
   `STATIC_DELTAS`: раскрытое противоречие −3, подтверждённое ложное обвинение +15, и отдаёт
@@ -616,6 +629,13 @@ function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionR
 
 См. [backend.md](../backend/backend.md). Модули: `sessions`, `pairing`, `gateway`, `views`, `qr`,
 `saves`, `diagnostics`, `config`.
+
+SRV-013: `createSessionServices(config, { scenariosDir?, networkInterfaces? })` собирает
+`SessionManager`, `PairingService`, `SessionGateway` и `QrService` для `buildApp` и нативного запуска.
+`SessionRouteDependencies.prepare?(session)` связывает ресурсы движка с новой сессией до публикации.
+`QrService.scan(session, raw, onCaptured?)` передаёт callback точный успешный `SessionDispatchResult`
+один раз; `SessionGateway.publishDispatch(session, result)` рассылает его проекции и события
+по ролям с исходной версией. Подробности — [backend.md](../backend/backend.md).
 
 ## 17. `apps/mobile` — Companion App
 

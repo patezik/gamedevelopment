@@ -9,6 +9,13 @@ extends Node
 ## «Снизить визуальные эффекты» was switched on or off.
 signal reduce_visual_effects_changed(enabled: bool)
 
+## The interface language was switched (QA-003).
+signal locale_changed(locale: String)
+
+const SUPPORTED_LOCALES: PackedStringArray = ["ru", "en"]
+const DEFAULT_LOCALE: String = "ru"
+const SECTION_GENERAL: String = "general"
+const KEY_LOCALE: String = "locale"
 const DEFAULT_PATH: String = "user://settings.cfg"
 const SECTION_ACCESSIBILITY: String = "accessibility"
 const KEY_REDUCE_VISUAL_EFFECTS: String = "reduce_visual_effects"
@@ -17,6 +24,7 @@ const KEY_REDUCE_VISUAL_EFFECTS: String = "reduce_visual_effects"
 var config_path: String = DEFAULT_PATH
 
 var _reduce_visual_effects: bool = false
+var _locale: String = DEFAULT_LOCALE
 
 
 func _ready() -> void:
@@ -29,7 +37,13 @@ func load_settings() -> Error:
 	var config: ConfigFile = ConfigFile.new()
 	var error: Error = config.load(config_path)
 	var reduce: bool = false
+	var locale: String = DEFAULT_LOCALE
 	if error == OK:
+		var stored: Variant = config.get_value(SECTION_GENERAL, KEY_LOCALE, DEFAULT_LOCALE)
+		if stored is String and SUPPORTED_LOCALES.has(str(stored)):
+			locale = str(stored)
+		else:
+			push_warning("Settings: '%s' is not a supported locale, the default is used" % KEY_LOCALE)
 		var value: Variant = config.get_value(SECTION_ACCESSIBILITY, KEY_REDUCE_VISUAL_EFFECTS, false)
 		if value is bool:
 			reduce = value
@@ -42,6 +56,7 @@ func load_settings() -> Error:
 			config_path, error_string(error)
 		])
 	_apply_reduce_visual_effects(reduce)
+	_apply_locale(locale)
 	return error
 
 
@@ -49,6 +64,7 @@ func load_settings() -> Error:
 func save_settings() -> Error:
 	var config: ConfigFile = ConfigFile.new()
 	config.set_value(SECTION_ACCESSIBILITY, KEY_REDUCE_VISUAL_EFFECTS, _reduce_visual_effects)
+	config.set_value(SECTION_GENERAL, KEY_LOCALE, _locale)
 	var error: Error = config.save(config_path)
 	if error != OK:
 		push_warning("Settings: %s could not be written (%s)" % [config_path, error_string(error)])
@@ -72,3 +88,27 @@ func _apply_reduce_visual_effects(enabled: bool) -> void:
 		return
 	_reduce_visual_effects = enabled
 	reduce_visual_effects_changed.emit(enabled)
+
+
+func get_locale() -> String:
+	return _locale
+
+
+## Switches the interface language and saves the settings when the value changes. An unsupported
+## locale is refused with ERR_INVALID_PARAMETER.
+func set_locale(locale: String) -> Error:
+	if not SUPPORTED_LOCALES.has(locale):
+		push_warning("Settings: locale '%s' is not supported" % locale)
+		return ERR_INVALID_PARAMETER
+	if locale == _locale:
+		return OK
+	_apply_locale(locale)
+	return save_settings()
+
+
+func _apply_locale(locale: String) -> void:
+	TranslationServer.set_locale(locale)
+	if locale == _locale:
+		return
+	_locale = locale
+	locale_changed.emit(locale)

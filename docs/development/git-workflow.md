@@ -35,6 +35,6 @@ claim(SRV-004): claude-server-2
 
 ## Конфликты
 
-- `tasks/INDEX.md` генерируется — при конфликте возьмите любую сторону и выполните `npm run tasks:index`.
+- `tasks/INDEX.md` генерируется автоматически после каждого merge в `main` (workflow `tasks-index.yml`). **Не добавляйте его в PR и не коммитьте** (ни в claim, ни в смену статуса); если он оказался в diff — `git checkout origin/main -- tasks/INDEX.md`. Локально посмотреть свежий индекс: `npm run tasks:index` (не коммитить).
 - `package-lock.json` — `git checkout --theirs package-lock.json && npm install`.
 - Сгенерированные схемы протокола и `protocol_constants.gd` — `npm run protocol:gen`.

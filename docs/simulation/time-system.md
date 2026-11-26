@@ -157,6 +157,8 @@ advance(m):
 в фазе `Timers`, без собственных таймеров. Планировщик в снимок не входит, поэтому после `restore`
 следующий тик ставится на ближайшую границу часа. `GameEngine.staticLevel()` даёт текущий уровень
 для `earlierIf.staticAtLeast` ([survival-horror.md §3](../game-design/survival-horror.md)).
+Ночной прирост (+3) — второй обработчик `Timers` (`survival.nightFall`): раз в сутки в 22:00, следующий
+вход в ночь ищется по календарю от текущей минуты, поэтому после `restore` состояние не нужно.
 
 ### События сценария (`ScenarioEvents`)
 

@@ -46,7 +46,7 @@ npm run docs:check
 | Команда | Что делает | Доступна |
 |---------|-----------|----------|
 | `npm run tasks:ready` | готовые к взятию задачи | сейчас |
-| `npm run tasks:index` | обновить `tasks/INDEX.md` | сейчас |
+| `npm run tasks:index` | пересобрать `tasks/INDEX.md` локально (не коммитить, его обновляет CI на main) | сейчас |
 | `npm run tasks:check` | валидация задач | сейчас |
 | `npm run docs:check` | проверка относительных ссылок в Markdown | сейчас |
 | `npm run lint` / `npm run typecheck` / `npm test` | ESLint, TypeScript и Vitest (включая сервер) | сейчас |
@@ -59,6 +59,7 @@ npm run docs:check
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
 | `npm run protocol:gen` / `npm run protocol:check` | регенерация и проверка схем и GDScript-констант | сейчас |
 | `npm run content:check` | валидация данных сценариев и ссылок между файлами | сейчас |
+| `npm run art:check` / `art:reference` | правила арт-ассетов; перегенерация эталонов CNT-010 ([art-direction.md §7](../game-design/art-direction.md)) | сейчас |
 
 Из корня запустите `npm run dev:server` (`npm.cmd run dev:server` в PowerShell) и проверьте
 `http://localhost:7420/api/v1/health` в браузере или во втором терминале. Остановите процесс

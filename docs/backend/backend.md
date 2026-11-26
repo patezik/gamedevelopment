@@ -54,7 +54,7 @@ apps/server/src/
 | `GET /health` | — | `{ status, version, protocolVersion }` | — |
 | `GET /scenarios` | — | `[{ id, title, durationMinutes }]`: сценарии для игрока; `title` — строка (локаль `ru`) | — |
 | `GET /network` | — | `{ candidates: [{ address, interface, recommended, virtual }] }` — LAN-адреса для QR привязки, лучшие первыми; `virtual` — похож на Docker/WSL/VM/VPN (остаётся в списке, но ниже); `recommended` — не более одного; `HS_PUBLIC_HOST` идёт первым. Подробности — [setup.md §6](../development/setup.md) | — |
-| `POST /sessions` | — | `{ scenarioId, seed? }` → 201 `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }`, `Cache-Control: no-store`. Подробности ниже | `INVALID_MESSAGE` (400; 413 — тело больше лимита, 415 — неподдерживаемый `Content-Type`), `SCENARIO_NOT_FOUND` (404), `GENERATION_UNSOLVABLE` (422), `INTERNAL` (500) |
+| `POST /sessions` | — | `{ scenarioId, seed?, locale? }` (`locale` — `ru` по умолчанию или `en`) → 201 `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }`, `Cache-Control: no-store`. Подробности ниже | `INVALID_MESSAGE` (400; 413 — тело больше лимита, 415 — неподдерживаемый `Content-Type`), `SCENARIO_NOT_FOUND` (404), `GENERATION_UNSOLVABLE` (422), `INTERNAL` (500) |
 | `POST /sessions/:id/pairing-code` | desktop | → новый `pairing` | `SESSION_NOT_FOUND` |
 | `GET /sessions/:id/pairing-qr` | desktop | → `{ size, modules }` текущего кода привязки (новый не выпускается) | `PAIRING_CODE_INVALID` (404, кода нет), `PAIRING_CODE_EXPIRED` (410) |
 | `GET /sessions/:id/evidence-qr/:tokenId` | desktop | → `{ size, modules }` | `QR_INVALID` (404), `QR_EXPIRED` (410), `QR_ALREADY_USED` (409) |
@@ -113,7 +113,9 @@ DEVICE_REVOKED обработчику шлюза (SRV-004).
   (он называет персонажей). Порты движка (`sessions/scenario-ports.ts`, SRV-012) собираются из одного принятого
   результата и пресета: `startLocationId`, `clues`, `testimony.witness` (память и политика лжи
   из `knowledge`/`liePolicies`), `accusation.rules`, `startVitals` пресета и `phone.initial`
-  (`initialPhoneState` из шаблонов). `actionCosts`, `player`, `inventory` и арбитраж звонка —
+  (`initialPhoneState` из шаблонов). SRV-010 добавляет `texts`: все группы `text/ru/*.json`
+  объединяются в карту `TextTemplates`. Общий провайдер используется как при создании, так и при
+  регенерации сохранения, поэтому реплики NPC проецируются на русском и после загрузки. `actionCosts`, `player`, `inventory` и арбитраж звонка —
   значения движка. `$incident` берётся из сведений игрока: `AccusationPort.incident` может быть
   функцией от `PlayerKnowledge` (OQ-25). Порты не покидают процесс сервера.
   Генерация синхронная (сотни миллисекунд на `sanatorium_winter`) и на это время занимает поток
@@ -256,3 +258,36 @@ created → (pairing) → active → (game over) → finished → (TTL 30 мин
 - Сценарии: создание сессии → привязка → hello обеих ролей → действие → оба получили `view.update`;
   неверный/просроченный/повторный код; rate limit; resume с буфером и без; повторный QR;
   QR чужой сессии; одновременные действия desktop и phone сериализуются.
+
+### Реальные проекции и события (SRV-010)
+
+`SessionGateway` по умолчанию читает `Session.engine.playerView()` / `phoneView()`;
+`RecordingEngine` делегирует эти методы движку сохранения. Тестовые движки без методов проекции
+не публикуют снимок. Кэш и проверка схем по роли сохраняются. Штатная фабрика передаёт этому шлюзу тот же менеджер сессий,
+который обслуживает REST и привязку (SRV-013).
+
+`engineEvents` использует разрешённый список: уведомления, входящие звонки и успешная фиксация
+улики адресуются только телефону, с проверкой ссылки в реальной проекции. Исходные объекты
+доменных событий не сериализуются; остальные изменения доступны через полный снимок.
+`gameOver` шлюз отправляет обеим ролям по исходу действия. Подробности — [protocol.md §7](protocol.md#7-последовательности).
+
+### Штатная сборка с WebSocket и QR (SRV-013)
+
+`createSessionServices(config, { scenariosDir?, networkInterfaces? })` возвращает зависимости
+для `buildApp`: `sessions`, `pairing`, `gateway` и `qr`. Этот же вход использует нативный
+`node src/server.ts` (`npm start -w @hs/server`). Явный `scenariosDir` позволяет упаковщику
+передать собственный каталог контента; полный шлюз генерации остаётся включён.
+
+Фабрика создаёт отдельный `EvidenceTokenStore` для каждого движка и передаёт его в
+`EnginePorts.evidenceTokens`. В синхронном `SessionRouteDependencies.prepare(session)`
+хранилище привязывается к созданной сессии до выдачи токенов и регистрации в менеджере.
+`QrService` берёт игровые минуты из движка, а маршруты матриц используют desktop-авторизацию
+и текущий код `PairingService`.
+
+После первого успешного `qr.scan` сервис помечает токен использованным и передаёт точный
+`SessionDispatchResult` в callback `onCaptured`. `buildApp` направляет его в
+`SessionGateway.publishDispatch`: обе роли получают снимки с версией этого действия,
+phone — видимый `scanResult`, при исходе обе роли — `gameOver`. Рассылка происходит до
+ответа `qr.result`; клиент обрабатывает сообщения по их типу. Повторный или чужой скан
+не вызывает callback, не тратит время и не создаёт новую версию или повторную рассылку.
+Сохранения и присоединение загруженной игры к фабрике остаются SRV-014/015.
