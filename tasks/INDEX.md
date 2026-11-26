@@ -2,13 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **165** · todo: 30 · in_progress: 12 · review: 2 · done: 120 · blocked: 1
+Всего задач: **165** · todo: 29 · in_progress: 13 · review: 2 · done: 120 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
 - [MOB-011](MOB-011.md) — Психологические эффекты ОС телефона: глитчи, искажения, обои (P1, M)
-- [PROTO-006](PROTO-006.md) — REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot (P2, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
 - [ENG-008](ENG-008.md) — portraitRef персонажей: вариант портрета по архетипу (P2, S)
@@ -145,7 +144,7 @@
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | done | claude-m1 | [MOB-003](MOB-003.md) |
 | [PHONE-001](PHONE-001.md) | Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | P0 | L | done | claude-w3 | [INV-001](INV-001.md), [PROTO-002](PROTO-002.md) |
 | [PROTO-003](PROTO-003.md) | Генерация GDScript-констант протокола и контрактные тесты Godot | P0 | S | done | egor-claude-proto-003 | [PROTO-002](PROTO-002.md), [FND-008](FND-008.md) |
-| [PROTO-006](PROTO-006.md) | REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot | P2 | S | todo | — | [SRV-002](SRV-002.md) |
+| [PROTO-006](PROTO-006.md) | REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot | P2 | S | in_progress | claude-p1 | [SRV-002](SRV-002.md) |
 | [SRV-001](SRV-001.md) | SessionManager: сессии, очередь действий, жизненный цикл | P0 | M | done | codex-engine-27 | [FND-005](FND-005.md), [ENG-001](ENG-001.md) |
 | [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | done | egor-claude-srv-002 | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
 | [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | done | codex-prototype-27 | [SRV-001](SRV-001.md) |
