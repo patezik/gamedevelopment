@@ -1,6 +1,7 @@
-import { FORBIDDEN_VIEW_KEYS, PlayerView } from '@hs/protocol';
+import { FORBIDDEN_VIEW_KEYS, PhoneView, PlayerView } from '@hs/protocol';
 import { expect, test } from 'vitest';
 import { tinyManor, tinyManorWithClues } from '../../test/fixtures/tiny-manor.ts';
+import { createPhoneState } from '../phone/index.ts';
 import { createActionCostTable } from '../time/index.ts';
 import { GameEngine } from './engine.ts';
 
@@ -152,4 +153,34 @@ test('ENG-008: presentCharacters carry the portraitRef of the character, "" with
   expect(
     GameEngine.create(investigation, { startLocationId }).playerView().presentCharacters,
   ).toEqual(view.presentCharacters);
+});
+
+test('ENG-008: the engine projects portraits only for existing phone contacts', () => {
+  const manor = tinyManor();
+  const investigation = {
+    ...manor,
+    characters: manor.characters.map((character) => {
+      if (character.id === 'ch_owner') return { ...character, portraitRef: 'owner.m1' };
+      if (character.id === 'ch_cook') return { ...character, portraitRef: 'cook.f1' };
+      return character;
+    }),
+  };
+  const contacts = [
+    { id: 'ch_owner', name: 'Owner', number: '101' },
+    { id: 'ch_porter', name: 'Porter', number: '102' },
+    { id: 'ev_1_a_c', name: 'Unknown', number: '', hallucination: true },
+  ];
+  const engine = GameEngine.create(investigation, {
+    startLocationId,
+    phone: { initial: createPhoneState({ contacts }) },
+  });
+  const view = engine.phoneView();
+  expect(PhoneView.parse(view).contacts).toEqual([
+    { id: 'ch_owner', name: 'Owner', number: '101', portraitRef: 'owner.m1' },
+    { id: 'ch_porter', name: 'Porter', number: '102', portraitRef: '' },
+    { id: 'ev_1_a_c', name: 'Unknown', number: '', portraitRef: '' },
+  ]);
+  const json = JSON.stringify(view);
+  for (const key of FORBIDDEN_VIEW_KEYS) expect(json).not.toContain(JSON.stringify(key) + ':');
+  expect(json).not.toContain('cook.f1');
 });
