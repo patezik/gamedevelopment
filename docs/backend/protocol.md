@@ -121,7 +121,7 @@
 | `HealthResponse` | `GET /health` | `health.json` |
 | `NetworkResponse` | `GET /network` | `network.json` |
 | `ScenarioList` | `GET /scenarios` | `scenarios.json` |
-| `CreateSessionRequest` | тело `POST /sessions` | `create-session.request.json` |
+| `CreateSessionRequest` | тело `POST /sessions` (`scenarioId`, `seed?`, `locale?`: `ru`/`en`, язык текстов) | `create-session.request.json` |
 | `SessionCredentials` | ответ `POST /sessions` и `POST /saves/:saveId/load` | `create-session.response.json`, `load-save.response.json` |
 | `PairingCodeResponse` (= `PairingInfo`) | `POST /sessions/:id/pairing-code` | `pairing-code.response.json` |
 | `QrMatrixResponse` | `GET /sessions/:id/pairing-qr`, `GET /sessions/:id/evidence-qr/:tokenId` | `pairing-qr.response.json`, `evidence-qr.response.json` |
