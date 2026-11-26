@@ -13,6 +13,11 @@ func send_action(action: Dictionary) -> Error:
 	return send_result
 
 
+## Pretends a `welcome` of session [param session_id] arrived.
+func set_session_id(session_id: String) -> void:
+	_session_id = session_id
+
+
 func deliver(kind: String, payload: Dictionary) -> void:
 	message_received.emit({
 		"v": ProtocolConstants.PROTOCOL_VERSION,

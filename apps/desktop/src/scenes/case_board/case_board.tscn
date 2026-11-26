@@ -65,6 +65,13 @@ custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 size_flags_vertical = 4
 
+[node name="Accuse" type="Button" parent="Margin/Layout/Header"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+text = "Обвинить…"
+
 [node name="Status" type="Label" parent="Margin/Layout"]
 unique_name_in_owner = true
 layout_mode = 2

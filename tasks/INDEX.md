@@ -2,14 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **155** · todo: 42 · in_progress: 9 · review: 0 · done: 104 · blocked: 0
+Всего задач: **159** · todo: 42 · in_progress: 9 · review: 0 · done: 107 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
-- [ENG-010](ENG-010.md) — Проводка модулей выживания в GameEngine (P0, L)
+- [ENG-013](ENG-013.md) — Цели мотива для обвинения: кого игрок может указать в motive(c, v) (P0, S)
+- [PROTO-005](PROTO-005.md) — Исход необратимого действия после переподключения: признак совершённого обвинения (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
+- [QA-003](QA-003.md) — Инфраструктура локализации RU/EN (Godot и мобильное приложение) (P2, M)
 
 ## Критический путь
 
@@ -29,10 +31,10 @@
 | [SRV-013](SRV-013.md) Штатная сборка Session Server с WebSocket и QR | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
-| [MOB-001](MOB-001.md) Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | 2 |
 | [MOB-005](MOB-005.md) Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | 2 |
 | [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
 | [SRV-012](SRV-012.md) Порты дела и стартовые данные пресета для GameEngine | 2 |
+| [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -95,7 +97,7 @@
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | done | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
-## Фаза 4 · M4 — Solvable investigations (25)
+## Фаза 4 · M4 — Solvable investigations (26)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -108,6 +110,7 @@
 | [GEN-010](GEN-010.md) | Стадии TestimonyGen и RedHerrings | P0 | M | done | claude-qf | [GEN-009](GEN-009.md), [KNOW-002](KNOW-002.md) |
 | [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | done | claude-qg | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
 | [GEN-013](GEN-013.md) | Серверный результат генерации: улики, показания и правила дедукции | P0 | M | done | egor-claude-gen-013 | [GEN-011](GEN-011.md) |
+| [GEN-014](GEN-014.md) | Генерация проходит шлюз: мотив, возможность, оправдание по средству и доступу | P0 | L | in_progress | claude-qp | [GEN-011](GEN-011.md), [VAL-002](VAL-002.md), [VAL-004](VAL-004.md), [INV-002](INV-002.md) |
 | [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | done | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
 | [INV-002](INV-002.md) | Утверждения (Claims) и правила дедукции | P0 | L | done | claude-w1 | [INV-001](INV-001.md) |
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | done | egor-claude-inv-003 | [INV-002](INV-002.md) |
@@ -133,8 +136,8 @@
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | todo | — | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
-| [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | in_progress | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
-| [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | todo | — | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
+| [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
+| [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | in_progress | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
 | [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | todo | — | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
 | [MOB-004](MOB-004.md) | Приложение Camera: сканирование QR улик и обработка ошибок | P0 | M | todo | — | [MOB-003](MOB-003.md), [SRV-006](SRV-006.md) |
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | todo | — | [MOB-003](MOB-003.md) |
@@ -153,7 +156,7 @@
 | [SRV-011](SRV-011.md) | Нативный запуск сервера: npm start без ошибок strip-types | P0 | S | done | egor-claude-srv-011 | [SAVE-001](SAVE-001.md) |
 | [TOOL-001](TOOL-001.md) | Фейковые клиенты desktop/phone (CLI и библиотека) для тестов | P0 | M | done | claude-w3 | [SRV-004](SRV-004.md) |
 
-## Фаза 6 · M6 — Vertical slice (28)
+## Фаза 6 · M6 — Vertical slice (31)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -166,12 +169,14 @@
 | [ENG-007](ENG-007.md) | Действие markSuspicion и проекция персон интереса и отметок в caseBoard | P0 | S | done | claude-qa | [ENG-003](ENG-003.md), [INV-003](INV-003.md) |
 | [ENG-009](ENG-009.md) | Проекция реплик NPC и стоимости предъявления в PlayerView | P0 | M | done | claude-qm | [ENG-003](ENG-003.md), [CNT-005](CNT-005.md) |
 | [ENG-011](ENG-011.md) | Источник рода и словарь терминов для русских текстов | P0 | M | todo | — | [CNT-005](CNT-005.md), [ENG-009](ENG-009.md) |
+| [ENG-012](ENG-012.md) | EndingView: хронология истины, seed и статистика прохождения | P1 | M | in_progress | egor-codex-eng-012 | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
+| [ENG-013](ENG-013.md) | Цели мотива для обвинения: кого игрок может указать в motive(c, v) | P0 | S | todo | — | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
 | [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | done | egor-codex-gdt-005 | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | done | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
 | [GDT-007](GDT-007.md) | Оверлей фиксации улики: показ QR, ожидание скана, результат | P0 | S | done | egor-codex-gdt-007 | [GDT-004](GDT-004.md), [SRV-006](SRV-006.md) |
 | [GDT-008](GDT-008.md) | Доска дела: улики, показания, противоречия, персоны интереса, хронология | P0 | L | done | egor-claude-gdt-008 | [GDT-002](GDT-002.md), [INV-003](INV-003.md), [INV-004](INV-004.md) |
-| [GDT-009](GDT-009.md) | Экран обвинения и экраны концовок с разбором истины | P0 | M | in_progress | egor-claude-gdt-009 | [GDT-008](GDT-008.md), [ENG-006](ENG-006.md) |
+| [GDT-009](GDT-009.md) | Экран обвинения и экраны концовок с разбором истины | P0 | M | done | egor-claude-gdt-009 | [GDT-008](GDT-008.md), [ENG-006](ENG-006.md) |
 | [GDT-011](GDT-011.md) | Debug-панель: seed, время, просмотр истины в debug-режиме | P2 | S | done | egor-claude-gdt-011 | [GDT-002](GDT-002.md), [SRV-009](SRV-009.md) |
 | [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | todo | — | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
 | [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | todo | — | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
@@ -180,6 +185,7 @@
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
+| [PROTO-005](PROTO-005.md) | Исход необратимого действия после переподключения: признак совершённого обвинения | P1 | S | todo | — | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
 | [SRV-010](SRV-010.md) | Проводка texts, проекций и событий в Session Server | P0 | M | todo | — | [SRV-005](SRV-005.md), [ENG-009](ENG-009.md), [PHONE-001](PHONE-001.md), [SRV-012](SRV-012.md) |
 | [SRV-012](SRV-012.md) | Порты дела и стартовые данные пресета для GameEngine | P0 | L | todo | — | [SRV-002](SRV-002.md), [GEN-013](GEN-013.md), [ENG-003](ENG-003.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [CNT-006](CNT-006.md) |
@@ -190,7 +196,7 @@
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [ENG-010](ENG-010.md) | Проводка модулей выживания в GameEngine | P0 | L | todo | — | [SURV-002](SURV-002.md), [SURV-005](SURV-005.md), [SURV-003](SURV-003.md), [SIM-006](SIM-006.md) |
+| [ENG-010](ENG-010.md) | Проводка модулей выживания в GameEngine | P0 | L | in_progress | claude-qo | [SURV-002](SURV-002.md), [SURV-005](SURV-005.md), [SURV-003](SURV-003.md), [SIM-006](SIM-006.md) |
 | [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | done | egor-claude-gdt-010 | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
 | [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [MOB-011](MOB-011.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
@@ -221,8 +227,8 @@
 |---|---|---|---|---|---|---|
 | [INT-005](INT-005.md) | Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | P0 | L | in_progress | claude-w5 | [SRV-008](SRV-008.md), [GDT-001](GDT-001.md) |
 | [INT-006](INT-006.md) | Мастер сетевого подключения в Godot (брандмауэр, выбор сети, диагностика) | P1 | M | todo | — | [INT-005](INT-005.md), [SRV-008](SRV-008.md) |
-| [INT-007](INT-007.md) | Профиль Expo Development Build (EAS) как резерв к Expo Go | P1 | M | in_progress | claude-ql | [FND-006](FND-006.md) |
-| [INT-008](INT-008.md) | Спайк: TLS с pinning через QR и облачный ретранслятор → ADR | P2 | M | in_progress | claude-w6 | [SRV-004](SRV-004.md) |
+| [INT-007](INT-007.md) | Профиль Expo Development Build (EAS) как резерв к Expo Go | P1 | M | blocked | claude-ql | [FND-006](FND-006.md) |
+| [INT-008](INT-008.md) | Спайк: TLS с pinning через QR и облачный ретранслятор → ADR | P2 | M | done | claude-w6 | [SRV-004](SRV-004.md) |
 
 ## Фаза 10 · M10 — Quality (5)
 

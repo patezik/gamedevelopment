@@ -215,6 +215,8 @@ const gameSnapshot = z.strictObject({
   desktop: z.json().optional(),
   /** Validated by `PhoneRuntime.restore`. */
   phone: z.json().optional(),
+  /** Validated by `restoreStaticState`. */
+  static: z.json().optional(),
 });
 
 export function gameReplayRuntime(
@@ -230,7 +232,13 @@ export function gameReplayRuntime(
         current.replayBeforeDesktop(entry.source, entry.action, entry.stateHash, investigation),
     },
     restore: (snapshot) => {
-      const { pendingCapture, desktop, phone, ...state } = gameSnapshot.parse(snapshot);
+      const {
+        pendingCapture,
+        desktop,
+        phone,
+        static: staticState,
+        ...state
+      } = gameSnapshot.parse(snapshot);
       return GameEngine.restore(
         {
           ...state,
@@ -239,6 +247,9 @@ export function gameReplayRuntime(
             desktop: desktop as NonNullable<GameSnapshot['desktop']>,
           }),
           ...(phone !== undefined && { phone }),
+          ...(staticState !== undefined && {
+            static: staticState as unknown as NonNullable<GameSnapshot['static']>,
+          }),
         },
         investigation,
         ports,
