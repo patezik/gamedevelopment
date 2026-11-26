@@ -54,7 +54,7 @@ apps/server/src/
 | `GET /health` | — | `{ status, version, protocolVersion }` | — |
 | `GET /scenarios` | — | `[{ id, title, durationMinutes }]`: сценарии для игрока; `title` — строка (локаль `ru`) | — |
 | `GET /network` | — | `{ candidates: [{ address, interface, recommended, virtual }] }` — LAN-адреса для QR привязки, лучшие первыми; `virtual` — похож на Docker/WSL/VM/VPN (остаётся в списке, но ниже); `recommended` — не более одного; `HS_PUBLIC_HOST` идёт первым. Подробности — [setup.md §6](../development/setup.md) | — |
-| `POST /sessions` | — | `{ scenarioId, seed? }` → 201 `{ sessionId, seed, desktopToken, pairing: { code, expiresAt, qrPayload } }`, `Cache-Control: no-store`. Подробности ниже | `INVALID_MESSAGE` (400; 413 — тело больше лимита, 415 — неподдерживаемый `Content-Type`), `SCENARIO_NOT_FOUND` (404), `GENERATION_UNSOLVABLE` (422), `INTERNAL` (500) |
+| `POST /sessions` | — | `{ scenarioId, seed? }` → 201 `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }`, `Cache-Control: no-store`. Подробности ниже | `INVALID_MESSAGE` (400; 413 — тело больше лимита, 415 — неподдерживаемый `Content-Type`), `SCENARIO_NOT_FOUND` (404), `GENERATION_UNSOLVABLE` (422), `INTERNAL` (500) |
 | `POST /sessions/:id/pairing-code` | desktop | → новый `pairing` | `SESSION_NOT_FOUND` |
 | `GET /sessions/:id/pairing-qr` | desktop | → `{ size, modules }` текущего кода привязки (новый не выпускается) | `PAIRING_CODE_INVALID` (404, кода нет), `PAIRING_CODE_EXPIRED` (410) |
 | `GET /sessions/:id/evidence-qr/:tokenId` | desktop | → `{ size, modules }` | `QR_INVALID` (404), `QR_EXPIRED` (410), `QR_ALREADY_USED` (409) |
@@ -101,10 +101,11 @@ DEVICE_REVOKED обработчику шлюза (SRV-004).
   `INTERNAL` (500), включая отклонение без причины и исключение с полями ошибки парсера. Ответ и
   лог содержат общий код ошибки без текста исключения.
 - **Seed по умолчанию.** Без `seed` сервер берёт 12 символов Crockford Base32 из CSPRNG
-  (`crypto.randomInt`) и пишет их группами `XXXX-XXXX-XXXX` (60 бит): такой seed можно прочитать
-  вслух и ввести заново. Ответ всегда возвращает `seed`, по которому сгенерировано дело.
-  Автоматический seed проверяется той же схемой, что и seed клиента; нарушение — `INTERNAL` до
-  генерации.
+  (`crypto.randomInt`) и пишет их группами `XXXX-XXXX-XXXX` (60 бит). Сервер проверяет
+  автоматически созданный seed той же схемой, что и seed клиента. При нарушении сервер
+  возвращает `INTERNAL` до генерации. Seed вместе со сценарием и версией генератора позволяет
+  воспроизвести дело по [ADR 0004](../architecture/adr/0004-determinism.md), поэтому поля
+  `seed` в ответе о создании сессии нет.
 - **Генерация.** `GeneratorInvestigationProvider` реализует `InvestigationProvider` SRV-001 через
   `generateInvestigation` (GEN-011) с полным шлюзом валидации. Отклонённое шлюзом дело — ошибка
   `GENERATION_UNSOLVABLE` (422): провайдер бросает её до того, как `SessionManager` выдаёт id, так
@@ -132,7 +133,7 @@ DEVICE_REVOKED обработчику шлюза (SRV-004).
   код, совпадающий с `pairing.code`. Поддержка литералов IPv6 требует решения по протоколу.
   `GET /network` (SRV-008) по-прежнему перечисляет все интерфейсы, поэтому при явном bind его
   рекомендация может отличаться от адреса в pairing payload.
-- **Ответ.** 201 `{ sessionId, seed, desktopToken, pairing }`: `sessionId` — UUID v4,
+- **Ответ.** 201 `{ sessionId, desktopToken, pairing }`. `sessionId` — UUID v4,
   `desktopToken` — 256 бит base64url (в сессии хранится только SHA-256), `pairing` — как у
   `POST /sessions/:id/pairing-code`. Статус новой сессии — `created`; активирует её привязка
   телефона. Истины в ответе нет: ни персонажей, ни виновника.
@@ -140,13 +141,10 @@ DEVICE_REVOKED обработчику шлюза (SRV-004).
   (с `ErrorCode` из `@hs/protocol`) экспортирует `routes/sessions.ts`. Ответ `POST /sessions`
   проверяется схемой и на production-пути до регистрации сессии, остальные — в integration-тестах.
   В `@hs/protocol` схем REST пока нет ([PROTO-006](../../tasks/PROTO-006.md)).
-- **Состояние на SRV-002.** Пока открыт [OQ-20](../planning/open-questions.md), полный шлюз
-  отклоняет все известные seed обоих сценариев: реальный `POST /sessions` отвечает
-  `GENERATION_UNSOLVABLE` (на `sanatorium_winter` за 0,6–0,9 с). Ответ 201 на решаемом деле
-  штатного сценария через production-путь пока не подтверждён. Успешный путь проверяется тестами с
-  внедрённым провайдером и с генератором без проверок солвера (только в тестах). Что production-сборка
-  использует полный шлюз, проверяет тест через `createSessionServices`: на копии `_test_minimal` без
-  правил дедукции полный шлюз отклоняет дело, а обход (`checks: []`) принял бы его.
+- **Проверка полного шлюза.** Интеграционный тест через `createSessionServices` проверяет,
+  что на копии `_test_minimal` без правил дедукции полный шлюз отклоняет дело, которое прошло
+  бы при `checks: []`. Проверка штатного HTTP 201 использует решаемый seed публичного сценария
+  и полный шлюз.
 
 ### Сохранения ([ADR 0014](../architecture/adr/0014-save-system.md))
 

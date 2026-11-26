@@ -184,7 +184,6 @@ describe('POST /api/v1/sessions', () => {
       expect(response.statusCode).toBe(201);
       expect(response.headers['cache-control']).toBe('no-store');
       const body = CreateSessionResponse.parse(response.json());
-      expect(body.seed).toBe('winter-42');
       expect(generated).toHaveBeenCalledExactlyOnceWith('sanatorium_winter', 'winter-42');
       expect(body.pairing.qrPayload).toBe(`hs1:pair:game-pc.local:7420:${body.pairing.code}`);
 
@@ -240,13 +239,10 @@ describe('POST /api/v1/sessions', () => {
       const second = CreateSessionResponse.parse(
         (await create({ scenarioId: 'sanatorium_winter' })).json(),
       );
-      expect(first.seed).toMatch(READABLE_SEED);
-      expect(second.seed).toMatch(READABLE_SEED);
-      expect(first.seed).not.toBe(second.seed);
-      expect(generated.mock.calls).toEqual([
-        ['sanatorium_winter', first.seed],
-        ['sanatorium_winter', second.seed],
-      ]);
+      expect(generated).toHaveBeenCalledTimes(2);
+      expect(generated).toHaveBeenNthCalledWith(1, 'sanatorium_winter', expect.stringMatching(READABLE_SEED));
+      expect(generated).toHaveBeenNthCalledWith(2, 'sanatorium_winter', expect.stringMatching(READABLE_SEED));
+      expect(generated.mock.calls[0]![1]).not.toBe(generated.mock.calls[1]![1]);
       expect(first.sessionId).not.toBe(second.sessionId);
       expect(first.desktopToken).not.toBe(second.desktopToken);
     } finally {
@@ -254,16 +250,34 @@ describe('POST /api/v1/sessions', () => {
     }
   });
 
+  test('uses the server-generated seed without disclosing it in the response', async () => {
+    const seed = 'FIXED-SEED-0001';
+    const { app, generated, create } = boot({ createSeed: () => seed });
+    try {
+      const response = await create({ scenarioId: 'sanatorium_winter' });
+
+      expect(response.statusCode).toBe(201);
+      expect(generated).toHaveBeenCalledExactlyOnceWith('sanatorium_winter', seed);
+      expect(response.body.includes(seed)).toBe(false);
+      const body = response.json();
+      expect(body).not.toHaveProperty('seed');
+      expect(CreateSessionResponse.safeParse(body).success).toBe(true);
+      expect(CreateSessionResponse.safeParse({ ...body, seed }).success).toBe(false);
+    } finally {
+      await app.close();
+    }
+  });
+
   test('the seed source can be injected; a given seed is never replaced', async () => {
     const createSeed = vi.fn(() => 'FIXED-SEED-0001');
-    const { app, create } = boot({ createSeed });
+    const { app, generated, create } = boot({ createSeed });
     try {
-      expect((await create({ scenarioId: 'sanatorium_winter' })).json()).toMatchObject({
-        seed: 'FIXED-SEED-0001',
-      });
-      expect((await create({ scenarioId: 'sanatorium_winter', seed: '7' })).json()).toMatchObject({
-        seed: '7',
-      });
+      expect((await create({ scenarioId: 'sanatorium_winter' })).statusCode).toBe(201);
+      expect((await create({ scenarioId: 'sanatorium_winter', seed: '7' })).statusCode).toBe(201);
+      expect(generated.mock.calls).toEqual([
+        ['sanatorium_winter', 'FIXED-SEED-0001'],
+        ['sanatorium_winter', '7'],
+      ]);
       expect(createSeed).toHaveBeenCalledTimes(1);
     } finally {
       await app.close();
@@ -427,7 +441,6 @@ describe('logs and leaks', () => {
       }
       expect(Object.keys(JSON.parse(response.body) as Record<string, unknown>)).toEqual([
         'sessionId',
-        'seed',
         'desktopToken',
         'pairing',
       ]);
@@ -440,8 +453,8 @@ describe('logs and leaks', () => {
 
 describe('real generator', () => {
   test('a case the generator builds (gate without the solver) becomes a playable session', async () => {
-    // Test-only injection: the shipped deduction rules prove no motive (OQ-20), so the full gate
-    // refuses every seed. The structural checks still gate the case, as in the GEN-011 tests.
+    // Test-only injection: exercise engine creation with the structural checks, independently
+    // of the solver. The production factory is tested against the full gate below.
     const solverFree = new Set(['V-TRUTH-INV', 'V-TIMELINE', 'V-TESTIMONY', 'V-PHONE-REQUIRED']);
     const structural = GENERATION_CHECKS.filter(({ id }) => solverFree.has(id));
     expect(structural).toHaveLength(solverFree.size);

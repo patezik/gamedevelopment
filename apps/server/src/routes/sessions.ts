@@ -32,7 +32,6 @@ const PAIRING_PAYLOAD = /^hs1:pair:([^:]+):([0-9]{1,5}):([0-9A-HJKMNP-TV-Z]{6})$
 /** `POST /api/v1/sessions` answer: what the desktop needs to start and pair, never the case. */
 export const CreateSessionResponse = z.strictObject({
   sessionId: z.uuid(),
-  seed: Seed,
   desktopToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   pairing: z
     .strictObject({
@@ -160,7 +159,6 @@ export function registerSessionRoutes(
             try {
               const answer = CreateSessionResponse.safeParse({
                 sessionId: session.id,
-                seed,
                 desktopToken: issueToken(session, 'desktop'),
                 pairing: pairing.createCode(session),
               });
