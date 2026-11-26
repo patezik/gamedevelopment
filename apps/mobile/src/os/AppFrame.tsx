@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { PhoneView } from '@hs/protocol';
 import { StatusBar } from './StatusBar';
+import { GlitchTitle } from './effects/GlitchTitle';
 
 export interface AppFrameProps {
   status: PhoneView['status'];
@@ -23,7 +24,7 @@ export function AppFrame({ status, title, onHome, children }: AppFrameProps) {
         >
           <Text style={styles.home}>⌂</Text>
         </Pressable>
-        <Text style={styles.title}>{title}</Text>
+        <GlitchTitle title={title} style={styles.title} />
       </View>
       <View style={styles.body}>{children}</View>
     </View>
