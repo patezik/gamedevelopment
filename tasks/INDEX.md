@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **171** · todo: 18 · in_progress: 8 · review: 1 · done: 143 · blocked: 1
+Всего задач: **171** · todo: 18 · in_progress: 8 · review: 0 · done: 144 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -209,7 +209,7 @@
 | [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | done | egor-codex-mob-011 | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
 | [SRV-014](SRV-014.md) | Атомарная смена сессии при загрузке сохранения | P1 | M | done | egor-codex-srv-014 | [SRV-002](SRV-002.md), [SRV-007](SRV-007.md) |
 | [SRV-015](SRV-015.md) | Подключение сохранений к штатной сессии и восстановление QR | P1 | L | in_progress | claude-s15 | [SRV-013](SRV-013.md), [SRV-014](SRV-014.md), [TIME-006](TIME-006.md) |
-| [SRV-016](SRV-016.md) | Удаление seed из публичного списка сохранений | P1 | S | review | egor-codex-srv-016 | [SRV-007](SRV-007.md) |
+| [SRV-016](SRV-016.md) | Удаление seed из публичного списка сохранений | P1 | S | done | egor-codex-srv-016 | [SRV-007](SRV-007.md) |
 | [SURV-001](SURV-001.md) | Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | P0 | M | done | claude-surv-1 | [ENG-001](ENG-001.md), [TIME-004](TIME-004.md) |
 | [SURV-002](SURV-002.md) | Static: глобальная эскалация, пороги, влияние на события сценария | P0 | M | done | claude-qi | [SURV-001](SURV-001.md), [TIME-005](TIME-005.md) |
 | [SURV-003](SURV-003.md) | Угрозы: нападение виновника, опасные локации, исход столкновения | P1 | M | done | claude-qc | [SURV-001](SURV-001.md), [SIM-006](SIM-006.md) |
