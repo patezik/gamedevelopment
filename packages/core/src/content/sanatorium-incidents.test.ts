@@ -17,6 +17,18 @@ import type { ScenarioContent } from './scenario.ts';
 const root = fileURLToPath(new URL('../../../../content/scenarios/', import.meta.url));
 const content = loadScenarioFromDir(join(root, 'sanatorium_winter'));
 
+test('taking the boiler key leaves a readable document, not only testimony', () => {
+  const rule = content.traceRules.find(
+    (entry) => entry.verb === 'take' && entry.when?.itemId === 'it_key_boiler',
+  );
+  expect(rule?.produces).toContainEqual({
+    kind: 'document',
+    at: 'loc_boiler',
+    template: 'key_log_gap',
+    supports: ['means($actor)'],
+  });
+});
+
 type Crime = ScenarioContent['crimes'][number];
 type Motive = ScenarioContent['motives'][number];
 type Archetype = ScenarioContent['archetypes'][number];
