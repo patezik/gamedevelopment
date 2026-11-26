@@ -79,9 +79,23 @@ test('a key event without any clue rejects the attempt', () => {
     const h = world && simulateHistory(world, sanatorium, `${seed}-${n}`);
     if (h && !(h instanceof GenerationRejection)) history = h;
   }
+  expect(history).toBeDefined();
+  const keyVerbs = new Set(
+    history!.truth
+      .events()
+      .filter(
+        (event) =>
+          history!.truth.incident.keyEventIds.includes(event.id) &&
+          !CONCEALMENT_VERBS.includes(event.verb),
+      )
+      .map((event) => event.verb),
+  );
+  expect(keyVerbs.size).toBeGreaterThan(0);
   const content: ScenarioContent = {
     ...sanatorium,
-    traceRules: sanatorium.traceRules.filter(({ verb }) => verb !== 'poison'),
+    // The chosen incident may be a boiler accident rather than a poisoning.
+    // Remove the actual key events' rules so the mutation always removes their clues.
+    traceRules: sanatorium.traceRules.filter(({ verb }) => !keyVerbs.has(verb)),
   };
   expect(() => evidence(history!, content, seed)).toThrow(GenerationRejection);
 });
