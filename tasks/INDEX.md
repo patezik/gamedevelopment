@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **167** · todo: 22 · in_progress: 15 · review: 2 · done: 127 · blocked: 1
+Всего задач: **167** · todo: 22 · in_progress: 14 · review: 3 · done: 127 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -134,7 +134,7 @@
 | [GDT-001](GDT-001.md) | Autoload Backend: REST и WebSocketPeer, переподключение | P0 | M | done | codex-engine-27 | [FND-007](FND-007.md), [PROTO-003](PROTO-003.md) |
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | done | claude-g1 | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
-| [GDT-013](GDT-013.md) | Backend: отказ рукопожатия не теряется, без бесконечного переподключения | P1 | S | in_progress | claude-x3 | [GDT-001](GDT-001.md), [GDT-002](GDT-002.md) |
+| [GDT-013](GDT-013.md) | Backend: отказ рукопожатия не теряется, без бесконечного переподключения | P1 | S | review | claude-x3 | [GDT-001](GDT-001.md), [GDT-002](GDT-002.md) |
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | in_progress | claude-i1 | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
