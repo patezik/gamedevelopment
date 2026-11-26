@@ -41,10 +41,12 @@ apps/desktop/
 │   │   ├── pairing/              — Pairing: QR привязки, код, адреса, статус телефона; PairingSession (§4.7)
 │   │   └── overlays/debug/       — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
 │   │   └── overlays/horror_fx/   — HorrorFx: шейдер искажения и шума по рассудку и Static (§7.2)
-│   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта)
+│   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта),
+│                                   art_library (пути, загрузка и кэш пластин и портретов), portrait_frame (портрет в рамке, §4.1)
 ├── assets/                       — арт, шрифты, звук; арт: art/ по [art-direction.md](../game-design/art-direction.md)
 └── tests/
     ├── manual/art_preview.tscn   — ручной предпросмотр арта в масштабе показа (art-direction.md §9)
+    ├── manual/exploration_art_preview.tscn — настоящий Exploration с артом на фикстуре PlayerView (§4.1)
     ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture, экраны и smoke сцен
     │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, FakeSessionBackend, FakeRouter, экран-заглушка)
     ├── live/                     — серверы живых тестов на Node: accusation_server.mjs, pairing_server.mjs (§6)
@@ -206,9 +208,9 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 | Элемент | Поля `PlayerView` |
 |---------|-------------------|
 | Заголовок, описание, освещение | `location.name`, `location.description`, `location.lighting` |
-| Фон | плейсхолдер: оттенок из `location.id`, яркость из `lighting` (стиль арта — [art-direction.md](../game-design/art-direction.md); показ пластин — GDT-012) |
+| Пластина локации | `location.id` и `location.lighting`: пластина ×3 (1152×648) слева сверху; без арта — плейсхолдер: оттенок из `location.id`, яркость из `lighting` (ниже «Арт») |
 | Точки интереса | `location.hotspots[]` (`name`, отметка `examined`) |
-| Персонажи | `presentCharacters[]` (`name`, `demeanor`) |
+| Персонажи | `presentCharacters[]` (`name`, `demeanor`, портрет по `portraitRef`) |
 | Выходы | `location.exits[]` (`name`, `minutes`, `blockedReason`) |
 | Действия | `availableActions[]` (`label`, `costPreview`, `blockedReason`) |
 | Карта | локации и связи из полученных экраном видов (см. ниже) |
@@ -229,6 +231,42 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   накапливает текущую локацию и выходы из полученных видов. Текущая локация подсвечена, посещённые
   и только увиденные различаются; ничего сверх присланного карта не показывает, при выходе с
   экрана или завершении сессии она очищается.
+- **Арт** ([art-direction.md](../game-design/art-direction.md) §5–§7). `src/ui/art_library.gd`
+  собирает пути только из полей `PlayerView`: пластина —
+  `res://assets/art/scenarios/<scenario>/locations/<location.id>.<lighting>.png`, портрет —
+  `…/portraits/<portraitRef>.png`. Значение, не являющееся id (`snake_case`, ≤ 64 символов;
+  `portraitRef` — `<archetype>.<variant>`, вариант вида `m1`), даёт пустой путь; отсутствующий
+  файл — `null` без ошибки. Загрузка — `ResourceLoader.load_threaded_request`, готовность —
+  сигнал `art_changed`. В кэше только текущая локация (все её уровни освещения, чтобы смена света
+  была готова), локации её выходов и портреты на экране; остальное освобождается при каждом виде.
+  Сценарий арта — параметр маршрута `{"scenario": "<id>"}`, по умолчанию `sanatorium_winter`
+  (`PlayerView` не содержит id сценария; экран NewGame/загрузки передаёт его при переходе).
+  - Пластина: `TextureRect` 384×216 с `scale = (3, 3)` и `texture_filter = NEAREST` в узле
+    `Plate` 1152×648; под ней плейсхолдер. Смена `lighting` в той же локации — затемнение
+    0,25 с до чёрного, замена пластины и обратное проявление; переход в другую локацию — без него
+    (экран и так обновляется целиком). Уровень освещения без пластины — плейсхолдер.
+  - Портреты: `src/ui/portrait_frame.gd` — 96×128 ×2 в `photo_frame.png` (`NinePatchRect`,
+    поля 6 px, `draw_center = false`), nearest. Пустой или некорректный `portraitRef`, файла нет
+    или он ещё грузится — общий для всех силуэт (стена C4→C3, фигура C1), так что заглушка ничего не
+    говорит о персонаже. Строка персонажа: портрет с именем и `demeanor`, ниже его действия.
+  - Из арта клиент ничего не выводит: пластина зависит только от `location.id` и `lighting`, портрет
+    — только от `portraitRef`; пластины соседей грузятся в кэш, но не показываются.
+  - **Целочисленный масштаб окна — отклонён.** `display/window/stretch/scale_mode = "integer"`
+    (GDT-012, проверено на Godot 4.7.2) не уменьшает масштаб ниже 1: при окне меньше 1920×1080
+    (1366×768, 1600×900) интерфейс показывается в масштабе 1,0 и обрезается, при 2560×1440 — остаётся
+    1920×1080 с полями. Режим `canvas_items` с дробным масштабом сохраняется: пластина ×3 даёт ровные
+    пиксели при 1920×1080 (×3), 2560×1440 (×4) и 3840×2160 (×6); при окнах не кратных 640×360
+    пиксели арта неравные — известное ограничение.
+  - Кадры (`tests/manual/exploration_art_preview.tscn -- --location=<id> --lighting=<level>
+    --portraits=<ref,…> [--relight=<level>] --capture=<file.png>`, Godot 4.7.2, GL Compatibility):
+
+    ![Холл, полумрак: пластина ×3, портреты в рамках](exploration-art/exploration-loc_hall.dim.png)
+
+    ![Тропа к озеру после смены света на «темно»: силуэт при пустом portraitRef](exploration-art/exploration-loc_lake_path.dark.png)
+
+    ![Процедурный корпус, темно](exploration-art/exploration-loc_treatment.dark.png)
+
+    ![Локация без арта: плейсхолдер](exploration-art/exploration-loc_lobby.bright.png)
 - **Скрытые данные.** Вид с ключом из `FORBIDDEN_VIEW_KEYS` не отображается (вдобавок к проверке
   в `GameStore`); доска дела, диалог, инвентарь и внутренние id на экран не выводятся.
 - **Предпросмотр без сервера.** Сцена, запущенная отдельно (без параметров `SceneRouter`), или
