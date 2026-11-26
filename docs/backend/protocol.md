@@ -198,8 +198,10 @@ interface PlayerView {
   // Цена предъявления — costPreview действия interrogate в availableActions.
   phone: { paired; online; battery };
   ending?: { endingId: "solved"|"partial"|"wrong_accusation"|"time_up"|"death"|"madness";
-             title; text; proven?: { motive; means; opportunity };
-             recap?: { summary; responsible: { id; name }[] } };        // разбор истины, только в концовке
+             title; text; seed?: string; scenarioId?: string;
+             proven?: { motive; means; opportunity };
+             recap?: { summary; responsible: { id; name }[];
+                       timeline?: { at: number; location: string; participants: string[]; text: string }[] } };
 }
 interface PhoneView {
   status: { time; battery; signal };
@@ -232,8 +234,13 @@ interface PhoneView {
 - **Галлюцинации неотличимы по структуре.** Элементы телефона (например, снимок в `gallery`) имеют
   одинаковые поля независимо от происхождения; признак «галлюцинация» существует только на сервере
   (survival-horror.md §5). Игрок распознаёт их опытным путём, а не по форме данных.
-- **Единственное легальное раскрытие истины** — `ending.recap`, и только в концовке (ENG-006). Поле
-  названо нейтрально (`responsible`), чтобы запрещённые ключи не появлялись ни в одном представлении.
+- **Разбор истины** передаётся только в `PlayerView.ending.recap` закончившейся игры.
+  `recap.timeline` содержит ключевые события в хронологическом порядке. `at` — целые игровые
+  минуты от начала сценария, отрицательные для предыстории. `location` и `participants` содержат
+  название места и имена участников, `text` — краткое описание события.
+- **Seed и сценарий** сервер отправляет только в итоговом `PlayerView.ending`. Расширенные поля
+  опциональны в схеме для совместимости со старыми снимками. `PhoneView` не получает их даже
+  после конца игры. См. [ADR 0021](../architecture/adr/0021-ending-recap.md).
 - Запертый файл не несёт `content` (проверяется схемой): содержимое приходит только после `unlockFile`.
 
 ## 7. Последовательности

@@ -57,7 +57,7 @@ func test_all_six_endings_render_on_fixtures() -> void:
 		assert_has(texts, EndingFormat.kind_text(ending_id), "%s shows its kind" % ending_id)
 		assert_has(texts, str((view["ending"] as Dictionary)["text"]), "%s shows its text" % ending_id)
 		assert_true(screen.has_recap(), "%s shows the TruthRecap" % ending_id)
-		assert_has(texts, "Seed")
+		assert_has(texts, "sanatorium-42")
 		assert_has(texts, "Статистика")
 		assert_false(screen.is_preview())
 		screen.free()
@@ -113,6 +113,7 @@ func test_no_recap_before_the_game_is_over() -> void:
 	assert_eq(screen.get_ending_id(), "")
 	assert_false(screen.has_recap())
 	assert_string_contains(screen.get_status_text(), "не окончена")
+	assert_does_not_have(screen.get_texts(), "Seed")
 	for text: String in screen.get_texts():
 		assert_false(text.begins_with("Ответственны"), "nothing names the responsible before the end")
 
@@ -122,7 +123,8 @@ func test_statistics_come_from_the_final_view() -> void:
 	var rows: Dictionary = {}
 	for row: PackedStringArray in EndingFormat.statistics_rows(view):
 		rows[row[0]] = row[1]
-	assert_eq(str(rows["Seed"]), EndingFormat.SEED_UNAVAILABLE_TEXT, "the protocol sends no seed")
+	assert_eq(str(rows["Seed"]), "sanatorium-42")
+	assert_eq(str(rows["Сценарий"]), "sanatorium_winter")
 	assert_eq(str(rows["Конец игры"]), "День 3, 18:10")
 	assert_eq(str(rows["Прошло игрового времени"]), "2 д 2 ч 10 мин")
 	assert_eq(str(rows["Оставалось времени"]), "21 ч 50 мин")
@@ -133,10 +135,80 @@ func test_statistics_come_from_the_final_view() -> void:
 	assert_eq(str(rows["Рассудок"]), "4/10")
 	var screen: Ending = _live(view)
 	assert_has(screen.get_texts(), "2 д 2 ч 10 мин")
-	var given: Dictionary = {}
-	for row: PackedStringArray in EndingFormat.statistics_rows(view, "1234"):
-		given[row[0]] = row[1]
-	assert_eq(str(given["Seed"]), "1234")
+
+
+func test_statistics_columns_keep_readable_width_at_laptop_resolution() -> void:
+	var screen: Ending = _live(EndingFixtures.view_for("solved"))
+	screen.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	screen.size = Vector2(1366, 768)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var stats: GridContainer = screen.find_child("Statistics", true, false) as GridContainer
+	var title: Label = stats.get_child(0) as Label
+	assert_gt(title.size.x, 200.0, "the heading must not wrap into single letters")
+	assert_eq(title.get_line_count(), 1)
+	for child: Node in stats.get_children():
+		if child is Label and (child as Label).text == "sanatorium-42":
+			assert_gt((child as Label).size.x, 200.0, "the value column keeps its share of width")
+			assert_eq((child as Label).get_line_count(), 1)
+
+
+func test_timeline_shows_actual_time_location_participants_and_text_in_order() -> void:
+	var texts: PackedStringArray = _live(EndingFixtures.view_for("solved")).get_texts()
+	var first: String = "За 20 мин до начала · Процедурная · Доктор Белов — Ключ взят."
+	var second: String = "Начало расследования · Оранжерея · Доктор Белов, Нина Орлова — Состоялась встреча."
+	assert_has(texts, "Хронология")
+	assert_has(texts, first)
+	assert_has(texts, second)
+	assert_true(texts.find(first) < texts.find(second))
+
+
+func test_empty_timeline_clears_event_rows_and_keeps_the_final_seed() -> void:
+	var screen: Ending = _live(EndingFixtures.view_for("solved"))
+	assert_has(screen.get_texts(), "Хронология")
+	var empty_view: Dictionary = EndingFixtures.view_for("time_up").duplicate(true)
+	var ending: Dictionary = empty_view["ending"]
+	var recap: Dictionary = ending["recap"]
+	recap["timeline"] = []
+	ending["seed"] = "empty-timeline-42"
+
+	assert_true(_store.set_view(empty_view, 2))
+	var texts: PackedStringArray = screen.get_texts()
+	assert_eq(screen.get_ending_id(), "time_up")
+	assert_true(screen.has_recap())
+	assert_has(texts, "Ответственны: Доктор Белов")
+	assert_has(texts, "empty-timeline-42")
+	assert_does_not_have(texts, "Хронология")
+	assert_does_not_have(texts, "За 20 мин до начала · Процедурная · Доктор Белов — Ключ взят.")
+	assert_does_not_have(texts, "sanatorium-42")
+
+
+func test_final_seed_and_timeline_clear_when_a_new_game_arrives() -> void:
+	var screen: Ending = _live(EndingFixtures.view_for("solved"))
+	assert_has(screen.get_texts(), "sanatorium-42")
+	assert_true(_store.set_view(PreviewFixtures.load_view("start"), 2))
+	assert_does_not_have(screen.get_texts(), "sanatorium-42")
+	assert_does_not_have(screen.get_texts(), "Seed")
+	assert_does_not_have(screen.get_texts(), "Хронология")
+	assert_false(screen.has_recap())
+
+
+func test_older_ending_without_seed_or_timeline_is_rendered() -> void:
+	var view: Dictionary = EndingFixtures.view_for("solved").duplicate(true)
+	var ending: Dictionary = view["ending"]
+	ending.erase("seed")
+	ending.erase("scenarioId")
+	(ending["recap"] as Dictionary).erase("timeline")
+	var screen: Ending = _live(view)
+	assert_true(screen.has_recap())
+	assert_has(screen.get_texts(), EndingFormat.SEED_UNAVAILABLE_TEXT)
+	assert_does_not_have(screen.get_texts(), "Хронология")
+
+
+func test_empty_seed_is_distinguished_from_an_omitted_seed() -> void:
+	var view: Dictionary = EndingFixtures.view_for("solved").duplicate(true)
+	(view["ending"] as Dictionary)["seed"] = ""
+	assert_has(_live(view).get_texts(), "(пустая строка)")
 
 
 func test_endings_that_force_vitals_or_time_show_them() -> void:
