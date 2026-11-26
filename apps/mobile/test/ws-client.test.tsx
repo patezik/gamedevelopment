@@ -316,3 +316,21 @@ test.each([
   await render(<OfflineBanner />);
   expect(screen.queryByText('Нет связи с игрой') !== null).toBe(shown);
 });
+
+test('sendAction and sendPhoneUi go out only after welcome and are never queued', () => {
+  const c = makeClient();
+  const action = { type: 'message', contactId: 'ct_director', templateId: 'reply_coming' } as const;
+  expect(c.sendAction(action)).toBe(false);
+  c.start();
+  last().open();
+  expect(c.sendAction(action)).toBe(false);
+  last().receive('welcome', welcome);
+  expect(c.sendAction(action)).toBe(true);
+  expect(c.sendPhoneUi('appOpened', 'messages')).toBe(true);
+  const [, a, ui] = last().sent;
+  expect(a).toMatchObject({ type: 'action.request', payload: { action } });
+  expect(ui).toMatchObject({ type: 'phone.ui', payload: { kind: 'appOpened', ref: 'messages' } });
+  last().drop();
+  expect(c.sendAction(action)).toBe(false);
+  c.stop();
+});

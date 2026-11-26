@@ -1,3 +1,4 @@
+import type { PlayerAction } from '@hs/protocol';
 import { AppState } from 'react-native';
 import { clearPairing, loadPairing } from '../pairing/storage';
 import { useConnectionStore } from '../stores/connectionStore';
@@ -62,4 +63,14 @@ export function stopGameConnection(): void {
   usePhoneStore.getState().clear();
   useQrStore.getState().reset();
   useConnectionStore.getState().setStatus('unpaired');
+}
+
+/** Sends a phone action (`message`, `answerCall`, ...); false when there is no live connection. */
+export function sendPhoneAction(action: PlayerAction): boolean {
+  return client?.sendAction(action) ?? false;
+}
+
+/** Sends `phone.ui`; false when there is no live connection. */
+export function sendPhoneUi(kind: 'appOpened' | 'notificationRead', ref: string): boolean {
+  return client?.sendPhoneUi(kind, ref) ?? false;
 }
