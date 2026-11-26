@@ -45,13 +45,15 @@ async function waitForHealth(port, deadline) {
 
 const parent = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 600000)'], { stdio: 'ignore' });
 const port = await freePort();
+const dataDir = mkdtempSync(join(tmpdir(), 'hs-smoke-'));
 const server = spawn(binary, [], {
+  cwd: dataDir,
   stdio: 'inherit',
   env: {
     ...process.env,
     HS_PORT: String(port),
     HS_PARENT_PID: String(parent.pid),
-    HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-smoke-')),
+    HS_DATA_DIR: dataDir,
     HS_LOG_LEVEL: 'warn',
   },
 });
@@ -64,6 +66,33 @@ try {
   const health = await waitForHealth(port, Date.now() + 20000);
   console.log(`health ok on port ${port}:`, JSON.stringify(health));
   if (exited) throw new Error('The server exited early');
+
+  const base = `http://127.0.0.1:${port}/api/v1`;
+  const scenarios = await (await fetch(`${base}/scenarios`)).json();
+  if (!scenarios.some((scenario) => scenario.id === 'sanatorium_winter')) {
+    throw new Error('Packaged scenario catalog is missing');
+  }
+  const created = await fetch(`${base}/sessions`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ scenarioId: 'sanatorium_winter', seed: '2' }),
+  });
+  if (!created.ok) throw new Error(`Session creation failed: ${await created.text()}`);
+  const session = await created.json();
+  const paired = await fetch(`${base}/pair`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      code: session.pairing.code,
+      deviceName: 'SEA smoke',
+      appVersion: '0.0.0',
+      protocolVersion: health.protocolVersion,
+    }),
+  });
+  if (!paired.ok || (await paired.json()).sessionId !== session.sessionId) {
+    throw new Error('The packaged server could not pair with its created session');
+  }
+  console.log('packaged scenario, session creation and pairing ok from a separate cwd');
 
   parent.kill();
   await Promise.race([exit, sleep(10000)]);

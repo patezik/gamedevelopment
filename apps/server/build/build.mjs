@@ -2,7 +2,15 @@
 // Output: dist/server/hollow-signal-server[.exe]. Signing and notarization are out of scope (OQ-09).
 import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
-import { chmodSync, copyFileSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  copyFileSync,
+  cpSync,
+  mkdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -66,4 +74,8 @@ if (process.platform === 'darwin') {
 }
 
 rmSync(work, { recursive: true, force: true });
+// Scenario loading must also work without the source checkout and from an arbitrary cwd.
+cpSync(join(root, 'content', 'scenarios'), join(outDir, 'content', 'scenarios'), {
+  recursive: true,
+});
 console.log(`Built ${output}`);
