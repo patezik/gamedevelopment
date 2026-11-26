@@ -40,6 +40,7 @@ const PAIRED_TEXT: String = "Телефон привязан к этой игр�
 const REJECTED_TEXT: String = "Сервер отклонил подключение игры (%s)."
 const START_TEXT: String = "Начать расследование"
 const START_WAIT_TEXT: String = "Кнопка станет доступна, когда сервер подтвердит, что телефон в сети."
+const REPAIR_SHOWN_TEXT: String = "Новый код: введите его или наведите камеру на другом или этом телефоне; привязка заменит текущий телефон."
 const NEW_CODE_TEXT: String = "Новый код"
 const RETRY_TEXT: String = "Повторить"
 const RECONNECT_TEXT: String = "Переподключить игру"
@@ -67,6 +68,9 @@ var _auto_refresh_armed: bool = false
 var _replaced_on_expiry: bool = false
 var _options: Array[Dictionary] = []
 var _rejection: String = ""
+## The player asked for a new code while a phone was paired: the code and QR stay on screen so the
+## phone can be replaced. It ends when a phone comes online again (a new pair) or the screen closes.
+var _repairing: bool = false
 
 var _qr: TextureRect
 var _qr_status: Label
@@ -77,6 +81,7 @@ var _address_choice: OptionButton
 var _address_hint: Label
 var _connection: Label
 var _phone: Label
+var _phone_hint: Label
 var _error: Label
 var _new_code: Button
 var _retry: Button
@@ -107,7 +112,7 @@ func _ready() -> void:
 	_session = PairingSession.current()
 	_build_ui()
 	_backend.rest_completed.connect(_on_rest_completed)
-	_store.peer_status_changed.connect(func(_desktop: String, _phone: String) -> void: _refresh())
+	_store.peer_status_changed.connect(_on_peer_status)
 	_store.connection_state_changed.connect(_on_connection_state)
 	_store.error_received.connect(_on_error_received)
 	if _session == null:
@@ -134,7 +139,14 @@ func _exit_tree() -> void:
 ## The player asks for a new pairing code (the previous one stops working) and then its QR.
 func request_new_code() -> void:
 	_replaced_on_expiry = false
+	if _phone_paired():
+		_repairing = true
 	_request_code()
+
+
+## True while the screen shows a new code over a paired phone (replacement of the phone).
+func is_repairing() -> bool:
+	return _repairing
 
 
 func _request_code() -> void:
@@ -178,7 +190,7 @@ func tick() -> void:
 		_refresh()
 		return
 	var expired: bool = _session.expires_at <= _now()
-	if expired and _auto_refresh_armed and _code_request < 0 and not _phone_paired():
+	if expired and _auto_refresh_armed and _code_request < 0 and _may_refresh_code():
 		_auto_refresh_armed = false
 		_request_code()
 		return
@@ -234,7 +246,7 @@ func _on_qr(result: int, status: int, body: Variant) -> void:
 		else:
 			_replaced_on_expiry = false
 		_set_qr(texture)
-	elif _qr_state == Format.QR_EXPIRED and not _replaced_on_expiry and not _phone_paired():
+	elif _qr_state == Format.QR_EXPIRED and not _replaced_on_expiry and _may_refresh_code():
 		_replaced_on_expiry = true
 		_auto_refresh_armed = false
 		_request_code()
@@ -259,6 +271,19 @@ func _on_code(result: int, status: int, body: Variant) -> void:
 	_network_request = _backend.request_rest(_session.origin + "/api/v1/network")
 	_fill_addresses()
 	_request_qr()
+
+
+## A code is replaced by the clock or the server while no phone is paired, or in replacement mode.
+func _may_refresh_code() -> bool:
+	return _repairing or not _phone_paired()
+
+
+func _on_peer_status(_desktop: String, phone: String) -> void:
+	# A phone online after the new code was asked for: the pairing finished (or the old phone
+	# came back); either way the usual «paired» view returns.
+	if _repairing and Format.is_paired(phone) and phone == Format.PHONE_ONLINE:
+		_repairing = false
+	_refresh()
 
 
 func _on_connection_state(state: BackendScript.ConnectionState) -> void:
@@ -338,24 +363,33 @@ func _refresh() -> void:
 	if live:
 		_code.text = _session.code
 		_expiry.text = Format.expiry_text(_session.expires_at, _now())
-		_qr_status.text = PAIRED_TEXT if paired else _qr_text()
-		if paired:
+		var hidden: bool = paired and not _repairing
+		if hidden:
+			_qr_status.text = PAIRED_TEXT
+		elif _repairing and (_qr_state == Format.QR_SHOWN or _qr_state.is_empty()):
+			_qr_status.text = REPAIR_SHOWN_TEXT
+		else:
+			_qr_status.text = _qr_text()
+		if hidden:
 			_qr_status.add_theme_color_override(&"font_color", OK_COLOR)
 		else:
 			_qr_status.remove_theme_color_override(&"font_color")
-		_qr.visible = _qr.texture != null and not paired
-		_code_box.visible = not paired
+		_qr.visible = _qr.texture != null and not hidden
+		_code_box.visible = not hidden
 		_refresh_address_hint()
 
 	var state: BackendScript.ConnectionState = _store.get_connection_state()
 	if not here:
 		state = BackendScript.ConnectionState.OFFLINE
 	_connection.text = Format.connection_text(state)
-	_phone.text = Format.phone_text(_store.get_phone_status() if here else "")
+	var phone_status: String = _store.get_phone_status() if here else ""
+	_phone.text = Format.phone_text(phone_status)
+	_phone_hint.text = Format.phone_hint(phone_status)
+	_phone_hint.visible = not _phone_hint.text.is_empty()
 	_reconnect.visible = live and state == BackendScript.ConnectionState.OFFLINE
 	_new_code.visible = live and _qr_state != "refreshing"
 	_new_code.disabled = _code_request >= 0
-	_retry.visible = live and not paired and (_qr_state == Format.QR_NETWORK or _qr_state == Format.QR_FAILED)
+	_retry.visible = live and (not paired or _repairing) and (_qr_state == Format.QR_NETWORK or _qr_state == Format.QR_FAILED)
 	_retry.disabled = _qr_request >= 0
 	var can_start: bool = _can_start()
 	_start.disabled = not can_start
@@ -498,6 +532,9 @@ func _build_ui() -> void:
 	_phone = _label(info, "")
 	_phone.name = "Phone"
 	_phone.add_theme_font_size_override(&"font_size", 28)
+	_phone_hint = _label(info, "")
+	_phone_hint.name = "PhoneHint"
+	_phone_hint.modulate.a = 0.8
 	_reconnect = _button(info, "Reconnect", RECONNECT_TEXT, _reconnect_game)
 	_reconnect.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 

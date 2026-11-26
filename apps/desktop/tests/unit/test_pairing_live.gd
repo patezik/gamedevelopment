@@ -247,3 +247,50 @@ func test_adapter_pairs_a_phone_and_unlocks_the_investigation() -> void:
 	await wait_until(func() -> bool: return start.disabled, WAIT_SECONDS)
 	assert_true(start.disabled)
 	assert_eq(_text("Phone"), "Телефон привязан, но не в сети")
+
+
+func test_production_new_code_over_a_paired_phone_replaces_the_phone() -> void:
+	if not _start_server("production"):
+		return
+	assert_true(await _create_session(str(_info.get("seed"))))
+	var session: PairingSession = PairingSession.current()
+	if session == null:
+		fail_test("no session")
+		return
+	var pairing: Pairing = _open_pairing()
+	await wait_until(func() -> bool: return pairing.get_qr_state() != "loading", WAIT_SECONDS)
+	assert_eq(pairing.get_qr_state(), PairingFormat.QR_SHOWN)
+	await wait_until(func() -> bool: return _store.get_phone_status() == "unpaired", WAIT_SECONDS)
+	var first_code: String = _text("Code")
+	var paired: Dictionary = _command({"cmd": "pair", "code": first_code})
+	var first_status: float = paired.get("status", 0.0)
+	assert_eq(first_status, 200.0)
+	await wait_until(func() -> bool: return _store.get_phone_status() == "online", WAIT_SECONDS)
+	assert_eq(_text("QrStatus"), Pairing.PAIRED_TEXT)
+	assert_false((_node("Qr") as TextureRect).visible)
+
+	(_node("NewCode") as Button).pressed.emit()
+	await wait_until(
+		func() -> bool: return session.code != first_code and pairing.get_qr_state() == PairingFormat.QR_SHOWN,
+		WAIT_SECONDS
+	)
+	assert_true(pairing.is_repairing())
+	var new_code: String = session.code
+	assert_ne(new_code, first_code)
+	assert_eq(_text("Code"), new_code)
+	assert_true((_node("Code") as Control).is_visible_in_tree(), "the new code is visible over a paired phone")
+	assert_true((_node("Qr") as TextureRect).visible)
+	assert_eq(_text("QrStatus"), Pairing.REPAIR_SHOWN_TEXT)
+
+	var stale: Dictionary = _command({"cmd": "pair", "code": first_code})
+	var stale_status: float = stale.get("status", 0.0)
+	assert_eq(stale_status, 400.0, "the old code is rejected (PAIRING_CODE_INVALID)")
+	var second: Dictionary = _command({"cmd": "pair", "code": new_code})
+	var second_status: float = second.get("status", 0.0)
+	assert_eq(second_status, 200.0, "the second phone pairs by the new code")
+	assert_eq(str(second.get("welcome")), "true")
+	await wait_until(func() -> bool: return not pairing.is_repairing(), WAIT_SECONDS)
+	assert_false(pairing.is_repairing())
+	assert_eq(_store.get_phone_status(), "online", "the second phone replaced the first")
+	assert_eq(_text("QrStatus"), Pairing.PAIRED_TEXT)
+	assert_false((_node("Code") as Control).is_visible_in_tree())
