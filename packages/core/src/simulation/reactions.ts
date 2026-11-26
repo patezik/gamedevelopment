@@ -32,6 +32,19 @@ export const STRESS_ON_DISAPPEARANCE = 0.15;
 /** Above `CONCEAL_WARINESS_THRESHOLD` (0.5): a freed culprit may hide evidence. */
 export const WARINESS_WHEN_FREED = 0.6;
 
+/** `PlayerReactions.snapshot()`: sorted arrays of plain data, no truth about the culprit's guilt. */
+export interface ReactionsSnapshot {
+  readonly wariness: readonly (readonly [string, number])[];
+  readonly stress: readonly (readonly [string, number])[];
+  readonly refusing: readonly string[];
+  readonly freed: readonly string[];
+  readonly gone: readonly (readonly [string, SeekTopic['trigger']])[];
+  readonly trust: number;
+}
+
+const byKey = <T extends readonly [string, unknown]>(entries: Iterable<T>): T[] =>
+  [...entries].sort((a, b) => (a[0] < b[0] ? -1 : Number(a[0] > b[0])));
+
 /**
  * The world's memory of the player: per-character wariness and stress additions, who refuses to
  * talk, how far the group trusts the player, and who has gone missing. Plain state, advanced only
@@ -48,6 +61,32 @@ export class PlayerReactions {
 
   constructor(ports: ReactionPorts) {
     this.#ports = ports;
+  }
+
+  /** The state in a form `restore` reads back; the engine saves it in `GameSnapshot.reactions`. */
+  snapshot(): ReactionsSnapshot {
+    return {
+      wariness: byKey(this.#wariness),
+      stress: byKey(this.#stress),
+      refusing: [...this.#refusing].sort(),
+      freed: [...this.#freed].sort(),
+      gone: byKey(this.#gone),
+      trust: this.#trust,
+    };
+  }
+
+  restore(saved: ReactionsSnapshot): void {
+    this.#wariness.clear();
+    this.#stress.clear();
+    this.#refusing.clear();
+    this.#freed.clear();
+    this.#gone.clear();
+    for (const [id, value] of saved.wariness) this.#wariness.set(id, clamp01(value));
+    for (const [id, value] of saved.stress) this.#stress.set(id, clamp01(value));
+    for (const id of saved.refusing) this.#refusing.add(id);
+    for (const id of saved.freed) this.#freed.add(id);
+    for (const [id, trigger] of saved.gone) this.#gone.set(id, trigger);
+    this.#trust = clamp01(saved.trust);
   }
 
   /** Feed every `PlayerActionObserved` here (`EnginePorts.simulation.onPlayerAction`). */

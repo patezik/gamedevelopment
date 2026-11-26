@@ -1,6 +1,6 @@
 import type { GameMinutes } from '../../common/index.ts';
 import type { ContradictionFound } from '../../investigation/index.ts';
-import type { StaticEvent, SurvivalEvent } from '../../survival/index.ts';
+import type { PlayerAttacked, StaticEvent, SurvivalEvent } from '../../survival/index.ts';
 import type { PhoneEvent } from '../../phone/index.ts';
 import type { ClockEvent } from '../../time/index.ts';
 
@@ -113,6 +113,7 @@ export type GameEvent =
   | ClockEvent
   | SurvivalEvent
   | StaticEvent
+  | PlayerAttacked
   | KnowledgeEvent
   | ActionEvent
   | PlayerActionObserved
