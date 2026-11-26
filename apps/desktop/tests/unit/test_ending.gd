@@ -137,6 +137,22 @@ func test_statistics_come_from_the_final_view() -> void:
 	assert_has(screen.get_texts(), "2 д 2 ч 10 мин")
 
 
+func test_statistics_columns_keep_readable_width_at_laptop_resolution() -> void:
+	var screen: Ending = _live(EndingFixtures.view_for("solved"))
+	screen.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	screen.size = Vector2(1366, 768)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var stats: GridContainer = screen.find_child("Statistics", true, false) as GridContainer
+	var title: Label = stats.get_child(0) as Label
+	assert_gt(title.size.x, 200.0, "the heading must not wrap into single letters")
+	assert_eq(title.get_line_count(), 1)
+	for child: Node in stats.get_children():
+		if child is Label and (child as Label).text == "sanatorium-42":
+			assert_gt((child as Label).size.x, 200.0, "the value column keeps its share of width")
+			assert_eq((child as Label).get_line_count(), 1)
+
+
 func test_timeline_shows_actual_time_location_participants_and_text_in_order() -> void:
 	var texts: PackedStringArray = _live(EndingFixtures.view_for("solved")).get_texts()
 	var first: String = "За 20 мин до начала · Процедурная · Доктор Белов — Ключ взят."
