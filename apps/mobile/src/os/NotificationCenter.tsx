@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   read: { fontWeight: '400' },
   rowText: { color: '#b4c2ba', fontSize: 14 },
   call: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: '#131717f2',
     alignItems: 'center',
     justifyContent: 'center',
