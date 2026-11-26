@@ -259,10 +259,10 @@ describe('POST /api/v1/sessions', () => {
       expect(response.statusCode).toBe(201);
       expect(generated).toHaveBeenCalledExactlyOnceWith('sanatorium_winter', seed);
       expect(response.body.includes(seed)).toBe(false);
-      const body = response.json();
+      const body: unknown = response.json();
       expect(body).not.toHaveProperty('seed');
-      expect(CreateSessionResponse.safeParse(body).success).toBe(true);
-      expect(CreateSessionResponse.safeParse({ ...body, seed }).success).toBe(false);
+      const parsed = CreateSessionResponse.parse(body);
+      expect(CreateSessionResponse.safeParse({ ...parsed, seed }).success).toBe(false);
     } finally {
       await app.close();
     }
