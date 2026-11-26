@@ -88,6 +88,16 @@ func _result(ok: bool, error: String = ProtocolConstants.ERROR_ACTION_INVALID, i
 	_backend.deliver(ProtocolConstants.MSG_ACTION_RESULT, result)
 
 
+## An accepted result of an operation-bound accusation, as the server sends it (ADR 0022).
+func _operation_result(state_version: int, id: String = "") -> void:
+	var request_id: String = id if not id.is_empty() else "desktop-%d" % _backend.sent.size()
+	_backend.deliver(ProtocolConstants.MSG_ACTION_RESULT, {
+		"ok": true, "requestId": request_id, "minutesSpent": 0,
+		"operationId": str(_backend.sent[_backend.sent.size() - 1].get("operationId")),
+		"stateVersion": state_version,
+	})
+
+
 ## A screen mounted like SceneRouter does it, on the live store with the mid view.
 func _live(params: Dictionary = {"back": "case_board"}) -> Accusation:
 	_publish()
@@ -106,7 +116,12 @@ func _fill(screen: Accusation) -> void:
 
 
 func _assert_action(action: Dictionary, confirm: bool) -> void:
-	assert_eq(action, {"type": "accuse", "caseFile": FULL_FILE, "confirm": confirm})
+	var expected: Dictionary = {"type": "accuse", "caseFile": FULL_FILE, "confirm": confirm}
+	if confirm:
+		var operation_id: Variant = action.get("operationId")
+		assert_true(operation_id is String and (operation_id as String).begins_with("op-"), "an operation ID")
+		expected["operationId"] = operation_id
+	assert_eq(action, expected)
 	var problems: Array = Contract.shape_problems(action, Contract.schema("player-action.json"), "$")
 	assert_true(problems.is_empty(), "the action matches the PlayerAction schema: %s" % [problems])
 	assert_eq(GameStoreScript.find_forbidden_key(action), "")
@@ -361,7 +376,7 @@ func test_connection_loss_during_the_probe_needs_a_new_confirmation() -> void:
 # --- regression: an executed accusation must never be sent again (review P1-1) ------------------
 
 
-func test_lost_result_after_confirm_true_blocks_a_second_accusation() -> void:
+func test_lost_result_is_retried_with_the_same_operation_after_a_reconnect() -> void:
 	var screen: Accusation = _live()
 	_reach_final(screen)
 	screen.get_final_dialog().confirmed.emit()
@@ -370,15 +385,42 @@ func test_lost_result_after_confirm_true_blocks_a_second_accusation() -> void:
 	# the resume brought only the snapshot: no ending, no result.
 	_backend.change_state(BackendScript.ConnectionState.RETRYING)
 	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
+	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE, "no new accusation while the outcome is unknown")
 	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	assert_eq(_backend.sent.size(), 3, "the same accusation is sent again once")
+	assert_eq(_backend.sent[2], _backend.sent[1], "same case file and the same operationId")
+	assert_eq(screen.get_stage(), Accusation.Stage.SUBMITTING)
+	assert_eq(screen.request_accusation(), ERR_BUSY)
+	# The stored outcome of the operation: executed at the version the view already has.
+	_operation_result(_version)
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING, "the game went on: a known outcome")
+	assert_string_contains(screen.get_status_text(), "продолжается")
+	assert_eq(_backend.sent.size(), 3, "nothing is sent a third time")
+
+
+func test_retry_result_ahead_of_the_view_waits_for_the_view() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	screen.get_final_dialog().confirmed.emit()
+	_backend.change_state(BackendScript.ConnectionState.RETRYING)
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_operation_result(_version + 1)
+	assert_eq(screen.get_stage(), Accusation.Stage.AWAITING_VIEW, "the view of the operation is not here yet")
+	_publish()
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
+
+
+func test_unsent_retry_stays_unknown_and_is_not_repeated_by_state_changes() -> void:
+	var screen: Accusation = _live()
+	_reach_final(screen)
+	screen.get_final_dialog().confirmed.emit()
+	_backend.change_state(BackendScript.ConnectionState.RETRYING)
+	_backend.send_result = ERR_CONNECTION_ERROR
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN, "nothing left, the outcome is still unknown")
 	_publish()
 	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN, "a new stateVersion proves nothing")
-	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE)
-	assert_true(screen.get_accuse_button().disabled)
-	assert_false(screen.get_first_dialog().visible)
-	assert_true(screen.can_go_back(), "the player is not trapped")
-	assert_string_contains(screen.get_status_text(), "неизвестен")
-	assert_eq(_backend.sent.size(), 2, "nothing is re-sent, automatically or by hand")
+	assert_eq(_backend.sent.size(), 2)
 
 
 func test_unknown_outcome_survives_reopening_the_screen() -> void:
@@ -386,6 +428,7 @@ func test_unknown_outcome_survives_reopening_the_screen() -> void:
 	_reach_final(screen)
 	screen.get_final_dialog().confirmed.emit()
 	_backend.change_state(BackendScript.ConnectionState.RETRYING)
+	_backend.send_result = ERR_CONNECTION_ERROR
 	_backend.change_state(BackendScript.ConnectionState.ONLINE)
 	screen.free()
 	var again: Accusation = AccusationScene.instantiate() as Accusation

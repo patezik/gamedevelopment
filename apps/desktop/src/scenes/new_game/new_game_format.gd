@@ -85,11 +85,14 @@ static func is_valid_seed(seed: String) -> bool:
 
 
 ## The `POST /sessions` body. An empty [param seed] leaves the choice to the server, which never
-## returns it (a random seed stays hidden).
-static func request_body(scenario_id: String, seed: String) -> String:
+## returns it (a random seed stays hidden). A non-empty [param locale] (`ru`/`en`, QA-003) is the
+## language of the game texts; the server falls back to ru for a scenario without such templates.
+static func request_body(scenario_id: String, seed: String, locale: String = "") -> String:
 	var body: Dictionary = {"scenarioId": scenario_id}
 	if not seed.is_empty():
 		body["seed"] = seed
+	if not locale.is_empty():
+		body["locale"] = locale
 	return JSON.stringify(body)
 
 

@@ -31,6 +31,7 @@ import {
 } from '../../time/index.ts';
 import type { EntityRef } from '../../truth/index.ts';
 import type { Actor } from '../../world/index.ts';
+import { BODY_HOTSPOT_ID, visibleHotspots } from '../body.ts';
 import type { Investigation } from '../investigation.ts';
 import type { DesktopActionType, GameEvent } from './events.ts';
 import { doorKey, type DesktopState, type DialogueLine } from './state.ts';
@@ -289,7 +290,6 @@ export function planDesktopAction(
 
 function plan(action: Desktop, state: DesktopState, env: ActionEnv): ActionPlan {
   const { investigation, locationId, now } = env;
-  const room = investigation.world.locations.describe(locationId);
   const actor = effectiveActor(state, env.actor, investigation, locationId);
   const has = (requirement: DiscoveryRequirement): boolean => {
     switch (requirement.kind) {
@@ -347,13 +347,17 @@ function plan(action: Desktop, state: DesktopState, env: ActionEnv): ActionPlan 
       const { hotspotId } = action;
       if (
         !state.examinedLocations.has(locationId) ||
-        !room.hotspots.some(({ id }) => id === hotspotId)
+        !visibleHotspots(investigation, locationId, now).some(({ id }) => id === hotspotId)
       ) {
         return notAvailable();
       }
       return simple('examineHotspot', 'examine_hotspot', [], (at) => {
-        state.examinedHotspots.add(`${locationId}/${hotspotId}`);
-        return discover({ type: 'examineHotspot', hotspotId }, at);
+        const key = `${locationId}/${hotspotId}`;
+        const found = hotspotId === BODY_HOTSPOT_ID && !state.examinedHotspots.has(key);
+        state.examinedHotspots.add(key);
+        const events = discover({ type: 'examineHotspot', hotspotId }, at);
+        // The body is found once, at the moment of the inspection (OQ-28).
+        return found ? [{ type: 'BodyFound', locationId, at }, ...events] : events;
       });
     }
 

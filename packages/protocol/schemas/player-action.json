@@ -274,6 +274,10 @@
         },
         "confirm": {
           "type": "boolean"
+        },
+        "operationId": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [

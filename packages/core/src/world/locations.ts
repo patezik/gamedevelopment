@@ -28,10 +28,7 @@ type WorldErrorCode = 'WORLD_UNKNOWN_LOCATION' | 'WORLD_NO_PATH';
 export class WorldError extends Error {
   readonly code: WorldErrorCode;
 
-  constructor(
-    code: WorldErrorCode,
-    message: string,
-  ) {
+  constructor(code: WorldErrorCode, message: string) {
     super(message);
     this.code = code;
     this.name = 'WorldError';
@@ -58,6 +55,8 @@ interface Route {
 
 export class LocationGraph {
   private readonly locations = new Map<string, Location>();
+  private readonly routes = new Map<string, Route | undefined>();
+  private readonly clockMinutes = new Map<GameMinutes, number>();
   private readonly calendar: Calendar;
   readonly accessItemIds: readonly string[];
   readonly startDateTime: string;
@@ -91,7 +90,11 @@ export class LocationGraph {
     return structuredClone(this.getLocation(id));
   }
 
-  directConnection(from: string, to: string, actor: Actor = {}): Location['connections'][number] | undefined {
+  directConnection(
+    from: string,
+    to: string,
+    actor: Actor = {},
+  ): Location['connections'][number] | undefined {
     const connection = this.getLocation(from).connections.find((edge) => edge.to === to);
     if (!connection || (connection.locked && !actor.itemIds?.has(connection.locked.itemId ?? ''))) {
       return undefined;
@@ -106,12 +109,13 @@ export class LocationGraph {
   path(from: string, to: string, actor: Actor = {}): string[] {
     const route = this.findRoute(from, to, actor);
     if (!route) throw new WorldError('WORLD_NO_PATH', `No path from ${from} to ${to}`);
-    return route.path;
+    return [...route.path];
   }
 
   /** First edge of the earliest-arrival route, including any wait before departure. */
   nextTimedStep(from: string, to: string, actor: Actor, now: GameMinutes): TimedTravelStep | null {
-    return this.findRoute(from, to, actor, now)?.firstStep ?? null;
+    const step = this.findRoute(from, to, actor, now)?.firstStep;
+    return step ? { ...step } : null;
   }
 
   lightingAt(id: string, period: DayPeriod): Light {
@@ -122,8 +126,7 @@ export class LocationGraph {
     const { access } = this.getLocation(id);
     if (access.length === 0) return { ok: true };
 
-    const { hh, mm } = this.calendar.toDisplay(t);
-    const minute = hh * 60 + mm;
+    const minute = this.minuteAt(t);
     let firstDenial: AccessDenial | undefined;
     for (const rule of access) {
       const denial = deniedBy(rule, actor, minute);
@@ -143,8 +146,7 @@ export class LocationGraph {
     const { access } = this.getLocation(id);
     if (access.length === 0) return earliest;
 
-    const { hh, mm } = this.calendar.toDisplay(earliest);
-    const minute = hh * 60 + mm;
+    const minute = this.minuteAt(earliest);
     const minutesPerDay = 1440;
     let next = Infinity;
     for (const rule of access) {
@@ -157,9 +159,43 @@ export class LocationGraph {
     return Number.isFinite(next) ? next : null;
   }
 
+  private minuteAt(t: GameMinutes): number {
+    const cached = this.clockMinutes.get(t);
+    if (cached !== undefined) return cached;
+    const { hh, mm } = this.calendar.toDisplay(t);
+    const minute = hh * 60 + mm;
+    if (this.clockMinutes.size >= 2048) {
+      this.clockMinutes.delete(this.clockMinutes.keys().next().value!);
+    }
+    this.clockMinutes.set(t, minute);
+    return minute;
+  }
+
   private findRoute(from: string, to: string, actor: Actor, now?: GameMinutes): Route | undefined {
     this.getLocation(from);
     this.getLocation(to);
+    // The graph is immutable. Simulated candidates repeatedly ask the same routing question;
+    // retain a bounded set of answers, including failures, with every access input in the key.
+    const key = JSON.stringify([
+      from,
+      to,
+      actor.archetypeId ?? null,
+      this.accessItemIds.filter((id) => actor.itemIds?.has(id)),
+      now ?? null,
+    ]);
+    if (this.routes.has(key)) return this.routes.get(key);
+    const route = this.computeRoute(from, to, actor, now);
+    if (this.routes.size >= 2048) this.routes.delete(this.routes.keys().next().value!);
+    this.routes.set(key, route);
+    return route;
+  }
+
+  private computeRoute(
+    from: string,
+    to: string,
+    actor: Actor,
+    now?: GameMinutes,
+  ): Route | undefined {
     const pending = new Map([[from, 0]]);
     const visited = new Set<string>();
     const previous = new Map<string, string>();

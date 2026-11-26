@@ -143,8 +143,54 @@ const relationFact = (a: string, b: string, relType: RelationType, index: number
 const secretFact = (world: SocialWorld, about: string, kind: string) =>
   factId(world.secrets.find((secret) => secret.about === about && secret.kind === kind)!.fact);
 
-/** motives.json on main, before CNT-003. */
-const mainRules: Rule[] = content.motives;
+/**
+ * motives.json on main, before CNT-003, frozen here: these fixture tests pin ConflictGen's reading
+ * of a known rule set, so tuning the scenario data must not change them.
+ */
+const fixtureRules: Rule[] = [
+  {
+    id: 'inheritance',
+    when: {
+      relation: { type: 'child', from: '$c', to: '$v' },
+      secret: { kind: 'will_changed', about: '$v', knownBy: '$c' },
+    },
+    strength: { base: 0.5, plus: [{ if: { trait: '$c.honesty', lt: 0.4 }, add: 0.2 }] },
+    evidenceHints: ['will_document', 'notary_letter'],
+  },
+  {
+    id: 'blackmail',
+    when: {
+      relation: { type: 'blackmail', from: '$v', to: '$c' },
+      secret: { kind: 'blackmail_material', about: '$c', knownBy: '$v' },
+    },
+    strength: { base: 0.55, plus: [{ if: { trait: '$c.neuroticism', gt: 0.6 }, add: 0.15 }] },
+    evidenceHints: ['blackmail_note', 'bank_transfer'],
+  },
+  {
+    id: 'jealousy',
+    when: {
+      relation: { type: 'spouse', from: '$c', to: '$v' },
+      secret: { kind: 'affair', about: '$v', knownBy: '$c' },
+    },
+    strength: { base: 0.45, plus: [{ if: { trait: '$c.impulsivity', gt: 0.6 }, add: 0.2 }] },
+    evidenceHints: ['love_letter', 'phone_messages'],
+  },
+  {
+    id: 'revenge',
+    when: {
+      relation: { type: 'past_conflict', from: '$c', to: '$v' },
+      secret: { kind: 'hit_and_run', about: '$v', knownBy: '$c' },
+    },
+    strength: { base: 0.5, plus: [{ if: { trait: '$c.agreeableness', lt: 0.3 }, add: 0.2 }] },
+    evidenceHints: ['old_newspaper', 'accident_report'],
+  },
+  {
+    id: 'malpractice_coverup',
+    when: { secret: { kind: 'malpractice', about: '$c', knownBy: '$v' } },
+    strength: { base: 0.5, plus: [{ if: { trait: '$c.honesty', lt: 0.4 }, add: 0.15 }] },
+    evidenceHints: ['medical_record_gap', 'archive_missing_folder'],
+  },
+];
 
 /** The CNT-003 (#58) shape: inheritance written from the parent's side. */
 const parentSideInheritance: Rule = {
@@ -270,8 +316,8 @@ describe('ConflictGen on a hand-built fixture', () => {
     },
   ];
 
-  test('finds exactly the expected motives with the main motives.json', () => {
-    const result = conflicts(world, mainRules);
+  test('finds exactly the expected motives with fixed rules', () => {
+    const result = conflicts(world, fixtureRules);
     expect(result.motives).toEqual(expected);
     expectTruthBacked(result, 0.4);
     // Directed edges: the spouse whose partner has no known affair and the blackmailer have none.
@@ -280,14 +326,14 @@ describe('ConflictGen on a hand-built fixture', () => {
   });
 
   test('parent → child and child → parent rules read the same reverse edge', () => {
-    const childSide = mainRules.filter(({ id }) => id === 'inheritance');
+    const childSide = fixtureRules.filter(({ id }) => id === 'inheritance');
     const fromChild = conflicts(world, childSide).motives;
     const fromParent = conflicts(world, [parentSideInheritance]).motives;
     expect(fromChild).toEqual([expected[0]]);
     expect(fromParent).toEqual([{ ...expected[0]!, strength: 0.65 }]);
     // The reverse reading of a directed type does not exist.
     const reversedBlackmail: Rule = {
-      ...mainRules.find(({ id }) => id === 'blackmail')!,
+      ...fixtureRules.find(({ id }) => id === 'blackmail')!,
       when: { relation: { type: 'blackmail', from: '$c', to: '$v' } },
     };
     expect(conflicts(world, [reversedBlackmail]).motives).toEqual([
@@ -372,6 +418,16 @@ describe('ConflictGen on a hand-built fixture', () => {
 
 describe('ConflictGen on the sanatorium', () => {
   test('200 seeds: truth-backed candidates, invariants, no culprit or suspect, report', () => {
+    const round = (value: number) => Math.round(value * 1e6) / 1e6;
+    const bounds = new Map(
+      content.motives.map(({ id, strength: { base, plus } }) => [
+        id,
+        {
+          min: round(plus.reduce((sum, { add }) => sum + Math.min(add, 0), base)),
+          max: round(plus.reduce((sum, { add }) => sum + Math.max(add, 0), base)),
+        },
+      ]),
+    );
     const histogram = Array.from({ length: MOTIVE_HISTOGRAM_BINS }, () => 0);
     const counts = new Map<string, number>();
     let worldsWithMotive = 0;
@@ -387,8 +443,9 @@ describe('ConflictGen on the sanatorium', () => {
         motives.length,
       );
       for (const { strength, motiveType } of motives) {
-        expect(strength).toBeGreaterThanOrEqual(0);
-        expect(strength).toBeLessThanOrEqual(1);
+        const { min, max } = bounds.get(motiveType)!;
+        expect(strength, motiveType).toBeGreaterThanOrEqual(min);
+        expect(strength, motiveType).toBeLessThanOrEqual(max);
         counts.set(motiveType, (counts.get(motiveType) ?? 0) + 1);
       }
       report.histogram.forEach((count, bin) => (histogram[bin]! += count));
@@ -397,18 +454,20 @@ describe('ConflictGen on the sanatorium', () => {
         JSON.stringify({ ...world, relationships: world.relationships.snapshot() }),
       ).not.toMatch(/culprit|suspect|victim/i);
     }
-    // Every sanatorium rule needs a relation or secret SocialGen can create, except inheritance:
-    // CastGen gives everyone age 45, so there is no parent edge (GEN-004 limitation).
+    // Every rule fires. CastGen gives everyone age 45, so SocialGen creates no parent edge;
+    // inheritance rests on the will_changed secret alone, which sibling relationships carry.
     expect([...counts.keys()].sort()).toEqual([
       'blackmail',
+      'debt',
+      'inheritance',
       'jealousy',
       'malpractice_coverup',
       'revenge',
     ]);
     expect(worldsWithMotive).toBeGreaterThanOrEqual(150);
-    // With main motives.json every base is ≥ 0.45, so all mass is in [0.4, 0.8).
+    // Debt starts at 0.4 and revenge can hit 0.8, which falls in bin 8.
     expect(histogram.slice(0, 4)).toEqual([0, 0, 0, 0]);
-    expect(histogram.slice(8)).toEqual([0, 0]);
+    expect(histogram.slice(9)).toEqual([0]);
   }, 60_000);
 
   test('the motive history passes truth invariants and builds an investigation', () => {
@@ -538,18 +597,19 @@ describe('ConflictGen determinism', () => {
       report: result.motiveReport,
       history: result.history,
     });
-    const expected = plain(conflicts(world, mainRules, 0.4, 'one'));
-    expect(plain(conflicts(world, mainRules, 0.4, 'one'))).toEqual(expected);
-    expect(plain(conflicts(world, mainRules, 0.4, 'two'))).toEqual(expected);
+    const rules = content.motives;
+    const expected = plain(conflicts(world, rules, 0.4, 'one'));
+    expect(plain(conflicts(world, rules, 0.4, 'one'))).toEqual(expected);
+    expect(plain(conflicts(world, rules, 0.4, 'two'))).toEqual(expected);
     const shuffled = { ...world, characters: world.characters.toReversed() };
-    expect(plain(conflicts(shuffled, mainRules.toReversed(), 0.4, 'three'))).toEqual(expected);
-    expect(plain(sanatorium('determinism'))).toEqual(plain(conflicts(world, mainRules)));
+    expect(plain(conflicts(shuffled, rules.toReversed(), 0.4, 'three'))).toEqual(expected);
+    expect(plain(sanatorium('determinism'))).toEqual(plain(conflicts(world, rules)));
   });
 
   test('refuses a world that already has motive events instead of duplicating them', () => {
     const world = sanatorium('0');
     expect(world.motiveReport.aboveThreshold).toBeGreaterThan(0);
-    expect(() => conflicts(world, mainRules)).toThrow(/already has motive events/);
+    expect(() => conflicts(world, content.motives)).toThrow(/already has motive events/);
   });
 });
 

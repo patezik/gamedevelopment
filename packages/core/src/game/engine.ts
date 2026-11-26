@@ -10,15 +10,22 @@ import {
 } from '../evidence/index.ts';
 import { createRng } from '../rng/index.ts';
 import {
+  PlayerReactions,
   SimulationRunner,
+  refuseWhenAccused,
+  type ReactionPorts,
+  type ReactionsSnapshot,
   type PerceptibleEvent,
   type SimulationSnapshot,
 } from '../simulation/index.ts';
 import { projectPhoneView, type PhoneEvent } from '../phone/index.ts';
 import {
   burnFlashlight,
+  clearHallucinations,
   costModifiers,
   hallucinationIds,
+  applyDelta,
+  VITALS_DELTAS,
   isOverwhelmed,
   rest,
   restoreStaticState,
@@ -28,6 +35,7 @@ import {
   STATIC_DELTAS,
   createStaticState,
   type StaticState,
+  type HallucinationPool,
   type PackItem,
   type Vitals,
 } from '../survival/index.ts';
@@ -63,7 +71,9 @@ import {
 } from './actions/index.ts';
 import { accuse, type AccusationPort } from './actions/accuse.ts';
 import { applyMarkSuspicion } from './actions/suspicion.ts';
+import { startConfrontLoop, type ThreatPorts } from './confront.ts';
 import { endingOf, type EndingId } from './ending.ts';
+import { rollHallucinationsBetween } from './hallucinate.ts';
 import { blockReason, type BlockReason } from './interaction.ts';
 import {
   deserializeInvestigation,
@@ -120,6 +130,23 @@ export interface EnginePorts {
    * are not driven yet. Saves made with it replay only with it.
    */
   readonly npcSimulation?: true;
+  /**
+   * Remembers what the hero did and said (ENG-010, SIM-006): witnesses grow wary of sensitive
+   * topics, a false accusation makes some refuse to talk (`refuseWhenAccused` wraps `testimony`),
+   * and the culprit's wariness feeds `ConfrontPlayer`. Its state is saved in `GameSnapshot.reactions`.
+   * Off by default.
+   */
+  readonly reactions?: Omit<ReactionPorts, 'wake'>;
+  /**
+   * The culprit attacks a hero who is close to the truth (ENG-010, SURV-003): at night, alone, in the
+   * dark, with enough wariness (needs `reactions`). Needs `npcSimulation`. Off by default.
+   */
+  readonly threats?: ThreatPorts;
+  /**
+   * Phone hallucinations (ENG-010, SURV-005): a roll every 30 game minutes while sanity is low or
+   * Static is high; rest clears them. Needs a phone. Off by default.
+   */
+  readonly hallucinations?: { readonly pool: HallucinationPool };
   /** The hero's phone (ENG-004): starting content and the simulation's answers to calls and messages. */
   readonly phone?: PhonePort;
   /** The phone call state for arbitration (ENG-005); no phone in the engine yet means no call. */
@@ -153,6 +180,8 @@ export interface GameSnapshot {
   readonly phone?: unknown;
   /** ENG-010 Static state; absent in older snapshots and in engines without `ports.static`. */
   readonly static?: StaticState;
+  /** ENG-010 `PlayerReactions` state; present only for engines with `ports.reactions`. */
+  readonly reactions?: ReactionsSnapshot;
   /** ENG-014 state of the characters' routines; present only for engines with `npcSimulation`. */
   readonly simulation?: SimulationSnapshot;
 }
@@ -216,6 +245,9 @@ export class GameEngine {
   #savedStatic: StaticState | undefined;
   #npcs: SimulationRunner | undefined;
   #savedNpcs: SimulationSnapshot | undefined;
+  #reactions: PlayerReactions | undefined;
+  #savedReactions: ReactionsSnapshot | undefined;
+  #attackEvents: GameEvent[] = [];
 
   private constructor(
     investigation: Investigation,
@@ -241,7 +273,21 @@ export class GameEngine {
   #wireTime(): void {
     this.ports.attachTime?.(this.#time);
     this.#startStatic();
+    this.#startReactions();
     this.#startNpcs();
+  }
+
+  #startReactions(): void {
+    const ports = this.ports.reactions;
+    if (!ports || this.#reactions) return;
+    this.#reactions = new PlayerReactions(ports);
+    if (this.#savedReactions) this.#reactions.restore(this.#savedReactions);
+  }
+
+  /** The testimony the player's actions can reach: a character who refuses has nothing to say. */
+  #testimony(): TestimonyPort | undefined {
+    const base = this.ports.testimony;
+    return base && this.#reactions ? refuseWhenAccused(base, this.#reactions) : base;
   }
 
   #startStatic(): void {
@@ -335,6 +381,19 @@ export class GameEngine {
       endAt: world.durationMinutes,
     });
     // The first tick of the minute establishes presence before the first action.
+    if (this.ports.threats) {
+      startConfrontLoop({
+        time: this.#time,
+        investigation: this.investigation,
+        threats: this.ports.threats,
+        rng: createRng(seed).fork('engine').fork('threat'),
+        reactions: this.#reactions,
+        knowledgeOf: (id) => this.#npcs?.knowledgeOf(id),
+        desktop: () => this.#desktop,
+        location: () => this.locationId,
+        notify: (events) => this.#attackEvents.push(...events),
+      });
+    }
     if (!saved) this.#time.advance(0);
   }
 
@@ -422,6 +481,7 @@ export class GameEngine {
       snapshot.minute,
     );
     engine.#pendingCapture = snapshot.pendingCapture && { ...snapshot.pendingCapture };
+    engine.#savedReactions = snapshot.reactions;
     if (snapshot.static !== undefined) engine.#savedStatic = restoreStaticState(snapshot.static);
     engine.#savedNpcs = snapshot.simulation;
     if (snapshot.desktop !== undefined) {
@@ -521,7 +581,10 @@ export class GameEngine {
         this.#desktop = desktop;
         this.#wireTime();
       }
-      if (judged.outcome) this.ports.simulation?.onAccusation?.(judged.outcome, now);
+      if (judged.outcome) {
+        this.ports.simulation?.onAccusation?.(judged.outcome, now);
+        this.#reactions?.applyConsequences(judged.outcome.consequences);
+      }
       const events: GameEvent[] = [...judged.events];
       if (this.#static && judged.outcome?.endingId === 'wrong_accusation') {
         this.#static.apply(STATIC_DELTAS.falseAccusation, now, 'falseAccusation');
@@ -560,7 +623,7 @@ export class GameEngine {
         now,
         actor: this.ports.player ?? {},
         costs: this.ports.actionCosts ?? DEFAULT_ACTION_COSTS,
-        ...(this.ports.testimony && { testimony: this.ports.testimony }),
+        ...(this.#testimony() && { testimony: this.#testimony() as TestimonyPort }),
         requestCapture: (clue, has) => {
           const previous = this.pendingEvidenceCapture();
           const pending = this.requestEvidenceCapture(clue, { action: clue.discovery.action, has });
@@ -759,9 +822,25 @@ export class GameEngine {
     desktop.vitals = vitals.state;
     desktop.inventory = burnFlashlight(desktop.inventory, minutesSpent);
     events.push(...vitals.events);
+    events.push(...this.#attackEvents.splice(0));
     if (this.#static) events.push(...this.#static.drain());
 
     if (this.#phone) {
+      const pool = this.ports.hallucinations?.pool;
+      if (pool && plan.type !== 'rest') {
+        events.push(
+          ...rollHallucinationsBetween(this.#phone, elapsed.from, elapsed.to, {
+            seed: this.investigation.seed,
+            pool,
+            sanity: desktop.vitals.vitals.sanity,
+            staticLevel: this.staticLevel(),
+          }),
+        );
+      }
+      // Rest clears what the tired mind showed; real items stay.
+      if (pool && plan.type === 'rest' && minutesSpent > 0) {
+        this.#phone.state = clearHallucinations(this.#phone.state);
+      }
       events.push(...this.#phone.drain(minutesSpent), ...this.#phone.deliverDue(elapsed.to));
     }
 
@@ -773,6 +852,18 @@ export class GameEngine {
     }
     const resolved = plan.resolve({ at: elapsed.to, completed });
     events.push(...resolved);
+    // Finding the body (OQ-28, option B): sanity -2 is an assumption pending the owner's answer.
+    for (const event of resolved) {
+      if (event.type !== 'BodyFound') continue;
+      const found = applyDelta(
+        desktop.vitals,
+        VITALS_DELTAS.gruesomeFind,
+        elapsed.to,
+        'gruesomeFind',
+      );
+      desktop.vitals = found.state;
+      events.push(...found.events);
+    }
     if (this.#static) {
       for (const event of resolved) {
         if (event.type === 'ContradictionFound') {
@@ -781,6 +872,9 @@ export class GameEngine {
             elapsed.to,
             'contradictionRevealed',
           );
+        }
+        if (event.type === 'BodyFound') {
+          this.#static.apply(STATIC_DELTAS.gruesomeFind, elapsed.to, 'gruesomeFind');
         }
       }
       events.push(...this.#static.drain());
@@ -825,6 +919,7 @@ export class GameEngine {
     };
     events.push(observed);
     this.ports.simulation?.onPlayerAction(observed);
+    this.#reactions?.onPlayerAction(observed);
     return {
       ok: true,
       minutesSpent,
@@ -875,6 +970,7 @@ export class GameEngine {
       ...(this.#desktop && { desktop: this.#desktop.serialize() }),
       ...(this.#phone && { phone: this.#phone.serialize() }),
       ...(this.#static && { static: this.#static.state() }),
+      ...(this.#reactions && { reactions: this.#reactions.snapshot() }),
       ...(this.#npcs && { simulation: this.#npcs.snapshot() }),
     };
   }

@@ -41,6 +41,8 @@ var _create_request: int = -1
 
 var _status: Label
 var _error: Label
+var _language_heading: Label
+var _language: OptionButton
 var _scenario: OptionButton
 var _random_seed: CheckButton
 var _seed: LineEdit
@@ -69,10 +71,13 @@ func _ready() -> void:
 	_origin = Format.server_origin(_params, user_args)
 	_build_ui()
 	_backend.rest_completed.connect(_on_rest_completed)
+	Settings.locale_changed.connect(_on_locale_changed)
 	load_catalog()
 
 
 func _exit_tree() -> void:
+	if Settings.locale_changed.is_connected(_on_locale_changed):
+		Settings.locale_changed.disconnect(_on_locale_changed)
 	for request_id: int in [_catalog_request, _create_request]:
 		if request_id >= 0 and is_instance_valid(_backend):
 			_backend.cancel_queued_rest(request_id)
@@ -109,7 +114,7 @@ func create_session() -> bool:
 	_error.text = ""
 	_create_request = _backend.request_rest(
 		_origin + "/api/v1/sessions", HTTPClient.METHOD_POST,
-		Format.request_body(str(scenario["id"]), seed)
+		Format.request_body(str(scenario["id"]), seed, Settings.get_locale())
 	)
 	_refresh()
 	return true
@@ -214,6 +219,30 @@ func _refresh() -> void:
 	_reload.disabled = _catalog_request >= 0
 
 
+## Language picker: the locales come from [constant Settings.SUPPORTED_LOCALES], every one is shown
+## under its own name (`language.<locale>` in the string table).
+func _fill_languages() -> void:
+	_language.clear()
+	for index: int in range(Settings.SUPPORTED_LOCALES.size()):
+		var locale: String = Settings.SUPPORTED_LOCALES[index]
+		_language.add_item(Localization.text("language." + locale, locale), index)
+		if locale == Settings.get_locale():
+			_language.select(index)
+
+
+func _on_language_selected(index: int) -> void:
+	Settings.set_locale(Settings.SUPPORTED_LOCALES[index])
+
+
+func _on_locale_changed(_locale: String) -> void:
+	_redraw_language()
+
+
+func _redraw_language() -> void:
+	_language_heading.text = Localization.text("settings.language")
+	_fill_languages()
+
+
 func _on_seed_mode_toggled(_random: bool) -> void:
 	_refresh()
 	if not _random_seed.button_pressed:
@@ -254,6 +283,15 @@ func _build_ui() -> void:
 	_error = _label(layout, "")
 	_error.name = "Error"
 	_error.add_theme_color_override(&"font_color", ERROR_COLOR)
+
+	_language_heading = _label(layout, "")
+	_language_heading.name = "LanguageHeading"
+	_language_heading.add_theme_font_size_override(&"font_size", 24)
+	_language = OptionButton.new()
+	_language.name = "Language"
+	_language.item_selected.connect(_on_language_selected)
+	layout.add_child(_language)
+	_redraw_language()
 
 	_heading(layout, SCENARIO_TEXT)
 	_scenario = OptionButton.new()

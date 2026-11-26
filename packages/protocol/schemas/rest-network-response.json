@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "minLength": 1
+          },
+          "interface": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recommended": {
+            "type": "boolean"
+          },
+          "virtual": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "address",
+          "interface",
+          "recommended",
+          "virtual"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "candidates"
+  ],
+  "additionalProperties": false
+}

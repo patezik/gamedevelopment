@@ -1,6 +1,6 @@
 import type { GameMinutes } from '../../common/index.ts';
 import type { ContradictionFound } from '../../investigation/index.ts';
-import type { StaticEvent, SurvivalEvent } from '../../survival/index.ts';
+import type { PlayerAttacked, StaticEvent, SurvivalEvent } from '../../survival/index.ts';
 import type { PhoneEvent } from '../../phone/index.ts';
 import type { ClockEvent } from '../../time/index.ts';
 
@@ -77,6 +77,8 @@ export type ActionEvent =
       readonly success: boolean;
       readonly at: GameMinutes;
     }
+  /** The player inspected the body point (OQ-28): Static and sanity effects, once per body. */
+  | { readonly type: 'BodyFound'; readonly locationId: string; readonly at: GameMinutes }
   | { readonly type: 'PageViewed'; readonly pageId: string; readonly at: GameMinutes }
   | { readonly type: 'FileOpened'; readonly fileId: string; readonly at: GameMinutes }
   | {
@@ -113,6 +115,7 @@ export type GameEvent =
   | ClockEvent
   | SurvivalEvent
   | StaticEvent
+  | PlayerAttacked
   | KnowledgeEvent
   | ActionEvent
   | PlayerActionObserved

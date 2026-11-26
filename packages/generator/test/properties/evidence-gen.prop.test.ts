@@ -4,8 +4,7 @@ import { expect, test } from 'vitest';
 import { CONCEALMENT_VERBS } from '@hs/core/evidence';
 import { evidenceGen, GenerationRejection, type HistoryWorld } from '../../src/index.ts';
 import { planned, simulateHistory } from '../support/history.ts';
-import { silent } from '../support/incident.ts';
-import { sanatorium } from '../support/incident.ts';
+import { minimal, sanatorium, silent } from '../support/incident.ts';
 
 const COUNT = 1000;
 
@@ -80,18 +79,32 @@ test('a key event without any clue rejects the attempt', () => {
     const h = world && simulateHistory(world, sanatorium, `${seed}-${n}`);
     if (h && !(h instanceof GenerationRejection)) history = h;
   }
+  expect(history).toBeDefined();
+  const keyVerbs = new Set(
+    history!.truth
+      .events()
+      .filter(
+        (event) =>
+          history!.truth.incident.keyEventIds.includes(event.id) &&
+          !CONCEALMENT_VERBS.includes(event.verb),
+      )
+      .map((event) => event.verb),
+  );
+  expect(keyVerbs.size).toBeGreaterThan(0);
   const content: ScenarioContent = {
     ...sanatorium,
-    traceRules: sanatorium.traceRules.filter(({ verb }) => verb !== 'poison'),
+    // The chosen incident may be a boiler accident rather than a poisoning.
+    // Remove the actual key events' rules so the mutation always removes their clues.
+    traceRules: sanatorium.traceRules.filter(({ verb }) => !keyVerbs.has(verb)),
   };
   expect(() => evidence(history!, content, seed)).toThrow(GenerationRejection);
 });
 
 test('the stage raises the QR share of required clues when the rules give too few', () => {
   const content: ScenarioContent = {
-    ...sanatorium,
-    preset: { ...sanatorium.preset, phone: { minQrShare: 0.6 } },
-    traceRules: sanatorium.traceRules.map((rule) => ({
+    ...minimal,
+    preset: { ...minimal.preset, phone: { minQrShare: 0.6 } },
+    traceRules: minimal.traceRules.map((rule) => ({
       ...rule,
       produces: rule.produces.map((spec) => ({ ...spec, captureMode: 'direct' as const })),
     })),
@@ -99,8 +112,8 @@ test('the stage raises the QR share of required clues when the rules give too fe
   let checked = 0;
   for (let n = 0; n < 40; n++) {
     const seed = `evidence-qr-${n}`;
-    const world = planned(sanatorium, seed);
-    const history = world && simulateHistory(world, sanatorium, seed);
+    const world = planned(minimal, seed);
+    const history = world && simulateHistory(world, minimal, seed);
     if (!history || history instanceof GenerationRejection) continue;
     const result = evidence(history, content, seed);
     const required = new Set(result.requiredClueIds);

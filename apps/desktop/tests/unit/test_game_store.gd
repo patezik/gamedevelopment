@@ -243,6 +243,35 @@ func test_error_without_request_id_emits_error_received() -> void:
 	assert_signal_not_emitted(_store, "action_failed")
 
 
+func test_error_with_request_id_after_a_closed_handshake_emits_error_received() -> void:
+	_backend.change_state(BackendScript.ConnectionState.HANDSHAKING)
+	_backend.change_state(BackendScript.ConnectionState.OFFLINE)
+	_backend.deliver(
+		ProtocolConstants.MSG_ERROR,
+		{"code": ProtocolConstants.ERROR_UNAUTHORIZED, "message": "Bad token", "requestId": "desktop-1"}
+	)
+
+	assert_signal_emitted_with_parameters(
+		_store, "error_received", [ProtocolConstants.ERROR_UNAUTHORIZED, "Bad token"]
+	)
+	assert_signal_not_emitted(_store, "action_failed")
+	assert_signal_not_emitted(_store, "action_resolved")
+
+
+func test_error_with_request_id_while_online_stays_an_action_failure() -> void:
+	_backend.change_state(BackendScript.ConnectionState.HANDSHAKING)
+	_backend.change_state(BackendScript.ConnectionState.ONLINE)
+	_backend.deliver(
+		ProtocolConstants.MSG_ERROR,
+		{"code": ProtocolConstants.ERROR_GAME_OVER, "message": "Over", "requestId": "desktop-4"}
+	)
+
+	assert_signal_emitted_with_parameters(
+		_store, "action_failed", [ProtocolConstants.ERROR_GAME_OVER, "Over"]
+	)
+	assert_signal_not_emitted(_store, "error_received")
+
+
 func test_request_action_sends_a_copy_through_backend() -> void:
 	var action: Dictionary = {"type": ProtocolConstants.ACTION_WAIT, "minutes": 30}
 

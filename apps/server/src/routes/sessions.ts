@@ -1,4 +1,10 @@
-import { ErrorCode } from '@hs/protocol';
+import {
+  CreateSessionRequest,
+  ErrorCode,
+  ErrorResponse,
+  ScenarioList,
+  SessionCredentials,
+} from '@hs/protocol';
 import { errorCodes, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { isPairingHost } from '../config/index.ts';
@@ -9,7 +15,6 @@ import {
   GenerationUnsolvableError,
   ScenarioId,
   ScenarioNotFoundError,
-  ScenarioSummary,
   Seed,
   SLOW_GENERATION_MS,
   type GenerationLog,
@@ -18,50 +23,31 @@ import {
 
 export { ScenarioId, Seed };
 
-/** `POST /api/v1/sessions` body (backend.md §3). */
-export const CreateSessionRequest = z.strictObject({
-  scenarioId: ScenarioId,
-  seed: Seed.optional(),
-  locale: z.enum(['ru', 'en']).optional(),
-});
-
-/** `GET /api/v1/scenarios` answer. */
-export const ScenarioList = z.array(ScenarioSummary);
-
 const PAIRING_PAYLOAD = /^hs1:pair:([^:]+):([0-9]{1,5}):([0-9A-HJKMNP-TV-Z]{6})$/;
 
-/** `POST /api/v1/sessions` answer: what the desktop needs to start and pair, never the case. */
-export const CreateSessionResponse = z.strictObject({
-  sessionId: z.uuid(),
-  desktopToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
-  pairing: z
-    .strictObject({
-      code: z.string().regex(/^[0-9A-HJKMNP-TV-Z]{6}$/),
-      expiresAt: z.int().positive(),
-      qrPayload: z.string(),
-    })
-    .refine(
-      ({ code, qrPayload }) => {
-        const match = PAIRING_PAYLOAD.exec(qrPayload);
-        if (!match) return false;
-        const [, host, port, payloadCode] = match;
-        const portNumber = Number(port);
-        return (
-          host !== undefined &&
-          isPairingHost(host) &&
-          portNumber >= 1 &&
-          portNumber <= 65535 &&
-          payloadCode === code
-        );
-      },
-      { path: ['qrPayload'], message: 'Invalid pairing payload' },
-    ),
-});
+export { CreateSessionRequest, ErrorResponse, ScenarioList };
 
-/** Error answer of every REST endpoint: `{ error: { code, message } }`. */
-export const ErrorResponse = z.strictObject({
-  error: z.strictObject({ code: ErrorCode, message: z.string() }),
-});
+/**
+ * `POST /api/v1/sessions` answer: what the desktop needs to start and pair, never the case. The
+ * schema of the package plus the server's own check that the QR names a pairing host and the
+ * code of the answer.
+ */
+export const CreateSessionResponse = SessionCredentials.refine(
+  ({ pairing: { code, qrPayload } }) => {
+    const match = PAIRING_PAYLOAD.exec(qrPayload);
+    if (!match) return false;
+    const [, host, port, payloadCode] = match;
+    const portNumber = Number(port);
+    return (
+      host !== undefined &&
+      isPairingHost(host) &&
+      portNumber >= 1 &&
+      portNumber <= 65535 &&
+      payloadCode === code
+    );
+  },
+  { path: ['pairing', 'qrPayload'], message: 'Invalid pairing payload' },
+);
 
 export interface SessionRouteDependencies {
   readonly scenarios: Pick<ScenarioCatalog, 'list' | 'has'>;
@@ -159,22 +145,27 @@ export function registerSessionRoutes(
           const seed = body.data.seed ?? createSeed();
           if (!Seed.safeParse(seed).success) throw new SessionContractError('seed');
           // Register only after preparing the credentials and validating the DTO.
-          await sessions.create(scenarioId, seed, (session) => {
-            try {
-              prepare?.(session);
-              const answer = CreateSessionResponse.safeParse({
-                sessionId: session.id,
-                desktopToken: issueToken(session, 'desktop'),
-                pairing: pairing.createCode(session),
-              });
-              if (!answer.success) throw new SessionContractError('answer');
-              created = answer.data;
-            } catch (error) {
-              session.clearTokenHash('desktop');
-              pairing.discardCode(session);
-              throw error;
-            }
-          }, body.data.locale);
+          await sessions.create(
+            scenarioId,
+            seed,
+            (session) => {
+              try {
+                prepare?.(session);
+                const answer = CreateSessionResponse.safeParse({
+                  sessionId: session.id,
+                  desktopToken: issueToken(session, 'desktop'),
+                  pairing: pairing.createCode(session),
+                });
+                if (!answer.success) throw new SessionContractError('answer');
+                created = answer.data;
+              } catch (error) {
+                session.clearTokenHash('desktop');
+                pairing.discardCode(session);
+                throw error;
+              }
+            },
+            body.data.locale,
+          );
         } catch (error) {
           if (error instanceof ScenarioNotFoundError) {
             return reply.code(404).send(failure('SCENARIO_NOT_FOUND', 'Scenario not found'));

@@ -2,24 +2,28 @@
   {
     "id": "inheritance",
     "when": {
-      "relation": { "type": "child", "from": "$c", "to": "$v" },
       "secret": { "kind": "will_changed", "about": "$v", "knownBy": "$c" }
     },
     "strength": {
-      "base": 0.5,
-      "plus": [{ "if": { "trait": "$c.honesty", "lt": 0.4 }, "add": 0.2 }]
+      "base": 0.45,
+      "plus": [
+        { "if": { "trait": "$c.honesty", "lt": 0.4 }, "add": 0.2 },
+        { "if": { "trait": "$c.agreeableness", "lt": 0.4 }, "add": 0.1 }
+      ]
     },
     "evidenceHints": ["will_document", "notary_letter"]
   },
   {
     "id": "blackmail",
     "when": {
-      "relation": { "type": "blackmail", "from": "$v", "to": "$c" },
-      "secret": { "kind": "blackmail_material", "about": "$c", "knownBy": "$v" }
+      "relation": { "type": "blackmail", "from": "$v", "to": "$c" }
     },
     "strength": {
-      "base": 0.55,
-      "plus": [{ "if": { "trait": "$c.neuroticism", "gt": 0.6 }, "add": 0.15 }]
+      "base": 0.45,
+      "plus": [
+        { "if": { "trait": "$c.neuroticism", "gt": 0.6 }, "add": 0.15 },
+        { "if": { "trait": "$c.courage", "gt": 0.7 }, "add": 0.1 }
+      ]
     },
     "evidenceHints": ["blackmail_note", "bank_transfer"]
   },
@@ -31,7 +35,10 @@
     },
     "strength": {
       "base": 0.45,
-      "plus": [{ "if": { "trait": "$c.impulsivity", "gt": 0.6 }, "add": 0.2 }]
+      "plus": [
+        { "if": { "trait": "$c.impulsivity", "gt": 0.6 }, "add": 0.2 },
+        { "if": { "trait": "$c.neuroticism", "gt": 0.6 }, "add": 0.1 }
+      ]
     },
     "evidenceHints": ["love_letter", "phone_messages"]
   },
@@ -43,7 +50,10 @@
     },
     "strength": {
       "base": 0.5,
-      "plus": [{ "if": { "trait": "$c.agreeableness", "lt": 0.3 }, "add": 0.2 }]
+      "plus": [
+        { "if": { "trait": "$c.agreeableness", "lt": 0.3 }, "add": 0.2 },
+        { "if": { "trait": "$c.courage", "gt": 0.8 }, "add": 0.1 }
+      ]
     },
     "evidenceHints": ["old_newspaper", "accident_report"]
   },
@@ -54,8 +64,26 @@
     },
     "strength": {
       "base": 0.5,
-      "plus": [{ "if": { "trait": "$c.honesty", "lt": 0.4 }, "add": 0.15 }]
+      "plus": [
+        { "if": { "trait": "$c.honesty", "lt": 0.4 }, "add": 0.15 },
+        { "if": { "trait": "$c.neuroticism", "gt": 0.6 }, "add": 0.1 }
+      ]
     },
     "evidenceHints": ["medical_record_gap", "archive_missing_folder"]
+  },
+  {
+    "id": "debt",
+    "when": {
+      "relation": { "type": "debt", "from": "$c", "to": "$v" },
+      "secret": { "kind": "hidden_debt", "about": "$c", "knownBy": "$v" }
+    },
+    "strength": {
+      "base": 0.4,
+      "plus": [
+        { "if": { "trait": "$c.impulsivity", "gt": 0.6 }, "add": 0.15 },
+        { "if": { "trait": "$c.honesty", "lt": 0.4 }, "add": 0.1 }
+      ]
+    },
+    "evidenceHints": ["debt_receipt", "phone_messages"]
   }
 ]

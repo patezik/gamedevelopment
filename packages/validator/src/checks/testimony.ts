@@ -82,42 +82,46 @@ export const testimonyCheck: Check = {
     const tolerance = DEFAULT_TOLERANCE_MINUTES;
     const { truth } = investigation;
     const findings: FindingInput[] = [];
+    // Truth is immutable during a check. Its public readers return defensive copies;
+    // reuse those copies within this run instead of cloning the history for every reply.
+    const presence = new Map<string, ReturnType<typeof truth.presenceIntervals>>();
+    let acts: ReturnType<typeof truth.facts> | undefined;
+    let events: ReturnType<typeof truth.events> | undefined;
     for (const statement of [...testimony].sort(byStatement)) {
       if (statement.veracity === 'lie') continue;
       const p = statement.proposition;
       let agrees = true;
       if (p.kind === 'at') {
-        agrees = truth
-          .presenceIntervals(p.who)
-          .some(
-            ({ location, interval }) =>
-              location === p.where &&
-              interval.from - tolerance <= p.interval.from &&
-              p.interval.to <= interval.to + tolerance,
-          );
+        let stays = presence.get(p.who);
+        if (!stays) {
+          stays = truth.presenceIntervals(p.who);
+          presence.set(p.who, stays);
+        }
+        agrees = stays.some(
+          ({ location, interval }) =>
+            location === p.where &&
+            interval.from - tolerance <= p.interval.from &&
+            p.interval.to <= interval.to + tolerance,
+        );
       } else if (p.kind === 'did') {
         // Observers remember an event as `did`, but the log states a plain stay or move only as
         // presence, so an event of the same actor, verb and place counts as the truth too.
         agrees =
-          truth
-            .facts({ kind: 'did' })
-            .some(
-              (fact) =>
-                fact.kind === 'did' &&
-                fact.who === p.who &&
-                fact.verb === p.verb &&
-                fact.where === p.where &&
-                Math.abs(fact.at - p.at) <= tolerance,
-            ) ||
-          truth
-            .events()
-            .some(
-              (event) =>
-                event.actorIds.includes(p.who) &&
-                event.verb === p.verb &&
-                event.location === p.where &&
-                Math.abs(event.t - p.at) <= tolerance,
-            );
+          (acts ??= truth.facts({ kind: 'did' })).some(
+            (fact) =>
+              fact.kind === 'did' &&
+              fact.who === p.who &&
+              fact.verb === p.verb &&
+              fact.where === p.where &&
+              Math.abs(fact.at - p.at) <= tolerance,
+          ) ||
+          (events ??= truth.events()).some(
+            (event) =>
+              event.actorIds.includes(p.who) &&
+              event.verb === p.verb &&
+              event.location === p.where &&
+              Math.abs(event.t - p.at) <= tolerance,
+          );
       }
       if (!agrees) {
         findings.push({

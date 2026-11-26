@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "sessionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "deviceToken": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "wsPath": {
+      "type": "string",
+      "format": "starts_with",
+      "pattern": "^\\/.*"
+    }
+  },
+  "required": [
+    "sessionId",
+    "deviceToken",
+    "wsPath"
+  ],
+  "additionalProperties": false
+}

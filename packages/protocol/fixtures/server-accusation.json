@@ -1,0 +1,14 @@
+[
+  {
+    "v": 1,
+    "type": "action.result",
+    "id": "s-40",
+    "payload": {
+      "requestId": "c-31",
+      "ok": true,
+      "minutesSpent": 0,
+      "operationId": "op-7f3c",
+      "stateVersion": 12
+    }
+  }
+]

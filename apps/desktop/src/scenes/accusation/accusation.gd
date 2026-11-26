@@ -381,7 +381,8 @@ func _on_final_confirmed() -> void:
 	if not _same_session() or _ledger == null or _ledger.call(&"can_accuse") != true:
 		_fail_session()
 		return
-	if _store.request_action(AccusationFormat.accuse_action(_file, true)) != OK:
+	var operation_id: String = AccusationFormat.new_operation_id()
+	if _store.request_action(AccusationFormat.accuse_action(_file, true, operation_id)) != OK:
 		# Nothing left: safe to try again after reconnecting.
 		_fail(GameStoreScript.ERROR_NOT_CONNECTED, "")
 		return
@@ -389,7 +390,7 @@ func _on_final_confirmed() -> void:
 	var file: Dictionary = _file
 	_file = {}
 	_stage = Stage.EDITING
-	_ledger.call(&"begin", file, _store.get_last_action_request_id())
+	_ledger.call(&"begin", file, _store.get_last_action_request_id(), operation_id)
 	_render_status()
 	_sync_controls()
 

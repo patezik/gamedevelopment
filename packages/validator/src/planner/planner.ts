@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
-import { GameEngine, type EnginePorts, type Investigation } from '@hs/core/game';
+import { BODY_HOTSPOT_ID, GameEngine, type EnginePorts, type Investigation } from '@hs/core/game';
 import {
   PlayerKnowledge,
   evaluateClaims,
@@ -64,10 +64,15 @@ function byCostThenId(a: Candidate, b: Candidate): number {
 }
 
 function offers(view: PlayerView): { action: PlayerAction; min: number }[] {
-  const result = view.availableActions.map(({ action, costPreview }) => ({
-    action,
-    min: costPreview.min,
-  }));
+  // The body point only costs Static and sanity (OQ-28) and holds no evidence, so no path needs it.
+  const result = view.availableActions
+    .filter(
+      ({ action }) => !(action.type === 'examineHotspot' && action.hotspotId === BODY_HOTSPOT_ID),
+    )
+    .map(({ action, costPreview }) => ({
+      action,
+      min: costPreview.min,
+    }));
   if (view.pendingCapture) {
     // The cost table bounds it from below; dispatch spends the real minutes.
     result.push({

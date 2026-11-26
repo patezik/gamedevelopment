@@ -163,7 +163,27 @@ func _confirm_true_count(entries: Array) -> int:
 # --- regressions -------------------------------------------------------------------------------
 
 
-func test_live_lost_result_of_an_executed_accusation_blocks_a_second_one() -> void:
+func test_unknown_token_gives_one_unauthorized_error_and_no_reconnect_loop() -> void:
+	var states: Array = []
+	var errors: Array = []
+	var failures: Array = []
+	_store.connection_state_changed.connect(func(state: int) -> void: states.append(state))
+	_store.error_received.connect(func(code: String, _text: String) -> void: errors.append(code))
+	_store.action_failed.connect(func(code: String, _text: String) -> void: failures.append(code))
+	_backend.connect_session(str(_info.get("url", "")), "token-the-server-never-issued")
+	await wait_until(func() -> bool: return not errors.is_empty(), WAIT_SECONDS)
+	assert_eq(errors, [ProtocolConstants.ERROR_UNAUTHORIZED])
+	assert_eq(failures, [], "a rejected hello is not a rejected action")
+	assert_eq(_store.get_connection_state(), BackendScript.ConnectionState.OFFLINE)
+	# The old loop reconnected within a second; give it time to show up.
+	await wait_seconds(3.0)
+	assert_eq(errors.size(), 1, "no retries")
+	assert_eq(_store.get_connection_state(), BackendScript.ConnectionState.OFFLINE)
+	var retrying: int = states.count(BackendScript.ConnectionState.RETRYING)
+	assert_eq(retrying, 0, "never RETRYING after the rejection")
+
+
+func test_live_lost_result_of_an_executed_accusation_is_recovered_by_a_retry() -> void:
 	var live: bool = _pipe != null and await _connect("a")
 	assert_true(live, "a live session")
 	if not live:
@@ -176,12 +196,15 @@ func test_live_lost_result_of_an_executed_accusation_blocks_a_second_one() -> vo
 	_command({"cmd": "drop", "type": "action.result", "close": true})
 	screen.get_final_dialog().confirmed.emit()
 	await wait_until(func() -> bool: return screen.get_stage() == Accusation.Stage.UNKNOWN, WAIT_SECONDS)
-	await wait_until(func() -> bool: return _store.is_online(), WAIT_SECONDS)
-	await get_tree().create_timer(0.5).timeout
-	assert_true(_store.is_online(), "reconnected")
-	assert_false(_store.get_view().has("ending"), "the game went on: the outcome is not visible")
 	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
-	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE, "no second accusation")
+	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE, "no second accusation while unknown")
+	# After the reconnect the same accusation goes out under the same operationId; the server
+	# answers with the stored outcome and does not execute it again.
+	await wait_until(func() -> bool: return screen.get_stage() == Accusation.Stage.EDITING, WAIT_SECONDS)
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING, "the outcome became known")
+	assert_true(_store.is_online(), "reconnected")
+	assert_false(_store.get_view().has("ending"), "the game went on")
+	assert_string_contains(screen.get_status_text(), "продолжается")
 	assert_true(screen.can_go_back())
 	var received: Array = _received("a")
 	assert_eq(_confirm_true_count(received), 1, "the engine got exactly one confirm:true: %s" % [received])
@@ -265,7 +288,7 @@ func test_live_several_accused_unchanged_in_both_phases_then_an_ending() -> void
 	assert_eq(ending.get_ending_id(), "partial")
 	assert_true(ending.has_recap(), "the TruthRecap comes with the ending")
 
-func test_live_unknown_survives_manual_reconnect_and_returning_to_the_game() -> void:
+func test_live_unknown_survives_switching_games_and_is_settled_on_return() -> void:
 	var live: bool = _pipe != null and await _connect("a")
 	assert_true(live, "a live session")
 	if not live:
@@ -277,20 +300,16 @@ func test_live_unknown_survives_manual_reconnect_and_returning_to_the_game() -> 
 	screen.get_final_dialog().confirmed.emit()
 	await wait_until(func() -> bool: return screen.get_stage() == Accusation.Stage.UNKNOWN, WAIT_SECONDS)
 	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
+	# Leave before the automatic reconnect: the unknown outcome must outlive the other game.
+	_backend.disconnect_session()
 	assert_eq(_confirm_true_count(_received("a")), 1, "the first accusation was executed")
-
-	assert_true(await _connect("a"), "explicit reconnect to the same session")
-	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
-	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE)
 	assert_true(await _connect("b"), "switch to another game")
 	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
 	assert_true(await _connect("a"), "return to the game with an unknown result")
-	screen.free()
-	screen = _screen()
-	assert_eq(screen.get_stage(), Accusation.Stage.UNKNOWN)
-	screen.set_accused([INNOCENT])
-	assert_eq(screen.request_accusation(), ERR_UNAVAILABLE)
-	assert_eq(_confirm_true_count(_received("a")), 1)
+	await wait_until(func() -> bool: return screen.get_stage() == Accusation.Stage.EDITING, WAIT_SECONDS)
+	assert_eq(screen.get_stage(), Accusation.Stage.EDITING)
+	assert_string_contains(screen.get_status_text(), "продолжается")
+	assert_eq(_confirm_true_count(_received("a")), 1, "the retry did not run it a second time")
 	assert_eq(_received("b"), [])
 
 

@@ -28,7 +28,7 @@ const PART_TEXT: Dictionary = {
 const PROVEN_TEXT: String = "доказан"
 const NOT_PROVEN_TEXT: String = "не доказан"
 const MISSING: String = "—"
-## The protocol has no seed in any view (EndingView included); see godot-client.md §4.5.
+## Older servers may omit the seed even from a final view.
 const SEED_UNAVAILABLE_TEXT: String = "не передаётся сервером"
 
 
@@ -79,8 +79,35 @@ static func recap_of(ending: Dictionary) -> Dictionary:
 	return {"summary": HudFormat.read_string(recap, "summary"), "responsible": names}
 
 
+## Render the server's recap in its supplied order.
+static func timeline_rows(ending: Dictionary) -> PackedStringArray:
+	var rows: PackedStringArray = []
+	var recap: Dictionary = HudFormat.read_dict(ending, "recap")
+	for value: Variant in _array(recap.get("timeline")):
+		if not value is Dictionary:
+			continue
+		var event: Dictionary = value
+		var at: Variant = HudFormat.read_int(event, "at")
+		var location: String = HudFormat.read_string(event, "location")
+		var participants: PackedStringArray = PackedStringArray(_array(event.get("participants")))
+		var people: String = " · " + ", ".join(participants) if not participants.is_empty() else ""
+		var text: String = HudFormat.read_string(event, "text")
+		rows.append("%s · %s%s — %s" % [_event_time(at), location, people, text])
+	return rows
+
+
 ## `[[label, value], ...]` of the run's statistics, from the final view.
-static func statistics_rows(view: Dictionary, seed_text: String = "") -> Array[PackedStringArray]:
+static func statistics_rows(view: Dictionary) -> Array[PackedStringArray]:
+	var ending: Dictionary = ending_of(view)
+	var seed: Variant = ending.get("seed")
+	var seed_text: String = SEED_UNAVAILABLE_TEXT
+	if seed is String:
+		seed_text = seed if seed != "" else "(пустая строка)"
+	var scenario_id: String = HudFormat.read_string(ending, "scenarioId")
+	var rows: Array[PackedStringArray] = [PackedStringArray(["Seed", seed_text])]
+	if not scenario_id.is_empty():
+		rows.append(PackedStringArray(["Сценарий", scenario_id]))
+
 	var clock: Dictionary = HudFormat.read_dict(view, "clock")
 	var board: Dictionary = HudFormat.read_dict(view, "caseBoard")
 	var vitals: Dictionary = HudFormat.read_dict(view, "vitals")
@@ -91,8 +118,7 @@ static func statistics_rows(view: Dictionary, seed_text: String = "") -> Array[P
 	for clue: Variant in clues:
 		if clue is Dictionary and (clue as Dictionary).get("captured") == true:
 			captured += 1
-	return [
-		PackedStringArray(["Seed", seed_text if not seed_text.is_empty() else SEED_UNAVAILABLE_TEXT]),
+	rows.append_array([
 		PackedStringArray([
 			"Конец игры",
 			HudFormat.clock_text(HudFormat.read_int(clock, "day"), HudFormat.read_string(clock, "time")),
@@ -106,7 +132,19 @@ static func statistics_rows(view: Dictionary, seed_text: String = "") -> Array[P
 		PackedStringArray(["Персон интереса", str(_array(board.get("personsOfInterest")).size())]),
 		PackedStringArray(["Здоровье", HudFormat.scale_text(HudFormat.read_int(vitals, "health"), 10)]),
 		PackedStringArray(["Рассудок", HudFormat.scale_text(HudFormat.read_int(vitals, "sanity"), 10)]),
-	]
+	])
+	return rows
+
+
+static func _event_time(at: Variant) -> String:
+	if not at is int:
+		return MISSING
+	var minute: int = at
+	if minute < 0:
+		return "За %s до начала" % HudFormat.duration_text(-minute)
+	if minute > 0:
+		return "Через %s после начала" % HudFormat.duration_text(minute)
+	return "Начало расследования"
 
 
 static func _duration(minutes: Variant) -> String:

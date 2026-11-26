@@ -47,7 +47,7 @@ test('golden HistorySimulation results for five seeds of _test_minimal', () => {
       }),
     ];
   });
-  expect(GENERATOR_VERSION).toBe('0.3.0');
+  expect(GENERATOR_VERSION).toBe('0.4.0');
   expect(results).toEqual([
     ['0', 'ev_13', '9ad47b7c601972a20929ff06c4422711602b046a9e17a5a0b60e6c61b3d43882'],
     ['1', 'ev_13', '75a68538f48af9fe9b1847984fbfc562c66b0c68add56ce1ecd63ec955f795e6'],

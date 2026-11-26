@@ -12,7 +12,9 @@ import { QrService } from './service.ts';
 
 const content = loadScenarioFromDir(`${defaultScenariosDir()}sanatorium_winter`);
 
-describe.each(['1', '2', '3', '6'])('sanatorium_winter seed %s', (seed) => {
+// Seeds whose accepted case is a poisoning with a QR clue on missing_substance. On CNT-003 data
+// (GENERATOR_VERSION 0.4.0) seed 1 does not pass the gate and seed 3 is a staged fall.
+describe.each(['2', '6', '7', '8'])('sanatorium_winter seed %s', (seed) => {
   async function play() {
     const result = generateInvestigation({ scenarioId: 'sanatorium_winter', seed }, content);
     if (!result.ok) throw new Error('the seed is expected to pass the gate');

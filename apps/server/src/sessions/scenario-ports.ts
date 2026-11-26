@@ -17,16 +17,38 @@ const toPhoneTemplate = (row: unknown): PhoneTemplate =>
  * arbitration (`callState`) and the phone answers (`callGreeting`, `callReply`, `messageReply`).
  * Tokens (SRV-013) and simulation hooks (ENG-010, TIME-006) are other tasks.
  */
+/** The locale of the source texts: the fallback of every missing template (QA-003). */
+export const SOURCE_TEXT_LOCALE = 'ru';
+
+/** The text locale a scenario can serve: the requested one if it has templates, else `ru`. */
+export function resolveTextLocale(content: ScenarioContent, locale?: string): string {
+  return locale !== undefined && content.text[locale] !== undefined ? locale : SOURCE_TEXT_LOCALE;
+}
+
+const flattenTexts = (content: ScenarioContent, locale: string) =>
+  Object.values(content.text[locale] ?? {}).flatMap((group) => Object.entries(group));
+
+/** Templates of the resolved locale over the Russian ones: a key a translation lacks stays ru. */
+export function scenarioTexts(content: ScenarioContent, locale?: string): Map<string, string[]> {
+  const texts = new Map(flattenTexts(content, SOURCE_TEXT_LOCALE));
+  const resolved = resolveTextLocale(content, locale);
+  if (resolved !== SOURCE_TEXT_LOCALE) {
+    for (const [key, text] of flattenTexts(content, resolved)) texts.set(key, text);
+  }
+  return texts;
+}
+
 export function scenarioEnginePorts(
   content: ScenarioContent,
   investigation: Investigation,
   server: ServerGenerationPayload,
+  locale?: string,
 ): EnginePorts {
   const { knowledge, liePolicies, deductionRules } = server;
   const required = new Set(server.requiredClueIds);
   return {
     startLocationId: server.startLocationId,
-    texts: new Map(Object.values(content.text.ru ?? {}).flatMap((group) => Object.entries(group))),
+    texts: scenarioTexts(content, locale),
     clues: server.clues,
     startVitals: { ...content.preset.survival.startVitals },
     phone: {

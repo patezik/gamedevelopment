@@ -23,6 +23,10 @@ const PHONE_TEXT: Dictionary = {
 	"offline": "Телефон привязан, но не в сети",
 	"unpaired": "Телефон не привязан",
 }
+const PHONE_HINTS: Dictionary = {
+	"offline": "Телефон уже привязан к этой игре, но сейчас не на связи (закрыто приложение или нет Wi-Fi). Чтобы привязать другой телефон или переустановленное приложение, нажмите «Новый код».",
+	"online": "Чтобы заменить телефон, нажмите «Новый код»: привязка по новому коду заменит текущий телефон.",
+}
 const PHONE_UNKNOWN_TEXT: String = "Статус телефона пока неизвестен"
 const CONNECTION_TEXT: Dictionary = {
 	BackendScript.ConnectionState.OFFLINE: "Игра не подключена к серверу",
@@ -122,6 +126,11 @@ static func qr_display_side(texture_side: int, max_side: int) -> int:
 
 static func phone_text(phone: String) -> String:
 	return str(PHONE_TEXT.get(phone, PHONE_UNKNOWN_TEXT))
+
+
+## Explains what a paired phone's status means and how to replace the phone; empty if unpaired.
+static func phone_hint(phone: String) -> String:
+	return str(PHONE_HINTS.get(phone, ""))
 
 
 static func connection_text(state: BackendScript.ConnectionState) -> String:

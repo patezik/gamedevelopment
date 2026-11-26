@@ -56,6 +56,11 @@ func test_random_seed_is_left_to_the_server() -> void:
 	assert_eq(entered, {"scenarioId": "sanatorium_winter", "seed": "winter-42"})
 
 
+func test_locale_is_sent_when_given() -> void:
+	var body: Dictionary = JSON.parse_string(Format.request_body("sanatorium_winter", "", "en"))
+	assert_eq(body, {"scenarioId": "sanatorium_winter", "locale": "en"})
+
+
 func test_create_errors_map_to_player_text() -> void:
 	var error: Callable = func(code: String) -> Dictionary: return {"error": {"code": code, "message": "m"}}
 	assert_eq(Format.create_error_text(HTTPRequest.RESULT_CANT_CONNECT, 0, null), Format.CREATE_UNREACHABLE)

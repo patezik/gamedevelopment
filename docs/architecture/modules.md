@@ -496,6 +496,9 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   attachTime?: (time: TimeSystem) => void;              // обработчики фаз; прерывание отдыха
   static?: { start?: number; endingAt100?: EndingId };  // ENG-010: Static в движке; без порта выключен
   npcSimulation?: true;                                 // ENG-014: расписания персонажей; выключено
+  reactions?: { topicSensitivity; closeTo };            // ENG-010: PlayerReactions (SIM-006); выключено
+  threats?: { traceRules; onTraces? };                  // ENG-010: ConfrontPlayer (SURV-003); нужен npcSimulation
+  hallucinations?: { pool: HallucinationPool };         // ENG-010: броски SURV-005; нужен phone; выключено
   ```
 - **ENG-014** (рутины персонажей в движке): при `EnginePorts.npcSimulation` движок создаёт
   `SimulationRunner` на своих `TimeSystem`, календаре, графе локаций, `ItemRegistry` и `TruthModel`
@@ -507,8 +510,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `runner.observe`. `GameSnapshot.simulation` (`SimulationRunner.snapshot()`: локация, блок, шаг, RNG
   и знания каждого агента) восстанавливается так, что дальнейшее состояние и хеш совпадают.
   Снимок без `simulation` стартует с текущей минуты по истине. Без порта снимок и хеш не меняются.
-  Порт на сервере для новых дел не включён (OQ-27). Не подключены: цели NPC (SIM-004/005), реакции
-  и нападение (ENG-010, SIM-006), LOD по фокусу игрока, переопределения расписаний сценария (TIME-006).
+  Порт на сервере для новых дел не включён (OQ-27). Не подключены: цели NPC (SIM-004/005, ENG-015), LOD по фокусу игрока, переопределения расписаний сценария (TIME-006).
 - **ENG-010** (Static в движке): при `EnginePorts.static` движок вешает `StaticTimer` на свои
   `TimeSystem` (рост +1 / 60 мин по часам, ровно по сетке часа и после `restore`), применяет
   `STATIC_DELTAS`: раскрытое противоречие −3, подтверждённое ложное обвинение +15, и отдаёт
@@ -517,9 +519,24 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `ScenarioEvents` (TIME-006). Static 100 завершает игру концовкой `endingAt100` (по умолчанию
   `madness`), `GameSnapshot.static` хранит состояние; старые снимки восстанавливаются с `start`. При
   обвинении `hallucinationIds(phone)` добавляются в `hallucinatedClueIds`. Без порта `static` снимок
-  и хеш состояния не меняются, поэтому сохранения без него загружаются. Не подключены (остаток
-  ENG-010): ночь +3, находка тела +5, броски галлюцинаций по времени, реакции NPC и нападение
-  виновника.
+  и хеш состояния не меняются, поэтому сохранения без него загружаются. Ночь +3 — раз в игровую ночь
+  в 22:00. Не подключена находка тела +5 (OQ-28).
+  Галлюцинации (`EnginePorts.hallucinations`, нужен `phone`): по сетке 30 минут (`game/hallucinate.ts`)
+  движок вызывает `rollHallucination` с подпотоком `createRng(seed).fork('hallucination').fork(<минута>)`,
+  поэтому состояния для снимка не нужно; события идут в телефон (`PhoneRuntime.emit`), `rest` вызывает
+  `clearHallucinations`. Вид телефона копирует поля по одному: флага нет, id вида `ev_<минута>_<hex>`.
+  Реакции (`EnginePorts.reactions`): движок владеет `PlayerReactions`, кормит его
+  `PlayerActionObserved` и `applyConsequences` обвинения, оборачивает `testimony` в
+  `refuseWhenAccused`; состояние — `GameSnapshot.reactions` (`PlayerReactions.snapshot()/restore()`).
+  Нападение (`EnginePorts.threats`, нужен `npcSimulation`): `game/confront.ts` ставит на `TimeSystem` цикл
+  целей с `ConfrontPlayer` для виновников из `truth.incident.culpritIds`. Решение принимается только на
+  сетке 10 минут и не в стартовую минуту, пауза после нападения — 60 минут (из событий `attack` в истине),
+  поэтому после `restore` ход совпадает. Условия: ночь, герой с виновником один, локация тёмная и фонарь
+  выключен, настороженность виновника из `PlayerReactions` (без `reactions` — 0, нападения нет). Исход
+  применяется к `DesktopState` (здоровье, потеря предмета), событие `attack` пишется в истину, следы
+  передаются в `threats.onTraces`, клиент получает `PlayerAttacked` без нападавшего, отдых прерывается
+  (`survival.attackInterrupt`, фаза `Timers`). Не сделано: остальные цели NPC и избегание игрока (ENG-015),
+  превращение следов нападения в улики (правила `attack` в контенте).
   `DispatchResult.events` — `GameEvent[]`: события часов, показателей, `PlayerKnowledge`,
   действий и `PlayerActionObserved`. `GameSnapshot.desktop` хранит `PlayerKnowledge`, серверные
   показания с `veracity`, осмотренные локации и точки, открытые двери, диалог, показатели и
@@ -544,8 +561,9 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   (в них есть `characterId` виновных) уходит только в серверный порт
   `simulation.onAccusation`, не в `events` и не в `PlayerView`. `endingOf` определяет концовку:
   вердикт, затем `death`/`madness` по показателям, затем `time_up` по часам; после неё любое
-  действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` с `recap` (`TruthRecap`:
-  `responsible` — единственная проекция истины клиенту) появляется только когда игра окончена.
+  действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` появляется только после
+  окончания игры. ENG-012 добавляет в него `seed` и `scenarioId`. `recap` содержит ответственных
+  и хронологию ключевых событий ([ADR 0021](adr/0021-ending-recap.md)).
 - **SRV-012**: `AccusationPort.incident` — значение или функция `(PlayerKnowledge) => incident | undefined`, вызываемая в момент обвинения; сервер собирает порты в `apps/server/src/sessions/scenario-ports.ts` ([backend.md](../backend/backend.md)).
 - **Блокировка взаимодействия (ENG-005, `game/interaction.ts`):** `blockReason(action, context)` —
   чистая матрица открытого диалога (`talk` или `interrogation`) и состояния звонка
@@ -619,7 +637,9 @@ function solutionSource(action: PlayerAction): 'desktop' | 'phone'; // роль 
 // Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
 function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
 // Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE
-// CLI: hs-sweep --scenario sanatorium_winter --count 1000 --from 0 --out reports/
+// VAL-005 (validator/checks/robustness): redundancyCheck / strictRedundancyCheck (V-REDUNDANCY), cleanupCheck (V-CLEANUP), ROBUSTNESS_CHECKS, tSafe
+// CLI: hs-sweep --scenario sanatorium_winter --count 1000 --from 0 --out reports/ (VAL-007)
+// aggregateSweep(records, params, timing, thresholds?) -> SweepReport; sweepRecord(seed, result); renderSweepMarkdown(report)
 ```
 **Зависимости:** `@hs/core` (без `@hs/generator`, чтобы не было цикла; sweep-CLI живёт в
 `packages/validator/bin` и импортирует генератор динамически). **Тесты:** валидатор отвергает
@@ -651,3 +671,5 @@ SRV-013: `createSessionServices(config, { scenariosDir?, networkInterfaces? })` 
 
 См. [godot-client.md](../desktop/godot-client.md). Autoload: `Backend`, `GameStore`,
 `SceneRouter`, `Settings`, `AudioDirector`, `ServerLauncher`.
+
+Для повторяющихся запросов маршрута `LocationGraph` хранит до 2048 результатов с учётом исходной и конечной локаций, архетипа, ключей и точной игровой минуты. Копии маршрутов и первого шага остаются независимыми от вызывающего кода; кэш не сериализуется и не меняет выбор пути. Календарные минуты для часов доступа также кэшируются внутри неизменяемого графа.

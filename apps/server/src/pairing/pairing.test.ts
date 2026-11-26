@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION } from '@hs/protocol';
+import { PairResponse, PairingCodeResponse, PROTOCOL_VERSION } from '@hs/protocol';
 import { afterEach, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.ts';
 import { readConfig } from '../config/index.ts';
@@ -37,13 +37,14 @@ test('pairs once, activates the session and revokes old device credentials', asy
   const { app, session, revoked, pair, createCode, url, headers } = setup();
   const issued = await createCode();
   expect(issued.statusCode).toBe(200);
-  const { code, expiresAt, qrPayload } = issued.json<{ code: string; expiresAt: number; qrPayload: string }>();
+  const { code, expiresAt, qrPayload } = PairingCodeResponse.parse(issued.json());
   expect(code).toMatch(/^[0-9A-HJKMNP-TV-Z]{6}$/);
   expect(expiresAt).toBe(1_300_000);
   expect(qrPayload).toBe(['hs1', 'pair', 'game-pc.local', 7420, code].join(':'));
   const replies = await Promise.all([pair(code), pair(code)]);
   expect(replies.map((reply) => reply.statusCode).sort()).toEqual([200, 400]);
   const first = replies.find((reply) => reply.statusCode === 200)?.json<{ deviceToken: string }>();
+  expect(PairResponse.safeParse(first).success).toBe(true);
   expect(first).toMatchObject({ sessionId: session.id, wsPath: '/ws' });
   expect(first?.deviceToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
   expect(session.status).toBe('active');

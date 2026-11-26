@@ -45,4 +45,5 @@ export {
   type AvoidPorts,
   type ObservedPlayerAction,
   type ReactionPorts,
+  type ReactionsSnapshot,
 } from './reactions.ts';

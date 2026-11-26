@@ -12,3 +12,4 @@ export { GameEngine, type DispatchResult, type EnginePorts, type GameSnapshot } 
 export { type AccusationPort } from './actions/accuse.ts';
 export { endingOf, endingView, type EndingId } from './ending.ts';
 export { projectPlayerView, type PlayerViewState } from './views.ts';
+export { BODY_HOTSPOT_ID } from './body.ts';

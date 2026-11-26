@@ -30,6 +30,15 @@ export {
   truthInvariantsCheck,
 } from './checks/index.ts';
 export type { TestimonyWitness } from './checks/testimony.ts';
+export {
+  ROBUSTNESS_CHECKS,
+  T_SAFE_SHARE,
+  cleanupCheck,
+  createRedundancyCheck,
+  redundancyCheck,
+  strictRedundancyCheck,
+  tSafe,
+} from './checks/robustness.ts';
 export { validateInvestigation, type ValidateOptions } from './validate.ts';
 export {
   SOLVER_CHECKS,
@@ -41,3 +50,18 @@ export {
   uniqueCheck,
   type Solution,
 } from './solver/index.ts';
+export {
+  DEFAULT_SWEEP_THRESHOLDS,
+  aggregateSweep,
+  entropyBits,
+  evaluateThresholds,
+  renderSweepMarkdown,
+  sweepRecord,
+  type Distribution,
+  type SweepGeneration,
+  type SweepParams,
+  type SweepRecord,
+  type SweepReport,
+  type SweepThresholds,
+  type SweepTiming,
+} from './sweep/sweep.ts';

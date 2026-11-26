@@ -52,7 +52,8 @@
       { "to": "loc_treatment", "minutes": 4 },
       { "to": "loc_room_1", "minutes": 1 },
       { "to": "loc_greenhouse", "minutes": 3 },
-      { "to": "loc_lake_path", "minutes": 6 }
+      { "to": "loc_lake_path", "minutes": 6 },
+      { "to": "loc_boiler", "minutes": 3 }
     ]
   },
   {
@@ -307,7 +308,10 @@
     "description": "Полуподвальная котельная с гудящим котлом и сетью труб под потолком. В углу отгорожена каморка завхоза с топчаном.",
     "tags": ["service", "hazard", "isolated", "staff"],
     "lighting": { "morning": "dim", "day": "dim", "evening": "dim", "night": "dim" },
-    "access": [],
+    "access": [
+      { "from": 480, "to": 1260 },
+      { "itemId": "it_key_boiler" }
+    ],
     "hotspots": [
       {
         "id": "hs_boiler_furnace",
@@ -364,7 +368,8 @@
     ],
     "connections": [
       { "to": "loc_kitchen", "minutes": 3, "locked": { "itemId": "it_key_boiler" } },
-      { "to": "loc_treatment", "minutes": 3, "locked": { "itemId": "it_key_boiler" } }
+      { "to": "loc_treatment", "minutes": 3, "locked": { "itemId": "it_key_boiler" } },
+      { "to": "loc_hall", "minutes": 3 }
     ]
   },
   {

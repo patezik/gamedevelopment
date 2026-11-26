@@ -109,8 +109,40 @@ describe('PlayerAction', () => {
       type: 'accuse',
       caseFile: { accusedIds: ['character-1', 'character-2'], evidence: ['clue-1'] },
       confirm: true,
+      operationId: 'op-1',
     };
     expect(PlayerAction.safeParse(accusation).success).toBe(true);
     expect(PlayerAction.safeParse({ ...accusation, confirm: undefined }).success).toBe(false);
+  });
+
+  it('keeps the operation ID optional in the schema and non-empty when present', () => {
+    const accuse = { type: 'accuse', caseFile: { accusedIds: ['character-1'], evidence: [] } };
+    expect(PlayerAction.safeParse({ ...accuse, confirm: true, operationId: '' }).success).toBe(
+      false,
+    );
+    expect(PlayerAction.safeParse({ ...accuse, confirm: false }).success).toBe(true);
+  });
+});
+
+describe('accusation operation fixtures', () => {
+  type Message = Fixture & { payload: Record<string, unknown> };
+  const read = (name: string) =>
+    JSON.parse(readFileSync(new URL(`../fixtures/${name}`, import.meta.url), 'utf8')) as Message[];
+  const [request, retry] = read('client-accusation.json') as [Message, Message];
+  const [result] = read('server-accusation.json') as [Message];
+
+  it('are valid, and a retry carries the same operation ID and case file', () => {
+    expect(parseClientMessage(request).ok).toBe(true);
+    expect(parseClientMessage(retry).ok).toBe(true);
+    expect(parseServerMessage(result).ok).toBe(true);
+    expect(retry.id).not.toBe(request.id);
+    expect(retry.payload).toEqual(request.payload);
+    expect(result.payload.operationId).toBe(
+      (request.payload.action as { operationId: string }).operationId,
+    );
+  });
+
+  it('carry no field of the truth', () => {
+    expect(JSON.stringify(result)).not.toMatch(/veracity|culprit|hallucinat|truth/i);
   });
 });
