@@ -37,3 +37,4 @@ ADR фиксирует значимое архитектурное решени�
 | [0020](0020-player-known-map.md) | Известная игроку карта в PlayerView | Proposed |
 | [0021](0021-ending-recap.md) | Хронология и seed в итоговом PlayerView | Accepted |
 | [0022](0022-accusation-operation-outcome.md) | Исход необратимого обвинения после переподключения | Accepted |
+| [0023](0023-save-list-seed.md) | Seed в публичном списке сохранений | Accepted |

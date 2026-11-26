@@ -63,7 +63,7 @@ apps/server/src/
 телефона для них не подходит (`UNAUTHORIZED`).
 | `POST /pair` | код привязки | `{ code, deviceName, appVersion, protocolVersion }` → `{ sessionId, deviceToken, wsPath }` | `PAIRING_CODE_INVALID`, `PAIRING_CODE_EXPIRED`, `PAIRING_RATE_LIMITED`, `PROTOCOL_MISMATCH` |
 | `DELETE /sessions/:id/device` | desktop | отвязать телефон | |
-| `GET /saves` | — (локальный сервер) | `[{ saveId, scenarioId, seed, updatedAt, gameTime }]`, новые первыми; `updatedAt` — ISO-время последней записи, `gameTime` — прошедшие игровые минуты (`null`, если файл метаданных потерян). Повреждённые и посторонние файлы в список не попадают | |
+| `GET /saves` | — (локальный сервер) | `[{ saveId, scenarioId, updatedAt, gameTime }]`, новые первыми. `updatedAt` — ISO-время последней записи, `gameTime` — прошедшие игровые минуты (`null`, если файл метаданных потерян). Повреждённые и посторонние файлы в список не попадают | |
 | `POST /saves/:saveId/load` | — | → `{ sessionId, desktopToken, pairing }`; `sessionId` равен `saveId`. Ответ с `Cache-Control: no-store` | `SAVE_NOT_FOUND` (404, в том числе неверный формат id), `SAVE_DESYNC` (422, с `error.atAction`), `ACTION_NOT_AVAILABLE` (409, сессия с этим id ещё идёт или уже загружается), `INTERNAL` (500) |
 | `GET /sessions/:id/debug/truth` | desktop + `HS_DEBUG_TRUTH=1` | `{ sessionId, scenarioId, seed, generatorVersion, minute, truth }`: журнал истины целиком | 404 если флаг выключен (маршрута нет); `UNAUTHORIZED`, `SESSION_NOT_FOUND`, 501 если движок сессии нельзя осмотреть |
 | `GET /sessions/:id/debug/export` | desktop + `HS_DEBUG_TRUTH=1` | репро-пакет `{ format: "hollow-signal-repro", exportedAt, server, session, scenarioId, seed, generatorVersion, stateHash, snapshot }` | как у `debug/truth` |
@@ -164,6 +164,9 @@ DEVICE_REVOKED обработчику шлюза (SRV-004).
   (`{ gameTime }` для списка: производные данные, не источник истины). Идентификатор — только
   `[A-Za-z0-9_-]{1,64}`, иначе это не сохранение (защита от выхода из каталога). Файлы создаются с
   правами `0600` (в них истина), каталог — `0700`.
+- **Публичный список.** Для активных и завершённых дел `GET /saves` возвращает одинаковый
+  набор метаданных. Seed хранится в журнале для загрузки и replay. После завершения дела
+  seed доступен игроку в `EndingView.seed`. [ADR 0023](../architecture/adr/0023-save-list-seed.md)
 - **Автосохранение.** `SaveService.createEngine` передаётся в `SessionManager` и оборачивает
   `GameEngine`: каждое действие идёт через `recordAction`, затем журнал целиком записывается на диск и
   только после этого результат уходит клиенту. Каждое 50-е действие добавляет чекпойнт (это делает

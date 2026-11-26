@@ -86,11 +86,6 @@ interface LoadBody {
   desktopToken: string;
   pairing: { code: string; qrPayload: string };
 }
-interface SummaryBody {
-  saveId: string;
-  seed: string;
-  gameTime: number | null;
-}
 interface ErrorBody {
   error: { code: string; message: string; atAction?: number };
 }
@@ -212,11 +207,23 @@ describe('restart and load', () => {
       'utf8',
     );
     await store.write(id, original);
+    const list = await app.inject({ method: 'GET', url: '/api/v1/saves' });
+    expect(list.statusCode).toBe(200);
+    expect(list.json<SaveList>()).toEqual([
+      {
+        saveId: id,
+        scenarioId: 'tiny-manor',
+        updatedAt: expect.any(String) as string,
+        gameTime: null,
+      },
+    ]);
     const response = await app.inject({ method: 'POST', url: `/api/v1/saves/${id}/load` });
     expect(response.statusCode).toBe(200);
     expect(await store.read(id)).toBe(original);
 
     const session = sessions.get(id)!;
+    expect(hashOf(session)).toBe((JSON.parse(original) as SaveJson).finalStateHash);
+    expect(session.engine.playerView!().ending).toBeUndefined();
     await session.activate();
     expect((await session.dispatch('desktop', { type: 'examineLocation' })).ok).toBe(true);
     const restored = await boot().saves.restore(id);
@@ -274,14 +281,11 @@ describe('restart and load', () => {
     expect(file.actions).toHaveLength(61);
     expect(file.checkpoint?.atAction).toBe(50);
 
-    const list = (await third.app.inject({ method: 'GET', url: '/api/v1/saves' })).json<
-      SummaryBody[]
-    >();
+    const list = (await third.app.inject({ method: 'GET', url: '/api/v1/saves' })).json<SaveList>();
     expect(list).toEqual([
       {
         saveId: session.id,
         scenarioId: 'tiny-manor',
-        seed: 'winter',
         updatedAt: expect.any(String) as string,
         gameTime: minute + 15,
       },
@@ -691,6 +695,7 @@ describe('GET /saves', () => {
 
     const older = await sessions.create('tiny-manor', 'spring');
     await play(older, 1);
+    expect(older.engine.playerView!().ending).toBeUndefined();
     const newer = await sessions.create('tiny-manor', 'autumn');
     await play(newer, 2);
     await writeFile(join(saveDir(), 'notes.txt'), 'x');
@@ -701,18 +706,62 @@ describe('GET /saves', () => {
     await utimes(join(saveDir(), `${older.id}.json`), 1000, 1000);
     await utimes(join(saveDir(), `${newer.id}.json`), 2000, 2000);
 
-    const list = (await app.inject({ method: 'GET', url: '/api/v1/saves' })).json<SummaryBody[]>();
+    const response = await app.inject({ method: 'GET', url: '/api/v1/saves' });
+    expect(response.statusCode).toBe(200);
+    const list = response.json<SaveList>();
     expect(SaveList.safeParse(list).success).toBe(true);
-    expect(list.map((entry) => entry.saveId)).toEqual([newer.id, older.id]);
-    expect(list[0]).toMatchObject({ seed: 'autumn', gameTime: 30 });
-    expect(list[1]).toMatchObject({ seed: 'spring', gameTime: 15 });
-    expect(Object.keys(list[0]!).sort()).toEqual([
-      'gameTime',
-      'saveId',
-      'scenarioId',
-      'seed',
-      'updatedAt',
+    expect(list).toEqual([
+      {
+        saveId: newer.id,
+        scenarioId: 'tiny-manor',
+        updatedAt: '1970-01-01T00:33:20.000Z',
+        gameTime: 30,
+      },
+      {
+        saveId: older.id,
+        scenarioId: 'tiny-manor',
+        updatedAt: '1970-01-01T00:16:40.000Z',
+        gameTime: 15,
+      },
     ]);
+  });
+
+  test('omits the seed of a finished game after restart without replaying it', async () => {
+    const shortGameProvider: InvestigationProvider = {
+      create: (_scenarioId, seed) => {
+        const investigation = tinyManor(seed);
+        return {
+          investigation: {
+            ...investigation,
+            world: { ...investigation.world, durationMinutes: 15 },
+          },
+          ports: { startLocationId: 'loc_hall' },
+        };
+      },
+    };
+    const first = boot({}, { provider: shortGameProvider });
+    const seed = 'finished-case';
+    const session = await first.sessions.create('tiny-manor', seed);
+    await play(session, 1);
+    expect(session.status).toBe('finished');
+    expect(session.engine.playerView!().ending).toMatchObject({ endingId: 'time_up', seed });
+    expect(await readSave(join(saveDir(), `${session.id}.json`))).toMatchObject({ seed });
+    await first.app.close();
+
+    const create = vi.fn(shortGameProvider.create);
+    const { app } = boot({}, { provider: { create } });
+    const response = await app.inject({ method: 'GET', url: '/api/v1/saves' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json<SaveList>()).toEqual([
+      {
+        saveId: session.id,
+        scenarioId: 'tiny-manor',
+        updatedAt: expect.any(String) as string,
+        gameTime: 15,
+      },
+    ]);
+    expect(create).not.toHaveBeenCalled();
+    await app.close();
   });
 
   test('a lost metadata file only blanks gameTime', async () => {
@@ -720,8 +769,16 @@ describe('GET /saves', () => {
     const session = await sessions.create('tiny-manor', 'winter');
     await play(session, 1);
     await rm(join(saveDir(), `${session.id}.meta.json`));
-    const list = (await app.inject({ method: 'GET', url: '/api/v1/saves' })).json<SummaryBody[]>();
-    expect(list[0]).toMatchObject({ saveId: session.id, gameTime: null });
+    const response = await app.inject({ method: 'GET', url: '/api/v1/saves' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json<SaveList>()).toEqual([
+      {
+        saveId: session.id,
+        scenarioId: 'tiny-manor',
+        updatedAt: expect.any(String) as string,
+        gameTime: null,
+      },
+    ]);
   });
 
   test('never exposes the solution or any token', async () => {
@@ -729,7 +786,7 @@ describe('GET /saves', () => {
     const session = await sessions.create('tiny-manor', 'winter');
     await play(session, 1);
     const text = (await app.inject({ method: 'GET', url: '/api/v1/saves' })).body;
-    expect(text).not.toMatch(/truth|culprit|veracity|token/i);
+    expect(text).not.toMatch(/truth|culprit|veracity|token|"seed"/i);
   });
 });
 

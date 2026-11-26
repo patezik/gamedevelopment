@@ -2,14 +2,12 @@
   {
     "saveId": "3f2b8c1e-5d4a-4e7b-9a10-6c2d8e9f0a11",
     "scenarioId": "sanatorium_winter",
-    "seed": "fixture-seed",
     "updatedAt": "2026-11-26T12:00:00.000Z",
     "gameTime": 95
   },
   {
     "saveId": "11111111-2222-4333-8444-555555555555",
     "scenarioId": "sanatorium_winter",
-    "seed": "older",
     "updatedAt": "2026-11-25T09:30:00.000Z",
     "gameTime": null
   }

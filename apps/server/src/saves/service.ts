@@ -12,7 +12,7 @@ import {
   SaveDesyncError,
   SaveFile,
 } from '@hs/core/save';
-import type { ErrorCode, PlayerAction } from '@hs/protocol';
+import type { ErrorCode, PlayerAction, SaveSummary as PublicSaveSummary } from '@hs/protocol';
 import { z } from 'zod';
 import type { InvestigationProvider, SessionEngine, SessionRole } from '../sessions/index.ts';
 import { isSaveId, type SaveStore } from './store.ts';
@@ -33,15 +33,7 @@ export class SaveError extends Error {
   }
 }
 
-export interface SaveSummary {
-  readonly saveId: string;
-  readonly scenarioId: string;
-  readonly seed: string;
-  /** ISO time of the last write. */
-  readonly updatedAt: string;
-  /** Game minutes elapsed; `null` if the metadata next to the save was lost. */
-  readonly gameTime: number | null;
-}
+export type SaveSummary = Readonly<PublicSaveSummary>;
 
 const identity = z.looseObject({ scenarioId: z.string().min(1), seed: z.string() });
 const meta = z.object({ gameTime: z.int().nonnegative() });
@@ -165,7 +157,6 @@ export class SaveService {
       summaries.push({
         saveId,
         scenarioId: head.scenarioId,
-        seed: head.seed,
         updatedAt: updatedAt.toISOString(),
         gameTime: stored.success ? stored.data.gameTime : null,
       });
