@@ -353,6 +353,60 @@ func test_a_paired_phone_hides_the_qr_and_stops_code_refresh() -> void:
 	assert_true(_node("Qr").visible, "a revoked phone needs the QR again")
 
 
+func test_new_code_over_a_paired_phone_shows_the_code_and_qr() -> void:
+	_open()
+	_answer_qr(200, matrix)
+	_go_online("online")
+	assert_false(_node("Qr").visible)
+	assert_false(screen.is_repairing())
+	assert_true(_node("NewCode").visible)
+	assert_true(_text("PhoneHint").contains("Новый код"))
+	_button("NewCode").pressed.emit()
+	assert_true(screen.is_repairing())
+	backend.answer(_last(CODE_ROUTE).id, 200, _pairing("192.168.1.20", "ZZ9Y8X", NOW + TTL))
+	_answer_qr(200, matrix)
+	assert_eq(_text("Code"), "ZZ9Y8X")
+	assert_true(_node("Code").is_visible_in_tree())
+	assert_true(_node("Qr").visible)
+	assert_eq(_text("QrStatus"), Pairing.REPAIR_SHOWN_TEXT)
+	assert_eq(_text("Phone"), "Телефон в сети", "the phone status stays visible")
+	# The code is still replaced on expiry while the phone is being replaced.
+	now = NOW + TTL + 1
+	screen.tick()
+	assert_eq(backend.calls_to(CODE_ROUTE).size(), 2)
+
+
+func test_replacement_mode_ends_when_a_phone_comes_online_again() -> void:
+	_open()
+	_answer_qr(200, matrix)
+	_go_online("offline")
+	assert_eq(_text("Phone"), Format.phone_text("offline"))
+	assert_true(_text("PhoneHint").contains("не на связи"))
+	assert_false(_node("Code").is_visible_in_tree())
+	screen.request_new_code()
+	backend.answer(_last(CODE_ROUTE).id, 200, _pairing("192.168.1.20", "ZZ9Y8X", NOW + TTL))
+	_answer_qr(200, matrix)
+	assert_true(_node("Code").is_visible_in_tree())
+	assert_true(_node("Qr").visible)
+	backend.peer_status("online", "unpaired")
+	assert_true(screen.is_repairing(), "the old phone was revoked, the new one has not paired yet")
+	assert_true(_node("Qr").visible)
+	backend.peer_status("online", "online")
+	assert_false(screen.is_repairing())
+	assert_eq(_text("QrStatus"), Pairing.PAIRED_TEXT)
+	assert_false(_node("Qr").visible)
+	assert_false(_node("Code").is_visible_in_tree())
+
+
+func test_new_code_without_a_paired_phone_is_not_replacement_mode() -> void:
+	_open()
+	_answer_qr(200, matrix)
+	_go_online("unpaired")
+	screen.request_new_code()
+	assert_false(screen.is_repairing())
+	assert_true(_text("PhoneHint").is_empty())
+
+
 func test_a_rejected_handshake_can_be_retried() -> void:
 	_open()
 	backend._set_state(FakeSessionBackend.ConnectionState.HANDSHAKING)
