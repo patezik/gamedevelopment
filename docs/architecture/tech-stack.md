@@ -54,8 +54,8 @@
 | expo-camera | SDK 58 (58.0.x), MIT | Да | Камера, сканирование QR (`CameraView`) |
 | expo-secure-store | SDK 58, MIT | Да | Хранение `deviceToken` |
 | @react-native-async-storage/async-storage | версия SDK 58 | Да | Настройки |
-| expo-haptics | SDK 58 | Да | Вибрация уведомлений |
-| expo-audio | SDK 58 | Да | Рингтон звонков, звуки ОС |
+| expo-haptics | SDK 58 (58.0.x), MIT | Да | Вибрация уведомлений |
+| expo-audio | SDK 58 (58.0.x), MIT | Да | Рингтон звонков, звуки ОС |
 | react-native-reanimated | версия SDK 58 | Да | Анимации, эффекты глитча |
 | zustand | 5.1.x, MIT | Да (чистый JS) | Состояние |
 | zod | 4.6.x | Да (чистый JS) | Валидация входящих сообщений |
