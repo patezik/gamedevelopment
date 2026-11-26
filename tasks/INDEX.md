@@ -2,13 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **169** · todo: 19 · in_progress: 10 · review: 1 · done: 138 · blocked: 1
+Всего задач: **169** · todo: 18 · in_progress: 11 · review: 1 · done: 138 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [VAL-008](VAL-008.md) — Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус (P0, S)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
-- [INT-003](INT-003.md) — MVP-плейтест: чек-лист и первое полное прохождение (P0, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
 
@@ -202,7 +201,7 @@
 | [ENG-014](ENG-014.md) | Подключение симуляции NPC к GameEngine | P0 | L | in_progress | claude-qw | [SIM-003](SIM-003.md), [SIM-005](SIM-005.md), [SIM-006](SIM-006.md), [SIM-007](SIM-007.md), [ENG-006](ENG-006.md) |
 | [ENG-015](ENG-015.md) | Цели NPC и реакции на игрока в цикле симуляции движка | P1 | L | todo | — | [ENG-014](ENG-014.md) |
 | [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | done | egor-claude-gdt-010 | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
-| [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
+| [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | in_progress | claude-pt | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
 | [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | in_progress | egor-codex-mob-011 | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
 | [SRV-014](SRV-014.md) | Атомарная смена сессии при загрузке сохранения | P1 | M | done | egor-codex-srv-014 | [SRV-002](SRV-002.md), [SRV-007](SRV-007.md) |
