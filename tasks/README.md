@@ -59,7 +59,7 @@ blocked — внешняя причина (описать в задаче); canc
 ```bash
 npm run tasks:check                          # валидация (CI)
 npm run tasks:ready                          # что можно взять
-npm run tasks:index                          # обновить INDEX.md
+npm run tasks:index                          # пересобрать INDEX.md локально (не коммитить: его обновляет CI на main)
 node tools/tasks/tasks.mjs show <ID>
 node tools/tasks/tasks.mjs claim <ID> --as <agent>
 node tools/tasks/tasks.mjs status <ID> <status>
