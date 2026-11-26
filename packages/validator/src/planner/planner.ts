@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { GameEngine, type EnginePorts, type Investigation } from '@hs/core/game';
 import {
   PlayerKnowledge,
@@ -11,6 +12,8 @@ import { GUILT_KINDS } from '../solver/index.ts';
 type PlayerAction = Parameters<GameEngine['dispatch']>[1];
 type PlayerView = ReturnType<GameEngine['playerView']>;
 export type SolutionPath = readonly PlayerAction[];
+type SearchResult = SolutionPath | null | 'limit' | 'missing-incident' | 'replay-mismatch';
+type RuleTerm = DeductionRules['rules'][number]['requires'][number]['args'][number];
 
 /** The role that replays a step: the server dispatches a validated QR capture from the phone. */
 export function solutionSource(action: PlayerAction): 'desktop' | 'phone' {
@@ -168,11 +171,14 @@ function proofScore(
   return Math.max(0, ...Array.from(byPerson.values(), (kinds) => kinds.size));
 }
 
+function readsIncident(term: RuleTerm): boolean {
+  return term.k === 'path'
+    ? term.name.startsWith('incident.')
+    : term.k === 'call' && term.args.some(readsIncident);
+}
+
 /** Forward beam search. Every retained edge is accepted and priced by a real GameEngine. */
-function search(
-  investigation: Investigation,
-  options: PlannerOptions,
-): SolutionPath | null | 'limit' {
+function search(investigation: Investigation, options: PlannerOptions): SearchResult {
   const { timeBudget, clues, deductionRules, knownIncident } = options;
   if (!Number.isSafeInteger(timeBudget) || timeBudget < 0)
     throw new RangeError('Invalid time budget');
@@ -180,10 +186,14 @@ function search(
     options.startLocationId ?? investigation.world.locations.snapshot().locations[0]?.id;
   const culprits = investigation.truth.incident.culpritIds;
   if (startLocationId === undefined || culprits.length === 0) return null;
-  if (
-    !GUILT_KINDS.every((kind) => deductionRules.rules.some((rule) => rule.establishes.fn === kind))
-  )
-    return null;
+  for (const kind of GUILT_KINDS) {
+    const rules = deductionRules.rules.filter((rule) => rule.establishes.fn === kind);
+    if (rules.length === 0) return null;
+    // A required premise with an unbound incident path cannot match, even with every clue.
+    if (!knownIncident && rules.every((rule) => rule.requires.some(readsIncident))) {
+      return 'missing-incident';
+    }
+  }
   const context: ClaimContext = {
     clues: new Map(clues.map((clue) => [clue.id, clue])),
     ...(knownIncident && { incident: knownIncident }),
@@ -230,8 +240,11 @@ function search(
       if (consumed.has(parent)) {
         engine = create();
         for (const step of parent.path) {
-          if (!engine.dispatch(solutionSource(step), step).ok)
-            throw new Error('Simulation ports cannot reproduce the prefix');
+          const replayed = engine.dispatch(solutionSource(step), step);
+          if (!replayed.ok || replayed.outcome) return 'replay-mismatch';
+        }
+        if (options.createSimulationPorts && !isDeepStrictEqual(engine.playerView(), parent.view)) {
+          return 'replay-mismatch';
         }
       }
       consumed.add(parent);
@@ -267,7 +280,7 @@ function search(
 
 export function solve(investigation: Investigation, options: PlannerOptions): SolutionPath | null {
   const result = search(investigation, options);
-  return result === 'limit' ? null : result;
+  return typeof result === 'string' ? null : result;
 }
 
 export const timeFeasibleCheck: Check = {
@@ -286,6 +299,20 @@ export const timeFeasibleCheck: Check = {
       ];
     const timeBudget = Math.floor((investigation.world.durationMinutes * 7) / 10);
     const path = search(investigation, { ...context, clues, deductionRules, timeBudget });
+    if (path === 'missing-incident' || path === 'replay-mismatch') {
+      return [
+        {
+          severity: 'error',
+          code:
+            path === 'missing-incident' ? 'TIME_INCIDENT_CONTEXT_MISSING' : 'TIME_REPLAY_MISMATCH',
+          message:
+            path === 'missing-incident'
+              ? 'A required claim depends on the incident briefing known to the player'
+              : 'Independent simulation ports did not reproduce an accepted action prefix',
+          eventIds: [],
+        },
+      ];
+    }
     if (path === 'limit')
       return [
         {

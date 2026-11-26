@@ -138,6 +138,26 @@ it('reports an inconclusive bounded search and refuses a case without a producib
   ).toBeNull();
 });
 
+it('can still prove opportunity using an alternative rule independent of the incident briefing', () => {
+  const deductionRules = compileDeductionRules([
+    { id: 'motive_debt', establishes: 'motive($c)', requires: ['debt($c)'] },
+    { id: 'means_key', establishes: 'means($c)', requires: ['has_key($c)'] },
+    {
+      id: 'opportunity_from_witness_at_incident',
+      establishes: 'opportunity($c)',
+      requires: ['testimony($w,presence($c,$incident.location,$incident.window))'],
+    },
+    {
+      id: 'opportunity_from_register',
+      establishes: 'opportunity($c)',
+      requires: ['presence($c,loc_study,-15)'],
+    },
+  ]);
+  expect(
+    solve(manor(40), { clues, deductionRules, startLocationId, timeBudget: 28 }),
+  ).not.toBeNull();
+});
+
 it('waits for a witness and obtains a statement by asking a visible dialogue topic', () => {
   const inv = manor(70);
   inv.truth.append({
@@ -323,4 +343,21 @@ it('captures a QR clue with the phone and replays the capture from the phone rol
     expect.objectContaining({ id: 'register', captured: true }),
   );
   expect(engine.playerView().clock.t).toBeLessThanOrEqual(28);
+});
+
+it('reports a simulation replay mismatch when a sibling receives a different QR token', () => {
+  let nextToken = 0;
+  const context = {
+    ...options,
+    clues: [{ ...clues[0]!, captureMode: 'qr' as const }],
+    createSimulationPorts: () => ({
+      phone: {},
+      evidenceTokens: { issue: () => `shared_${++nextToken}`, revoke: () => {} },
+    }),
+  };
+  const inv = manor(100);
+  expect(solve(inv, { ...context, timeBudget: 70 })).toBeNull();
+  expect(
+    validateInvestigation(inv, { checks: [timeFeasibleCheck], context }).findings,
+  ).toMatchObject([{ code: 'TIME_REPLAY_MISMATCH', severity: 'error' }]);
 });
