@@ -1,7 +1,38 @@
 [
   {
     "id": "means_from_log",
-    "establishes": "means($actor)",
-    "requires": ["access_to_record($actor)"]
+    "establishes": "means($c)",
+    "requires": ["took_record($c,$l)"]
+  },
+  {
+    "id": "opportunity_from_taking",
+    "establishes": "opportunity($c)",
+    "requires": ["took_record($c,$incident.location)"],
+    "excludes": ["alibi($c,$incident.window)", "no_access($c,$incident.window)"]
+  },
+  {
+    "id": "opportunity_from_presence",
+    "establishes": "opportunity($c)",
+    "requires": ["presence($c,$incident.location,$incident.window)"],
+    "excludes": ["alibi($c,$incident.window)", "no_access($c,$incident.window)"]
+  },
+  {
+    "id": "alibi_from_witness",
+    "establishes": "alibi($c,$i)",
+    "requires": [
+      "presence($c,$l,$i)",
+      "testimony($w,presence($c,$l,$i))",
+      "neq($l,$incident.location)"
+    ]
+  },
+  {
+    "id": "no_access_from_record",
+    "establishes": "no_access($c,$i)",
+    "requires": ["presence($c,$l,$i)", "neq($l,$incident.location)"]
+  },
+  {
+    "id": "motive_from_testimony",
+    "establishes": "motive($c,$v)",
+    "requires": ["testimony($w,motive($c,$v))"]
   }
 ]

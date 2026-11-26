@@ -9,6 +9,8 @@ export const CLAIM_KINDS = [
   'means',
   'motive',
   'alibi',
+  'no_means',
+  'no_access',
   'contradiction',
 ] as const;
 export type ClaimKind = (typeof CLAIM_KINDS)[number];
@@ -431,7 +433,9 @@ export function evaluateClaims(
         solve(ordered, new Map(), [], solutions);
         for (const { bindings, used } of solutions) {
           const text = groundOf(rule.establishes, bindings);
-          if (text === undefined || facts.has(text)) continue;
+          // A reference a clue supports (`means(ch_1)`) is not yet a claim: a rule that reads it
+          // may establish the same claim, once.
+          if (text === undefined || derived.has(text)) continue;
           const blocked = rule.excludes.some((atom) =>
             [...facts.values()].some((fact) => unify(atom, fact.term, bindings, 'excludes', paths)),
           );
