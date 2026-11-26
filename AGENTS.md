@@ -88,6 +88,7 @@ git add tasks/CORE-001.md && git commit -m "claim(CORE-001): <agent-name>"
 git push origin main
 ```
 
+- CI проверяет PR из веток `task/<ID>-…`: задача должна быть уже захвачена (`in_progress`, `review` или `done`), иначе проверка «Tasks and index» красная.
 - Если `push` отклонён — `git pull --rebase` и **перепроверьте**, не захватил ли задачу кто-то другой
   (`node tools/tasks/tasks.mjs show CORE-001`). Если захватил — откатите свой коммит и выберите другую.
 - `<agent-name>` — стабильное имя агента/сессии (например, `claude-core-1`).
