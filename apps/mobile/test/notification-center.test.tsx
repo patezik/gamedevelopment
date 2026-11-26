@@ -17,7 +17,10 @@ jest.mock(
 jest.mock(
   'expo-audio',
   () => ({
-    createAudioPlayer: () => ({ play: mockPlay, seekTo: () => Promise.resolve() }),
+    createAudioPlayer: (source: unknown) => ({
+      play: () => mockPlay(source),
+      seekTo: () => Promise.resolve(),
+    }),
   }),
   { virtual: true },
 );

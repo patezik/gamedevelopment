@@ -7,11 +7,11 @@ extends Node
 ## the `incomingCall` / `gameOver` events. It computes no game rule and keeps only the last values
 ## it heard.
 ##
-## The sounds are placeholders synthesised in code: a drone with dark noise per lighting, pitched
-## by the period and the place, and short stingers. They are original, licence-free and
-## deterministic, and are all built once in [method _ready] (before the first frame), so nothing
-## is synthesised during play. Final assets replace them in CNT-011 through
-## [method ambient_stream], [method ambient_pitch] and [method stinger_stream].
+## The sounds are the library of CNT-011 (`assets/audio`, synthesised by `tools/audio/synth.py`,
+## see docs/game-design/audio-library.md): an ambience bed per variant, pitched by the period
+## and the place, and a stinger per event. If a file is missing, a simple placeholder is
+## synthesised in code instead, so the game is never silent by accident. Everything is loaded
+## once in [method _ready] (before the first frame), nothing is built during play.
 
 const GameStoreScript = preload("res://src/autoload/game_store.gd")
 const BackendScript = preload("res://src/autoload/backend.gd")
@@ -38,6 +38,14 @@ const STATIC_THRESHOLDS: Array[int] = [25, 50, 75]
 ## Stingers are rare (game-design.md §8): another one waits at least this long, in real time.
 ## The game-over stinger always plays.
 const STINGER_MIN_GAP_MS: int = 2000
+
+## Ambience beds and stingers of the library: `res://assets/audio/ambient/ambient_<variant>.wav`
+## and `res://assets/audio/stingers/stinger_<kind>.wav`. Replacing a file keeps the name.
+const AUDIO_DIR: String = "res://assets/audio"
+## Variants of the ambience: the three lighting levels, the night bed and the boiler room.
+const VARIANT_NIGHT: String = "night"
+const VARIANT_BOILER: String = "boiler"
+const AMBIENT_VARIANTS: Array[String] = ["bright", "dim", "dark", VARIANT_NIGHT, VARIANT_BOILER]
 
 const AMBIENT_VOLUME_DB: float = -16.0
 const STINGER_VOLUME_DB: float = -9.0
@@ -80,10 +88,10 @@ var _bank: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	for lighting: String in LIGHTING_NOISE.keys() + [""]:
-		_bank[lighting] = _synth_ambient(lighting)
+	for variant: String in AMBIENT_VARIANTS:
+		_bank[variant] = _load_ambient(variant)
 	for kind: StringName in STINGERS:
-		_bank[kind] = _synth_stinger(kind)
+		_bank[kind] = _load_stinger(kind)
 	for index: int in 2:
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		player.name = "Ambient%d" % index
@@ -201,15 +209,24 @@ func is_ambient_playing() -> bool:
 	return not _ambient_key.is_empty() and _ambient_players[_active_player].playing
 
 
-## The looping ambience for [param key] (see [method ambient_key_for]): the base loop of its
-## lighting. Built in [method _ready]; before that it is synthesised on the spot.
-func ambient_stream(key: String) -> AudioStreamWAV:
+## The ambience variant of [param key]: the boiler room's own bed, the night bed at night, else
+## the bed of the lighting ("dim" when the lighting is unknown).
+static func ambient_variant(key: String) -> String:
+	if _key_part(key, 0).contains(VARIANT_BOILER):
+		return VARIANT_BOILER
+	if _key_part(key, 2) == "night":
+		return VARIANT_NIGHT
 	var lighting: String = _key_part(key, 1)
-	if not LIGHTING_NOISE.has(lighting):
-		lighting = ""
-	if not _bank.has(lighting):
-		_bank[lighting] = _synth_ambient(lighting)
-	return _bank[lighting] as AudioStreamWAV
+	return lighting if LIGHTING_NOISE.has(lighting) else "dim"
+
+
+## The looping ambience for [param key] (see [method ambient_key_for]): the bed of its variant.
+## Loaded in [method _ready]; before that it is loaded on the spot.
+func ambient_stream(key: String) -> AudioStreamWAV:
+	var variant: String = ambient_variant(key)
+	if not _bank.has(variant):
+		_bank[variant] = _load_ambient(variant)
+	return _bank[variant] as AudioStreamWAV
 
 
 ## The pitch of the ambience for [param key]: lower in darker periods, and each place shifted by
@@ -220,11 +237,11 @@ static func ambient_pitch(key: String) -> float:
 	return period * pow(2.0, semitones / 12.0)
 
 
-## The one-shot sound for the stinger [param kind]. Built in [method _ready]; before that it is
-## synthesised on the spot.
+## The one-shot sound for the stinger [param kind]. Loaded in [method _ready]; before that it is
+## loaded on the spot.
 func stinger_stream(kind: StringName) -> AudioStreamWAV:
 	if not _bank.has(kind):
-		_bank[kind] = _synth_stinger(kind)
+		_bank[kind] = _load_stinger(kind)
 	return _bank[kind] as AudioStreamWAV
 
 
@@ -299,7 +316,38 @@ static func _key_part(key: String, index: int) -> String:
 	return parts[index] if parts.size() > index else ""
 
 
-# --- Placeholder synthesis (replaced by CNT-011 assets) -------------------------------------------
+# --- Library files, with a placeholder synthesis as the fallback ----------------------------------
+
+
+static func ambient_path(variant: String) -> String:
+	return "%s/ambient/ambient_%s.wav" % [AUDIO_DIR, variant]
+
+
+static func stinger_path(kind: StringName) -> String:
+	return "%s/stingers/stinger_%s.wav" % [AUDIO_DIR, kind]
+
+
+static func _load_ambient(variant: String) -> AudioStreamWAV:
+	var path: String = ambient_path(variant)
+	if ResourceLoader.exists(path):
+		var wav: AudioStreamWAV = load(path) as AudioStreamWAV
+		if wav != null:
+			wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			wav.loop_begin = 0
+			wav.loop_end = wav.data.size() / 2
+			return wav
+	push_warning("AudioDirector: '%s' is missing, using a placeholder" % path)
+	return _synth_ambient(variant if LIGHTING_NOISE.has(variant) else "")
+
+
+static func _load_stinger(kind: StringName) -> AudioStreamWAV:
+	var path: String = stinger_path(kind)
+	if ResourceLoader.exists(path):
+		var wav: AudioStreamWAV = load(path) as AudioStreamWAV
+		if wav != null:
+			return wav
+	push_warning("AudioDirector: '%s' is missing, using a placeholder" % path)
+	return _synth_stinger(kind)
 
 
 static func _synth_ambient(lighting: String) -> AudioStreamWAV:
