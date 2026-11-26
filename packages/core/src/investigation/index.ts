@@ -38,6 +38,7 @@ export {
 } from './player-knowledge.ts';
 export {
   SUSPICION_LEVELS,
+  motiveTargets,
   personsOfInterest,
   type LinkRole,
   type PersonLink,

@@ -28,8 +28,14 @@ const rulesFile = (scenario: string): object[] =>
   JSON.parse(
     readFileSync(`content/scenarios/${scenario}/deduction-rules.json`, 'utf8'),
   ) as object[];
+/** The means rule these tests combine with the sanatorium rules (not a shipped file). */
+const MEANS_FROM_LOG = {
+  id: 'means_from_log',
+  establishes: 'means($actor)',
+  requires: ['access_to_record($actor)'],
+};
 const [opportunityRule, , motiveRule] = rulesFile('sanatorium_winter') as [object, object, object];
-const rules = compileDeductionRules([opportunityRule, ...rulesFile('_test_minimal'), motiveRule]);
+const rules = compileDeductionRules([opportunityRule, MEANS_FROM_LOG, motiveRule]);
 
 const keyEvent = investigation.truth.incident.keyEventIds[0]!;
 const clueSpecs = [
@@ -114,6 +120,21 @@ describe('accuse', () => {
     const engine = found({ phone });
     expect(accuseWith(engine, fullCase)).toMatchObject({ ok: false, error: 'ACTION_INVALID' });
     expect(accuseWith(found(), fullCase)).toMatchObject({ ok: true, outcome: 'solved' });
+  });
+
+  test('motive targets come from the clues held, name no culprit, and ignore the truth (ENG-013)', () => {
+    const none = GameEngine.create(investigation, ports());
+    expect(none.playerView().caseBoard.motiveTargets).toEqual([]);
+
+    const engine = found();
+    const targets = engine.playerView().caseBoard.motiveTargets;
+    const victimName = investigation.characters.find(({ id }) => id === victim)!.name;
+    expect(targets).toEqual([{ characterId: victim, name: victimName }]);
+    // The target list lets the player build the claim that wins the case.
+    const motive = `motive(${culprit},${targets[0]!.characterId})`;
+    expect(accuseWith(engine, { ...fullCase, motive })).toMatchObject({ outcome: 'solved' });
+
+    expect(targets.map(({ characterId }) => characterId)).not.toContain(culprit);
   });
 
   test('a false accusation raises Static by 15 once judged (ENG-010)', () => {

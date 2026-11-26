@@ -34,7 +34,8 @@ const rulesFile = (scenario) =>
   JSON.parse(readFileSync(new URL(`content/scenarios/${scenario}/deduction-rules.json`, root), 'utf8'));
 // The rule set of the ENG-006 tests: opportunity and motive of the sanatorium, means of _test_minimal.
 const [opportunityRule, , motiveRule] = rulesFile('sanatorium_winter');
-const rules = compileDeductionRules([opportunityRule, ...rulesFile('_test_minimal'), motiveRule]);
+const meansRule = rulesFile('_test_minimal').find(({ id }) => id === 'means_from_log');
+const rules = compileDeductionRules([opportunityRule, meansRule, motiveRule]);
 
 function engineFor(investigation) {
   const { culpritIds, victimIds, window, keyEventIds } = investigation.truth.incident;

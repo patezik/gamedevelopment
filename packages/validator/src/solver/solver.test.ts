@@ -12,6 +12,12 @@ const file = (scenario: string): object[] =>
   JSON.parse(
     readFileSync(`content/scenarios/${scenario}/deduction-rules.json`, 'utf8'),
   ) as object[];
+/** The means rule these tests combine with the sanatorium rules (not a shipped file). */
+const MEANS_FROM_LOG = {
+  id: 'means_from_log',
+  establishes: 'means($actor)',
+  requires: ['access_to_record($actor)'],
+};
 const [opportunity, , motive] = file('sanatorium_winter') as [object, object, object];
 const deductionRules = compileDeductionRules([
   opportunity,
@@ -20,7 +26,7 @@ const deductionRules = compileDeductionRules([
     establishes: 'alibi($c,$i)',
     requires: ['testimony($w,presence($c,$l,$i))', 'neq($l,$incident.location)'],
   },
-  ...file('_test_minimal'),
+  MEANS_FROM_LOG,
   motive,
 ]);
 
@@ -275,6 +281,87 @@ describe('solver on tiny-manor', () => {
     expect(result.unreachable.get(dependent.id)).toEqual({
       kind: 'requirement',
       requirement: `clue:${far.id}`,
+    });
+  });
+
+  describe('no_access and no_means exonerate (OQ-19)', () => {
+    const excusing = compileDeductionRules([
+      opportunity,
+      MEANS_FROM_LOG,
+      motive,
+      {
+        id: 'no_access_from_record',
+        establishes: 'no_access($c,$i)',
+        requires: ['presence($c,$l,$i)', 'neq($l,$incident.location)'],
+      },
+      {
+        id: 'no_means_from_record',
+        establishes: 'no_means($c)',
+        requires: ['lacks_means($c)'],
+        excludes: ['means($c)'],
+      },
+    ]);
+    const check = (extra: Spec[]) => {
+      const { investigation, specs } = base();
+      const all = clues(investigation, [...specs, ...extra]);
+      return validateInvestigation(investigation, {
+        checks: SOLVER_CHECKS,
+        context: contextFor(all, { deductionRules: excusing }),
+      }).findings.map(({ code, subject }) => [code, subject?.id]);
+    };
+    const record = (who: string, where: string, from: number, to: number): Spec => ({
+      template: `register_${who}_${where}`,
+      supports: [`presence(${who},${where},${from}..${to})`],
+    });
+    const { window } = base().investigation.truth.incident;
+
+    it('a record that puts them elsewhere for the whole window clears an innocent', () => {
+      expect(
+        check([
+          record('ch_cook', 'loc_pantry', window.from - 5, window.to + 5),
+          record('ch_porter', 'loc_pantry', window.from, window.to),
+        ]),
+      ).toEqual([]);
+    });
+
+    it('a record that leaves part of the window, or places them at the scene, clears no one', () => {
+      expect(
+        check([
+          record('ch_cook', 'loc_pantry', window.from, window.to - 1),
+          record('ch_porter', 'loc_pantry', window.from, window.to),
+        ]),
+      ).toEqual([['NOT_UNIQUE', 'ch_cook']]);
+      expect(
+        check([
+          record('ch_cook', 'loc_study', window.from, window.to),
+          record('ch_porter', 'loc_pantry', window.from, window.to),
+        ]),
+      ).toEqual([['NOT_UNIQUE', 'ch_cook']]);
+    });
+
+    it('no_means clears an innocent, and is withheld from one the evidence gives the means', () => {
+      const lacks = (who: string): Spec => ({
+        template: `lacks_${who}`,
+        supports: [`lacks_means(${who})`],
+      });
+      const porter = record('ch_porter', 'loc_pantry', window.from, window.to);
+      expect(check([lacks('ch_cook'), porter])).toEqual([]);
+      const takes: Spec = { template: 'log_cook', supports: ['access_to_record(ch_cook)'] };
+      expect(check([lacks('ch_cook'), takes, porter])).toEqual([['NOT_UNIQUE', 'ch_cook']]);
+    });
+
+    it('no_access of the culprit does not make a proven culprit disappear', () => {
+      const { investigation, culprit } = base();
+      const away = record(culprit, 'loc_pantry', window.from, window.to);
+      const solution = solveDeduction({
+        investigation,
+        clues: clues(investigation, [...base().specs, away]),
+        rules: excusing,
+      });
+      // The opportunity rule is blocked by the covering no_access, so the culprit is not provable:
+      // evidence that clears the culprit is a defect the gate must report, not hide.
+      expect(solution.provable).not.toContain(culprit);
+      expect(solution.exonerated).toContain(culprit);
     });
   });
 

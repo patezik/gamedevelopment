@@ -13,6 +13,7 @@ export {
   PersonOfInterestView,
   PlayerView,
   StatementView,
+  MotiveTargetView,
   SuspicionView,
   TimelineEntryView,
 } from './player.ts';

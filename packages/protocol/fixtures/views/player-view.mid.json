@@ -227,6 +227,7 @@
         "linkedClueIds": ["clue_nurse_alibi", "clue_footprints"]
       }
     ],
+    "motiveTargets": [{ "characterId": "ch_nurse", "name": "Дежурная медсестра" }],
     "suspicions": [
       {
         "characterId": "ch_doctor",

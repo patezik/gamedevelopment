@@ -26,6 +26,7 @@ apps/server/src/
 ├── qr/            — payload pairing/evidence, HMAC, матрица QR, реализация EvidenceTokenPort
 ├── saves/         — запись журнала действий, чекпойнты, загрузка (ADR 0014)
 ├── diagnostics/   — /health, /debug (только HS_DEBUG_TRUTH), метрики сессии
+├── routes/        — GET /scenarios, POST /sessions: каталог сценариев, InvestigationProvider на генераторе
 └── app.ts         — сборка Fastify; server.ts — запуск
 ```
 
@@ -38,7 +39,7 @@ apps/server/src/
 |------------|--------------|---------------------|
 | `HS_PORT` | `7420` | Целое от 1 до 65535 |
 | `HS_HOST` | `0.0.0.0` | Непустой адрес привязки или имя хоста |
-| `HS_PUBLIC_HOST` | не задан | IPv4-адрес или имя хоста без порта (символы `A–Z a–z 0–9 . -`); отменяет определение LAN-адреса для QR |
+| `HS_PUBLIC_HOST` | не задан | Конкретный IPv4-адрес или имя хоста без порта (символы `A–Z a–z 0–9 . -`). Адрес `0.0.0.0` допустим для `HS_HOST` и отклоняется здесь при чтении конфигурации. Явный адрес отменяет определение LAN-адреса для QR (выбор адреса — §3, «Создание сессии») |
 | `HS_DATA_DIR` | `.hollow-signal` в домашнем каталоге | Непустой путь к каталогу данных |
 | `HS_LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent` |
 | `HS_DEBUG_TRUTH` | `0` | `0` выключает флаг, `1` включает |
@@ -51,9 +52,9 @@ apps/server/src/
 | Метод и путь | Аутентификация | Тело / ответ | Ошибки |
 |--------------|----------------|--------------|--------|
 | `GET /health` | — | `{ status, version, protocolVersion }` | — |
-| `GET /scenarios` | — | `[{ id, title, durationMinutes }]` | — |
+| `GET /scenarios` | — | `[{ id, title, durationMinutes }]`: сценарии для игрока; `title` — строка (локаль `ru`) | — |
 | `GET /network` | — | `{ candidates: [{ address, interface, recommended, virtual }] }` — LAN-адреса для QR привязки, лучшие первыми; `virtual` — похож на Docker/WSL/VM/VPN (остаётся в списке, но ниже); `recommended` — не более одного; `HS_PUBLIC_HOST` идёт первым. Подробности — [setup.md §6](../development/setup.md) | — |
-| `POST /sessions` | — | `{ scenarioId, seed? }` → `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }` | `SCENARIO_NOT_FOUND`, `GENERATION_UNSOLVABLE` |
+| `POST /sessions` | — | `{ scenarioId, seed? }` → 201 `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }`, `Cache-Control: no-store`. Подробности ниже | `INVALID_MESSAGE` (400; 413 — тело больше лимита, 415 — неподдерживаемый `Content-Type`), `SCENARIO_NOT_FOUND` (404), `GENERATION_UNSOLVABLE` (422), `INTERNAL` (500) |
 | `POST /sessions/:id/pairing-code` | desktop | → новый `pairing` | `SESSION_NOT_FOUND` |
 | `GET /sessions/:id/pairing-qr` | desktop | → `{ size, modules }` текущего кода привязки (новый не выпускается) | `PAIRING_CODE_INVALID` (404, кода нет), `PAIRING_CODE_EXPIRED` (410) |
 | `GET /sessions/:id/evidence-qr/:tokenId` | desktop | → `{ size, modules }` | `QR_INVALID` (404), `QR_EXPIRED` (410), `QR_ALREADY_USED` (409) |
@@ -77,6 +78,73 @@ apps/server/src/
 При создании сессии SRV-002 выдаёт desktop-токен и первоначальный код через сервис привязки.
 expiresAt — Unix-время в миллисекундах. При отзыве сервис удаляет хеш токена и передаёт
 DEVICE_REVOKED обработчику шлюза (SRV-004).
+
+### Создание сессии (SRV-002)
+
+Код — `apps/server/src/routes`: `sessions.ts` (маршруты и zod-схемы запроса и ответов),
+`generation.ts` (каталог сценариев, провайдер на генераторе, seed, сборка зависимостей для
+`server.ts`).
+
+- **Сценарии.** При старте сервер загружает каждый каталог `content/scenarios/<id>`
+  (`loadScenarioFromDir`); ошибка контента останавливает запуск. Каталоги с `_` в начале имени
+  (`_test_minimal`) — тестовый контент: их нет в `GET /scenarios`, и `POST /sessions` отвечает на
+  них `SCENARIO_NOT_FOUND`. Порядок списка — по `id`. `GET` и `POST` проверяют `id` одной схемой
+  (`ScenarioId`, 1–64 символа): сценарий, который `POST` не примет (или чья запись списка не проходит
+  `ScenarioList`), останавливает запуск, а не появляется в списке.
+- **Запрос.** Тело строгое (лишние поля — `INVALID_MESSAGE`). `scenarioId` — строка 1–64 символа.
+  `seed` — `[A-Za-z0-9_-]{1,64}`: без `#` (генератор называет попытки `<seed>#<n>`), пробелов и
+  управляющих символов, поэтому он безопасен в логе. Отказы Fastify при чтении тела тоже дают
+  `INVALID_MESSAGE` со своим статусом: пустой или некорректный JSON и неверный `Content-Length` —
+  400, тело больше лимита (1 МБ) — 413, неподдерживаемый `Content-Type` — 415. Тело `text/plain`
+  Fastify принимает как строку, его отвергает схема (400). При подготовке сессии только ошибки
+  неизвестного сценария и отказа генерации дают 404 и 422 соответственно. Остальные сбои дают
+  `INTERNAL` (500), включая отклонение без причины и исключение с полями ошибки парсера. Ответ и
+  лог содержат общий код ошибки без текста исключения.
+- **Seed по умолчанию.** Без `seed` сервер берёт 12 символов Crockford Base32 из CSPRNG
+  (`crypto.randomInt`) и пишет их группами `XXXX-XXXX-XXXX` (60 бит). Сервер проверяет
+  автоматически созданный seed той же схемой, что и seed клиента. При нарушении сервер
+  возвращает `INTERNAL` до генерации. Seed вместе со сценарием и версией генератора позволяет
+  воспроизвести дело по [ADR 0004](../architecture/adr/0004-determinism.md), поэтому поля
+  `seed` в ответе о создании сессии нет.
+- **Генерация.** `GeneratorInvestigationProvider` реализует `InvestigationProvider` SRV-001 через
+  `generateInvestigation` (GEN-011) с полным шлюзом валидации. Отклонённое шлюзом дело — ошибка
+  `GENERATION_UNSOLVABLE` (422): провайдер бросает её до того, как `SessionManager` выдаёт id, так
+  что ни сессии, ни токена, ни кода привязки не появляется. Текст находок шлюза в ответ не попадает
+  (он называет персонажей). Порты движка — пока только `startLocationId` (стартовая локация пресета,
+  иначе первая); улики, показания и обвинение генератор в `GenerationResult` не отдаёт.
+  Генерация синхронная (сотни миллисекунд на `sanatorium_winter`) и на это время занимает поток
+  сервера.
+- **Атомарность подготовки.** `SessionManager.create` регистрирует сессию после синхронного
+  `prepare`, который выпускает desktop-токен, код привязки и проверяет DTO. ID зарезервирован
+  на время подготовки, чтобы `adopt` не опубликовал другой объект с тем же ID. При сбое подготовки
+  маршрут стирает хеш, удаляет принадлежащий этой сессии код из обеих таблиц и отвечает
+  `INTERNAL` (500). При ошибочной передаче Promise менеджер отклоняет создание и обрабатывает
+  возможное отклонение Promise. За внешнее состояние отвечает callback. Сериализация и
+  доставка HTTP-ответа происходят после регистрации. При их сбое готовая сессия может остаться
+  на сервере.
+- **Адрес QR привязки.** Сервер использует `HS_PUBLIC_HOST` или явный `HS_HOST` в виде IPv4-адреса
+  или имени без порта. Интерфейсы перебираются только при wildcard bind `0.0.0.0` или `::`.
+  Выбирается первый LAN-кандидат, а при пустом списке используется локальный `127.0.0.1`.
+  Для `::` этот путь предполагает, что системный сокет принимает IPv4. При привязке к
+  конкретному IPv6-адресу подготовка сессии требует `HS_PUBLIC_HOST` с доступным телефону
+  адресом или именем. Без него подготовка заканчивается `500 INTERNAL` без регистрации
+  сессии. За доступность явно заданного публичного адреса отвечает конфигурация установки.
+  Формат `hs1:pair:<host>:<port>:<code>` по ADR 0008 допускает IPv4 или имя, порт 1–65535 и
+  код, совпадающий с `pairing.code`. Поддержка литералов IPv6 требует решения по протоколу.
+  `GET /network` (SRV-008) по-прежнему перечисляет все интерфейсы, поэтому при явном bind его
+  рекомендация может отличаться от адреса в pairing payload.
+- **Ответ.** 201 `{ sessionId, desktopToken, pairing }`. `sessionId` — UUID v4,
+  `desktopToken` — 256 бит base64url (в сессии хранится только SHA-256), `pairing` — как у
+  `POST /sessions/:id/pairing-code`. Статус новой сессии — `created`; активирует её привязка
+  телефона. Истины в ответе нет: ни персонажей, ни виновника.
+- **Схемы.** `CreateSessionRequest`, `CreateSessionResponse`, `ScenarioList` и `ErrorResponse`
+  (с `ErrorCode` из `@hs/protocol`) экспортирует `routes/sessions.ts`. Ответ `POST /sessions`
+  проверяется схемой и на production-пути до регистрации сессии, остальные — в integration-тестах.
+  В `@hs/protocol` схем REST пока нет ([PROTO-006](../../tasks/PROTO-006.md)).
+- **Проверка полного шлюза.** Интеграционный тест через `createSessionServices` проверяет,
+  что на копии `_test_minimal` без правил дедукции полный шлюз отклоняет дело, которое прошло
+  бы при `checks: []`. Проверка штатного HTTP 201 использует решаемый seed публичного сценария
+  и полный шлюз.
 
 ### Сохранения ([ADR 0014](../architecture/adr/0014-save-system.md))
 
@@ -154,7 +222,11 @@ created → (pairing) → active → (game over) → finished → (TTL 30 мин
   `token`, `tokenId`, `deviceToken`, `desktopToken`, `pairingCode`, `sig`, `signature`, `secret`,
   `sessionSecret`, `password`, `raw`, `qrPayload` на любой глубине (до двух уровней вложенности), если
   кто-то залогирует объект с такими полями.
-- Генерация логирует `seed`, `generatorVersion`, попытки, время стадий.
+- Генерация логирует `seed`, `generatorVersion`, попытки, время стадий: запись `generation finished`
+  (`info`) или `slow generation` (`warn`, дольше 2 с) с полями `scenarioId`, `seed`,
+  `generatorVersion`, `ok`, `attempts`, `durationMs`, `stageMs` (сумма по попыткам) и `rejections`
+  — только коды отказов (`INCIDENT_NO_FEASIBLE_CULPRIT`, `V-UNIQUE:NOT_UNIQUE`), как `hs-gen` без
+  `--debug-truth`. Тексты находок и выбранный инцидент называют персонажей и в лог не пишутся.
 
 ### Отладка и репро
 

@@ -13,6 +13,9 @@ export default function HomeScreen() {
       <Link href="/os" style={styles.openPhone}>
         Открыть телефон
       </Link>
+      <Link href="/pair" style={styles.openPhone}>
+        Привязать телефон
+      </Link>
     </SafeAreaView>
   );
 }

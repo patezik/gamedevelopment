@@ -99,7 +99,7 @@ describe('scenario trace rules', () => {
         kind: 'document',
         sourceEventId: 'ev_1',
         template: 'missing_record',
-        supports: ['means(ch_anna)'],
+        supports: ['took_record(ch_anna,loc_archive)'],
         captureMode: 'auto',
         location: archive,
         itemId: 'it_log',
@@ -343,6 +343,21 @@ describe('trace payload (OQ-15)', () => {
       'opportunity()',
     ]);
     expect(trace?.location).toBe(hall);
+  });
+
+  test('binds $span to the interval the event lasts, at least one minute', () => {
+    const rules = [
+      {
+        verb: 'take',
+        produces: [{ ...physicalHere, supports: ['presence($actor,$location,$span)'] }],
+      },
+    ];
+    expect(single(rules, event({ t: -20, duration: 7 }))[0]?.supports).toEqual([
+      'presence(ch_anna,loc_hall,-20..-13)',
+    ]);
+    expect(single(rules, event({ t: 5, duration: 0 }))[0]?.supports).toEqual([
+      'presence(ch_anna,loc_hall,5..6)',
+    ]);
   });
 
   test('expands $actor per distinct actor and drops it without actors', () => {
