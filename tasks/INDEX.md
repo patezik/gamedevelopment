@@ -2,11 +2,10 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **159** · todo: 39 · in_progress: 8 · review: 1 · done: 110 · blocked: 1
+Всего задач: **159** · todo: 37 · in_progress: 10 · review: 1 · done: 110 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [GDT-003](GDT-003.md) — Экраны NewGame и Pairing: сессия, QR привязки, статус телефона (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
 - [PROTO-005](PROTO-005.md) — Исход необратимого действия после переподключения: признак совершённого обвинения (P1, S)
 - [SRV-014](SRV-014.md) — Атомарная смена сессии при загрузке сохранения (P1, M)
@@ -135,7 +134,7 @@
 |---|---|---|---|---|---|---|
 | [GDT-001](GDT-001.md) | Autoload Backend: REST и WebSocketPeer, переподключение | P0 | M | done | codex-engine-27 | [FND-007](FND-007.md), [PROTO-003](PROTO-003.md) |
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
-| [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | todo | — | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
+| [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | in_progress | egor-claude-gdt-003 | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
