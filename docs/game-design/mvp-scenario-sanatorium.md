@@ -265,8 +265,8 @@ node --experimental-transform-types --no-warnings packages/generator/scripts/inc
 знанием и показаниями), `die` (смерть — сам инцидент), `harbor_motive`, `form_relationship`,
 `keep_secret` (события предыстории за годы до игры; известны из показаний). Глагол `attack`
 (цель `ConfrontPlayer`) обязан давать след, но шаблона, текстов и точек осмотра для него нет:
-[OQ-41](../planning/open-questions.md). Пока нападение не подключено к движку (ENG-010, OQ-27),
-это не ломает игру. Список проверяет `packages/generator/src/sanatorium-rules.test.ts`.
+[OQ-41](../planning/open-questions.md). Пока порт `threats` движка (ENG-010) на сервере не
+включён (OQ-27), это не ломает игру; с ним первое нападение в санатории бросит ошибку. Список проверяет `packages/generator/src/sanatorium-rules.test.ts`.
 
 ### Дедукция
 
