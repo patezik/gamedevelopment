@@ -4,6 +4,12 @@ import { isIPv6 } from 'node:net';
 import os from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GameEngine } from '@hs/core/game';
+import serverPackage from '../../package.json' with { type: 'json' };
+import { SessionGateway } from '../gateway/index.ts';
+import { QrService, type QrRouteDependencies, type EvidenceTokenStore } from '../qr/index.ts';
+import { engineView, engineEvents } from '../views/index.ts';
+import type { SessionEngine } from '../sessions/index.ts';
 import { loadScenarioFromDir, type ScenarioContent } from '@hs/core/content';
 import { generateInvestigation, type GenerationResult } from '@hs/generator';
 import { z } from 'zod';
@@ -264,20 +270,66 @@ export interface SessionServicesOptions {
 }
 
 /**
- * The production wiring of SRV-002: scenarios from disk, the real generator behind
- * `SessionManager`, and the pairing service whose code `POST /sessions` returns. The result is
+ * The production wiring (SRV-013): real generation, one session manager for REST, pairing,
+ * role projections and QR, and a separate token store attached before a session is published. The result is
  * passed to `buildApp` as is.
  */
 export function createSessionServices(
   config: Pick<ServerConfig, 'host' | 'port' | 'publicHost'>,
   { scenariosDir, networkInterfaces = os.networkInterfaces }: SessionServicesOptions = {},
-): { pairing: PairingService; sessions: SessionRouteDependencies } {
+): {
+  pairing: PairingService;
+  sessions: SessionRouteDependencies & { sessions: SessionManager };
+  gateway: SessionGateway;
+  qr: QrRouteDependencies;
+} {
   const scenarios = ScenarioCatalog.fromDirectory(scenariosDir);
   const provider = new GeneratorInvestigationProvider(scenarios);
-  const sessions = new SessionManager(provider);
+  const qr = new QrService({
+    gameMinute(session) {
+      const view = session.engine.playerView?.();
+      if (!view) throw new Error('The session engine has no game clock');
+      return view.clock.t;
+    },
+  });
+  const pendingStores = new WeakMap<SessionEngine, EvidenceTokenStore>();
+  const sessions = new SessionManager(provider, {
+    createEngine(investigation, ports) {
+      const store = qr.createStore();
+      const engine = GameEngine.create(investigation, { ...ports, evidenceTokens: store });
+      pendingStores.set(engine, store);
+      return engine;
+    },
+  });
   const pairing = new PairingService(sessions, {
     host: () => pairingHost(config, networkInterfaces),
     port: config.port,
   });
-  return { pairing, sessions: { scenarios, sessions, pairing, generation: provider } };
+  const gateway = new SessionGateway({
+    sessions,
+    serverVersion: serverPackage.version,
+    snapshot: engineView,
+    events: engineEvents,
+  });
+  return {
+    pairing,
+    gateway,
+    qr: {
+      qr,
+      authorizeDesktop: pairing.authorizeDesktop.bind(pairing),
+      activePairingCode: pairing.activeCode.bind(pairing),
+    },
+    sessions: {
+      scenarios,
+      sessions,
+      pairing,
+      generation: provider,
+      prepare(session) {
+        const store = pendingStores.get(session.engine);
+        if (!store) throw new Error('The session engine has no evidence token store');
+        qr.attach(session, store);
+        pendingStores.delete(session.engine);
+      },
+    },
+  };
 }

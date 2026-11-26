@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **165** · todo: 33 · in_progress: 10 · review: 2 · done: 119 · blocked: 1
+Всего задач: **165** · todo: 33 · in_progress: 9 · review: 2 · done: 120 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -30,7 +30,6 @@
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
-| [SRV-013](SRV-013.md) Штатная сборка Session Server с WebSocket и QR | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
@@ -39,6 +38,7 @@
 | [CNT-004](CNT-004.md) MVP-сценарий: правила следов и правила дедукции | 1 |
 | [CNT-007](CNT-007.md) Тюнинг MVP-пресета до порогов seed sweep | 1 |
 | [ENG-010](ENG-010.md) Проводка модулей выживания в GameEngine | 1 |
+| [ENG-014](ENG-014.md) Подключение симуляции NPC к GameEngine | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -194,7 +194,7 @@
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
 | [SRV-010](SRV-010.md) | Проводка texts, проекций и событий в Session Server | P0 | M | done | codex-srv-010 | [SRV-005](SRV-005.md), [ENG-009](ENG-009.md), [PHONE-001](PHONE-001.md), [SRV-012](SRV-012.md) |
 | [SRV-012](SRV-012.md) | Порты дела и стартовые данные пресета для GameEngine | P0 | L | done | claude-qt | [SRV-002](SRV-002.md), [GEN-013](GEN-013.md), [ENG-003](ENG-003.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [CNT-006](CNT-006.md) |
-| [SRV-013](SRV-013.md) | Штатная сборка Session Server с WebSocket и QR | P0 | M | in_progress | codex-srv-013 | [SRV-006](SRV-006.md), [SRV-010](SRV-010.md), [SRV-011](SRV-011.md) |
+| [SRV-013](SRV-013.md) | Штатная сборка Session Server с WebSocket и QR | P0 | M | done | codex-srv-013 | [SRV-006](SRV-006.md), [SRV-010](SRV-010.md), [SRV-011](SRV-011.md), [CNT-013](CNT-013.md) |
 | [TIME-005](TIME-005.md) | Дедлайны, критические события, пропущенные события, условия завершения | P0 | M | done | claude-qh | [TIME-003](TIME-003.md), [ENG-006](ENG-006.md) |
 
 ## Фаза 7 · M7 — MVP (15)

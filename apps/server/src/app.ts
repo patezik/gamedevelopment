@@ -54,7 +54,13 @@ export function buildApp(
 
   registerRequestLogging(app);
 
-  registerGateway(app, gateway, qr && ((session, raw) => qr.qr.scan(session, raw)));
+  registerGateway(
+    app,
+    gateway,
+    qr &&
+      ((session, raw) =>
+        qr.qr.scan(session, raw, (result) => gateway.publishDispatch(session, result))),
+  );
   if (pairing) {
     const unsubscribe = pairing.onDeviceRevoked((session) => gateway.revokePhone(session));
     app.addHook('onClose', (_instance, done) => {

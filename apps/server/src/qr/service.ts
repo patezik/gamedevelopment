@@ -1,6 +1,6 @@
 import type { DispatchResult } from '@hs/core/game';
 import type { ErrorCode, ServerMessage } from '@hs/protocol';
-import type { Session } from '../sessions/index.ts';
+import type { Session, SessionDispatchResult } from '../sessions/index.ts';
 import { renderMatrix, type QrMatrix } from './matrix.ts';
 import {
   EvidenceTokenStore,
@@ -94,8 +94,14 @@ export class QrService {
    * with one deliberate change: "already used" is decided before "expired", so scanning a QR again
    * after its clue was captured always answers QR_ALREADY_USED with the clue, never QR_EXPIRED.
    * A token is spent only when the capture succeeds, so a refused scan can be repeated.
+   * `onCaptured` receives that exact successful dispatch once, after spending the token;
+   * rejected and repeated scans never trigger it. It publishes role views through the gateway.
    */
-  async scan(session: Session, raw: unknown): Promise<QrResult> {
+  async scan(
+    session: Session,
+    raw: unknown,
+    onCaptured?: (result: SessionDispatchResult) => void,
+  ): Promise<QrResult> {
     const store = this.#stores.get(session);
     const parsed = parseEvidenceQr(raw);
     if (!store || !parsed) return rejected('QR_INVALID');
@@ -112,13 +118,14 @@ export class QrService {
 
     const capture =
       this.#options.capture ??
-      ((s, tokenId) => s.dispatch('phone', { type: 'captureEvidence', tokenId }, () => {
-        if (store.get(tokenId) !== record) return 'QR_INVALID';
-        if (this.#options.gameMinute(s) >= record.expiresAt) return 'QR_EXPIRED';
-        return undefined;
-      }));
+      ((s, tokenId) =>
+        s.dispatch('phone', { type: 'captureEvidence', tokenId }, () => {
+          if (store.get(tokenId) !== record) return 'QR_INVALID';
+          if (this.#options.gameMinute(s) >= record.expiresAt) return 'QR_EXPIRED';
+          return undefined;
+        }));
     const attempt = (async (): Promise<QrResult> => {
-      let result: DispatchResult;
+      let result: SessionDispatchResult;
       try {
         result = await capture(session, record.tokenId);
       } catch {
@@ -126,6 +133,7 @@ export class QrService {
       }
       if (!result.ok) return rejected(failureOf(result));
       record.usedAt = this.#options.gameMinute(session);
+      onCaptured?.(result);
       return { ok: true, clueRef: record.clueId };
     })();
     record.capturing = attempt;

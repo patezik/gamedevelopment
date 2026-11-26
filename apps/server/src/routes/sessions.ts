@@ -3,7 +3,7 @@ import { errorCodes, type FastifyInstance, type FastifyReply, type FastifyReques
 import { z } from 'zod';
 import { isPairingHost } from '../config/index.ts';
 import { issueToken, type PairingService } from '../pairing/index.ts';
-import type { SessionManager } from '../sessions/index.ts';
+import type { Session, SessionManager } from '../sessions/index.ts';
 import {
   createReadableSeed,
   GenerationUnsolvableError,
@@ -66,6 +66,8 @@ export const ErrorResponse = z.strictObject({
 export interface SessionRouteDependencies {
   readonly scenarios: Pick<ScenarioCatalog, 'list' | 'has'>;
   readonly sessions: Pick<SessionManager, 'create'>;
+  /** Connect engine resources to the new session before credentials or publication. */
+  readonly prepare?: (session: Session) => void;
   readonly pairing: Pick<PairingService, 'createCode' | 'discardCode'>;
   /** Source of the generation log lines (the provider of `sessions`). */
   readonly generation?: {
@@ -113,6 +115,7 @@ export function registerSessionRoutes(
     pairing,
     generation,
     createSeed = createReadableSeed,
+    prepare,
   }: SessionRouteDependencies,
 ): void {
   if (generation) {
@@ -158,6 +161,7 @@ export function registerSessionRoutes(
           // Register only after preparing the credentials and validating the DTO.
           await sessions.create(scenarioId, seed, (session) => {
             try {
+              prepare?.(session);
               const answer = CreateSessionResponse.safeParse({
                 sessionId: session.id,
                 desktopToken: issueToken(session, 'desktop'),
@@ -178,7 +182,12 @@ export function registerSessionRoutes(
           if (error instanceof GenerationUnsolvableError) {
             return reply
               .code(422)
-              .send(failure('GENERATION_UNSOLVABLE', 'No solvable investigation for this scenario and seed'));
+              .send(
+                failure(
+                  'GENERATION_UNSOLVABLE',
+                  'No solvable investigation for this scenario and seed',
+                ),
+              );
           }
           return internalError(request, reply);
         }
