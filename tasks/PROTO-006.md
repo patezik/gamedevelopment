@@ -1,7 +1,7 @@
 ---
 id: PROTO-006
 title: "REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot"
-status: todo
+status: in_progress
 priority: P2
 complexity: S
 phase: 5
@@ -9,8 +9,8 @@ milestone: M5
 area: protocol
 depends_on: [SRV-002]
 modules: ["packages/protocol/src/rest.ts", "packages/protocol/schemas", "packages/protocol/fixtures/rest", "apps/server/src/routes/sessions.ts", "apps/server/src/pairing/index.ts", "apps/server/src/saves/routes.ts", "apps/server/src/qr/routes.ts", "apps/server/src/diagnostics/debug.ts", "apps/server/src/app.ts"]
-assignee: null
-claimed_at: null
+assignee: claude-p1
+claimed_at: "2026-11-26T15:16:04Z"
 ---
 
 # PROTO-006 — REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot

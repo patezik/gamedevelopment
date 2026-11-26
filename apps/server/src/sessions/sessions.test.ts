@@ -112,6 +112,16 @@ describe('SessionManager', () => {
     session.setTokenHash('desktop', 'stored-hash');
     await session.setConnected('desktop', false);
     now += 30 * 60_000;
+
+    await expect(
+      manager.adopt(session.id, session.engine, () => {
+        throw new Error('Preparation failed');
+      }),
+    ).rejects.toThrow('Preparation failed');
+    expect(manager.get(session.id)).toBe(session);
+    expect(session.status).toBe('finished');
+    expect(session.tokenHash('desktop')).toBe('stored-hash');
+
     await manager.sweep();
     expect(session.status).toBe('disposed');
     expect(session.tokenHash('desktop')).toBeUndefined();
