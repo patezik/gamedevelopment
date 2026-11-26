@@ -1,7 +1,7 @@
 ---
 id: PROTO-005
 title: "Исход необратимого действия после переподключения: признак совершённого обвинения"
-status: review
+status: done
 priority: P1
 complexity: S
 phase: 6
