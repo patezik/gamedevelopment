@@ -27,6 +27,14 @@ export const INCIDENT_NO_FEASIBLE_CULPRIT = 'INCIDENT_NO_FEASIBLE_CULPRIT';
 export const WORLD_OWNER_ABSENT = 'WORLD_OWNER_ABSENT';
 
 const MINUTES_PER_DAY = 1440;
+interface DepartureSource {
+  readonly until: number;
+  readonly starts: readonly {
+    readonly from: number;
+    readonly at: string;
+    readonly holding: boolean;
+  }[];
+}
 const SCORE_DECIMALS = 6;
 const TRAITS: readonly string[] = PERSONALITY_TRAITS;
 const PLAN_ACTIVITY = 'incident_plan';
@@ -302,6 +310,11 @@ interface Move {
   readonly t: number;
 }
 
+/** Feasibility reads movement and item access only; perceived memories are discarded. */
+class AssessmentRunner extends SimulationRunner {
+  override observe(): void {}
+}
+
 /**
  * Runs the routines of the whole cast through `SimulationRunner` over history, as
  * HistorySimulation does: characters walk hop by hop (`nextTimedStep`) and are in transit between
@@ -322,7 +335,7 @@ function simulate(
     state.items.move(itemId, { kind: 'character', id: characterId }, t, PLAN_ACTIVITY);
   }
   const truth = new TruthModel(SCRATCH_INCIDENT);
-  new SimulationRunner({
+  new AssessmentRunner({
     time,
     calendar,
     world: state.locations,
@@ -412,6 +425,8 @@ class Assessor {
   readonly #crowds = new Map<number, Int16Array>();
   readonly #arrivals = new Map<string, number | null>();
   readonly #routes = new Map<string, readonly Route[]>();
+  readonly #simulationRuns = new Map<string, TruthModel>();
+  readonly #nextHolderPresence = new Map<string, Int32Array>();
   #rejectedBySimulation = 0;
 
   constructor(input: IncidentSelectionInput, content: ScenarioContent) {
@@ -479,6 +494,7 @@ class Assessor {
     this.#position = this.#cast.map(() => new Int16Array(length).fill(-1));
     if (length > 0) {
       const truth = simulate(input.world, this.#owners, this.#cast, this.#historyStart);
+      this.#simulationRuns.set('[[],[]]', truth);
       this.#cast.forEach(({ id }, index) => this.#fill(this.#position[index]!, truth, id));
     }
     this.#segmentAt = this.#segments.map((segments) => {
@@ -736,13 +752,44 @@ class Assessor {
    * before. Only the earliest start per (position, holding the means) matters, since waiting is
    * always possible.
    */
-  #sources(c: number, natural: Acquisition | null | undefined) {
+  #departureSources = new Map<string, readonly DepartureSource[]>();
+  #departureChanges = new Map<number, readonly (readonly number[])[]>();
+
+  #sources(c: number, natural: Acquisition | null | undefined): readonly DepartureSource[] {
+    // The baseline position and routine are fixed for this assessment. Only the minute at
+    // which the means becomes held changes these departures, not the victim or target scene.
+    const key = `${c}|${natural === null ? 'held' : (natural?.at ?? 'unavailable')}`;
+    const cached = this.#departureSources.get(key);
+    if (cached) return cached;
     const row = this.#position[c]!;
-    return this.#segments[c]!.map((segment) => {
+    let changes = this.#departureChanges.get(c);
+    if (!changes) {
+      changes = this.#segments[c]!.map((segment) => {
+        const times: number[] = [];
+        for (let from = segment.from; from < segment.to; from++) {
+          const offset = from - 1 - this.#historyStart;
+          if (
+            from === segment.from ||
+            from === this.#historyStart ||
+            row[offset] !== row[offset - 1]
+          ) {
+            times.push(from);
+          }
+        }
+        return times;
+      });
+      this.#departureChanges.set(c, changes);
+    }
+    const sources = this.#segments[c]!.map((segment, index) => {
       const seen = new Set<string>();
       const starts: { readonly from: number; readonly at: string; readonly holding: boolean }[] =
         [];
-      for (let from = segment.from; from < segment.to; from++) {
+      // Between position changes, only acquiring the means changes the departure class.
+      const times = [...changes[index]!];
+      const acquired = natural && natural.at + 1;
+      if (acquired && acquired >= segment.from && acquired < segment.to) times.push(acquired);
+      times.sort((a, b) => a - b);
+      for (const from of times) {
         const before = from === this.#historyStart ? -1 : row[from - 1 - this.#historyStart]!;
         if (from !== this.#historyStart && before < 0) continue;
         const at = before < 0 ? segment.location : this.#locationIds[before]!;
@@ -753,6 +800,8 @@ class Assessor {
       }
       return { until: segment.to, starts };
     });
+    this.#departureSources.set(key, sources);
+    return sources;
   }
 
   /** Whether the culprit can take this means at all before `t = 0`. */
@@ -813,8 +862,20 @@ class Assessor {
     for (const [place, location] of this.#locationIds.entries()) {
       const there = this.#arrive(from, location, without, at);
       if (there === null) continue;
-      let met = there - this.#historyStart;
-      while (met < holder.length && holder[met] !== place) met++;
+      const presenceKey = `${holderId}|${place}`;
+      let next = this.#nextHolderPresence.get(presenceKey);
+      if (!next) {
+        next = new Int32Array(holder.length + 1);
+        let nextAt = holder.length;
+        next[holder.length] = nextAt;
+        for (let i = holder.length - 1; i >= 0; i--) {
+          if (holder[i] === place) nextAt = i;
+          next[i] = nextAt;
+        }
+        this.#nextHolderPresence.set(presenceKey, next);
+      }
+      const offset = Math.max(0, there - this.#historyStart);
+      const met = offset < holder.length ? next[offset]! : holder.length;
       if (met < holder.length) {
         meetings.push({
           locationId: location,
@@ -1243,14 +1304,24 @@ class Assessor {
     const moves = acquisition
       ? [{ itemId: meansItemId, characterId: culprit.id, t: acquisition.at + 1 }]
       : [];
-    const truth = simulate(
-      this.#input.world,
-      this.#owners,
-      this.#cast,
-      this.#historyStart,
-      overrides,
-      moves,
-    );
+    // A run depends on the actual schedule/item changes, not on which victim/template is
+    // checked against it. Keep the full simulation, then repeat every candidate's assertions.
+    const simulationKey = JSON.stringify([overrides, moves]);
+    let truth = this.#simulationRuns.get(simulationKey);
+    if (!truth) {
+      truth = simulate(
+        this.#input.world,
+        this.#owners,
+        this.#cast,
+        this.#historyStart,
+        overrides,
+        moves,
+      );
+      if (this.#simulationRuns.size >= 128) {
+        this.#simulationRuns.delete(this.#simulationRuns.keys().next().value!);
+      }
+      this.#simulationRuns.set(simulationKey, truth);
+    }
     if (acquisition) {
       if (truth.whereWas(culprit.id, acquisition.at) !== acquisition.locationId) return false;
       const { fromCharacterId: holder } = acquisition;
