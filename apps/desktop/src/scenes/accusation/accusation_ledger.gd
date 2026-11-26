@@ -8,21 +8,21 @@ extends Node
 ## - SENT — the request left; waiting for its `action.result` (matched by `requestId`).
 ## - EXECUTED — the server accepted it (`ok: true`); waiting for the next view, which tells whether
 ##   the game ended (`ending`) or went on (a first wrong accusation is forgiven).
-## - UNKNOWN — the result can no longer be told: the connection dropped before `action.result`
-##   (the gateway sends `action.result` outside the replayed stream, so a reconnect never brings
-##   it back) or no result came in [member result_timeout_seconds]. The accusation may have been
-##   executed. The ledger never lets the player send another one in this session: a later
-##   `ending` resolves it; nothing in the current PlayerView can tell a forgiven accusation from a
-##   lost request, so a new stateVersion is not taken as proof either way (see godot-client.md
-##   §4.4 and the protocol gap recorded in PROTO-005).
+## - UNKNOWN — the result was lost: the connection dropped before `action.result` or none came in
+##   [member result_timeout_seconds]. The accusation may have been executed, so the ledger never
+##   lets the player send a new one meanwhile. On the next connection to the same game the ledger
+##   sends the same accusation again under the same `operationId`; the server answers with the
+##   stored outcome of that operation or runs it once (ADR 0022, PROTO-005). A timeout on a live
+##   connection waits for the next reconnect.
 ## - ENDED — the view carries `ending`.
 ##
 ## A refusal (`ok: false` for our request) returns to NONE. Welcome's `sessionId` selects which
 ## attempt to show. A disconnect cannot discard an unresolved attempt, even if the player joins
-## another game before returning. Nothing is re-sent automatically.
+## another game before returning. Only an UNKNOWN attempt is re-sent, and only after a reconnect.
 
 const GameStoreScript = preload("res://src/autoload/game_store.gd")
 const BackendScript = preload("res://src/autoload/backend.gd")
+const AccusationFormat = preload("res://src/scenes/accusation/accusation_format.gd")
 
 enum Outcome { NONE, SENT, EXECUTED, UNKNOWN, ENDED }
 
@@ -48,13 +48,18 @@ var view_timeout_seconds: float = VIEW_TIMEOUT_SECONDS
 class Attempt:
 	var outcome: Outcome = Outcome.SENT
 	var request_id: String
+	## Stable across retries: the server runs an accusation with this ID at most once.
+	var operation_id: String
+	## `stateVersion` the server reported for the executed operation; -1 until known.
+	var executed_version: int = -1
 	var file: Dictionary
 	var elapsed: float = 0.0
 	var stalled: bool = false
 
-	func _init(sent_file: Dictionary, sent_request_id: String) -> void:
+	func _init(sent_file: Dictionary, sent_request_id: String, sent_operation_id: String) -> void:
 		file = sent_file.duplicate(true)
 		request_id = sent_request_id
+		operation_id = sent_operation_id
 
 
 var _store: GameStoreScript = null
@@ -92,6 +97,7 @@ func bind_store(store: GameStoreScript) -> void:
 	if _store != null and is_instance_valid(_store):
 		_store.view_changed.disconnect(_on_view_changed)
 		_store.action_resolved.disconnect(_on_action_resolved)
+		_store.operation_resolved.disconnect(_on_operation_resolved)
 		_store.connection_state_changed.disconnect(_on_connection_state_changed)
 	_store = store
 	_attempts.clear()
@@ -100,6 +106,7 @@ func bind_store(store: GameStoreScript) -> void:
 		_session_id = _store.get_session_id()
 		_store.view_changed.connect(_on_view_changed)
 		_store.action_resolved.connect(_on_action_resolved)
+		_store.operation_resolved.connect(_on_operation_resolved)
 		_store.connection_state_changed.connect(_on_connection_state_changed)
 
 
@@ -140,10 +147,10 @@ func get_request_id() -> String:
 
 ## Records that `accuse` with `confirm: true` for [param file] left as [param request_id].
 ## Refused (false) unless the outcome is NONE.
-func begin(file: Dictionary, request_id: String) -> bool:
+func begin(file: Dictionary, request_id: String, operation_id: String = "") -> bool:
 	if not can_accuse() or request_id.is_empty():
 		return false
-	_attempts[_session_id] = Attempt.new(file, request_id)
+	_attempts[_session_id] = Attempt.new(file, request_id, operation_id)
 	changed.emit(Outcome.SENT)
 	return true
 
@@ -164,6 +171,12 @@ func advance(delta: float) -> void:
 			changed.emit(Outcome.EXECUTED)
 
 
+func _on_operation_resolved(request_id: String, state_version: int) -> void:
+	var attempt: Attempt = _current_attempt()
+	if attempt != null and request_id == attempt.request_id:
+		attempt.executed_version = state_version
+
+
 func _on_action_resolved(request_id: String, ok: bool, code: String, message: String) -> void:
 	var attempt: Attempt = _current_attempt()
 	if attempt == null or request_id != attempt.request_id:
@@ -171,8 +184,18 @@ func _on_action_resolved(request_id: String, ok: bool, code: String, message: St
 	if attempt.outcome != Outcome.SENT and attempt.outcome != Outcome.UNKNOWN:
 		return
 	if ok:
-		# Executed: the next view on this connection is the state after it.
-		_set_outcome(attempt, Outcome.EXECUTED)
+		# Executed: the next view on this connection is the state after it. A view that is already
+		# at the version the operation produced (a retry after a reconnect) is that proof.
+		if (
+			attempt.executed_version >= 0
+			and _store.get_state_version() >= attempt.executed_version
+			and not _store.get_view().has("ending")
+		):
+			_attempts.erase(_session_id)
+			changed.emit(Outcome.NONE)
+			continued.emit()
+		else:
+			_set_outcome(attempt, Outcome.EXECUTED)
 	else:
 		_attempts.erase(_session_id)
 		changed.emit(Outcome.NONE)
@@ -200,6 +223,7 @@ func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 		if joined_id != _session_id:
 			_session_id = joined_id
 			changed.emit(get_outcome())
+		_retry_unknown()
 		return
 	# Backend clears its ID before emitting OFFLINE, so use the known ID of the lost connection.
 	var attempt: Attempt = _attempts.get(_session_id)
@@ -208,6 +232,19 @@ func _on_connection_state_changed(state: BackendScript.ConnectionState) -> void:
 	if state == BackendScript.ConnectionState.OFFLINE:
 		_session_id = ""
 		changed.emit(Outcome.NONE)
+
+
+## Sends the accusation with the unknown outcome again under the same operation ID. The server
+## answers with the stored outcome, or runs it once if the first request never arrived (ADR 0022).
+func _retry_unknown() -> void:
+	var attempt: Attempt = _current_attempt()
+	if attempt == null or attempt.outcome != Outcome.UNKNOWN or attempt.operation_id.is_empty():
+		return
+	var action: Dictionary = AccusationFormat.accuse_action(attempt.file, true, attempt.operation_id)
+	if _store.request_action(action) != OK:
+		return
+	attempt.request_id = _store.get_last_action_request_id()
+	_set_outcome(attempt, Outcome.SENT)
 
 
 func _is_current_session() -> bool:

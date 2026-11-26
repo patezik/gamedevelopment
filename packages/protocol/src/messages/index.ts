@@ -84,6 +84,10 @@ export const ServerMessage = z.discriminatedUnion('type', [
       error: ErrorCode.optional(),
       minutesSpent: counter,
       interrupted: z.boolean().optional(),
+      /** Echo of `accuse.operationId`; with it the result may be a stored replay (ADR 0022). */
+      operationId: id.optional(),
+      /** `stateVersion` produced by the executed operation; only with `operationId`, only if `ok`. */
+      stateVersion: version.optional(),
     }),
   }),
   serverEnvelope.extend({
