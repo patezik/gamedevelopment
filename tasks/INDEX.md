@@ -2,13 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **159** · todo: 32 · in_progress: 13 · review: 1 · done: 112 · blocked: 1
+Всего задач: **159** · todo: 31 · in_progress: 14 · review: 1 · done: 112 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
 - [SRV-010](SRV-010.md) — Проводка texts, проекций и событий в Session Server (P0, M)
-- [MOB-010](MOB-010.md) — Приложения Browser и Settings (P1, S)
 - [PROTO-005](PROTO-005.md) — Исход необратимого действия после переподключения: признак совершённого обвинения (P1, S)
 - [PROTO-006](PROTO-006.md) — REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot (P2, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
@@ -184,7 +183,7 @@
 | [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | in_progress | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | todo | — | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | in_progress | claude-m2 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
-| [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | todo | — | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
+| [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | in_progress | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
 | [PROTO-005](PROTO-005.md) | Исход необратимого действия после переподключения: признак совершённого обвинения | P1 | S | todo | — | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
