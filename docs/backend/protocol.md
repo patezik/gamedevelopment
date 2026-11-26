@@ -62,7 +62,7 @@
 | `pong` | `{}` |
 | `view.update` | `{ stateVersion, view: PlayerView \| PhoneView }` |
 | `event` | `{ event: ClientEvent }` (уведомление, входящий звонок, результат скана, конец игры) |
-| `action.result` | `{ requestId, ok, error?, minutesSpent, interrupted? }` |
+| `action.result` | `{ requestId, ok, error?, minutesSpent, interrupted?, operationId?, stateVersion? }`; `operationId` и `stateVersion` — только для `accuse` с `confirm: true` (§7) |
 | `qr.result` | `{ ok, error?, clueRef? }` |
 | `resync` | `{ reason }` → за ним следует `view.update` |
 | `error` | `{ code: ErrorCode, message, requestId? }` |
@@ -99,7 +99,7 @@
 | `useItem` | `itemId, targetId?` |
 | `pickLock` | `targetId` |
 | `rest`, `wait` | `minutes` — положительное целое |
-| `accuse` | `caseFile: { accusedIds, motive?, means?, opportunity?, evidence }, confirm`; `confirm` — логическое значение |
+| `accuse` | `caseFile: { accusedIds, motive?, means?, opportunity?, evidence }, confirm, operationId?`; `confirm` — логическое значение; `operationId` — непустая строка, обязательна при `confirm: true` (шлюз иначе отвечает `ACTION_INVALID`) |
 | `markSuspicion` | `characterId, level, note?`; `level` — неотрицательное целое: индекс в `SUSPICION_LEVELS` (`0` = `none`, `1` = `possible`, `2` = `prime`); другое число или неизвестный `characterId` — `ACTION_INVALID`; время не тратится |
 | `call` | `contactId` |
 | `answerCall` | `callId` |
@@ -239,6 +239,16 @@ interface PhoneView {
 проекция роли кэшируется по `stateVersion` и используется при `resync` и входе клиента. Версия в `view.update` берётся из результата
 `dispatch`; если состояние уже ушло вперёд, устаревшая проекция не публикуется, её заменит
 рассылка следующего `dispatch`.
+
+**Исход обвинения после переподключения** ([ADR 0022](../architecture/adr/0022-accusation-operation-outcome.md)).
+`action.result` не входит в буфер возобновления, поэтому `accuse` с `confirm: true` несёт
+`operationId`, который клиент создаёт один раз и сохраняет при повторе. Шлюз хранит операции
+в памяти сессии (до 64, без вытеснения; сверх лимита `RATE_LIMITED`) и исполняет каждый ID не
+более одного раза: повтор с тем же `caseFile` получает сохранённый результат (или дожидается
+идущего) в новом `action.result` с тем же `operationId` и `stateVersion` исполнения; повтор с другим
+`caseFile` — `ACTION_INVALID`. Повтор не рассылает `view.update` и события. Исходы не
+сохраняются на диск и не зависят от `resume` и `resync`. Примеры — `fixtures/client-accusation.json`
+и `fixtures/server-accusation.json`.
 
 SRV-010 подключает `GameEngine.playerView()` для desktop и `GameEngine.phoneView()` (внутри —
 `projectPhoneView`) для phone, в том числе через `RecordingEngine` загруженной игры.

@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { once } from 'node:events';
-import { PlayerView, PROTOCOL_VERSION, ServerMessage, type ClientMessage } from '@hs/protocol';
+import {
+  PlayerAction,
+  PlayerView,
+  PROTOCOL_VERSION,
+  ServerMessage,
+  type ClientMessage,
+} from '@hs/protocol';
 import { afterEach, expect, test, vi } from 'vitest';
 import WebSocket from 'ws';
 import { buildApp } from '../app.ts';
@@ -80,6 +86,14 @@ async function client(address: string) {
       const message = ServerMessage.parse(JSON.parse(inbox.shift()!));
       expect(message.type).toBe(type);
       return message as Extract<ServerMessage, { type: T }>;
+    },
+    /** The next message of this type; others before it are skipped. */
+    async until<T extends ServerMessage['type']>(type: T) {
+      for (;;) {
+        await vi.waitFor(() => expect(inbox.length).toBeGreaterThan(0), { interval: 5 });
+        const message = ServerMessage.parse(JSON.parse(inbox.shift()!));
+        if (message.type === type) return message as Extract<ServerMessage, { type: T }>;
+      }
     },
     async close() {
       const closed = once(socket, 'close');
@@ -238,4 +252,103 @@ test('closes silent sockets at the handshake and heartbeat deadlines', async () 
   await connected.receive('welcome');
   const idleReason = await closed;
   expect(idleReason.toString()).toBe('HEARTBEAT_TIMEOUT');
+});
+
+type Accuse = Extract<PlayerAction, { type: 'accuse' }>;
+const accuse = (operationId: string, accusedId = 'ch_a'): Accuse => ({
+  type: 'accuse',
+  caseFile: { accusedIds: [accusedId], evidence: [] },
+  confirm: true,
+  operationId,
+});
+
+async function login(address: string, token: string, resume?: { lastSeq: number }) {
+  const desktop = await client(address);
+  desktop.send({
+    type: 'hello',
+    payload: {
+      role: 'desktop',
+      token,
+      appVersion: '1',
+      ...(resume && { resume: { ...resume, stateVersion: 0 } }),
+    },
+  });
+  await desktop.receive('welcome');
+  return desktop;
+}
+
+test('a lost accusation result is recovered by a retry with the same operation ID, run once', async () => {
+  const { address, dispatch, desktopToken, session } = await setup({ snapshot: () => view });
+  await session.activate();
+  const first = await login(address, desktopToken);
+  first.send({ type: 'action.request', id: 'try-1', payload: { action: accuse('op-1') } });
+  await vi.waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
+  first.socket.terminate();
+
+  // The history is gone (resume_unavailable): the outcome still comes from the stored operation.
+  const second = await login(address, desktopToken, { lastSeq: 9999 });
+  second.send({ type: 'action.request', id: 'try-2', payload: { action: accuse('op-1') } });
+  const result = await second.until('action.result');
+  expect(result.payload).toMatchObject({
+    requestId: 'try-2',
+    ok: true,
+    operationId: 'op-1',
+  });
+  expect(result.payload.stateVersion).toBeGreaterThan(0);
+  expect(dispatch).toHaveBeenCalledTimes(1);
+});
+
+test('a retry of an accusation in flight waits for it and does not execute it again', async () => {
+  const { address, dispatch, desktopToken, session } = await setup();
+  await session.activate();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  dispatch.mockImplementationOnce((async () => {
+    await gate;
+    return { ok: true, minutesSpent: 0, events: [] };
+  }) as never);
+  const first = await login(address, desktopToken);
+  first.send({ type: 'action.request', id: 'try-1', payload: { action: accuse('op-2') } });
+  await vi.waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
+  // The replacing connection starts while the first request still runs (its hello waits for it).
+  const joining = login(address, desktopToken);
+  setTimeout(release, 50);
+  const second = await joining;
+  second.send({ type: 'action.request', id: 'try-2', payload: { action: accuse('op-2') } });
+  const result = await second.until('action.result');
+  expect(result.payload).toMatchObject({ requestId: 'try-2', ok: true, operationId: 'op-2' });
+  expect(dispatch).toHaveBeenCalledTimes(1);
+});
+
+test('the same operation ID with another case file is refused and nothing runs', async () => {
+  const { address, dispatch, desktopToken, session } = await setup();
+  await session.activate();
+  const desktop = await login(address, desktopToken);
+  desktop.send({ type: 'action.request', id: 'a', payload: { action: accuse('op-3') } });
+  desktop.send({ type: 'action.request', id: 'b', payload: { action: accuse('op-3', 'ch_b') } });
+  desktop.send({
+    type: 'action.request',
+    id: 'c',
+    payload: { action: { ...accuse('op-3'), caseFile: { evidence: [], accusedIds: ['ch_a'] } } },
+  });
+  const results = new Map<string, unknown>();
+  while (results.size < 3) {
+    const message = await desktop.until('action.result');
+    results.set(message.payload.requestId, message.payload);
+  }
+  expect(results.get('a')).toMatchObject({ ok: true });
+  expect(results.get('b')).toMatchObject({ ok: false, error: 'ACTION_INVALID' });
+  expect(results.get('c')).toMatchObject({ ok: true, operationId: 'op-3' });
+  expect(dispatch).toHaveBeenCalledTimes(1);
+});
+
+test('a confirmed accusation without an operation ID is refused and nothing runs', async () => {
+  const { address, dispatch, desktopToken, session } = await setup();
+  await session.activate();
+  const desktop = await login(address, desktopToken);
+  const bare = { ...accuse('op-4'), operationId: undefined };
+  desktop.send({ type: 'action.request', payload: { action: bare } });
+  const message = await desktop.until('action.result');
+  expect(message.payload).toMatchObject({ ok: false, error: 'ACTION_INVALID' });
+  expect(dispatch).not.toHaveBeenCalled();
 });

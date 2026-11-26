@@ -1,0 +1,36 @@
+[
+  {
+    "v": 1,
+    "type": "action.request",
+    "id": "c-20",
+    "payload": {
+      "action": {
+        "type": "accuse",
+        "caseFile": {
+          "accusedIds": ["ch_bursar"],
+          "motive": "sec_debt",
+          "evidence": ["clue_ledger"]
+        },
+        "confirm": true,
+        "operationId": "op-7f3c"
+      }
+    }
+  },
+  {
+    "v": 1,
+    "type": "action.request",
+    "id": "c-31",
+    "payload": {
+      "action": {
+        "type": "accuse",
+        "caseFile": {
+          "accusedIds": ["ch_bursar"],
+          "motive": "sec_debt",
+          "evidence": ["clue_ledger"]
+        },
+        "confirm": true,
+        "operationId": "op-7f3c"
+      }
+    }
+  }
+]

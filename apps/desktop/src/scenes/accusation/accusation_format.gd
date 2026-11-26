@@ -85,9 +85,20 @@ static func case_file(accused_ids: Array[String], claims: Dictionary, evidence: 
 	return file
 
 
-## The `accuse` PlayerAction; [param confirm] false only asks the server to confirm.
-static func accuse_action(file: Dictionary, confirm: bool) -> Dictionary:
-	return {"type": ProtocolConstants.ACTION_ACCUSE, "caseFile": file.duplicate(true), "confirm": confirm}
+## The `accuse` PlayerAction; [param confirm] false only asks the server to confirm. A confirmed
+## accusation carries [param operation_id], which stays the same on every retry (ADR 0022).
+static func accuse_action(file: Dictionary, confirm: bool, operation_id: String = "") -> Dictionary:
+	var action: Dictionary = {
+		"type": ProtocolConstants.ACTION_ACCUSE, "caseFile": file.duplicate(true), "confirm": confirm
+	}
+	if confirm and not operation_id.is_empty():
+		action["operationId"] = operation_id
+	return action
+
+
+## A new random ID for one irreversible accusation.
+static func new_operation_id() -> String:
+	return "op-" + Crypto.new().generate_random_bytes(12).hex_encode()
 
 
 ## Parts of [param file] the player left out, as screen words ("мотив", ...), plus "улики" when

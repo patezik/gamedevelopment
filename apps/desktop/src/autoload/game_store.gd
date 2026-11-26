@@ -23,6 +23,9 @@ signal peer_status_changed(desktop: String, phone: String)
 signal action_failed(code: String, message: String)
 ## A server response for a specific request. A successful response precedes its view update.
 signal action_resolved(request_id: String, ok: bool, code: String, message: String)
+## An accepted result of an operation-bound action (PROTO-005, ADR 0022): the `stateVersion` that
+## the operation produced. Emitted just before [signal action_resolved] of the same request.
+signal operation_resolved(request_id: String, state_version: int)
 ## A server `error` that names no request (for example UNAUTHORIZED during the handshake).
 signal error_received(code: String, message: String)
 ## The Backend connection stage changed; OFFLINE also clears the current session's view.
@@ -231,6 +234,10 @@ func _on_action_result(payload: Dictionary) -> void:
 	if not accepted:
 		action_failed.emit(code, "")
 	var request_id: String = str(payload.get("requestId", ""))
+	if not request_id.is_empty() and accepted and payload.has("operationId"):
+		var produced: int = Envelope.counter(payload.get("stateVersion"))
+		if produced >= 0:
+			operation_resolved.emit(request_id, produced)
 	if not request_id.is_empty():
 		action_resolved.emit(request_id, accepted, code, "")
 
