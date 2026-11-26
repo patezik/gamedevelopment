@@ -180,7 +180,44 @@ function firstSteps(
   return new Set();
 }
 
-function candidates(branch: Branch, budget: number): Candidate[] {
+/**
+ * Questions whose replies are only presence statements: what a presented clue shows, a rebuttal,
+ * and where someone was or what they saw in the recent hours.
+ */
+function asksPresence(action: PlayerAction): boolean {
+  return (
+    action.type === 'interrogate' || (action.type === 'talk' && ROLLING_TOPIC.test(action.topicId))
+  );
+}
+
+/**
+ * Whether a heard presence statement can be a premise of a guilt link, directly or through a
+ * derived fact. INV-002 turns statements into `statement(w, claim)` and `testimony(w, claim)`;
+ * exclusions only remove claims, so they cannot make such a statement necessary for a proof.
+ */
+export function presenceTestimonyProves(rules: DeductionRules): boolean {
+  const quotesPresence = (premise: RuleTerm) =>
+    premise.k === 'call' &&
+    (premise.fn === 'statement' || premise.fn === 'testimony') &&
+    (premise.args[1]?.k === 'var' ||
+      (premise.args[1]?.k === 'call' && premise.args[1].fn === 'presence'));
+  const pending: string[] = [...GUILT_KINDS];
+  const visited = new Set<string>();
+  for (let fn = pending.pop(); fn !== undefined; fn = pending.pop()) {
+    if (visited.has(fn)) continue;
+    visited.add(fn);
+    for (const rule of rules.rules) {
+      if (rule.establishes.fn !== fn) continue;
+      for (const premise of rule.requires) {
+        if (quotesPresence(premise)) return true;
+        pending.push(premise.fn);
+      }
+    }
+  }
+  return false;
+}
+
+function candidates(branch: Branch, budget: number, presenceProves: boolean): Candidate[] {
   const { view } = branch;
   const result: Candidate[] = [];
   // People the dialogue may offer as `person:` topics: those heard from and those present.
@@ -226,7 +263,8 @@ function candidates(branch: Branch, budget: number): Candidate[] {
           ? 7
           : action.type === 'move' && towards?.has(action.locationId)
             ? TOWARDS_WITNESS
-            : action.type !== 'move' && branch.done.has(id) && !reopens
+            : (action.type !== 'move' && branch.done.has(id) && !reopens) ||
+                (!presenceProves && asksPresence(action))
               ? REPEATED
               : priority(action, view),
       sibling: 0,
@@ -317,6 +355,7 @@ function search(investigation: Investigation, options: PlannerOptions): SearchRe
     clues: new Map(clues.map((clue) => [clue.id, clue])),
     ...(knownIncident && { incident: knownIncident }),
   };
+  const presenceProves = presenceTestimonyProves(deductionRules);
   const startEngine = GameEngine.prepareStart(investigation);
   const create = () => {
     const ports: EnginePorts = { ...options.createSimulationPorts?.(), startLocationId, clues };
@@ -343,7 +382,7 @@ function search(investigation: Investigation, options: PlannerOptions): SearchRe
   ];
   while (beam.length > 0) {
     const edges = beam
-      .flatMap((branch) => candidates(branch, timeBudget))
+      .flatMap((branch) => candidates(branch, timeBudget, presenceProves))
       .sort(
         (a, b) =>
           b.parent.coverage - a.parent.coverage ||

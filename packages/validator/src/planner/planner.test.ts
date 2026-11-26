@@ -14,6 +14,7 @@ import {
   validateInvestigation,
   type SolutionPath,
 } from '../index.ts';
+import { presenceTestimonyProves } from './planner.ts';
 
 const rules = compileDeductionRules([
   { id: 'motive_debt', establishes: 'motive($c)', requires: ['debt($c)'] },
@@ -469,4 +470,47 @@ it('goes back to a witness to ask about a person met later, without leaving the 
     .filter((c) => c.subject === 'ch_bursar')
     .map((c) => c.kind);
   expect(new Set(kinds)).toEqual(new Set(['motive', 'means', 'opportunity']));
+});
+
+it('treats presence statements as proof material only when a guilt rule can use them', () => {
+  const guilt = [
+    { id: 'motive_debt', establishes: 'motive($c)', requires: ['debt($c)'] },
+    { id: 'means_key', establishes: 'means($c)', requires: ['has_key($c)'] },
+  ];
+  const opportunity = (requires: string[]) =>
+    compileDeductionRules([
+      ...guilt,
+      { id: 'opportunity', establishes: 'opportunity($c)', requires },
+      // Alibis only exclude claims; a contradiction is not a guilt link.
+      {
+        id: 'alibi_from_witness',
+        establishes: 'alibi($c,$i)',
+        requires: ['presence($c,$l,$i)', 'testimony($w,presence($c,$l,$i))'],
+      },
+      {
+        id: 'contradiction',
+        establishes: 'contradiction($c)',
+        requires: ['statement($c,presence($c,$l,$i))', 'presence($c,$l2,$i)'],
+      },
+    ]);
+  expect(presenceTestimonyProves(opportunity(['presence($c,loc_study,-15)']))).toBe(false);
+  expect(
+    presenceTestimonyProves(
+      opportunity(['testimony($w,presence($c,$incident.location,$incident.window))']),
+    ),
+  ).toBe(true);
+  const derived = compileDeductionRules([
+    ...guilt,
+    {
+      id: 'presence_from_witness',
+      establishes: 'presence($c,$l,$i)',
+      requires: ['testimony($w,presence($c,$l,$i))'],
+    },
+    {
+      id: 'opportunity',
+      establishes: 'opportunity($c)',
+      requires: ['presence($c,$incident.location,$incident.window)'],
+    },
+  ]);
+  expect(presenceTestimonyProves(derived)).toBe(true);
 });
