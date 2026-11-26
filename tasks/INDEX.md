@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **162** · todo: 32 · in_progress: 10 · review: 4 · done: 115 · blocked: 1
+Всего задач: **162** · todo: 32 · in_progress: 9 · review: 5 · done: 115 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -186,7 +186,7 @@
 | [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | todo | — | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
 | [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | review | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | todo | — | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
-| [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | in_progress | claude-m2 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
+| [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | review | claude-m2 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | review | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
 | [PROTO-005](PROTO-005.md) | Исход необратимого действия после переподключения: признак совершённого обвинения | P1 | S | todo | — | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
