@@ -121,6 +121,7 @@ static func large_view(clue_count: int = DEFAULT_CLUE_COUNT) -> Dictionary:
 			"statements": statements,
 			"contradictions": contradictions,
 			"personsOfInterest": persons,
+			"motiveTargets": [],
 			"suspicions": [
 				{"characterId": CHARACTERS[0][0], "level": "prime", "note": "Ключ от процедурной"},
 				{"characterId": CHARACTERS[2][0], "level": "possible"},

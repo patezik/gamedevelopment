@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **158** · todo: 39 · in_progress: 11 · review: 0 · done: 107 · blocked: 1
+Всего задач: **158** · todo: 39 · in_progress: 10 · review: 1 · done: 107 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -167,7 +167,7 @@
 | [ENG-009](ENG-009.md) | Проекция реплик NPC и стоимости предъявления в PlayerView | P0 | M | done | claude-qm | [ENG-003](ENG-003.md), [CNT-005](CNT-005.md) |
 | [ENG-011](ENG-011.md) | Источник рода и словарь терминов для русских текстов | P0 | M | todo | — | [CNT-005](CNT-005.md), [ENG-009](ENG-009.md) |
 | [ENG-012](ENG-012.md) | EndingView: хронология истины, seed и статистика прохождения | P1 | M | in_progress | egor-codex-eng-012 | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
-| [ENG-013](ENG-013.md) | Цели мотива для обвинения: кого игрок может указать в motive(c, v) | P0 | S | in_progress | claude-qq | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
+| [ENG-013](ENG-013.md) | Цели мотива для обвинения: кого игрок может указать в motive(c, v) | P0 | S | review | claude-qq | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
 | [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | done | egor-codex-gdt-005 | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | done | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
