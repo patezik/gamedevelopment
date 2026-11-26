@@ -19,10 +19,8 @@ jest.mock('expo-router', () => ({
   Slot: () => {
     const Component =
       mockRoute === 'home'
-        ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy: the mock factory runs before imports
-          require('../app/os/index').default
-        : // eslint-disable-next-line @typescript-eslint/no-require-imports -- same
-          require('../app/os/[appId]').default;
+        ? jest.requireActual<typeof import('../app/os/index')>('../app/os/index').default
+        : jest.requireActual<typeof import('../app/os/[appId]')>('../app/os/[appId]').default;
     return <Component />;
   },
 }));
