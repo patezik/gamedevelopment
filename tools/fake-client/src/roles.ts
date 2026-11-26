@@ -80,7 +80,7 @@ export class FakePhone extends FakeClient {
     return FakePhone.pair({ baseUrl: desktop.baseUrl, code, ...options });
   }
 
-  /** `DELETE /sessions/:id/device` with the device token: the phone leaves on its own (ADR 0023). */
+  /** `DELETE /sessions/:id/device` with the device token: the phone leaves on its own (ADR 0024). */
   unpair(): Promise<undefined> {
     return revokePhone(this.baseUrl, requireSession(this), this.token);
   }
