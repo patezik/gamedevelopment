@@ -10,6 +10,7 @@
 | Procedural Generation | [generation-pipeline.md](procedural-generation/generation-pipeline.md) · [scenario-presets.md](procedural-generation/scenario-presets.md) |
 | Gameplay Systems: симуляция и время | [character-simulation.md](simulation/character-simulation.md) · [time-system.md](simulation/time-system.md) |
 | Mobile Application | [mobile-app.md](mobile/mobile-app.md) · [qr-mechanics.md](mobile/qr-mechanics.md) |
+| Legal | [privacy-policy.md](legal/privacy-policy.md) |
 | Backend | [backend.md](backend/backend.md) · [protocol.md](backend/protocol.md) |
 | Desktop (Godot) | [godot-client.md](desktop/godot-client.md) |
 | Architecture | [overview.md](architecture/overview.md) · [modules.md](architecture/modules.md) · [tech-stack.md](architecture/tech-stack.md) · [ADR](architecture/adr/README.md) |
