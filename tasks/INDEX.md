@@ -2,12 +2,15 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **167** · todo: 29 · in_progress: 10 · review: 2 · done: 125 · blocked: 1
+Всего задач: **167** · todo: 29 · in_progress: 10 · review: 1 · done: 126 · blocked: 1
 
 ## Готовы к взятию сейчас
 
+- [VAL-005](VAL-005.md) — Проверки V-REDUNDANCY и V-CLEANUP (P0, M)
+- [VAL-007](VAL-007.md) — Seed sweep CLI hs-sweep и отчёты (P0, M)
 - [INT-001](INT-001.md) — Интеграция привязки: Godot ↔ сервер ↔ телефон (P0, S)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [INT-002](INT-002.md) — E2E-бот: прохождение расследования через реальный сервер по SolutionPath (P0, M)
 - [GDT-013](GDT-013.md) — Backend: отказ рукопожатия не теряется, без бесконечного переподключения (P1, S)
 - [REL-003](REL-003.md) — Политика приватности и тексты разрешений (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
@@ -19,7 +22,7 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[VAL-003](VAL-003.md) → [INT-002](INT-002.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -27,7 +30,6 @@
 |---|---|
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 4 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
-| [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
 | [CNT-003](CNT-003.md) MVP-сценарий: шаблоны преступлений и правила мотивов | 1 |
@@ -37,6 +39,7 @@
 | [ENG-014](ENG-014.md) Подключение симуляции NPC к GameEngine | 1 |
 | [INT-001](INT-001.md) Интеграция привязки: Godot ↔ сервер ↔ телефон | 1 |
 | [INT-002](INT-002.md) E2E-бот: прохождение расследования через реальный сервер по SolutionPath | 1 |
+| [INT-004](INT-004.md) Баланс MVP: стоимости действий, длительность, кривые Static и показателей | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -124,7 +127,7 @@
 | [SIM-007](SIM-007.md) | LOD симуляции (focus/background) и бенчмарки | P1 | M | done | claude-w5 | [SIM-003](SIM-003.md) |
 | [VAL-001](VAL-001.md) | Каркас валидатора и проверки V-TRUTH-INV, V-TIMELINE | P0 | S | done | claude-val-1 | [TRUTH-003](TRUTH-003.md), [CORE-003](CORE-003.md) |
 | [VAL-002](VAL-002.md) | Солвер решаемости: V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE | P0 | L | done | claude-w3 | [VAL-001](VAL-001.md), [INV-002](INV-002.md), [EVD-002](EVD-002.md) |
-| [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | review | claude-v1 | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
+| [VAL-003](VAL-003.md) | Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | P0 | L | done | claude-v1 | [VAL-002](VAL-002.md), [ENG-001](ENG-001.md) |
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | done | claude-qb | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | todo | — | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
 | [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | done | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
