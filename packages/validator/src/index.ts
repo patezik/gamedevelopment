@@ -30,6 +30,15 @@ export {
   truthInvariantsCheck,
 } from './checks/index.ts';
 export type { TestimonyWitness } from './checks/testimony.ts';
+export {
+  ROBUSTNESS_CHECKS,
+  T_SAFE_SHARE,
+  cleanupCheck,
+  createRedundancyCheck,
+  redundancyCheck,
+  strictRedundancyCheck,
+  tSafe,
+} from './checks/robustness.ts';
 export { validateInvestigation, type ValidateOptions } from './validate.ts';
 export {
   SOLVER_CHECKS,

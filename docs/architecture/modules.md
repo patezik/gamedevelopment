@@ -620,6 +620,7 @@ function solutionSource(action: PlayerAction): 'desktop' | 'phone'; // роль 
 // Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
 function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
 // Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE
+// VAL-005 (validator/checks/robustness): redundancyCheck / strictRedundancyCheck (V-REDUNDANCY), cleanupCheck (V-CLEANUP), ROBUSTNESS_CHECKS, tSafe
 // CLI: hs-sweep --scenario sanatorium_winter --count 1000 --from 0 --out reports/ (VAL-007)
 // aggregateSweep(records, params, timing, thresholds?) -> SweepReport; sweepRecord(seed, result); renderSweepMarkdown(report)
 ```
