@@ -51,6 +51,24 @@ export {
   type Solution,
 } from './solver/index.ts';
 export {
+  DEFAULT_BASELINE_TOLERANCE,
+  addFailedSeeds,
+  baselineFromReport,
+  checkCorpus,
+  compareToBaseline,
+  newFailedSeeds,
+  parseBaseline,
+  parseCorpus,
+  renderCorpus,
+  type BaselineComparison,
+  type BaselineTolerance,
+  type CorpusSeed,
+  type CorpusVerdict,
+  type RegressionCorpus,
+  type SeedExpectation,
+  type SweepBaseline,
+} from './sweep/regression.ts';
+export {
   DEFAULT_SWEEP_THRESHOLDS,
   aggregateSweep,
   entropyBits,
