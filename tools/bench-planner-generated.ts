@@ -142,7 +142,10 @@ export function examineGeneratedCase(seed: string, generated = generatedPlannerC
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const results = seeds.map((seed) => examineGeneratedCase(seed));
   console.table(results);
-  // The 300 ms of VAL-003 is reported, not enforced: it is not met on the full case (see validation.md).
-  console.log(`Within 300 ms: ${results.filter(({ ms }) => ms <= 300).length}/${results.length}`);
-  if (results.some((result) => 'failure' in result)) process.exitCode = 1;
+  // VAL-003: the planner budget on the full MVP case is 2000 ms (owner decision 26.11.2026, see validation.md).
+  const BUDGET_MS = 2000;
+  console.log(
+    `Within ${BUDGET_MS} ms: ${results.filter(({ ms }) => ms <= BUDGET_MS).length}/${results.length}`,
+  );
+  if (results.some((result) => 'failure' in result || result.ms > BUDGET_MS)) process.exitCode = 1;
 }
