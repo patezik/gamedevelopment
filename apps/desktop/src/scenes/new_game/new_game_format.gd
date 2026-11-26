@@ -16,6 +16,7 @@ const ORIGIN_PATTERN: String = r"^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?\z"
 const CATALOG_UNREACHABLE: String = "Сервер игры недоступен по адресу %s. Запустите его и повторите."
 const CATALOG_FAILED: String = "Не удалось получить список сценариев (HTTP %d)."
 const CATALOG_EMPTY: String = "На сервере нет доступных сценариев."
+const LAUNCH_FAILED: String = "Не удалось запустить сервер игры. Перезапустите игру; если ошибка повторится, сохраните лог игры."
 const SEED_INVALID: String = "Seed: от 1 до 64 символов — латинские буквы, цифры, «-» и «_»."
 const CREATE_UNREACHABLE: String = "Сервер не ответил. Проверьте, что он запущен, и повторите."
 const CREATE_INVALID: String = "Сервер отклонил запрос. Проверьте seed и повторите."
@@ -25,9 +26,22 @@ const CREATE_INTERNAL: String = "Внутренняя ошибка сервер�
 const CREATE_BAD_ANSWER: String = "Сервер прислал неожиданный ответ. Повторите попытку."
 
 
-## The server origin from `params.server`, then the command line, then [constant DEFAULT_ORIGIN].
+## The server origin from `params.server`, then the command line, then [param bundled] (the port
+## ServerLauncher actually started the packaged server on), then [constant DEFAULT_ORIGIN].
 ## An invalid value is skipped.
-static func server_origin(params: Dictionary, user_args: PackedStringArray) -> String:
+static func server_origin(
+	params: Dictionary, user_args: PackedStringArray, bundled: String = ""
+) -> String:
+	var explicit: String = explicit_origin(params, user_args)
+	if not explicit.is_empty():
+		return explicit
+	if is_origin(bundled):
+		return bundled
+	return DEFAULT_ORIGIN
+
+
+## A valid origin from `params.server` or `--server=`, or "" when neither names one.
+static func explicit_origin(params: Dictionary, user_args: PackedStringArray) -> String:
 	var from_params: String = str(params.get("server", "")).strip_edges().trim_suffix("/")
 	if is_origin(from_params):
 		return from_params
@@ -36,7 +50,7 @@ static func server_origin(params: Dictionary, user_args: PackedStringArray) -> S
 			var value: String = argument.substr(SERVER_ARGUMENT.length()).strip_edges().trim_suffix("/")
 			if is_origin(value):
 				return value
-	return DEFAULT_ORIGIN
+	return ""
 
 
 static func is_origin(value: String) -> bool:

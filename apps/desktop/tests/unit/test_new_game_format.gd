@@ -11,6 +11,17 @@ func test_server_origin_prefers_params_then_command_line_then_default() -> void:
 	assert_eq(Format.server_origin({"server": "ftp://x"}, PackedStringArray(["--server=bad"])), Format.DEFAULT_ORIGIN)
 
 
+func test_the_bundled_server_comes_after_explicit_origins_and_before_the_default() -> void:
+	var bundled: String = "http://127.0.0.1:7421"
+	var args: PackedStringArray = ["--server=http://10.0.0.5:7499/"]
+	assert_eq(Format.server_origin({}, PackedStringArray(), bundled), bundled)
+	assert_eq(Format.server_origin({}, args, bundled), "http://10.0.0.5:7499")
+	assert_eq(Format.server_origin({"server": "http://pc.local:7000"}, args, bundled), "http://pc.local:7000")
+	assert_eq(Format.server_origin({}, PackedStringArray(), "bad"), Format.DEFAULT_ORIGIN)
+	assert_eq(Format.explicit_origin({}, PackedStringArray()), "")
+	assert_eq(Format.explicit_origin({}, args), "http://10.0.0.5:7499")
+
+
 func test_origin_accepts_http_origins_only() -> void:
 	assert_true(Format.is_origin("http://127.0.0.1:7420"))
 	assert_true(Format.is_origin("https://host"))
