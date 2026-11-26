@@ -11,6 +11,7 @@ import {
   QR_REJECTION_MESSAGES,
   type PairingTarget,
 } from '../src/pairing/parsePairingQr';
+import { startGameConnection, stopGameConnection } from '../src/connection/gameConnection';
 import { savePairing } from '../src/pairing/storage';
 
 export default function PairScreen() {
@@ -37,6 +38,11 @@ export default function PairScreen() {
         return;
       }
       await savePairing(result.device);
+      stopGameConnection();
+      void startGameConnection({
+        appVersion: Constants.expoConfig?.version ?? '0.0.0',
+        onRevoked: () => router.replace('/pair'),
+      });
       router.replace('/os');
     } catch {
       setMessage('Не удалось сохранить привязку на телефоне. Повторите попытку.');

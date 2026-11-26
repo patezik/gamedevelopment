@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **159** · todo: 36 · in_progress: 11 · review: 1 · done: 110 · blocked: 1
+Всего задач: **159** · todo: 36 · in_progress: 10 · review: 2 · done: 110 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -137,7 +137,7 @@
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
-| [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | in_progress | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
+| [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | review | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
 | [MOB-004](MOB-004.md) | Приложение Camera: сканирование QR улик и обработка ошибок | P0 | M | todo | — | [MOB-003](MOB-003.md), [SRV-006](SRV-006.md) |
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | todo | — | [MOB-003](MOB-003.md) |
 | [PHONE-001](PHONE-001.md) | Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | P0 | L | done | claude-w3 | [INV-001](INV-001.md), [PROTO-002](PROTO-002.md) |
