@@ -469,6 +469,13 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 нечитаемый файл или значение не того типа — значение по умолчанию и предупреждение. Экран настроек
 появится вместе с главным меню; до тех пор настройка меняется через API или файл.
 
+Язык интерфейса (QA-003): секция `general`, ключ `locale` (`ru` по умолчанию, `en`); `get_locale()`,
+`set_locale(locale)` (неподдерживаемый язык — `ERR_INVALID_PARAMETER`), сигнал `locale_changed(locale)`;
+значение также выставляется в `TranslationServer`. Строки — в `assets/i18n/strings.csv`
+(`key,ru,en`), их читает autoload `Localization` (`src/autoload/localization.gd`) и регистрирует как
+`Translation`; `Localization.text(key)` при отсутствии ключа в языке возвращает русский текст с
+предупреждением. Файл помечен `importer="keep"` (в `.translation` не импортируется).
+
 ### 7.2. HorrorFx
 
 `src/scenes/overlays/horror_fx/` — `CanvasLayer` (слой 100: над экранами и HUD, под DebugOverlay и

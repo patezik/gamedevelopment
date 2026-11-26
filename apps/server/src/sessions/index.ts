@@ -11,6 +11,8 @@ const EVENT_LIMIT = 200;
 const DESKTOP_GRACE_MS = 60_000;
 const FINISHED_TTL_MS = 30 * 60_000;
 
+export const DEFAULT_LOCALE = 'ru';
+
 export type SessionRole = 'desktop' | 'phone';
 export type SessionStatus =
   'created' | 'active' | 'suspended' | 'finished' | 'faulted' | 'disposed';
@@ -19,6 +21,7 @@ export interface InvestigationProvider {
   create(
     scenarioId: string,
     seed: string,
+    locale?: string,
   ):
     | { investigation: Investigation; ports: EnginePorts }
     | Promise<{ investigation: Investigation; ports: EnginePorts }>;
@@ -236,14 +239,16 @@ export class SessionManager {
   /**
    * `prepare` runs synchronously on the new session before it is registered (tokens, pairing
    * code, the answer). If it fails, the manager never holds the session. The callback owns the
-   * cleanup of any state it changed outside the manager.
+   * cleanup of any state it changed outside the manager. `locale` is the text language chosen by
+   * the client (QA-003); the provider picks the templates.
    */
   async create(
     scenarioId: string,
     seed: string,
     prepare?: (session: Session) => undefined,
+    locale = DEFAULT_LOCALE,
   ): Promise<Session> {
-    const { investigation, ports } = await this.#provider.create(scenarioId, seed);
+    const { investigation, ports } = await this.#provider.create(scenarioId, seed, locale);
     const id = this.#createId();
     if (this.#sessions.has(id) || this.#creating.has(id)) throw new Error('Duplicate session ID');
     this.#creating.add(id);

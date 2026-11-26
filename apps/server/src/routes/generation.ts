@@ -44,6 +44,11 @@ export type ScenarioSummary = z.infer<typeof ScenarioSummary>;
 /** The locale of the game texts (game-design.md: Russian; other locales are QA-003). */
 const TITLE_LOCALE = 'ru';
 
+/** The text locale a scenario can serve: the requested one if it has templates, else `ru`. */
+export function resolveTextLocale(content: ScenarioContent, locale?: string): string {
+  return locale !== undefined && content.text[locale] !== undefined ? locale : TITLE_LOCALE;
+}
+
 /** Scenarios whose directory starts with `_` are test content: never offered to the player. */
 const isTestScenario = (id: string) => id.startsWith('_');
 
@@ -208,9 +213,12 @@ export class GeneratorInvestigationProvider implements InvestigationProvider {
     };
   }
 
-  create(scenarioId: string, seed: string) {
+  create(scenarioId: string, seed: string, locale?: string) {
     const content = this.#catalog.content(scenarioId);
     if (!content) throw new ScenarioNotFoundError();
+    // The generator emits language-neutral facts and has no locale input yet; the text locale is
+    // resolved here (with the ru fallback) for the stage that renders the templates.
+    void resolveTextLocale(content, locale);
     const started = this.#now();
     const result = this.#generate({ scenarioId, seed }, content, { now: this.#now });
     const entry = generationLog(scenarioId, seed, result, this.#now() - started);

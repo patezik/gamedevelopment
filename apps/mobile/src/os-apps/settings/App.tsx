@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { LOCALES, setLocale, t, useLocale } from '../../i18n';
 import { unpairDevice } from '../../pairing/unpair';
 import {
   TEXT_SCALE,
@@ -33,6 +34,7 @@ export function SettingsScreen({ onUnpair }: { onUnpair: () => void | Promise<vo
   const sound = useSettingsStore((s) => s.sound);
   const setSound = useSettingsStore((s) => s.setSound);
   const scale = useTextScale();
+  const locale = useLocale();
   const [confirming, setConfirming] = useState(false);
   const body = { fontSize: 15 * scale };
 
@@ -49,6 +51,24 @@ export function SettingsScreen({ onUnpair }: { onUnpair: () => void | Promise<vo
             style={[styles.size, textSize === s.id ? styles.sizeOn : null]}
           >
             <Text style={[styles.sizeText, { fontSize: 14 * TEXT_SCALE[s.id] }]}>{s.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={[styles.label, body]}>{t('settings.language', locale)}</Text>
+      <View style={styles.sizes}>
+        {LOCALES.map((code) => (
+          <Pressable
+            key={code}
+            accessibilityRole="button"
+            accessibilityState={{ selected: code === locale }}
+            accessibilityLabel={t(`language.${code}`, locale)}
+            onPress={() => setLocale(code)}
+            style={[styles.size, code === locale ? styles.sizeOn : null]}
+          >
+            <Text style={[styles.sizeText, { fontSize: 14 * scale }]}>
+              {t(`language.${code}`, locale)}
+            </Text>
           </Pressable>
         ))}
       </View>

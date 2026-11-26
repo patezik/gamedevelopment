@@ -22,6 +22,7 @@ export { ScenarioId, Seed };
 export const CreateSessionRequest = z.strictObject({
   scenarioId: ScenarioId,
   seed: Seed.optional(),
+  locale: z.enum(['ru', 'en']).optional(),
 });
 
 /** `GET /api/v1/scenarios` answer. */
@@ -169,7 +170,7 @@ export function registerSessionRoutes(
               pairing.discardCode(session);
               throw error;
             }
-          });
+          }, body.data.locale);
         } catch (error) {
           if (error instanceof ScenarioNotFoundError) {
             return reply.code(404).send(failure('SCENARIO_NOT_FOUND', 'Scenario not found'));
