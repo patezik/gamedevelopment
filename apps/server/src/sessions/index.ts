@@ -5,11 +5,13 @@ import {
   type EnginePorts,
   type Investigation,
 } from '@hs/core/game';
-import type { ErrorCode, PlayerAction } from '@hs/protocol';
+import type { ErrorCode, PlayerAction, PlayerView, PhoneView } from '@hs/protocol';
 
 const EVENT_LIMIT = 200;
 const DESKTOP_GRACE_MS = 60_000;
 const FINISHED_TTL_MS = 30 * 60_000;
+
+export const DEFAULT_LOCALE = 'ru';
 
 export type SessionRole = 'desktop' | 'phone';
 export type SessionStatus =
@@ -19,12 +21,15 @@ export interface InvestigationProvider {
   create(
     scenarioId: string,
     seed: string,
+    locale?: string,
   ):
     | { investigation: Investigation; ports: EnginePorts }
     | Promise<{ investigation: Investigation; ports: EnginePorts }>;
 }
 
 export interface SessionEngine {
+  playerView?(): PlayerView;
+  phoneView?(): PhoneView | undefined;
   dispatch(role: SessionRole, action: PlayerAction): DispatchResult | Promise<DispatchResult>;
 }
 
@@ -158,6 +163,27 @@ export class Session {
     });
   }
 
+  /** Wait for queued writes and hold the queue until the replacement is ready to publish. */
+  replaceWith<Engine extends SessionEngine>(
+    restore: () => Promise<Engine>,
+    publish: (engine: Engine) => Session,
+  ): Promise<Session> {
+    return this.#enqueue(async () => {
+      // Only an active session can become eligible here. Leave finished-session expiry to sweep.
+      if (this.#status === 'active') this.#refreshLifetime();
+      if (!REPLACEABLE.has(this.#status)) throw new SessionIdInUseError();
+      const replacement = publish(await restore());
+      this.#dispose();
+      return replacement;
+    });
+  }
+
+  #dispose(): void {
+    this.#status = 'disposed';
+    this.#tokenHashes.clear();
+    this.#events.length = 0;
+  }
+
   #refreshLifetime(): void {
     const now = this.#now();
     if (
@@ -172,9 +198,7 @@ export class Session {
       this.#finishedIdleSince !== undefined &&
       now - this.#finishedIdleSince >= FINISHED_TTL_MS
     ) {
-      this.#status = 'disposed';
-      this.#tokenHashes.clear();
-      this.#events.length = 0;
+      this.#dispose();
     }
   }
 
@@ -217,6 +241,7 @@ const REPLACEABLE: ReadonlySet<SessionStatus> = new Set([
 
 export class SessionManager {
   readonly #sessions = new Map<string, Session>();
+  readonly #pendingIds = new Set<string>();
   readonly #provider: InvestigationProvider;
   readonly #now: () => number;
   readonly #createId: () => string;
@@ -230,32 +255,63 @@ export class SessionManager {
       options.createEngine ?? ((investigation, ports) => GameEngine.create(investigation, ports));
   }
 
-  async create(scenarioId: string, seed: string): Promise<Session> {
-    const { investigation, ports } = await this.#provider.create(scenarioId, seed);
+  /**
+   * `prepare` runs synchronously on the new session before it is registered (tokens, pairing
+   * code, the answer). If it fails, the manager never holds the session. The callback owns the
+   * cleanup of any state it changed outside the manager. `locale` is the text language chosen by
+   * the client (QA-003); the provider picks the templates.
+   */
+  async create(
+    scenarioId: string,
+    seed: string,
+    prepare?: (session: Session) => undefined,
+    locale = DEFAULT_LOCALE,
+  ): Promise<Session> {
+    const { investigation, ports } = await this.#provider.create(scenarioId, seed, locale);
     const id = this.#createId();
-    if (this.#sessions.has(id)) throw new Error('Duplicate session ID');
-    const session = new Session(id, this.#createEngine(investigation, ports, id), this.#now);
-    this.#sessions.set(id, session);
-    return session;
+    if (this.#sessions.has(id) || this.#pendingIds.has(id)) throw new Error('Duplicate session ID');
+    this.#pendingIds.add(id);
+    try {
+      const session = new Session(id, this.#createEngine(investigation, ports, id), this.#now);
+      const prepared: unknown = prepare?.(session);
+      if (prepared !== undefined) {
+        // Observe a rejecting Promise from an untyped caller without publishing the session.
+        void Promise.resolve(prepared).catch(() => undefined);
+        throw new TypeError('Session prepare must finish synchronously and return undefined');
+      }
+      this.#sessions.set(id, session);
+      return session;
+    } finally {
+      this.#pendingIds.delete(id);
+    }
   }
 
   /**
-   * Hosts an already built engine (a loaded save) under `id`. A session that is still running under
-   * this ID is not replaced; one that is suspended, finished, faulted or disposed is.
+   * Hosts an engine under `id`. A factory restores it after the ID is reserved and queued actions
+   * have finished. Synchronous `prepare` returns the commit for staged data; that commit must not
+   * throw or call external hooks. The previous session is retired in the same synchronous step.
    */
-  async adopt(id: string, engine: SessionEngine): Promise<Session> {
-    const existing = this.#sessions.get(id);
-    if (existing && !REPLACEABLE.has(await existing.refreshLifetime())) {
-      throw new SessionIdInUseError();
+  async adopt<Engine extends SessionEngine>(
+    id: string,
+    engine: Engine | (() => Engine | Promise<Engine>),
+    prepare?: (session: Session, engine: Engine) => () => undefined,
+  ): Promise<Session> {
+    if (this.#pendingIds.has(id)) throw new SessionIdInUseError();
+    this.#pendingIds.add(id);
+    try {
+      const restore = () => Promise.resolve(typeof engine === 'function' ? engine() : engine);
+      const publish = (restored: Engine) => {
+        const session = new Session(id, restored, this.#now);
+        prepare?.(session, restored)();
+        this.#sessions.set(id, session);
+        return session;
+      };
+      const existing = this.#sessions.get(id);
+      if (existing) return await existing.replaceWith(restore, publish);
+      return publish(await restore());
+    } finally {
+      this.#pendingIds.delete(id);
     }
-    // The wait above may have let another adopt in: check again, synchronously with the insert.
-    const current = this.#sessions.get(id);
-    if (current !== existing && current && !REPLACEABLE.has(current.status)) {
-      throw new SessionIdInUseError();
-    }
-    const session = new Session(id, engine, this.#now);
-    this.#sessions.set(id, session);
-    return session;
   }
 
   get(id: string): Session | undefined {

@@ -84,11 +84,11 @@ node tools/tasks/tasks.mjs show CORE-001   # детали и статус зав
 ```bash
 git checkout main && git pull --rebase
 node tools/tasks/tasks.mjs claim CORE-001 --as <agent-name>   # status → in_progress, assignee, claimed_at
-npm run tasks:index
-git add tasks/ && git commit -m "claim(CORE-001): <agent-name>"
+git add tasks/CORE-001.md && git commit -m "claim(CORE-001): <agent-name>"
 git push origin main
 ```
 
+- CI проверяет PR из веток `task/<ID>-…`: задача должна быть уже захвачена (`in_progress`, `review` или `done`), иначе проверка «Tasks and index» красная.
 - Если `push` отклонён — `git pull --rebase` и **перепроверьте**, не захватил ли задачу кто-то другой
   (`node tools/tasks/tasks.mjs show CORE-001`). Если захватил — откатите свой коммит и выберите другую.
 - `<agent-name>` — стабильное имя агента/сессии (например, `claude-core-1`).
@@ -126,6 +126,7 @@ npm test -w @hs/mobile                          # мобильное прило�
 npm run sweep -- --scenario sanatorium_winter --count 200   # генерация (после VAL-007)
 npm run tasks:check                             # задачи и индекс
 npm run docs:check                              # ссылки документации
+npm run art:check                               # арт-ассеты (art-direction.md §7)
 ```
 
 Перед PR все проверки, относящиеся к затронутым областям, должны быть зелёными локально.
@@ -145,19 +146,19 @@ npm run docs:check                              # ссылки документ�
 1. Скопируйте любой файл из `tasks/` как образец, дайте следующий свободный ID своей области.
 2. Заполните все разделы; `status: todo`, `assignee: null`; задача ≤ `L`.
 3. Укажите зависимости в `depends_on` **и** в разделе «Зависимости».
-4. `npm run tasks:index && npm run tasks:check`.
+4. `npm run tasks:check`.
 5. Новые задачи добавляются в вашем PR или отдельным PR `chore(tasks): ...`.
 
 ## 11. Pull Request и передача на проверку
 
 1. Обновите `main`, сделайте rebase, прогоните проверки.
 2. Отметьте выполненные пункты «Критерии приёмки» в файле задачи (`- [x]`).
-3. Переведите задачу в `review`: `node tools/tasks/tasks.mjs status CORE-001 review && npm run tasks:index`.
+3. Переведите задачу в `review`: `node tools/tasks/tasks.mjs status CORE-001 review`.
 4. Создайте PR в `main` по [шаблону](.github/pull_request_template.md): ID задачи в заголовке
    (`[CORE-001] sfc32 PRNG`), что сделано, как проверено, что не сделано, вопросы.
 5. Ревьюер проверяет критерии приёмки, тесты, документацию, соблюдение правил раздела 3.
 6. **Перед merge** ревьюер (или автор после одобрения) переводит задачу в `done` в той же ветке
-   (`status CORE-001 done`, `tasks:index`). Merge — squash.
+   (`status CORE-001 done`). Merge — squash.
 7. Если работа не завершена — PR не мержится, задача остаётся `in_progress`; если вы прекращаете
    работу — верните задачу в `todo` (`status CORE-001 todo`) с комментарием в PR о сделанном.
 

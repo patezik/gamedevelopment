@@ -376,10 +376,11 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     markSuspicion(id: CharacterId, level: "none" | "possible" | "prime", note?: string): boolean;   // без затрат времени
     serialize(): PlayerKnowledgeSnapshot;  static restore(saved: unknown): PlayerKnowledge;   // INVESTIGATION_INVALID_STATE
   }
-  type Claim = { kind: "motive" | "means" | "opportunity" | "presence" | "alibi" | "contradiction"; subject: CharacterId; detail: unknown }
+  type Claim = { kind: "motive" | "means" | "opportunity" | "presence" | "alibi" | "no_means" | "no_access" | "contradiction"; subject: CharacterId; detail: unknown }
   function compileDeductionRules(input: unknown): DeductionRules;       // DeductionRulesError DEDUCTION_RULES_INVALID (INV-002)
   function evaluateClaims(pk: PlayerKnowledge, rules: DeductionRules, ctx?: ClaimContext): EstablishedClaim[];
   // ClaimContext = { clues: Map<ClueId, { supports }>; incident?: { location; window } } — известное игроку, не истина
+  function motiveTargets(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">): string[];   // ENG-013; только цели, без «чей» мотив
   function personsOfInterest(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">): PersonOfInterest[];   // INV-003; подсказка, не Suspect
   function detectContradictions(pk: PlayerKnowledge, ctx: Pick<ClaimContext, "clues">, toleranceMinutes?: number): Contradiction[];   // INV-004; событие ContradictionFound — contradictionEvents()
   interface CaseFile { accusedIds: CharacterId[]; motive?: ClaimRef; means?: ClaimRef; opportunity?: ClaimRef; evidence: ClueId[] }
@@ -473,6 +474,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     | RestAction | WaitAction | CallAction | MessageAction | BrowseAction | OpenFileAction | CaptureEvidenceAction | AccuseAction;
   class GameEngine {
     static create(inv: Investigation, ports: EnginePorts): GameEngine;
+    static prepareStart(inv: Investigation): (ports: EnginePorts) => GameEngine;
     dispatch(source: "desktop" | "phone", a: PlayerAction): DispatchResult;
     playerView(): PlayerView; phoneView(): PhoneView;   // проекции без истины
     snapshot(): GameSnapshot; static restore(s: GameSnapshot, inv: Investigation, ports): GameEngine;
@@ -492,7 +494,32 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   startVitals?: Vitals; inventory?: readonly PackItem[];            // SURV-001, SURV-004
   simulation?: { onPlayerAction(e: PlayerActionObserved): void };   // SIM-006
   attachTime?: (time: TimeSystem) => void;              // обработчики фаз; прерывание отдыха
+  static?: { start?: number; endingAt100?: EndingId };  // ENG-010: Static в движке; без порта выключен
+  npcSimulation?: true;                                 // ENG-014: расписания персонажей; выключено
   ```
+- **ENG-014** (рутины персонажей в движке): при `EnginePorts.npcSimulation` движок создаёт
+  `SimulationRunner` на своих `TimeSystem`, календаре, графе локаций, `ItemRegistry` и `TruthModel`
+  (`endAt` — конец сценария; подпоток `createRng(seed).fork('engine')`). Стартовые позиции берутся из
+  истины (последнее присутствие или прибытие), умершие до старта (`state alive = false`) передаются в
+  `exits`. Первый тик минуты 0 выполняется `TimeSystem.advance(0)` при подключении, поэтому
+  персонажи в комнатах и доступны для `talk`/`interrogate` до первого действия. Наблюдаемое
+  публичное действие игрока (не телефона) записывается в `KnowledgeStore` присутствующих через
+  `runner.observe`. `GameSnapshot.simulation` (`SimulationRunner.snapshot()`: локация, блок, шаг, RNG
+  и знания каждого агента) восстанавливается так, что дальнейшее состояние и хеш совпадают.
+  Снимок без `simulation` стартует с текущей минуты по истине. Без порта снимок и хеш не меняются.
+  Порт на сервере для новых дел не включён (OQ-27). Не подключены: цели NPC (SIM-004/005), реакции
+  и нападение (ENG-010, SIM-006), LOD по фокусу игрока, переопределения расписаний сценария (TIME-006).
+- **ENG-010** (Static в движке): при `EnginePorts.static` движок вешает `StaticTimer` на свои
+  `TimeSystem` (рост +1 / 60 мин по часам, ровно по сетке часа и после `restore`), применяет
+  `STATIC_DELTAS`: раскрытое противоречие −3, подтверждённое ложное обвинение +15, и отдаёт
+  `StaticChanged`, `StaticThresholdReached`, `StaticOverwhelmed` в `DispatchResult.events`. Уровень —
+  в `PlayerView.static` и сигнале `PhoneView`; `GameEngine.staticLevel()` — порт `staticLevel` для
+  `ScenarioEvents` (TIME-006). Static 100 завершает игру концовкой `endingAt100` (по умолчанию
+  `madness`), `GameSnapshot.static` хранит состояние; старые снимки восстанавливаются с `start`. При
+  обвинении `hallucinationIds(phone)` добавляются в `hallucinatedClueIds`. Без порта `static` снимок
+  и хеш состояния не меняются, поэтому сохранения без него загружаются. Не подключены (остаток
+  ENG-010): ночь +3, находка тела +5, броски галлюцинаций по времени, реакции NPC и нападение
+  виновника.
   `DispatchResult.events` — `GameEvent[]`: события часов, показателей, `PlayerKnowledge`,
   действий и `PlayerActionObserved`. `GameSnapshot.desktop` хранит `PlayerKnowledge`, серверные
   показания с `veracity`, осмотренные локации и точки, открытые двери, диалог, показатели и
@@ -519,6 +546,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   вердикт, затем `death`/`madness` по показателям, затем `time_up` по часам; после неё любое
   действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` с `recap` (`TruthRecap`:
   `responsible` — единственная проекция истины клиенту) появляется только когда игра окончена.
+- **SRV-012**: `AccusationPort.incident` — значение или функция `(PlayerKnowledge) => incident | undefined`, вызываемая в момент обвинения; сервер собирает порты в `apps/server/src/sessions/scenario-ports.ts` ([backend.md](../backend/backend.md)).
 - **Блокировка взаимодействия (ENG-005, `game/interaction.ts`):** `blockReason(action, context)` —
   чистая матрица открытого диалога (`talk` или `interrogation`) и состояния звонка
   (`EnginePorts.callState`) против нового действия. Открытый диалог блокирует `call` и `answerCall`;
@@ -583,7 +611,11 @@ golden-снимки для 5 seed; распределение виновнико
 ```ts
 interface Check { id: string; severity: "error" | "warning"; run(inv: Investigation): CheckResult }
 function validateInvestigation(inv: Investigation, opts?): ValidationReport;
-function solve(inv: Investigation, opts: { timeBudget: GameMinutes }): SolutionPath | null;   // планировщик по времени, VAL-003
+type SolutionPath = readonly PlayerAction[];
+function solve(inv: Investigation, opts: PlannerOptions): SolutionPath | null;
+function solutionSource(action: PlayerAction): 'desktop' | 'phone'; // роль для воспроизведения шага
+// PlannerOptions: timeBudget, clues, deductionRules; необязательные startLocationId, knownIncident и createSimulationPorts.
+// timeFeasibleCheck — отдельная проверка планировщика.
 // Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
 function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
 // Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE
@@ -602,6 +634,13 @@ function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionR
 
 См. [backend.md](../backend/backend.md). Модули: `sessions`, `pairing`, `gateway`, `views`, `qr`,
 `saves`, `diagnostics`, `config`.
+
+SRV-013: `createSessionServices(config, { scenariosDir?, networkInterfaces? })` собирает
+`SessionManager`, `PairingService`, `SessionGateway` и `QrService` для `buildApp` и нативного запуска.
+`SessionRouteDependencies.prepare?(session)` связывает ресурсы движка с новой сессией до публикации.
+`QrService.scan(session, raw, onCaptured?)` передаёт callback точный успешный `SessionDispatchResult`
+один раз; `SessionGateway.publishDispatch(session, result)` рассылает его проекции и события
+по ролям с исходной версией. Подробности — [backend.md](../backend/backend.md).
 
 ## 17. `apps/mobile` — Companion App
 

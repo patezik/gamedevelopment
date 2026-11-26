@@ -1,13 +1,15 @@
+import { createPhoneState } from '@hs/core/phone';
+import { PROTOCOL_VERSION } from '@hs/protocol';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
 import { buildApp } from '../app.ts';
 import { readConfig } from '../config/index.ts';
-import { PairingService, verifyToken } from '../pairing/index.ts';
-import { SessionManager, type Session } from '../sessions/index.ts';
+import { hashSessionToken, issueToken, PairingService, verifyToken } from '../pairing/index.ts';
+import { type InvestigationProvider, Session, SessionManager } from '../sessions/index.ts';
 import { SaveService, SaveStore, isSaveId, type StoreIo } from './index.ts';
 
 const wait = { type: 'wait', minutes: 15 } as const;
@@ -23,11 +25,22 @@ beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'hs-saves-'));
 });
 afterEach(async () => {
+  vi.restoreAllMocks();
   await rm(dir, { recursive: true, force: true });
 });
 
 /** One "server process": a store, a service, a manager and an app on the same data directory. */
-function boot(io: Partial<StoreIo> = {}, options: { provider?: typeof provider } = {}) {
+function boot(
+  io: Partial<StoreIo> = {},
+  options: {
+    provider?: InvestigationProvider;
+    createId?: () => string;
+    now?: () => number;
+    host?: () => string;
+    logs?: string[];
+  } = {},
+) {
+  const { logs } = options;
   const store = new SaveStore(join(dir, 'saves'), io);
   const saves = new SaveService({
     store,
@@ -36,12 +49,18 @@ function boot(io: Partial<StoreIo> = {}, options: { provider?: typeof provider }
   });
   const sessions = new SessionManager(options.provider ?? provider, {
     createEngine: saves.createEngine,
-    createId: randomUUID,
+    createId: options.createId ?? randomUUID,
+    ...(options.now && { now: options.now }),
   });
-  const pairing = new PairingService(sessions, { host: () => 'pc.local', port: 7420 });
-  const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), {
+  const pairing = new PairingService(sessions, {
+    host: options.host ?? (() => 'pc.local'),
+    port: 7420,
+    ...(options.now && { now: options.now }),
+  });
+  const app = buildApp(readConfig({ HS_LOG_LEVEL: logs ? 'info' : 'silent' }), {
     pairing,
     saves: { saves, sessions, pairing, cleanup: () => store.removeStaleTemp() },
+    ...(logs && { logStream: { write: (line) => logs.push(line) } }),
   });
   return { store, saves, sessions, pairing, app };
 }
@@ -76,6 +95,13 @@ interface ErrorBody {
 }
 const readSave = async (path: string) => JSON.parse(await readFile(path, 'utf8')) as SaveJson;
 const saveDir = () => join(dir, 'saves');
+const internal = { error: { code: 'INTERNAL', message: 'Internal error' } };
+const pairRequest = (code: string) => ({
+  code,
+  deviceName: 'Phone',
+  appVersion: '0.0.0',
+  protocolVersion: PROTOCOL_VERSION,
+});
 
 describe('autosave', () => {
   test('journals every action and checkpoints at 50', async () => {
@@ -368,41 +394,273 @@ describe('restart and load', () => {
     expect(file.actions).toHaveLength(3); // 2 + the replacement's one; the old engine wrote nothing
   });
 
-  test('two simultaneous loads over a suspended session: one wins, the other gets a conflict', async () => {
-    let now = 0;
-    const store = new SaveStore(saveDir());
-    const saves = new SaveService({ store, provider });
-    const sessions = new SessionManager(provider, {
-      createEngine: saves.createEngine,
-      now: () => now,
+  test('an invalid load DTO leaves no session, pairing code or writer in a fresh process', async () => {
+    const first = boot({}, { createId: () => 'winter-1' });
+    const old = await first.sessions.create('tiny-manor', 'winter');
+    await play(old, 1);
+    const before = await first.store.read(old.id);
+    await first.app.close();
+
+    let host = 'invalid:host';
+    const { app, pairing, sessions, store } = boot({}, { host: () => host });
+    const tokens = vi.spyOn(Session.prototype, 'setTokenHash');
+    const prepareCode = pairing.prepareCode.bind(pairing);
+    let stagedCode: string | undefined;
+    let duringPreparation: Session | undefined;
+    vi.spyOn(pairing, 'prepareCode').mockImplementation((session) => {
+      const staged = prepareCode(session);
+      stagedCode = staged.pairing.code;
+      duringPreparation = sessions.get(old.id);
+      return staged;
     });
-    const pairing = new PairingService(sessions, { host: () => 'pc.local', port: 7420 });
-    const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), {
-      pairing,
-      saves: { saves, sessions, pairing },
+    try {
+      const url = `/api/v1/saves/${old.id}/load`;
+      const failed = await app.inject({ method: 'POST', url });
+      expect(failed.statusCode).toBe(500);
+      expect(failed.json()).toEqual(internal);
+      expect(failed.headers['cache-control']).toBe('no-store');
+      expect(duringPreparation).toBeUndefined();
+      expect(sessions.get(old.id)).toBeUndefined();
+
+      host = 'pc.local';
+      const candidate = tokens.mock.contexts[0] as Session;
+      expect(candidate.tokenHash('desktop')).toBeUndefined();
+      expect(pairing.activeCode(candidate)).toBeUndefined();
+      expect(stagedCode).toBeDefined();
+      await expect(pairing.pair(pairRequest(stagedCode!), '192.0.2.1')).rejects.toMatchObject({
+        code: 'PAIRING_CODE_INVALID',
+      });
+      await expect(candidate.engine.dispatch('desktop', wait)).rejects.toThrow('belongs to another');
+      expect(await store.read(old.id)).toBe(before);
+
+      const retried = await app.inject({ method: 'POST', url });
+      expect(retried.statusCode).toBe(200);
+      await play(sessions.get(old.id)!, 1);
+      expect((await readSave(join(saveDir(), `${old.id}.json`))).actions).toHaveLength(2);
+    } finally {
+      await app.close();
+    }
+  });
+
+  test.each(['host lookup throws', 'DTO is invalid'])(
+    'failed replacement preserves the old credentials and writer when %s',
+    async (failure) => {
+      let now = 0;
+      let broken = false;
+      let privateMessage = '';
+      let duringPreparation: Session | undefined;
+      let id: string;
+      const logs: string[] = [];
+      const { app, pairing, sessions, store } = boot({}, {
+        now: () => now,
+        logs,
+        host() {
+          if (!broken) return 'pc.local';
+          duringPreparation = sessions.get(id);
+          if (failure === 'host lookup throws') {
+            throw Object.assign(new Error(privateMessage), { statusCode: 418 });
+          }
+          return 'invalid:host';
+        },
+      });
+      try {
+        const old = await sessions.create('tiny-manor', 'winter');
+        id = old.id;
+        const desktopToken = issueToken(old, 'desktop');
+        const phoneToken = issueToken(old, 'phone');
+        const oldPairing = pairing.createCode(old);
+        privateMessage = `private network error ${desktopToken} ${phoneToken} ${oldPairing.code}`;
+        await play(old, 1);
+        const before = await store.read(old.id);
+        const metaBefore = await store.readMeta(old.id);
+        now = 61_000;
+
+        broken = true;
+        const url = `/api/v1/saves/${old.id}/load`;
+        const response = await app.inject({ method: 'POST', url });
+        expect(response.statusCode).toBe(500);
+        expect(response.json()).toEqual(internal);
+        expect(logs.filter((line) => line.includes('request failed'))).toHaveLength(1);
+        for (const secret of ['private network error', desktopToken, phoneToken, oldPairing.code]) {
+          expect(response.body).not.toContain(secret);
+          expect(logs.join('')).not.toContain(secret);
+        }
+        broken = false;
+        expect(duringPreparation).toBe(old);
+        expect(sessions.get(old.id)).toBe(old);
+        expect(old.status).toBe('suspended');
+        expect(pairing.activeCode(old)).toEqual(oldPairing);
+        expect(pairing.authorizeDesktop(old.id, `Bearer ${desktopToken}`)).toBe(old);
+        expect(verifyToken(old, 'phone', phoneToken)).toBe(true);
+        expect(await store.read(old.id)).toBe(before);
+        expect(await store.readMeta(old.id)).toEqual(metaBefore);
+
+        await old.setConnected('desktop', true);
+        expect((await old.dispatch('desktop', wait)).ok).toBe(true);
+        expect((await readSave(join(saveDir(), `${old.id}.json`))).actions).toHaveLength(2);
+        await expect(pairing.pair(pairRequest(oldPairing.code), '192.0.2.1')).resolves.toMatchObject({
+          sessionId: old.id,
+        });
+        await old.setConnected('desktop', false);
+        now = 122_000;
+        const retried = await app.inject({ method: 'POST', url });
+        expect(retried.statusCode).toBe(200);
+        expect(hashOf(sessions.get(old.id)!)).toBe(hashOf(old));
+      } finally {
+        await app.close();
+      }
+    },
+  );
+
+  test('only the first concurrent load replaces the old session and revokes its credentials', async () => {
+    let now = 0;
+    let pauseNextRestore = false;
+    const restoring = Promise.withResolvers<void>();
+    const resumeRestore = Promise.withResolvers<void>();
+    const logs: string[] = [];
+    const { app, pairing, sessions, store } = boot({}, {
+      now: () => now,
+      logs,
+      provider: {
+        async create(scenarioId, seed) {
+          if (pauseNextRestore) {
+            pauseNextRestore = false;
+            restoring.resolve();
+            await resumeRestore.promise;
+          }
+          return provider.create(scenarioId, seed);
+        },
+      },
     });
     const old = await sessions.create('tiny-manor', 'winter');
     await play(old, 1);
+    const desktopToken = issueToken(old, 'desktop');
+    const phoneToken = issueToken(old, 'phone');
+    const oldPairing = pairing.createCode(old);
     now = 61_000;
 
     const url = `/api/v1/saves/${old.id}/load`;
-    const [a, b] = await Promise.all([
-      app.inject({ method: 'POST', url }),
-      app.inject({ method: 'POST', url }),
-    ]);
-    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 409]);
+    pauseNextRestore = true;
+    const first = app.inject({ method: 'POST', url }).then((response) => response);
+    try {
+      await restoring.promise;
+      expect(sessions.get(old.id)).toBe(old);
+      expect(pairing.activeCode(old)).toEqual(oldPairing);
+      expect(verifyToken(old, 'desktop', desktopToken)).toBe(true);
+      expect(verifyToken(old, 'phone', phoneToken)).toBe(true);
+      const second = await app.inject({ method: 'POST', url });
+      expect(second.statusCode).toBe(409);
+      expect(second.json<ErrorBody>().error.code).toBe('ACTION_NOT_AVAILABLE');
 
-    // Both adopts start before either finishes: still only one gets the ID.
-    now = 200_000;
-    const survivor = sessions.get(old.id)!;
-    await survivor.activate();
-    now = 400_000;
-    const engine = { dispatch: () => ({ ok: true, minutesSpent: 0, events: [] }) };
-    const results = await Promise.allSettled([
-      sessions.adopt(old.id, engine),
-      sessions.adopt(old.id, engine),
-    ]);
-    expect(results.map(({ status }) => status).sort()).toEqual(['fulfilled', 'rejected']);
+      resumeRestore.resolve();
+      const response = await first;
+      expect(response.statusCode).toBe(200);
+      const body = response.json<LoadBody>();
+      const winner = sessions.get(old.id)!;
+      expect(winner).not.toBe(old);
+      expect(winner.status).toBe('created');
+      expect(pairing.authorizeDesktop(old.id, `Bearer ${body.desktopToken}`)).toBe(winner);
+      expect(pairing.activeCode(winner)?.code).toBe(body.pairing.code);
+      expect(pairing.activeCode(old)).toBeUndefined();
+      for (const [role, token] of [['desktop', desktopToken], ['phone', phoneToken]] as const) {
+        expect(verifyToken(old, role, token)).toBe(false);
+        expect(sessions.findByTokenHash(hashSessionToken(token))).toBeUndefined();
+      }
+      await expect(pairing.pair(pairRequest(oldPairing.code), '192.0.2.1')).rejects.toMatchObject({
+        code: 'PAIRING_CODE_INVALID',
+      });
+      await expect(pairing.pair(pairRequest(body.pairing.code), '192.0.2.1')).resolves.toMatchObject({
+        sessionId: winner.id,
+      });
+      for (const secret of [desktopToken, phoneToken, oldPairing.code, body.desktopToken, body.pairing.code]) {
+        expect(logs.join('')).not.toContain(secret);
+      }
+
+      const before = await store.read(old.id);
+      await expect(old.engine.dispatch('desktop', wait)).rejects.toThrow('belongs to another');
+      expect(await store.read(old.id)).toBe(before);
+      await play(winner, 1);
+      expect((await readSave(join(saveDir(), `${old.id}.json`))).actions).toHaveLength(2);
+    } finally {
+      resumeRestore.resolve();
+      await first;
+      await app.close();
+    }
+  });
+
+  test('load reads the journal after an in-flight session write finishes', async () => {
+    let now = 0;
+    let pauseRename = false;
+    const writing = Promise.withResolvers<void>();
+    const finishWrite = Promise.withResolvers<void>();
+    const loading = Promise.withResolvers<void>();
+    const { app, saves, sessions, store } = boot({
+      async rename(from, to) {
+        if (pauseRename) {
+          pauseRename = false;
+          writing.resolve();
+          await finishWrite.promise;
+        }
+        await rename(from, to);
+      },
+    }, { now: () => now });
+    app.addHook('preHandler', (_request, _reply, done) => {
+      done();
+      loading.resolve();
+    });
+    await app.ready();
+    const restore = vi.spyOn(saves, 'restore');
+    const old = await sessions.create('tiny-manor', 'winter');
+    await play(old, 1);
+    const before = await store.read(old.id);
+    pauseRename = true;
+    const action = old.dispatch('desktop', wait);
+    await writing.promise;
+    now = 61_000;
+    const load = app.inject({ method: 'POST', url: `/api/v1/saves/${old.id}/load` }).then((res) => res);
+
+    try {
+      await loading.promise;
+      expect(restore).not.toHaveBeenCalled();
+      expect(await store.read(old.id)).toBe(before);
+      finishWrite.resolve();
+      expect(await action).toMatchObject({ ok: true });
+      expect((await load).statusCode).toBe(200);
+      const winner = sessions.get(old.id)!;
+      expect(hashOf(winner)).toBe(hashOf(old));
+      await play(winner, 1);
+      expect((await readSave(join(saveDir(), `${old.id}.json`))).actions).toHaveLength(3);
+    } finally {
+      finishWrite.resolve();
+      await Promise.all([action, load]);
+      await app.close();
+    }
+  });
+
+  test('a response hook failure is private even after the load commits', async () => {
+    const first = boot();
+    const old = await first.sessions.create('tiny-manor', 'winter');
+    await play(old, 1);
+    await first.app.close();
+
+    const logs: string[] = [];
+    const { app, sessions } = boot({}, { logs });
+    const privateMessage = 'private response hook failure';
+    app.addHook('preSerialization', (_request, reply, _payload, next) => {
+      if (reply.statusCode === 200) next(new Error(privateMessage));
+      else next();
+    });
+    try {
+      const failed = await app.inject({ method: 'POST', url: `/api/v1/saves/${old.id}/load` });
+      expect(failed.statusCode).toBe(500);
+      expect(failed.json()).toEqual(internal);
+      expect(failed.headers['cache-control']).toBe('no-store');
+      expect(logs.filter((line) => line.includes('request failed'))).toHaveLength(1);
+      expect(logs.join('')).not.toContain(privateMessage);
+      expect(sessions.get(old.id)?.status).toBe('created');
+    } finally {
+      await app.close();
+    }
   });
 
   test('two simultaneous loads of one save: one wins, the other gets a conflict', async () => {
@@ -506,4 +764,23 @@ test('registerSaveRoutes only runs the cleanup hook once, when the app is ready'
   await app.ready();
   expect(calls).toBe(1);
   await app.close();
+});
+
+test('recording and restored engines expose real role projections', async () => {
+  const projectedProvider = {
+    create: (_scenarioId: string, seed: string) => ({
+      investigation: tinyManor(seed),
+      ports: { startLocationId: 'loc_hall', phone: { initial: createPhoneState() } },
+    }),
+  };
+  const { sessions, saves } = boot({}, { provider: projectedProvider });
+  const session = await sessions.create('tiny-manor', 'projections');
+  await play(session, 1);
+  const player = session.engine.playerView!();
+  const phone = session.engine.phoneView!();
+  expect(player.clock.t).toBe(15);
+  expect(phone?.status.time).toBe(player.clock.time);
+  const loaded = await saves.restore(session.id);
+  expect(loaded.playerView()).toEqual(player);
+  expect(loaded.phoneView()).toEqual(phone);
 });

@@ -7,7 +7,7 @@ import {
 } from '../characters/index.ts';
 import type { GameMinutes, Interval } from '../common/index.ts';
 import { KnowledgeStore } from '../knowledge/index.ts';
-import type { Rng, RngState } from '../rng/index.ts';
+import { restoreRng, type Rng, type RngState } from '../rng/index.ts';
 import { TickPhase, type Calendar, type TickContext, type TimeSystem } from '../time/index.ts';
 import type { EntityRef, Fact, TruthModel } from '../truth/index.ts';
 import type { Actor, ItemRegistry, LocationGraph } from '../world/index.ts';
@@ -42,10 +42,26 @@ export interface Agent {
   readonly rngState: RngState;
 }
 
+/** One agent as saved by `SimulationRunner.snapshot`; the pending wake-up is derived on restore. */
+export interface AgentSnapshot {
+  readonly characterId: string;
+  readonly location: string;
+  readonly block: RoutineBlock;
+  readonly nextBoundary: GameMinutes;
+  readonly activity?: Activity;
+  readonly rngState: RngState;
+  /** `KnowledgeStore.serialize()` of the agent. */
+  readonly knowledge: string;
+}
+
+export interface SimulationSnapshot {
+  readonly agents: readonly AgentSnapshot[];
+}
+
 interface AgentState {
   readonly character: RoutineCharacter;
-  readonly rng: Rng;
-  readonly knowledge: KnowledgeStore;
+  rng: Rng;
+  knowledge: KnowledgeStore;
   readonly priority: number;
   readonly overrides: readonly ScheduleOverride[];
   /** Exclusive end of this character's actions: the runner's end or an earlier exit. */
@@ -77,6 +93,12 @@ export interface SimulationRunnerOptions {
    * no transition arrives later; the caller records what happens to the character at that minute.
    */
   readonly exits?: ReadonlyMap<string, GameMinutes>;
+  /**
+   * State saved by `snapshot()` at `time.now()`, after the tick of that minute ran. The runner
+   * continues exactly as the saved one would have; `initialLocations` and `knowledge` are ignored
+   * for the saved characters.
+   */
+  readonly restore?: SimulationSnapshot;
   /** Exclusive end of the interval owned by this runner. Use the same calendar as TimeSystem. */
   readonly endAt: GameMinutes;
 }
@@ -107,6 +129,7 @@ export class SimulationRunner {
     itemChangeMinutes = [],
     lod,
     exits = new Map(),
+    restore,
     endAt,
   }: SimulationRunnerOptions) {
     const start = time.now();
@@ -180,6 +203,21 @@ export class SimulationRunner {
       });
     }
 
+    const saved = new Map((restore?.agents ?? []).map((agent) => [agent.characterId, agent]));
+    for (const id of saved.keys()) {
+      if (!this.#agents.has(id)) throw new RangeError(`Saved state of unknown character: ${id}`);
+    }
+    for (const [id, agent] of this.#agents) {
+      const state = saved.get(id);
+      if (!state) continue;
+      agent.location = state.location;
+      agent.block = structuredClone(state.block);
+      agent.nextBoundary = state.nextBoundary;
+      agent.rng = restoreRng(state.rngState);
+      agent.knowledge = KnowledgeStore.deserialize(state.knowledge);
+      if (state.activity) agent.activity = structuredClone(state.activity);
+    }
+
     time.registerHandler(SCHEDULE_EVENT, {
       phase: TickPhase.Schedules,
       handle: ({ payload }, context) => this.#updateRoutine(this.#agentFor(payload), context),
@@ -192,9 +230,30 @@ export class SimulationRunner {
       phase: TickPhase.WorldEvents,
       handle: ({ payload }) => this.observe(payload as PerceptibleEvent),
     });
-    for (const [payload, { priority }] of this.#agents) {
-      time.schedule({ at: start, kind: SCHEDULE_EVENT, priority, payload });
+    for (const [payload, { priority, activity, nextBoundary }] of this.#agents) {
+      // A saved agent in the middle of a step wakes where the saved one was due to.
+      const at = activity ? Math.min(activity.step.to, nextBoundary) : start;
+      if (activity && at < start) throw new RangeError(`Saved step of ${payload} is already over`);
+      time.schedule({ at, kind: SCHEDULE_EVENT, priority, payload });
     }
+  }
+
+  snapshot(): SimulationSnapshot {
+    return {
+      agents: [...this.#agents.values()]
+        .map(({ character, location, block, nextBoundary, activity, rng, knowledge }) => ({
+          characterId: character.id,
+          location,
+          block: structuredClone(block),
+          nextBoundary,
+          ...(activity && { activity: structuredClone(activity) }),
+          rngState: structuredClone(rng.state),
+          knowledge: knowledge.serialize(),
+        }))
+        .sort((a, b) =>
+          a.characterId < b.characterId ? -1 : Number(a.characterId > b.characterId),
+        ),
+    };
   }
 
   getAgent(characterId: string): Agent | undefined {

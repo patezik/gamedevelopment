@@ -15,8 +15,13 @@ import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import type { RawData, WebSocket } from 'ws';
 import { hashSessionToken } from '../pairing/index.ts';
-import type { Session, SessionManager, SessionRole } from '../sessions/index.ts';
-import { ROLES, ViewCache, type EventSource } from '../views/index.ts';
+import type {
+  Session,
+  SessionManager,
+  SessionRole,
+  SessionDispatchResult,
+} from '../sessions/index.ts';
+import { ROLES, ViewCache, engineView, engineEvents, type EventSource } from '../views/index.ts';
 
 type Message<T extends ServerMessage['type']> = Extract<ServerMessage, { type: T }>;
 type Hello = Extract<ClientMessage, { type: 'hello' }>;
@@ -65,8 +70,8 @@ export class SessionGateway {
   readonly #views: ViewCache | undefined;
 
   constructor(options: GatewayOptions) {
-    this.#options = options;
-    this.#views = options.snapshot && new ViewCache(options.snapshot);
+    this.#options = { ...options, events: options.events ?? engineEvents };
+    this.#views = new ViewCache(options.snapshot ?? engineView);
     for (const value of [options.helloMs, options.heartbeatMs, options.replayLimit]) {
       if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) {
         throw new RangeError('Gateway limits must be positive integers');
@@ -273,6 +278,11 @@ export class SessionGateway {
       case 'phone.ui':
         await this.#phoneMessage(peer, message, qrScan);
     }
+  }
+
+  /** Publish the exact successful result returned by the session, including QR captures. */
+  publishDispatch(session: Session, result: SessionDispatchResult): void {
+    if (result.ok) this.#afterDispatch(session, result, result.stateVersion);
   }
 
   /**

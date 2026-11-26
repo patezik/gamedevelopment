@@ -1,3 +1,6 @@
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadScenarioFromDir } from '@hs/core/content';
 import {
@@ -31,10 +34,7 @@ const scenarios = new URL('../../../content/scenarios/', import.meta.url);
 const minimal = loadScenarioFromDir(fileURLToPath(new URL('_test_minimal/', scenarios)));
 const req = (seed: string) => ({ scenarioId: '_test_minimal', seed });
 
-/**
- * The gate without the solver and lie checks. The shipped deduction rules never establish a
- * motive (see OQ-20), so the full gate rejects every seed; these checks still gate the rest.
- */
+/** The gate without the solver and lie checks: structural checks only (golden hashes use it). */
 const STRUCTURAL: readonly Check[] = [
   truthInvariantsCheck,
   timelineCheck,
@@ -131,9 +131,16 @@ test('rejects a request for another scenario than the content', () => {
   );
 });
 
+/** The shipped scenario without the rule that proves a motive: no culprit can be proven. */
+const withoutMotiveRule = {
+  ...minimal,
+  deductionRules: minimal.deductionRules.filter(({ id }) => id !== 'motive_from_testimony'),
+};
+
 test('GENERATION_UNSOLVABLE: every attempt is rejected with the reasons of the failed checks', () => {
-  const result = generateInvestigation(req('1'), minimal);
-  if (result.ok) throw new Error('The shipped rules cannot prove a motive; expected a rejection');
+  const result = generateInvestigation(req('1'), withoutMotiveRule);
+  if (result.ok)
+    throw new Error('Without a motive rule the culprit is unprovable; expected a rejection');
   expect(result.error).toBe('GENERATION_UNSOLVABLE');
   expect(result.report.attempts).toHaveLength(8);
   expect(result.report.attempts.every(({ accepted }) => !accepted)).toBe(true);
@@ -144,12 +151,11 @@ test('GENERATION_UNSOLVABLE: every attempt is rejected with the reasons of the f
     expect(ok).toBe(false);
     const codes = findings.map(({ code }) => code);
     expect(codes).toContain('CULPRIT_NOT_PROVABLE');
-    expect(codes).toContain('NOT_UNIQUE');
     expect(findings.every(({ message }) => message.length > 0)).toBe(true);
   }
-  expect(generateInvestigation(req('1'), minimal, { maxAttempts: 3 }).report.attempts).toHaveLength(
-    3,
-  );
+  expect(
+    generateInvestigation(req('1'), withoutMotiveRule, { maxAttempts: 3 }).report.attempts,
+  ).toHaveLength(3);
 });
 
 test('the gate runs every check of the default list', () => {
@@ -252,7 +258,17 @@ test('hs-gen without --debug-truth prints no truth, with it prints the investiga
 });
 
 test('hs-gen on an unsolvable case exits 1 with codes only, and 2 on bad arguments', () => {
-  const failed = runCli(['--scenario', '_test_minimal', '--seed', '1']);
+  const dir = mkdtempSync(join(tmpdir(), 'hs-gen-'));
+  cpSync(fileURLToPath(new URL('_test_minimal/', scenarios)), join(dir, '_test_minimal'), {
+    recursive: true,
+  });
+  const rulesPath = join(dir, '_test_minimal', 'deduction-rules.json');
+  const rules = (JSON.parse(readFileSync(rulesPath, 'utf8')) as { id: string }[]).filter(
+    ({ id }) => id !== 'motive_from_testimony',
+  );
+  writeFileSync(rulesPath, JSON.stringify(rules));
+  const failed = runCli(['--scenario', '_test_minimal', '--seed', '1', '--content-dir', dir]);
+  rmSync(dir, { recursive: true });
   expect(failed.code).toBe(1);
   const body = JSON.parse(failed.stdout) as {
     error: string;

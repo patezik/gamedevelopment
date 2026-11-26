@@ -6,6 +6,8 @@ import {
   type LieMotive,
   type LiePolicy,
 } from '@hs/core/knowledge';
+import type { Rng } from '@hs/core/rng';
+import { factId } from '@hs/core/truth';
 import type { Fact, PropositionPattern } from '@hs/core/truth/facts';
 import type { Stage } from '../pipeline/index.ts';
 import type { EvidenceWorld } from './evidence-gen.ts';
@@ -91,6 +93,51 @@ function guiltMotive(world: EvidenceWorld, culprit: CharacterId): LieMotive {
 }
 
 /**
+ * A lie of the culprit is handed out only when a clue of the case can refute it (V-LIES-BREAKABLE):
+ * a `did` cover story is refuted by a clue whose source event puts the actor elsewhere at that
+ * minute. Anything else (a denied state, "I just stayed there" at the very scene of the deed) has
+ * no refutation, so the culprit keeps silent about it instead of lying.
+ */
+function refutable(alternative: Fabrication, world: EvidenceWorld): boolean {
+  const p = alternative.proposition;
+  if (p.kind !== 'did') return false;
+  const events = new Map(world.truth.events().map((event) => [event.id, event]));
+  return world.clues.some((clue) => {
+    const event = events.get(clue.sourceEventId);
+    return (
+      event !== undefined &&
+      event.actorIds.includes(p.who) &&
+      event.location !== p.where &&
+      event.t <= p.at &&
+      p.at < event.t + Math.max(1, event.duration)
+    );
+  });
+}
+
+function withoutUnbreakable(motive: LieMotive, world: EvidenceWorld): LieMotive {
+  return {
+    ...motive,
+    alternatives: (motive.alternatives ?? []).filter((alternative) =>
+      refutable(alternative, world),
+    ),
+  };
+}
+
+/**
+ * Who heard of the culprit's motive against the victim (OQ-20): a living character who is neither
+ * culprit nor victim, drawn from the sorted cast. Their `motive` belief is hearsay from the
+ * culprit; asked about the culprit they repeat it, and it becomes `testimony` for the solver.
+ */
+function motiveWitness(world: EvidenceWorld, rng: Rng): CharacterId | undefined {
+  const { culpritIds, victimIds } = world.truth.incident;
+  const pool = world.characters
+    .map(({ id }) => id)
+    .filter((id) => !culpritIds.includes(id) && !victimIds.includes(id))
+    .sort(compare);
+  return pool.length === 0 ? undefined : pool[rng.int(0, pool.length - 1)];
+}
+
+/**
  * TestimonyGen: writes the secrets into the stores of those who know them and builds the
  * `LiePolicy` of every character (KNOW-002). A character hides only what they know and have a
  * motive to hide: their own secrets (denied when the character is not scrupulously honest) and,
@@ -99,7 +146,7 @@ function guiltMotive(world: EvidenceWorld, culprit: CharacterId): LieMotive {
  */
 export const testimonyGen: Stage<EvidenceWorld, TestimonyWorld> = {
   name: 'TestimonyGen',
-  generate(input) {
+  generate(input, { rng }) {
     const knowledge = new Map<CharacterId, KnowledgeStore>();
     for (const [id, store] of input.knowledge)
       knowledge.set(id, KnowledgeStore.deserialize(store.serialize()));
@@ -124,18 +171,38 @@ export const testimonyGen: Stage<EvidenceWorld, TestimonyWorld> = {
     }
 
     const culprits = new Set(input.truth.incident.culpritIds);
+    const motiveFacts = input.truth
+      .facts({ kind: 'motive' })
+      .filter((fact) => fact.kind === 'motive' && culprits.has(fact.who));
+    const witness = motiveWitness(input, rng.fork('motive-witness'));
+    const store = witness === undefined ? undefined : knowledge.get(witness);
+    for (const fact of motiveFacts) {
+      if (!store || fact.kind !== 'motive') continue;
+      store.add({
+        proposition: structuredClone(fact),
+        confidence: 1,
+        source: 'told',
+        fromCharacter: fact.who,
+        acquiredAt:
+          input.truth.events().find((e) => e.facts.some((f) => factId(f) === factId(fact)))?.t ?? 0,
+        fuzzMinutes: 0,
+      });
+      secretBeliefs++;
+    }
+
     const lieMotives = new Map<CharacterId, readonly LieMotive[]>();
     const liePolicies = new Map<CharacterId, LiePolicy>();
     let concealing = 0;
     let lying = 0;
     let honest = 0;
     for (const character of [...input.characters].sort((a, b) => compare(a.id, b.id))) {
-      const motives = input.secrets
+      let motives = input.secrets
         .filter(({ about }) => about === character.id)
         .sort((a, b) => compare(a.id, b.id))
         .map(secretMotive);
       if (culprits.has(character.id)) {
         motives.push(guiltMotive(input, character.id));
+        motives = motives.map((motive) => withoutUnbreakable(motive, input));
       }
       const policy = buildLiePolicy(
         character,

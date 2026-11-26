@@ -162,6 +162,7 @@ interface PlayerView {
     statements: { id; characterId; topicId; text; heardAt }[];
     contradictions: { id; statementId; againstId; summary }[];          // только когда у игрока есть обе стороны
     personsOfInterest: { characterId; name; linkedClueIds }[];
+    motiveTargets: { characterId; name }[];                              // кого можно назвать целью мотива: вторые аргументы motive/about улик и показаний (ENG-013); без «чей» мотив
     suspicions: { characterId; level: "none"|"possible"|"prime"; note? }[];
     timeline: { id; from; to?; text; sourceIds }[];
   };
@@ -233,10 +234,19 @@ interface PhoneView {
 `resync` и запрашивает снимок для роли.
 
 После каждого успешного `dispatch` `stateVersion` растёт на 1. Шлюз отправляет `action.result`
-отправителю, затем `view.update` каждой роли со своей проекцией и события, видимые роли (источник
-проекций `snapshot` и событий `events` задаёт приложение). `gameOver` получают обе роли. Последняя
+отправителю, затем `view.update` каждой роли со своей проекцией и события, видимые роли (по умолчанию используются
+`engineView` и `engineEvents` из `apps/server/src/views`; их можно заменить опциями `snapshot` и `events`). `gameOver` получают обе роли. Последняя
 проекция роли кэшируется по `stateVersion` и используется при `resync` и входе клиента. Версия в `view.update` берётся из результата
 `dispatch`; если состояние уже ушло вперёд, устаревшая проекция не публикуется, её заменит
-рассылка следующего `dispatch`. Подключение реальных проекций (`GameEngine.playerView`,
-`projectPhoneView`) и сырых событий движка к `snapshot` и `events` не входит в SRV-005 и
-выполняется в INT-002; до этого приложение по умолчанию создаёт шлюз без них.
+рассылка следующего `dispatch`.
+
+SRV-010 подключает `GameEngine.playerView()` для desktop и `GameEngine.phoneView()` (внутри —
+`projectPhoneView`) для phone, в том числе через `RecordingEngine` загруженной игры.
+`NotificationPosted` → `notification`, `CallStarted` → `incomingCall` только для текущего
+входящего звонка (`ringing`), `EvidenceCaptured` → успешный `scanResult`: эти события получает
+только phone и только если ссылка есть в текущей проекции (для улики — `captured: true`).
+События содержат только идентификаторы; неизвестные и прочие доменные события не рассылаются.
+QR-скан возвращается отдельным `qr.result`. При первой успешной фиксации штатная сборка
+SRV-013 также отправляет снимки обеим ролям и `scanResult` телефону; они могут прийти до `qr.result`.
+Повторные и чужие сканы не создают новую версию состояния и не повторяют рассылку.
+Завершение игры по `DispatchResult.outcome` по-прежнему даёт `gameOver` обеим ролям.

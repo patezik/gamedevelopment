@@ -1,3 +1,9 @@
+import { GameEngine } from '@hs/core/game';
+import { loadScenarioFromDir } from '@hs/core/content';
+import { createPhoneState } from '@hs/core/phone';
+import { FORBIDDEN_VIEW_KEYS } from '@hs/protocol';
+import { defaultScenariosDir } from '../routes/generation.ts';
+
 import { once } from 'node:events';
 import { readFileSync } from 'node:fs';
 import {
@@ -13,9 +19,13 @@ import { buildApp } from '../app.ts';
 import { readConfig } from '../config/index.ts';
 import { SessionGateway } from '../gateway/index.ts';
 import { issueToken } from '../pairing/index.ts';
-import { SessionManager, type Session } from '../sessions/index.ts';
-import { ViewCache } from './index.ts';
-import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
+import { SessionManager, Session } from '../sessions/index.ts';
+import { ViewCache, engineEvents } from './index.ts';
+import {
+  tinyManor,
+  tinyManorWithClues,
+  tinyManorWitness,
+} from '../../../../packages/core/test/fixtures/tiny-manor.ts';
 
 const fixture = (name: string): unknown =>
   JSON.parse(
@@ -207,4 +217,186 @@ test('ViewCache serves a version once and never caches a view taken while the st
   moveOnNext = false;
   expect(cache.get(session, 'desktop')).toBe(playerView);
   expect(calls).toBe(3);
+});
+
+function realCase() {
+  const content = loadScenarioFromDir(`${defaultScenariosDir()}sanatorium_winter`);
+  const witness = tinyManorWitness();
+  const investigation = tinyManor();
+  investigation.truth.append({
+    t: 1,
+    duration: 0,
+    verb: 'work',
+    location: 'loc_archive',
+    actorIds: ['ch_bursar'],
+    targets: [],
+    causes: [],
+    facts: [
+      { kind: 'at', who: 'ch_bursar', where: 'loc_archive', interval: { from: 1, to: 1440 } },
+    ],
+    traceIds: [],
+    visibility: 'covert',
+  });
+  return {
+    investigation,
+    ports: {
+      startLocationId: 'loc_archive',
+      texts: new Map(Object.values(content.text.ru!).flatMap(Object.entries)),
+      testimony: { witness: () => witness },
+      phone: {
+        initial: createPhoneState({
+          contacts: [{ id: 'contact', name: 'Witness', number: '123' }],
+          threads: [
+            {
+              id: 'thread',
+              contactId: 'contact',
+              messages: [],
+              availableReplies: [{ id: 'ask', text: 'Question' }],
+            },
+          ],
+          files: [
+            {
+              id: 'secret',
+              name: 'Secret',
+              hidden: true,
+              locked: true,
+              password: 'secret-password',
+              content: 'hidden-content',
+            },
+          ],
+        }),
+        messageReply: () => ({ delayMinutes: 0, text: 'Reply' }),
+      },
+    },
+  };
+}
+
+test('default gateway sends real role views, Russian testimony and phone-only notifications', async () => {
+  const sessions = new SessionManager({ create: realCase });
+  const session = await sessions.create('tiny-manor', 'real-views');
+  await session.activate();
+  const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), {
+    gateway: new SessionGateway({ sessions, serverVersion: '1' }),
+  });
+  apps.push(app);
+  const address = (await app.listen({ host: '127.0.0.1', port: 0 })).replace(/^http:/, 'ws:');
+  const desktop = await client(address);
+  const phone = await client(address);
+  for (const [role, c] of [
+    ['desktop', desktop],
+    ['phone', phone],
+  ] as const) {
+    c.send({ type: 'hello', payload: { role, token: issueToken(session, role), appVersion: '1' } });
+    await c.receive('welcome');
+    const view = (await c.receive('view.update')).payload.view;
+    expect(view).toEqual(
+      role === 'desktop' ? session.engine.playerView!() : session.engine.phoneView!(),
+    );
+    const json = JSON.stringify(view);
+    for (const key of FORBIDDEN_VIEW_KEYS) expect(json).not.toContain(`"${key}"`);
+    expect(json).not.toContain('secret-password');
+    expect(json).not.toContain('hidden-content');
+  }
+  desktop.send({
+    type: 'action.request',
+    payload: { action: { type: 'talk', characterId: 'ch_bursar', topicId: 'where:-60:0' } },
+  });
+  expect((await desktop.receive('action.result')).payload.ok).toBe(true);
+  const talk = PlayerView.parse((await desktop.receive('view.update')).payload.view);
+  const text = talk.interaction!.history.at(-1)!.text;
+  expect(text).toMatch(/[\u0400-\u04ff]/);
+  expect(text).not.toMatch(/testimony_|\{.*\}/);
+  await phone.receive('view.update');
+  phone.send({
+    type: 'action.request',
+    payload: { action: { type: 'message', contactId: 'contact', templateId: 'ask' } },
+  });
+  expect((await phone.receive('action.result')).payload.ok).toBe(true);
+  await phone.receive('view.update');
+  await desktop.receive('view.update');
+  phone.send({
+    type: 'action.request',
+    payload: { action: { type: 'addNote', text: 'Remember' } },
+  });
+  expect((await phone.receive('action.result')).payload.ok).toBe(true);
+  const reply = PhoneView.parse((await phone.receive('view.update')).payload.view);
+  const notification = reply.notifications.at(-1)!;
+  expect(notification.text).toBe('Reply');
+  expect((await phone.receive('event')).payload.event).toEqual({
+    type: 'notification',
+    notificationId: notification.id,
+  });
+  await desktop.receive('view.update');
+  // Pong is a queue barrier: a wrongly routed phone event would arrive before it.
+  desktop.send({ type: 'ping', payload: {} });
+  await desktop.receive('pong');
+});
+
+test('event allowlist checks real projections and never copies raw payloads', () => {
+  const { investigation, ports } = realCase();
+  const notification = {
+    id: 'n',
+    appId: 'messages',
+    title: 'Call',
+    text: 'Answer',
+    at: 0,
+    read: false,
+    hallucination: true,
+  };
+  const call = {
+    callId: 'c',
+    contactId: 'contact',
+    state: 'ringing' as const,
+    startedAt: 0,
+    lines: [],
+    choices: [],
+  };
+  const engine = GameEngine.create(investigation, {
+    ...ports,
+    phone: { initial: createPhoneState({ notifications: [notification], activeCall: call }) },
+  });
+  const batch = {
+    events: [
+      { type: 'NotificationPosted', notification },
+      { type: 'CallStarted', call },
+      { type: 'NotificationPosted', notification: { id: 'invisible' } },
+      { type: 'CallStarted', call: { callId: 'invisible' } },
+      { type: 'EvidenceCaptured', clueId: 'uncollected' },
+      { type: 'StatementHeard', truth: 'server-secret' },
+      { type: 'gameOver', culpritIds: ['ch_bursar'] },
+      null,
+    ],
+  };
+  expect(engineEvents(new Session('test', engine, () => 0), 'desktop', batch)).toEqual([]);
+  expect(engineEvents(new Session('test', engine, () => 0), 'phone', batch)).toEqual([
+    { type: 'notification', notificationId: 'n' },
+    { type: 'incomingCall', callId: 'c' },
+  ]);
+  const active = GameEngine.create(investigation, {
+    ...ports,
+    phone: { initial: createPhoneState({ activeCall: { ...call, state: 'active' } }) },
+  });
+  expect(engineEvents(new Session('active', active, () => 0), 'phone', batch)).toEqual([]);
+});
+
+test('scan result refers only to evidence actually captured in the real engine', () => {
+  const investigation = tinyManorWithClues();
+  const engine = GameEngine.create(investigation, {
+    startLocationId: 'loc_study',
+    clues: investigation.clues,
+    phone: { initial: createPhoneState() },
+    evidenceTokens: { issue: () => 'token', revoke: () => undefined },
+  });
+  const session = new Session('capture', engine, () => 0);
+  expect(engine.dispatch('desktop', { type: 'read', documentId: 'ledger_note' }).ok).toBe(true);
+  const clueId = investigation.clues[0]!.id;
+  expect(
+    engineEvents(session, 'phone', { events: [{ type: 'EvidenceCaptured', clueId }] }),
+  ).toEqual([]);
+  const captured = engine.dispatch('phone', { type: 'captureEvidence', tokenId: 'token' });
+  expect(captured.ok).toBe(true);
+  expect(engineEvents(session, 'phone', captured)).toEqual([
+    { type: 'scanResult', ok: true, clueRef: clueId },
+  ]);
+  expect(engineEvents(session, 'desktop', captured)).toEqual([]);
 });

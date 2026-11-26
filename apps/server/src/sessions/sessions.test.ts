@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, expectTypeOf, test } from 'vitest';
 import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
-import { SessionManager } from './index.ts';
+import { SessionIdInUseError, SessionManager } from './index.ts';
 
 const wait = { type: 'wait', minutes: 15 } as const;
 const provider = {
@@ -112,6 +112,16 @@ describe('SessionManager', () => {
     session.setTokenHash('desktop', 'stored-hash');
     await session.setConnected('desktop', false);
     now += 30 * 60_000;
+
+    await expect(
+      manager.adopt(session.id, session.engine, () => {
+        throw new Error('Preparation failed');
+      }),
+    ).rejects.toThrow('Preparation failed');
+    expect(manager.get(session.id)).toBe(session);
+    expect(session.status).toBe('finished');
+    expect(session.tokenHash('desktop')).toBe('stored-hash');
+
     await manager.sweep();
     expect(session.status).toBe('disposed');
     expect(session.tokenHash('desktop')).toBeUndefined();
@@ -151,4 +161,105 @@ test('session manager loads under the server native Node runtime', () => {
 
   expect(probe.error).toBeUndefined();
   expect(probe.status, probe.stderr).toBe(0);
+});
+
+test('prepare has a synchronous return contract', () => {
+  type Prepare = NonNullable<Parameters<SessionManager['create']>[2]>;
+  expectTypeOf<Prepare>().returns.toEqualTypeOf<undefined>();
+});
+
+test('a Promise-returning prepare is rejected without registering or leaking its rejection', () => {
+  const probe = spawnSync(
+    process.execPath,
+    [
+      '--unhandled-rejections=strict',
+      '--import', 'tsx',
+      '--input-type=module', '-e',
+      `
+        import assert from 'node:assert/strict';
+        const { SessionManager } = await import(process.argv[1]);
+        const { tinyManor } = await import(process.argv[2]);
+        const manager = new SessionManager({
+          create: () => ({ investigation: tinyManor(), ports: { startLocationId: 'loc_hall' } }),
+        }, { createId: () => 'probe' });
+        const gate = Promise.withResolvers();
+        const creation = manager.create('tiny', 'seed', async () => {
+          await gate.promise;
+          throw new Error('late rejection');
+        });
+        try {
+          await assert.rejects(creation, /prepare must finish synchronously/);
+          assert.equal(manager.get('probe'), undefined);
+        } finally {
+          gate.resolve();
+        }
+        await new Promise(setImmediate);
+      `,
+      new URL('./index.ts', import.meta.url).href,
+      new URL('../../../../packages/core/test/fixtures/tiny-manor.ts', import.meta.url).href,
+    ],
+    { encoding: 'utf8' },
+  );
+
+  expect(probe.error).toBeUndefined();
+  expect(probe.status, probe.stderr).toBe(0);
+});
+
+test('concurrent create with a duplicate ID leaves the first session intact', async () => {
+  const manager = new SessionManager(provider, { createId: () => 'same-id' });
+  const results = await Promise.allSettled([
+    manager.create('tiny', 'first', (candidate) => {
+      candidate.setTokenHash('desktop', 'first-hash');
+    }),
+    manager.create('tiny', 'second', () => {
+      throw new Error('duplicate reached prepare');
+    }),
+  ]);
+  expect(results[0]).toMatchObject({ status: 'fulfilled', value: manager.get('same-id') });
+  expect(results[1]).toMatchObject({ status: 'rejected', reason: new Error('Duplicate session ID') });
+  expect(manager.get('same-id')?.tokenHash('desktop')).toBe('first-hash');
+});
+
+test('prepare cannot reenter adopt with the ID of the session being prepared', async () => {
+  const manager = new SessionManager(provider, { createId: () => 'same-id' });
+  const attempts: Promise<unknown>[] = [];
+  const created = await manager.create('tiny', 'seed', (candidate) => {
+    attempts.push(manager.adopt(candidate.id, candidate.engine).catch((error: unknown) => error));
+    expect(manager.get(candidate.id) === undefined).toBe(true);
+  });
+
+  expect(await Promise.all(attempts)).toEqual([expect.any(SessionIdInUseError)]);
+  expect(manager.get(created.id)).toBe(created);
+});
+
+test('create registers the session only after prepare succeeded', async () => {
+  const ids = ['s-failed', 's-ok'];
+  const manager = new SessionManager(provider, { createId: () => ids.shift()! });
+  await expect(
+    manager.create('tiny', 'seed', () => {
+      throw new Error('prepare failed');
+    }),
+  ).rejects.toThrow('prepare failed');
+  expect(manager.get('s-failed')).toBeUndefined();
+
+  const prepared: string[] = [];
+  const session = await manager.create('tiny', 'seed', (candidate) => {
+    prepared.push(candidate.id);
+    expect(manager.get(candidate.id)).toBeUndefined();
+  });
+  expect(prepared).toEqual(['s-ok']);
+  expect(manager.get('s-ok')).toBe(session);
+});
+
+test('the session locale is passed to the provider and defaults to ru', async () => {
+  const seen: string[] = [];
+  const manager = new SessionManager({
+    create(scenarioId, seed, locale) {
+      seen.push(locale ?? '');
+      return provider.create(scenarioId, seed);
+    },
+  });
+  await manager.create('tiny-manor', 'winter');
+  await manager.create('tiny-manor', 'winter', undefined, 'en');
+  expect(seen).toEqual(['ru', 'en']);
 });

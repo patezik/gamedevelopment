@@ -12,3 +12,13 @@ func _ready() -> void:
 	HorrorFx.install(get_tree().root)
 	# Opens the Ending screen once the server reports the game over (GDT-009).
 	EndingWatcher.install(get_tree().root)
+	# The game starts at NewGame (GDT-003), but only when this is the scene the game launched with:
+	# a Bootstrap mounted by SceneRouter or instantiated by a test stays where it is.
+	if get_tree().current_scene == self:
+		_open_new_game.call_deferred()
+
+
+func _open_new_game() -> void:
+	var router: Node = get_node_or_null(^"/root/SceneRouter")
+	if router != null and router.has_method(&"goto"):
+		router.call(&"goto", &"new_game")

@@ -1,0 +1,40 @@
+# ADR 0012 (дополнение): tasks/INDEX.md пересобирается здесь, а не в PR, чтобы не было конфликтов.
+name: Tasks index
+
+on:
+  push:
+    branches: [main]
+    paths: ['tasks/**.md', 'tools/tasks/**']
+
+permissions:
+  contents: write
+
+# Один пересбор за раз; более новый запуск заменяет ожидающий, в очереди остаётся самый свежий main.
+concurrency:
+  group: tasks-index
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    name: Rebuild tasks/INDEX.md
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: node tools/tasks/tasks.mjs index
+      - name: Commit when changed
+        run: |
+          if git diff --quiet -- tasks/INDEX.md; then
+            echo "INDEX.md is up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tasks/INDEX.md
+          git commit -m "chore(tasks): rebuild INDEX [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main

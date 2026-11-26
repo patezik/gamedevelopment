@@ -91,29 +91,46 @@ export class PairingService {
   }
 
   createCode(session: Session) {
+    const { pairing, commit } = this.prepareCode(session);
+    commit();
+    return pairing;
+  }
+
+  /** Stages a code without touching either index. Validate and commit it in the same turn. */
+  prepareCode(session: Session) {
     const now = this.#now();
-    this.#cleanup(now);
+    const host = this.#options.host();
     let code: string;
     do {
       code = Array.from({ length: 6 }, () => alphabet.charAt(randomInt(alphabet.length))).join('');
     } while (this.#codes.has(code));
-    const previous = this.#sessionCodes.get(session.id);
-    if (previous !== undefined) this.#codes.delete(previous);
+    const qrPayload = ['hs1', 'pair', host, this.#options.port, code].join(':');
     const expiresAt = now + ttlMs;
-    this.#codes.set(code, { session, expiresAt, failures: 0 });
-    this.#sessionCodes.set(session.id, code);
     return {
-      code,
-      expiresAt,
-      qrPayload: ['hs1', 'pair', this.#options.host(), this.#options.port, code].join(':'),
+      pairing: { code, expiresAt, qrPayload },
+      commit: () => {
+        this.#cleanup(now);
+        const previous = this.#sessionCodes.get(session.id);
+        if (previous !== undefined) this.#codes.delete(previous);
+        this.#codes.set(code, { session, expiresAt, failures: 0 });
+        this.#sessionCodes.set(session.id, code);
+      },
     };
+  }
+
+  /** Forgets the session's pairing code, if it has one (a session whose creation failed). */
+  discardCode(session: Session): void {
+    const code = this.#sessionCodes.get(session.id);
+    if (code === undefined) return;
+    const entry = this.#codes.get(code);
+    if (entry?.session === session) this.#removeCode(code, entry);
   }
 
   /** The session's latest pairing code (it may have expired), without issuing a new one. */
   activeCode(session: Session): { code: string; expiresAt: number; qrPayload: string } | undefined {
     const code = this.#sessionCodes.get(session.id);
     const entry = code === undefined ? undefined : this.#codes.get(code);
-    if (code === undefined || !entry) return undefined;
+    if (code === undefined || entry?.session !== session) return undefined;
     return {
       code,
       expiresAt: entry.expiresAt,

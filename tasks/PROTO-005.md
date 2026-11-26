@@ -1,7 +1,7 @@
 ---
 id: PROTO-005
 title: "Исход необратимого действия после переподключения: признак совершённого обвинения"
-status: todo
+status: in_progress
 priority: P1
 complexity: S
 phase: 6
@@ -9,8 +9,8 @@ milestone: M6
 area: protocol
 depends_on: [ENG-006, GDT-009]
 modules: ["packages/protocol/src/messages", "packages/protocol/src/views/player.ts", "apps/server/src/gateway", "apps/server/src/sessions", "apps/desktop/src/scenes/accusation"]
-assignee: null
-claimed_at: null
+assignee: claude-p1
+claimed_at: "2026-11-26T14:59:22Z"
 ---
 
 # PROTO-005 — Исход необратимого действия после переподключения: признак совершённого обвинения

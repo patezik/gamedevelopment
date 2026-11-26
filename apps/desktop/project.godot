@@ -14,6 +14,7 @@ ServerLauncher="*res://src/autoload/server_launcher.gd"
 GameStore="*res://src/autoload/game_store.gd"
 SceneRouter="*res://src/autoload/scene_router.gd"
 Settings="*res://src/autoload/settings.gd"
+Localization="*res://src/autoload/localization.gd"
 AudioDirector="*res://src/autoload/audio_director.gd"
 
 [display]

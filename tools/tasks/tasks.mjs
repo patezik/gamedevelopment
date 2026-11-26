@@ -5,6 +5,7 @@
 //   node tools/tasks/tasks.mjs validate          — check schema, deps, cycles, statuses, milestones
 //   node tools/tasks/tasks.mjs ready [--area X]  — list todo tasks whose dependencies are all done
 //   node tools/tasks/tasks.mjs index             — regenerate tasks/INDEX.md
+//   node tools/tasks/tasks.mjs pr-check <branch>  — CI: the task of a task/<ID>-... branch must be claimed
 //   node tools/tasks/tasks.mjs show <ID>         — print task summary with dependency status
 //   node tools/tasks/tasks.mjs claim <ID> --as <agent>   — set in_progress + assignee + claimed_at
 //   node tools/tasks/tasks.mjs status <ID> <status>      — change status (todo|in_progress|review|done|blocked|cancelled)
@@ -363,7 +364,13 @@ function main() {
     case 'validate': {
       for (const w of warnings) console.warn(`warning: ${w}`);
       for (const e of errors) console.error(`error: ${e}`);
-      if (existsSync(join(TASKS_DIR, 'INDEX.md')) && errors.length === 0) {
+      // INDEX.md is rebuilt by CI on main (.github/workflows/tasks-index.yml); PRs do not touch it.
+      // The freshness check is opt-in: `validate --strict-index`.
+      if (
+        args.includes('--strict-index') &&
+        existsSync(join(TASKS_DIR, 'INDEX.md')) &&
+        errors.length === 0
+      ) {
         const current = readFileSync(join(TASKS_DIR, 'INDEX.md'), 'utf8').replace(/\r\n/g, '\n');
         if (current !== buildIndex(byId)) {
           console.error('error: tasks/INDEX.md is outdated — run npm run tasks:index');
@@ -372,6 +379,33 @@ function main() {
       }
       console.log(`${tasks.length} tasks, ${errors.length} errors, ${warnings.length} warnings`);
       if (errors.length) process.exitCode = 1;
+      return;
+    }
+    case 'pr-check': {
+      // CI for pull requests: the task of a `task/<ID>-...` branch must already be claimed.
+      // Other branches (chore/, fix/, claim/, ...) are not task branches and pass.
+      const branch = args[0] ?? '';
+      const match = branch.match(/^task\/([A-Z]+-\d+)(?:-|$)/);
+      if (!match) {
+        console.log(`pr-check: "${branch}" is not a task branch, skipped`);
+        return;
+      }
+      const t = byId.get(match[1]);
+      const claimed = ['in_progress', 'review', 'done'];
+      if (!t) {
+        console.error(`error: ${match[1]} (branch ${branch}) is not in tasks/`);
+        process.exitCode = 1;
+      } else if (!claimed.includes(t.meta.status)) {
+        console.error(
+          `error: ${t.meta.id} is ${t.meta.status}, not claimed. Claim it first: ` +
+            `node tools/tasks/tasks.mjs claim ${t.meta.id} --as <agent> (AGENTS.md section 5)`,
+        );
+        process.exitCode = 1;
+      } else {
+        console.log(
+          `pr-check: ${t.meta.id} is ${t.meta.status} (assignee: ${t.meta.assignee ?? '-'})`,
+        );
+      }
       return;
     }
     case 'ready': {
@@ -455,12 +489,12 @@ function main() {
       const updates = { status };
       if (status === 'todo') Object.assign(updates, { assignee: null, claimed_at: null });
       setFrontmatter(t, updates);
-      console.log(`${id}: ${t.meta.status} → ${status}. Run npm run tasks:index.`);
+      console.log(`${id}: ${t.meta.status} → ${status}. `);
       return;
     }
     default:
       console.log(
-        'commands: validate | ready [--area X] | index | show <ID> | claim <ID> --as <agent> | status <ID> <status>',
+        'commands: validate | pr-check <branch> | ready [--area X] | index | show <ID> | claim <ID> --as <agent> | status <ID> <status>',
       );
       if (cmd) process.exitCode = 1;
   }

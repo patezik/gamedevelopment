@@ -3,6 +3,8 @@ export {
   type Activity,
   type ActivityStep,
   type Agent,
+  type AgentSnapshot,
+  type SimulationSnapshot,
   type SimulationRunnerOptions,
 } from './runner.ts';
 export {
