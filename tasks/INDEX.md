@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **163** · todo: 32 · in_progress: 9 · review: 5 · done: 116 · blocked: 1
+Всего задач: **165** · todo: 33 · in_progress: 10 · review: 2 · done: 119 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -185,10 +185,10 @@
 | [GDT-011](GDT-011.md) | Debug-панель: seed, время, просмотр истины в debug-режиме | P2 | S | done | egor-claude-gdt-011 | [GDT-002](GDT-002.md), [SRV-009](SRV-009.md) |
 | [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | todo | — | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
 | [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | todo | — | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
-| [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | review | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
+| [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | todo | — | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
-| [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | review | claude-m2 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
-| [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | review | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
+| [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | done | claude-m2 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
+| [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
 | [PROTO-005](PROTO-005.md) | Исход необратимого действия после переподключения: признак совершённого обвинения | P1 | S | todo | — | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [SIM-006](SIM-006.md) | Реакции NPC на игрока: настороженность, AvoidPlayer, реакции на обвинение | P0 | M | done | claude-qb | [SIM-005](SIM-005.md), [ENG-003](ENG-003.md) |
@@ -197,11 +197,13 @@
 | [SRV-013](SRV-013.md) | Штатная сборка Session Server с WebSocket и QR | P0 | M | in_progress | codex-srv-013 | [SRV-006](SRV-006.md), [SRV-010](SRV-010.md), [SRV-011](SRV-011.md) |
 | [TIME-005](TIME-005.md) | Дедлайны, критические события, пропущенные события, условия завершения | P0 | M | done | claude-qh | [TIME-003](TIME-003.md), [ENG-006](ENG-006.md) |
 
-## Фаза 7 · M7 — MVP (13)
+## Фаза 7 · M7 — MVP (15)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [ENG-010](ENG-010.md) | Проводка модулей выживания в GameEngine | P0 | L | in_progress | claude-qo | [SURV-002](SURV-002.md), [SURV-005](SURV-005.md), [SURV-003](SURV-003.md), [SIM-006](SIM-006.md) |
+| [ENG-014](ENG-014.md) | Подключение симуляции NPC к GameEngine | P0 | L | in_progress | claude-qw | [SIM-003](SIM-003.md), [SIM-005](SIM-005.md), [SIM-006](SIM-006.md), [SIM-007](SIM-007.md), [ENG-006](ENG-006.md) |
+| [ENG-015](ENG-015.md) | Цели NPC и реакции на игрока в цикле симуляции движка | P1 | L | todo | — | [ENG-014](ENG-014.md) |
 | [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | done | egor-claude-gdt-010 | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
 | [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [MOB-011](MOB-011.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
