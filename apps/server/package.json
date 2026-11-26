@@ -12,6 +12,7 @@
   "dependencies": {
     "@fastify/websocket": "~11.3.4",
     "@hs/core": "*",
+    "@hs/generator": "*",
     "@hs/protocol": "*",
     "fastify": "~5.12.8",
     "qrcode": "~1.5.4",

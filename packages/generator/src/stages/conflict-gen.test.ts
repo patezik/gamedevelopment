@@ -512,7 +512,9 @@ describe('ConflictGen on the sanatorium', () => {
       const engine = GameEngine.create(investigation, {
         startLocationId: generated.output.startLocationId,
       });
-      const view = JSON.stringify(engine.playerView());
+      // `caseBoard.motiveTargets` is a legitimate player-side list of accusation targets (ENG-013):
+      // it names no motive and no culprit, so its key is not what this check is looking for.
+      const view = JSON.stringify(engine.playerView()).replace('"motiveTargets"', '"targets"');
       expect(view).not.toMatch(/motive|culprit|veracity|truth|hallucination/i);
       expect(view).not.toContain(MOTIVE_EVENT_VERB);
       for (const candidate of world.motives) {

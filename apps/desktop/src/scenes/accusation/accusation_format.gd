@@ -19,8 +19,8 @@ const PART_TEXT: Dictionary = {
 const UNKNOWN_CHARACTER_TEXT: String = "Неизвестный персонаж"
 
 
-## Characters the view names, in its order: persons of interest, marked characters, statement
-## speakers, characters present, the conversation partner. Each entry is `{"id", "name"}`.
+## Characters the view names, in its order: persons of interest, motive targets, marked
+## characters, statement speakers, characters present, the conversation partner. Each entry is `{"id", "name"}`.
 ## The same sources the case board uses for its filter; the view has no full list of characters.
 static func known_characters(view: Dictionary) -> Array[Dictionary]:
 	var names: Dictionary = {}
@@ -28,6 +28,8 @@ static func known_characters(view: Dictionary) -> Array[Dictionary]:
 	var board: Dictionary = _dict(view.get("caseBoard"))
 	for person: Dictionary in _dicts(board.get("personsOfInterest")):
 		_learn(names, order, _text(person.get("characterId")), _text(person.get("name")))
+	for target: Dictionary in _dicts(board.get("motiveTargets")):
+		_learn(names, order, _text(target.get("characterId")), _text(target.get("name")))
 	for suspicion: Dictionary in _dicts(board.get("suspicions")):
 		_learn(names, order, _text(suspicion.get("characterId")), "")
 	for statement: Dictionary in _dicts(board.get("statements")):

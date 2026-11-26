@@ -93,3 +93,56 @@ test('limits IPs in a sliding window and invalidates a code after 20 attributabl
   expect((await pair(code, PROTOCOL_VERSION, '192.0.2.4')).json<{ error: { code: string } }>().error.code)
     .toBe('PAIRING_CODE_INVALID');
 });
+
+test('discardCode from an old session leaves both indexes of its replacement intact', async () => {
+  const { session: oldSession } = setup();
+  const current = new Session(oldSession.id, oldSession.engine, () => 0);
+  const service = new PairingService({ get: () => current }, {
+    host: () => 'game-pc.local', port: 7420,
+  });
+  const oldCode = service.createCode(oldSession);
+  const newCode = service.createCode(current);
+
+  service.discardCode(oldSession);
+  expect(service.activeCode(current)).toEqual(newCode);
+  const body = { deviceName: 'Phone', appVersion: '0.0.0', protocolVersion: PROTOCOL_VERSION };
+  await expect(service.pair({ ...body, code: oldCode.code }, '127.0.0.1')).rejects.toMatchObject({
+    code: 'PAIRING_CODE_INVALID',
+  });
+  await expect(service.pair({ ...body, code: newCode.code }, '127.0.0.1')).resolves.toMatchObject({
+    sessionId: current.id,
+  });
+  expect(current.status).toBe('active');
+  expect(oldSession.tokenHash('phone')).toBeUndefined();
+});
+
+test('createCode changes nothing when the host lookup throws; discardCode forgets the code', async () => {
+  const session = new Session('atomic-session', {
+    dispatch: () => ({ ok: false, error: 'INTERNAL', minutesSpent: 0, events: [] }),
+  }, () => 0);
+  let hostFails = false;
+  const service = new PairingService({ get: () => session }, {
+    host: () => {
+      if (hostFails) throw new Error('no interface');
+      return 'game-pc.local';
+    },
+    port: 7420,
+  });
+  const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), { pairing: service });
+  apps.push(app);
+  const pair = (code: string) => app.inject({
+    method: 'POST', url: '/api/v1/pair',
+    payload: { code, deviceName: 'Phone', appVersion: '0.0.0', protocolVersion: PROTOCOL_VERSION },
+  });
+
+  const first = service.createCode(session);
+  hostFails = true;
+  expect(() => service.createCode(session)).toThrow('no interface');
+  hostFails = false;
+  // The failed call neither replaced nor removed the code the session already had.
+  expect(service.activeCode(session)?.code).toBe(first.code);
+
+  service.discardCode(session);
+  expect(service.activeCode(session)).toBeUndefined();
+  expect((await pair(first.code)).json()).toMatchObject({ error: { code: 'PAIRING_CODE_INVALID' } });
+});

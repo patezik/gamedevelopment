@@ -51,8 +51,8 @@
 | react, react-dom | 19.3.0, MIT | Да (React) | Единая версия React для React Native и зависимостей Expo Router |
 | react-native-safe-area-context, react-native-screens | 5.11.x / 4.30.x, MIT | Да | Безопасная область и нативная навигация |
 | react-native-gesture-handler, react-native-worklets | 3.3.x / 0.13.x, MIT | Да | Версии нативных зависимостей Expo Router, совместимые с Expo Go |
-| expo-camera | SDK 58 (58.0.x) | Да | Камера, сканирование QR (`CameraView`) |
-| expo-secure-store | SDK 58 | Да | Хранение `deviceToken` |
+| expo-camera | SDK 58 (58.0.x), MIT | Да | Камера, сканирование QR (`CameraView`) |
+| expo-secure-store | SDK 58, MIT | Да | Хранение `deviceToken` |
 | @react-native-async-storage/async-storage | версия SDK 58 | Да | Настройки |
 | expo-haptics | SDK 58 | Да | Вибрация уведомлений |
 | expo-audio | SDK 58 | Да | Рингтон звонков, звуки ОС |
