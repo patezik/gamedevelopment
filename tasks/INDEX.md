@@ -2,12 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **159** · todo: 40 · in_progress: 9 · review: 1 · done: 108 · blocked: 1
+Всего задач: **159** · todo: 40 · in_progress: 8 · review: 1 · done: 109 · blocked: 1
 
 ## Готовы к взятию сейчас
 
+- [GDT-003](GDT-003.md) — Экраны NewGame и Pairing: сессия, QR привязки, статус телефона (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [SRV-012](SRV-012.md) — Порты дела и стартовые данные пресета для GameEngine (P0, L)
 - [PROTO-005](PROTO-005.md) — Исход необратимого действия после переподключения: признак совершённого обвинения (P1, S)
+- [SRV-014](SRV-014.md) — Атомарная смена сессии при загрузке сохранения (P1, M)
+- [PROTO-006](PROTO-006.md) — REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot (P2, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
 
@@ -15,14 +19,13 @@
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[SRV-002](SRV-002.md) → [SRV-012](SRV-012.md) → [SRV-010](SRV-010.md) → [SRV-013](SRV-013.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[SRV-012](SRV-012.md) → [SRV-010](SRV-010.md) → [SRV-013](SRV-013.md) → [INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
 | Задача | Блокирует напрямую |
 |---|---|
 | [MOB-003](MOB-003.md) WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | 6 |
-| [SRV-002](SRV-002.md) REST: создание сессии и список сценариев | 4 |
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
@@ -33,6 +36,7 @@
 | [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
 | [SRV-012](SRV-012.md) Порты дела и стартовые данные пресета для GameEngine | 2 |
 | [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
+| [CNT-003](CNT-003.md) MVP-сценарий: шаблоны преступлений и правила мотивов | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -143,7 +147,7 @@
 | [PROTO-003](PROTO-003.md) | Генерация GDScript-констант протокола и контрактные тесты Godot | P0 | S | done | egor-claude-proto-003 | [PROTO-002](PROTO-002.md), [FND-008](FND-008.md) |
 | [PROTO-006](PROTO-006.md) | REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot | P2 | S | todo | — | [SRV-002](SRV-002.md) |
 | [SRV-001](SRV-001.md) | SessionManager: сессии, очередь действий, жизненный цикл | P0 | M | done | codex-engine-27 | [FND-005](FND-005.md), [ENG-001](ENG-001.md) |
-| [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | in_progress | egor-claude-srv-002 | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
+| [SRV-002](SRV-002.md) | REST: создание сессии и список сценариев | P0 | S | done | egor-claude-srv-002 | [SRV-001](SRV-001.md), [GEN-011](GEN-011.md) |
 | [SRV-003](SRV-003.md) | Сервис привязки: коды, rate limit, токены устройств, POST /pair | P0 | M | done | codex-prototype-27 | [SRV-001](SRV-001.md) |
 | [SRV-004](SRV-004.md) | WebSocket-шлюз: hello, роли, heartbeat, seq/ack, resume | P0 | L | done | codex-prototype-27 | [SRV-003](SRV-003.md), [PROTO-001](PROTO-001.md) |
 | [SRV-005](SRV-005.md) | Рассылка представлений и событий с фильтром по роли | P0 | M | done | claude-w5 | [SRV-004](SRV-004.md), [ENG-002](ENG-002.md), [PHONE-001](PHONE-001.md) |
