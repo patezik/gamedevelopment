@@ -48,6 +48,13 @@ export interface EvidenceTokenStoreOptions {
   readonly secret?: Buffer;
   /** Source of randomness for token ids (replaced in tests). */
   readonly randomBytes?: (size: number) => Buffer;
+  /**
+   * Makes token ids reproducible: an id is a hash of this seed, the clue and the expiry, so a
+   * replay of the same journal issues the same ids and the engine state hashes agree (ADR 0025).
+   * The seed names the case (it is derived from the truth), so it stays on the server. The id is
+   * only a handle: what makes a QR genuine is the HMAC under the per-process secret.
+   */
+  readonly idSeed?: string;
 }
 
 /**
@@ -59,12 +66,14 @@ export interface EvidenceTokenStoreOptions {
 export class EvidenceTokenStore implements EvidenceTokenPort {
   readonly #secret: Buffer;
   readonly #random: (size: number) => Buffer;
+  readonly #idSeed: string | undefined;
   readonly #records = new Map<string, EvidenceTokenRecord>();
   #sessionTag: string | undefined;
 
   constructor(options: EvidenceTokenStoreOptions = {}) {
     this.#secret = options.secret ?? randomBytes(32);
     this.#random = options.randomBytes ?? randomBytes;
+    this.#idSeed = options.idSeed;
     if (this.#secret.length < 16) throw new RangeError('HMAC secret must be at least 16 bytes');
   }
 
@@ -81,11 +90,44 @@ export class EvidenceTokenStore implements EvidenceTokenPort {
   issue(clueId: string, expiresAt: GameMinutes): string {
     if (!Number.isFinite(expiresAt)) throw new RangeError('expiresAt must be a finite game minute');
     let tokenId: string;
+    let attempt = 0;
     do {
-      tokenId = this.#random(TOKEN_ID_BYTES).toString('base64url');
+      tokenId = this.#newId(clueId, expiresAt, attempt++);
     } while (this.#records.has(tokenId));
     this.#records.set(tokenId, { tokenId, clueId, expiresAt });
     return tokenId;
+  }
+
+  #newId(clueId: string, expiresAt: GameMinutes, attempt: number): string {
+    if (this.#idSeed === undefined) return this.#random(TOKEN_ID_BYTES).toString('base64url');
+    return createHash('sha256')
+      .update(JSON.stringify([this.#idSeed, clueId, expiresAt, attempt]))
+      .digest()
+      .subarray(0, TOKEN_ID_BYTES)
+      .toString('base64url');
+  }
+
+  /**
+   * Puts back the token a restored game still has pending, under this store's own secret (a QR
+   * drawn before the restart carries the old signature and no longer verifies). Every other
+   * record is dropped: replay issued tokens for clues that were captured or replaced since.
+   * Call it once the engine is rebuilt, with the engine's pending capture, if any.
+   */
+  adoptPending(
+    pending:
+      { readonly tokenId: string; readonly clueId: string; readonly expiresAt: number } | undefined,
+  ): void {
+    if (pending !== undefined && !TOKEN_ID_PATTERN.test(pending.tokenId)) {
+      throw new RangeError('Invalid pending token id');
+    }
+    this.#records.clear();
+    if (pending) {
+      this.#records.set(pending.tokenId, {
+        tokenId: pending.tokenId,
+        clueId: pending.clueId,
+        expiresAt: pending.expiresAt,
+      });
+    }
   }
 
   revoke(tokenId: string): void {

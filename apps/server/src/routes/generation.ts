@@ -4,19 +4,25 @@ import { isIPv6 } from 'node:net';
 import os from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GameEngine } from '@hs/core/game';
+import { serializeInvestigation } from '@hs/core/game';
+import { stateHash } from '@hs/core/common';
 import serverPackage from '../../package.json' with { type: 'json' };
 import { SessionGateway } from '../gateway/index.ts';
-import { QrService, type QrRouteDependencies, type EvidenceTokenStore } from '../qr/index.ts';
+import { QrService, EvidenceTokenStore, type QrRouteDependencies } from '../qr/index.ts';
+import {
+  RecordingEngine,
+  SaveService,
+  SaveStore,
+  type SaveRouteDependencies,
+} from '../saves/index.ts';
 import { engineView, engineEvents } from '../views/index.ts';
-import type { SessionEngine } from '../sessions/index.ts';
 import { loadScenarioFromDir, type ScenarioContent } from '@hs/core/content';
 import { generateInvestigation, type GenerationResult } from '@hs/generator';
 import { ScenarioId, ScenarioSummary, Seed } from '@hs/protocol';
 import { isPairingHost, type ServerConfig } from '../config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from '../config/network.ts';
 import { PairingService } from '../pairing/index.ts';
-import { SessionManager, type InvestigationProvider } from '../sessions/index.ts';
+import { SessionManager, type InvestigationProvider, type Session } from '../sessions/index.ts';
 import { resolveTextLocale, scenarioEnginePorts } from '../sessions/scenario-ports.ts';
 import type { SessionRouteDependencies } from './sessions.ts';
 
@@ -254,13 +260,14 @@ export interface SessionServicesOptions {
  * passed to `buildApp` as is.
  */
 export function createSessionServices(
-  config: Pick<ServerConfig, 'host' | 'port' | 'publicHost'>,
+  config: Pick<ServerConfig, 'host' | 'port' | 'publicHost' | 'dataDir'>,
   { scenariosDir, networkInterfaces = os.networkInterfaces }: SessionServicesOptions = {},
 ): {
   pairing: PairingService;
   sessions: SessionRouteDependencies & { sessions: SessionManager };
   gateway: SessionGateway;
   qr: QrRouteDependencies;
+  saves: SaveRouteDependencies;
 } {
   const scenarios = ScenarioCatalog.fromDirectory(scenariosDir);
   const provider = new GeneratorInvestigationProvider(scenarios);
@@ -271,15 +278,38 @@ export function createSessionServices(
       return view.clock.t;
     },
   });
-  const pendingStores = new WeakMap<SessionEngine, EvidenceTokenStore>();
-  const sessions = new SessionManager(provider, {
-    createEngine(investigation, ports) {
-      const store = qr.createStore();
-      const engine = GameEngine.create(investigation, { ...ports, evidenceTokens: store });
-      pendingStores.set(engine, store);
-      return engine;
+  // Every game, new or restored, journals to `HS_DATA_DIR/saves` and gets its own token store.
+  const evidenceStores = new WeakMap<RecordingEngine, EvidenceTokenStore>();
+  const store = new SaveStore(join(config.dataDir, 'saves'));
+  const saves = new SaveService({
+    store,
+    provider,
+    withPorts: (investigation, ports) => ({
+      ...ports,
+      // Reproducible ids keep the QR state hash the same in a replay (ADR 0025).
+      evidenceTokens: qr.createStore({
+        idSeed: stateHash(serializeInvestigation(investigation)),
+      }),
+    }),
+    onEngine(engine, ports) {
+      const tokens = ports.evidenceTokens;
+      if (!(tokens instanceof EvidenceTokenStore)) throw new Error('The game has no token store');
+      // A restored game keeps its pending QR; the secret of this process signs it anew.
+      tokens.adoptPending(engine.snapshot().pendingCapture);
+      evidenceStores.set(engine, tokens);
     },
   });
+  const sessions = new SessionManager(provider, {
+    createEngine: saves.createEngine,
+    published(session) {
+      if (session.engine instanceof RecordingEngine) session.engine.claim();
+    },
+  });
+  const attachQr = (session: Session, engine: RecordingEngine) => {
+    const tokens = evidenceStores.get(engine);
+    if (!tokens) throw new Error('The session engine has no evidence token store');
+    qr.attach(session, tokens);
+  };
   const pairing = new PairingService(sessions, {
     host: () => pairingHost(config, networkInterfaces),
     port: config.port,
@@ -304,11 +334,16 @@ export function createSessionServices(
       pairing,
       generation: provider,
       prepare(session) {
-        const store = pendingStores.get(session.engine);
-        if (!store) throw new Error('The session engine has no evidence token store');
-        qr.attach(session, store);
-        pendingStores.delete(session.engine);
+        if (!(session.engine instanceof RecordingEngine)) throw new Error('Not a recording engine');
+        attachQr(session, session.engine);
       },
+    },
+    saves: {
+      saves,
+      sessions,
+      pairing,
+      prepare: attachQr,
+      cleanup: () => store.removeStaleTemp(),
     },
   };
 }

@@ -75,7 +75,7 @@ function boot(options: BootOptions = {}) {
     port: 7420,
   });
   const createCode = vi.spyOn(pairing, 'createCode');
-  const app = buildApp(readConfig({ HS_LOG_LEVEL: options.logStream ? 'trace' : 'silent' }), {
+  const app = buildApp(readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: options.logStream ? 'trace' : 'silent' }), {
     pairing,
     sessions: {
       scenarios: catalog,
@@ -555,7 +555,7 @@ test('the session routes and the generator load under the server native Node run
 });
 
 test('createSessionServices wires the production app: catalog, real generator, pairing host', async () => {
-  const config = readConfig({ HS_LOG_LEVEL: 'silent', HS_PUBLIC_HOST: 'game-pc.lan' });
+  const config = readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: 'silent', HS_PUBLIC_HOST: 'game-pc.lan' });
   const services = createSessionServices(config, { networkInterfaces: () => ({}) });
   const app = buildApp(config, services);
   try {
@@ -787,7 +787,7 @@ describe('pairing address (P3)', () => {
     env: Record<string, string>,
     networkInterfaces: () => typeof interfaces = () => interfaces,
   ) => {
-    const config = readConfig({ HS_LOG_LEVEL: 'silent', ...env });
+    const config = readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: 'silent', ...env });
     const services = createSessionServices(config, { networkInterfaces });
     const session = new Session(
       randomUUID(),
@@ -814,7 +814,7 @@ describe('pairing address (P3)', () => {
   });
 
   test('a wildcard bind takes the recommended candidate of GET /network', async () => {
-    const app = buildApp(readConfig({ HS_LOG_LEVEL: 'silent' }), {
+    const app = buildApp(readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: 'silent' }), {
       networkInterfaces: () => interfaces,
     });
     try {
@@ -835,7 +835,7 @@ describe('pairing address (P3)', () => {
   });
 
   test('an IPv6-only bind gives a safe refusal over a real listener', async ({ skip }) => {
-    const config = readConfig({ HS_HOST: '::1', HS_LOG_LEVEL: 'silent' });
+    const config = readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_HOST: '::1', HS_LOG_LEVEL: 'silent' });
     const discover = vi.fn(() => interfaces);
     const { pairing } = createSessionServices(config, { networkInterfaces: discover });
     // Drive the production pairing service with a case that can reach session preparation.
@@ -889,7 +889,7 @@ describe('production factory uses the full GEN-011 gate (P4)', () => {
 
   test('a case only a bypassed gate accepts is refused through createSessionServices', async () => {
     const { dir, content } = unprovableScenarios();
-    const config = readConfig({ HS_LOG_LEVEL: 'silent' });
+    const config = readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: 'silent' });
     const services = createSessionServices(config, {
       scenariosDir: dir,
       networkInterfaces: () => ({}),
@@ -913,7 +913,7 @@ describe('production factory uses the full GEN-011 gate (P4)', () => {
 
   // Not pinned to today's outcome: the answer must follow the full gate, whichever way it goes.
   test('the shipped scenario answers exactly as the full gate decides', async () => {
-    const config = readConfig({ HS_LOG_LEVEL: 'silent' });
+    const config = readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: 'silent' });
     const app = buildApp(config, createSessionServices(config, { networkInterfaces: () => ({}) }));
     const content = loadScenarioFromDir(join(defaultScenariosDir(), 'sanatorium_winter'));
     try {

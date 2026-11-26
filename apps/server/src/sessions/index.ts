@@ -221,6 +221,11 @@ interface SessionManagerOptions {
     ports: EnginePorts,
     sessionId: string,
   ) => SessionEngine;
+  /**
+   * Called synchronously right after a created session is registered, never for a session whose
+   * `prepare` failed. It must not throw. The save layer makes the new engine the writer here.
+   */
+  readonly published?: (session: Session) => void;
 }
 
 /** A session that cannot be replaced (still running) already holds the ID. */
@@ -246,11 +251,13 @@ export class SessionManager {
   readonly #now: () => number;
   readonly #createId: () => string;
   readonly #createEngine: NonNullable<SessionManagerOptions['createEngine']>;
+  readonly #published: ((session: Session) => void) | undefined;
 
   constructor(provider: InvestigationProvider, options: SessionManagerOptions = {}) {
     this.#provider = provider;
     this.#now = options.now ?? Date.now;
     this.#createId = options.createId ?? randomUUID;
+    this.#published = options.published;
     this.#createEngine =
       options.createEngine ?? ((investigation, ports) => GameEngine.create(investigation, ports));
   }
@@ -280,6 +287,7 @@ export class SessionManager {
         throw new TypeError('Session prepare must finish synchronously and return undefined');
       }
       this.#sessions.set(id, session);
+      this.#published?.(session);
       return session;
     } finally {
       this.#pendingIds.delete(id);
