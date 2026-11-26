@@ -1,5 +1,6 @@
 import { createAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
+import notifySound from '../../assets/sounds/notify.wav';
 import { useSettingsStore } from '../stores/settingsStore';
 
 type Player = ReturnType<typeof createAudioPlayer>;
@@ -23,7 +24,7 @@ export function playSound(): void {
     return;
   }
   try {
-    player ??= createAudioPlayer(require('../../assets/sounds/notify.wav'));
+    player ??= createAudioPlayer(notifySound);
     void player.seekTo(0);
     player.play();
   } catch {
