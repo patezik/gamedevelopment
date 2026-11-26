@@ -73,6 +73,33 @@ test('opening a thread shows messages with times, marks message notifications as
   expect(screen.getByRole('button', { name: 'Директор санатория, 2' })).toBeTruthy();
 });
 
+test('opening one thread marks only its own notifications as read', async () => {
+  const a = actions();
+  const view: PhoneView = {
+    ...withThread({
+      id: 'th_new',
+      contactId: 'ct_station',
+      messages: [{ id: 'z', from: 'them', text: 'Свежее', at: 1430, read: false }],
+      unread: 1,
+    }),
+    notifications: [
+      ...base.notifications,
+      {
+        id: 'nt_station',
+        appId: 'messages',
+        title: 'Участковый',
+        text: 'Свежее',
+        at: 1430,
+        read: false,
+      },
+    ],
+  };
+  await render(<MessagesApp view={view} actions={a} />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Участковый, 1' }));
+  expect(a.ui).toHaveBeenCalledWith('notificationRead', 'nt_station');
+  expect(a.ui).not.toHaveBeenCalledWith('notificationRead', 'nt1');
+});
+
 test('a read thread does not report notificationRead', async () => {
   const view: PhoneView = {
     ...base,

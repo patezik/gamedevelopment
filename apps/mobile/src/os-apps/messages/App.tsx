@@ -58,8 +58,12 @@ export function MessagesApp({
     setOpenId(t.id);
     setOffline(false);
     if (t.unread > 0) {
+      // A notification carries no thread id: it belongs to this thread by sender name or by the
+      // text of one of its unread messages. Other threads keep their notifications unread.
+      const name = title(view, t);
+      const unreadTexts = new Set(t.messages.filter((m) => !m.read).map((m) => m.text));
       for (const n of view.notifications) {
-        if (n.appId === 'messages' && !n.read) {
+        if (n.appId === 'messages' && !n.read && (n.title === name || unreadTexts.has(n.text))) {
           actions.ui('notificationRead', n.id);
         }
       }
