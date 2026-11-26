@@ -1,7 +1,7 @@
 ---
 id: PROTO-006
 title: "REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot"
-status: in_progress
+status: done
 priority: P2
 complexity: S
 phase: 5
