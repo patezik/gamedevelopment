@@ -72,6 +72,13 @@ interface OsAppManifest {
 | Browser | `browserPages` (внутриигровые страницы) | `browse(pageId)` |
 | Settings | локальные настройки | размер текста, вибрация, снижение эффектов, отвязать устройство, о приложении и приватности; значения сохраняются между запусками в expo-secure-store (ключ `hs.settings`), без отдельной зависимости |
 
+Notes и Maps показывают только `PhoneView.notes` и `PhoneView.mapPins`. Notes сортирует записи от новых
+к старым, различает «Журнал» и «Заметка», отправляет `addNote` с обрезанным текстом (до 500 знаков)
+и не отправляет без связи; новая запись появляется после `view.update`. Maps группирует метки по
+`locationId` без показа технических id (названий мест в виде нет, поэтому «Место N»); время
+наблюдения — часы дела `H:MM` от начала сценария (`src/os/caseTime.ts`). Действия уходят через
+`sendAction` (`gameConnection`).
+
 ## 5. Состояние и подключение
 
 - `connectionStore`: `status: "unpaired" | "connecting" | "online" | "reconnecting" | "offline"`,
