@@ -8,6 +8,7 @@ extends Control
 ## shows Pairing. The token never reaches SceneRouter params or the screen.
 
 const BackendScript = preload("res://src/autoload/backend.gd")
+const LauncherScript = preload("res://src/autoload/server_launcher.gd")
 const Format = preload("res://src/scenes/new_game/new_game_format.gd")
 
 const PAIRING_SCREEN: StringName = &"pairing"
@@ -21,6 +22,7 @@ const SEED_REQUIRED: String = "Введите seed или включите сл�
 const CREATE_TEXT: String = "Создать дело"
 const RELOAD_TEXT: String = "Обновить список"
 const LOADING_TEXT: String = "Загрузка сценариев…"
+const STARTING_TEXT: String = "Запускаем сервер игры…"
 const CREATING_TEXT: String = "Создаём дело… Генерация может занять несколько секунд."
 const READY_TEXT: String = "Сервер: %s"
 const ERROR_COLOR: Color = Color(1.0, 0.45, 0.4, 1.0)
@@ -32,6 +34,9 @@ var user_args: PackedStringArray = OS.get_cmdline_user_args()
 
 var _backend: BackendScript
 var _router: Node
+## The packaged server (INT-005); null or IDLE when the game runs without one (editor, tests).
+var _launcher: LauncherScript
+var _waiting_for_launcher: bool = false
 var _params: Dictionary = {}
 var _origin: String = Format.DEFAULT_ORIGIN
 var _phase: Phase = Phase.LOADING
@@ -63,16 +68,54 @@ func bind_sources(backend: BackendScript, router: Node) -> void:
 	_router = router
 
 
+## Uses [param launcher] instead of the ServerLauncher autoload. Call before the node enters the tree.
+func bind_launcher(launcher: LauncherScript) -> void:
+	_launcher = launcher
+
+
 func _ready() -> void:
 	if _backend == null:
 		_backend = get_node(^"/root/Backend") as BackendScript
 	if _router == null:
 		_router = get_node_or_null(^"/root/SceneRouter")
-	_origin = Format.server_origin(_params, user_args)
+	if _launcher == null:
+		_launcher = get_node_or_null(^"/root/ServerLauncher") as LauncherScript
+	var bundled: bool = (
+		_launcher != null and _launcher.state != LauncherScript.State.IDLE
+		and Format.explicit_origin(_params, user_args).is_empty()
+	)
+	_origin = Format.server_origin(_params, user_args, _launcher.base_url() if bundled else "")
 	_build_ui()
 	_backend.rest_completed.connect(_on_rest_completed)
 	Settings.locale_changed.connect(_on_locale_changed)
+	if bundled and _launcher.state == LauncherScript.State.STARTING:
+		# The catalog is asked for only after /health answered on the port the launcher chose.
+		_waiting_for_launcher = true
+		_launcher.server_ready.connect(_on_launcher_ready, CONNECT_ONE_SHOT)
+		_launcher.server_failed.connect(_on_launcher_failed, CONNECT_ONE_SHOT)
+		_refresh()
+	elif bundled and _launcher.state == LauncherScript.State.FAILED:
+		_fail_catalog(Format.LAUNCH_FAILED)
+	else:
+		load_catalog()
+
+
+func _on_launcher_ready(_port: int) -> void:
+	if not _waiting_for_launcher:
+		return
+	_waiting_for_launcher = false
+	if _launcher.server_failed.is_connected(_on_launcher_failed):
+		_launcher.server_failed.disconnect(_on_launcher_failed)
 	load_catalog()
+
+
+func _on_launcher_failed(_reason: String) -> void:
+	if not _waiting_for_launcher:
+		return
+	_waiting_for_launcher = false
+	if _launcher.server_ready.is_connected(_on_launcher_ready):
+		_launcher.server_ready.disconnect(_on_launcher_ready)
+	_fail_catalog(Format.LAUNCH_FAILED)
 
 
 func _exit_tree() -> void:
@@ -199,7 +242,7 @@ func _refresh() -> void:
 	var busy: bool = _phase == Phase.CREATING or _phase == Phase.DONE
 	match _phase:
 		Phase.LOADING:
-			_status.text = LOADING_TEXT
+			_status.text = STARTING_TEXT if _waiting_for_launcher else LOADING_TEXT
 		Phase.CREATING, Phase.DONE:
 			_status.text = CREATING_TEXT
 		_:
