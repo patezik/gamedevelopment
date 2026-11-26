@@ -5,7 +5,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadScenarioFromDir } from '@hs/core/content';
 import type { Investigation } from '@hs/core/game';
-import { GENERATION_CHECKS, generateInvestigation, type GenerationResult } from '@hs/generator';
+import {
+  GENERATION_CHECKS,
+  GENERATOR_VERSION,
+  generateInvestigation,
+  type GenerationResult,
+} from '@hs/generator';
 import { errorCodes } from 'fastify';
 import { describe, expect, test, vi } from 'vitest';
 import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
@@ -123,7 +128,7 @@ function unsolvable(seed: string): GenerationResult {
     error: 'GENERATION_UNSOLVABLE',
     report: {
       seed,
-      generatorVersion: '0.3.0',
+      generatorVersion: GENERATOR_VERSION,
       attempts: [
         { number: 1, seed: `${seed}#1`, timingsMs: { WorldGen: 1.2 }, accepted: false },
         {
@@ -348,7 +353,7 @@ describe('POST /api/v1/sessions', () => {
       expect(generation).toMatchObject({
         scenarioId: 'sanatorium_winter',
         seed: 'dead-end',
-        generatorVersion: '0.3.0',
+        generatorVersion: GENERATOR_VERSION,
         ok: false,
         attempts: 2,
         stageMs: { WorldGen: 2, IncidentSelection: 2 },

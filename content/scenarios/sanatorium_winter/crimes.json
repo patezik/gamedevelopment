@@ -5,13 +5,20 @@
     "requires": {
       "means": { "itemTag": "poison" },
       "minWindowMinutes": 20,
-      "locationTags": ["private", "medical"],
+      "locationTags": ["private", "main_building"],
       "traits": {}
     },
     "plan": [
       { "step": "acquire", "verb": "take", "target": "$means", "duration": 5, "before": "act" },
       { "step": "act", "verb": "poison", "target": "$victim", "duration": 10 },
-      { "step": "conceal", "verb": "hide", "target": "$means", "duration": 5, "after": "act", "optional": false }
+      {
+        "step": "conceal",
+        "verb": "hide",
+        "target": "$means",
+        "duration": 5,
+        "after": "act",
+        "optional": false
+      }
     ],
     "deathDelayMinutes": [60, 180]
   },
@@ -21,14 +28,28 @@
     "requires": {
       "means": { "itemTag": "heavy" },
       "minWindowMinutes": 20,
-      "locationTags": ["residential", "hazard"],
-      "traits": {}
+      "locationTags": ["residential"],
+      "traits": { "courage": { "gt": 0.3 } }
     },
     "plan": [
       { "step": "acquire", "verb": "take", "target": "$means", "duration": 3, "before": "act" },
       { "step": "act", "verb": "strike", "target": "$victim", "duration": 2 },
-      { "step": "stage", "verb": "stage", "target": "$victim", "duration": 10, "after": "act", "optional": false },
-      { "step": "conceal", "verb": "hide", "target": "$means", "duration": 5, "after": "stage", "optional": false }
+      {
+        "step": "stage",
+        "verb": "stage",
+        "target": "$victim",
+        "duration": 10,
+        "after": "act",
+        "optional": false
+      },
+      {
+        "step": "conceal",
+        "verb": "hide",
+        "target": "$means",
+        "duration": 5,
+        "after": "stage",
+        "optional": false
+      }
     ]
   },
   {
@@ -37,14 +58,35 @@
     "requires": {
       "means": { "itemTag": "key", "itemId": "it_key_boiler" },
       "minWindowMinutes": 30,
-      "locationTags": ["hazard", "service"],
+      "locationTags": ["service", "hazard"],
       "traits": {}
     },
     "plan": [
-      { "step": "acquire", "verb": "take", "target": "$means", "duration": 2, "before": "sabotage" },
-      { "step": "sabotage", "verb": "tamper", "target": "$location", "duration": 15 },
-      { "step": "stage", "verb": "stage", "target": "$location", "duration": 10, "after": "sabotage", "optional": false },
-      { "step": "conceal", "verb": "hide", "target": "$means", "duration": 3, "after": "stage", "optional": false }
+      {
+        "step": "acquire",
+        "verb": "take",
+        "target": "$means",
+        "duration": 2,
+        "before": "act",
+        "optional": true
+      },
+      { "step": "act", "verb": "tamper", "target": "$location", "duration": 15 },
+      {
+        "step": "stage",
+        "verb": "stage",
+        "target": "$location",
+        "duration": 10,
+        "after": "act",
+        "optional": false
+      },
+      {
+        "step": "conceal",
+        "verb": "hide",
+        "target": "$means",
+        "duration": 3,
+        "after": "stage",
+        "optional": true
+      }
     ],
     "deathDelayMinutes": [30, 120]
   }

@@ -652,3 +652,5 @@ SRV-013: `createSessionServices(config, { scenariosDir?, networkInterfaces? })` 
 
 См. [godot-client.md](../desktop/godot-client.md). Autoload: `Backend`, `GameStore`,
 `SceneRouter`, `Settings`, `AudioDirector`, `ServerLauncher`.
+
+Для повторяющихся запросов маршрута `LocationGraph` хранит до 2048 результатов с учётом исходной и конечной локаций, архетипа, ключей и точной игровой минуты. Копии маршрутов и первого шага остаются независимыми от вызывающего кода; кэш не сериализуется и не меняет выбор пути. Календарные минуты для часов доступа также кэшируются внутри неизменяемого графа.

@@ -69,7 +69,7 @@ describe('GeneratorInvestigationProvider ports (SRV-012)', () => {
     const before = b.stateHash();
     expect(a.dispatch('desktop', { type: 'wait', minutes: 30 }).ok).toBe(true);
     expect(b.stateHash()).toBe(before);
-  });
+  }, 20_000); // Two complete generated games plus hashing under coverage; bench owns speed budgets.
 
   test('a refused gate gives GENERATION_UNSOLVABLE and no ports', () => {
     const report = { generatorVersion: 'x', attempts: [], validations: [] };

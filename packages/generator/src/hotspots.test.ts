@@ -36,9 +36,11 @@ test('a fixed trace location of a physical rule has the hotspot', () => {
   }
 });
 
-test('sanatorium_winter: every hotspot clue of seeds 1, 2, 3, 6 can be examined where it lies', () => {
+test('sanatorium_winter: every hotspot clue of seeds 2, 3, 6, 7 can be examined where it lies', () => {
   let required = 0;
-  for (const seed of ['1', '2', '3', '6']) {
+  // CNT-003 data (GENERATOR_VERSION 0.4.0): seed 1 does not pass the gate; 2, 6, 7 are poisonings,
+  // 3 a staged fall, so both kinds of physical clue are examined.
+  for (const seed of ['2', '3', '6', '7']) {
     const result = generateInvestigation({ scenarioId: 'sanatorium_winter', seed }, sanatorium);
     expect(result.ok, seed).toBe(true);
     if (!result.ok) continue;

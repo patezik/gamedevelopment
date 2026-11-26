@@ -80,5 +80,7 @@ test('sanatorium_winter: culprits are provable and lies breakable; some seeds pa
       }
     }
   }
-  expect(passed).toEqual(['1', '2', '3', '6']);
+  // CNT-003 data (GENERATOR_VERSION 0.4.0): seed 1 spends its attempts on NOT_UNIQUE and on
+  // boiler_accident attempts that EvidenceGen or PlotPlanning reject; seed 4 passes on attempt 4.
+  expect(passed).toEqual(['2', '3', '4', '6']);
 }, 60_000);

@@ -48,7 +48,7 @@ function accepted(result: GenerationResult) {
 }
 
 test('golden: five seeds of _test_minimal give the same investigations (structural gate)', () => {
-  expect(GENERATOR_VERSION).toBe('0.3.0');
+  expect(GENERATOR_VERSION).toBe('0.4.0');
   const rows = ['0', '1', '2', '3', '4'].map((seed) => {
     const result = accepted(generateInvestigation(req(seed), minimal, { checks: STRUCTURAL }));
     const { incident } = result.investigation.truth;
@@ -67,35 +67,35 @@ test('golden: five seeds of _test_minimal give the same investigations (structur
         1,
         "theft",
         "ch_1",
-        "55c976721d581ad13774a29fc246baacf699576168aa15402e3dc75e4a9578d6",
+        "be007135952d1090ce00a04979380c453f7d566fe3978d6339fce6501d67d1ee",
       ],
       [
         "1",
         1,
         "theft",
         "ch_1",
-        "69e24f16ecca038457f8eb8e66bcd201e035797d615dd51d40f8ec611ce0c459",
+        "19e829a4bdc9cb3b2277dbe6eb0a0ce1c9bd14dfa2a664926053fbe83602631b",
       ],
       [
         "2",
         1,
         "theft",
         "ch_2",
-        "cbbffdfcf6d3eef4a19d2d04ed4e0b94df04c72861f44d60ab0b13f872b3dfc1",
+        "6c40a6160080a2afa2542face90d0b08bfa847412cb4d528da9d43f0c9e69882",
       ],
       [
         "3",
         1,
         "theft",
         "ch_2",
-        "cb9903167d283c35bd0cc7527e418daa7940030a7e8fa25fe43abcd23af4ec39",
+        "c7903669389adb61b64d4e76479524e6834d43596abfa62fe0a7ae893b48e4bc",
       ],
       [
         "4",
         1,
         "theft",
         "ch_2",
-        "3ca42835ce4b6b11327a8b7520a736d378bac764e52f62cb786d1490a520b581",
+        "03cf3fa70ca6e505b1aa912db4498ecc2e44760a1e1e2dec608c33ada7c79e99",
       ],
     ]
   `);

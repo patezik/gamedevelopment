@@ -284,7 +284,11 @@ export function verifyPlot(world: IncidentWorld, plot: PlotPlan): string[] {
 
   if (deviation) {
     const { from, to } = deviation.interval;
-    if (from > o.from || to !== o.to) problems.push('schedule bend does not cover the window');
+    // IncidentSelection re-simulated this one-block deviation. The opportunity can start
+    // earlier while the unmodified routine already keeps the culprit at the scene.
+    if (!o.deviation || from !== o.deviation.from || to !== o.deviation.to || to !== o.to) {
+      problems.push('schedule bend does not cover the window verified by IncidentSelection');
+    }
     if (overrides.length === 0 || overrides.length > 2) {
       problems.push(`schedule bend needs 1 or 2 overrides, has ${overrides.length}`);
     }

@@ -7,7 +7,9 @@ import { KnowledgeStore } from '@hs/core/knowledge';
 import { generateInvestigation } from '@hs/generator';
 import { solutionSource, solve, timeFeasibleCheck, type PlannerOptions } from '@hs/validator';
 
-export const seeds = ['1', '2', '3', '6'] as const;
+// Version 0.4.0 changes the generated cases: seed 1 is now rejected by the static gate.
+// These fixtures replay current cases; broader beam-search coverage is tracked in VAL-009.
+export const seeds = ['3', '4', '7', '9'] as const;
 type Witness = NonNullable<ReturnType<NonNullable<EnginePorts['testimony']>['witness']>>;
 const content = loadScenarioFromDir(
   fileURLToPath(new URL('../content/scenarios/sanatorium_winter/', import.meta.url)),

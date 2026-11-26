@@ -62,7 +62,8 @@ describe('plotPlanning', () => {
       expect(plot.overrides.length).toBeLessThanOrEqual(2);
       expect(plot.deviation.interval.to).toBe(plot.opportunity.to);
     }
-  });
+    // Each seed runs IncidentSelection on the sanatorium; with the CNT-003 data that takes seconds.
+  }, 60_000);
 
   test('the planned alibi names another place than the scene', () => {
     const { plot } = plan(sanatoriumWorld);

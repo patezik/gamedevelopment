@@ -31,7 +31,8 @@
     "verb": "take",
     "when": { "itemId": "it_key_boiler" },
     "produces": [
-      { "kind": "testimonial", "at": "$location", "template": "key_missing_noticed", "supports": ["means($actor)"] }
+      { "kind": "testimonial", "at": "$location", "template": "key_missing_noticed", "supports": ["means($actor)"] },
+      { "kind": "document", "at": "loc_boiler", "template": "key_log_gap", "supports": ["means($actor)"] }
     ]
   },
   {

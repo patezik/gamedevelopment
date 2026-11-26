@@ -78,5 +78,5 @@ describe.each(['2', '3'])('sanatorium_winter seed %s with the NPC simulation', (
     first.engine.dispatch('desktop', next);
     restored.dispatch('desktop', next);
     expect(restored.stateHash()).toBe(first.engine.stateHash());
-  });
+  }, 20_000); // Full generation/replay under coverage; this test checks state equivalence.
 });
