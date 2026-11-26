@@ -120,7 +120,6 @@ export type PairResponse = z.infer<typeof PairResponse>;
 export const SaveSummary = z.strictObject({
   saveId: z.string().min(1),
   scenarioId: ScenarioId,
-  seed: z.string().min(1),
   updatedAt: z.iso.datetime(),
   gameTime: z.int().nonnegative().nullable(),
 });

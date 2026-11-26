@@ -58,6 +58,17 @@ describe('REST fixtures', () => {
 });
 
 describe('REST schemas', () => {
+  it('rejects seed in a save list entry', () => {
+    const entry = {
+      saveId: 'save-1',
+      scenarioId: 'sanatorium_winter',
+      updatedAt: '2026-11-26T12:00:00.000Z',
+      gameTime: 15,
+    };
+    expect(SaveList.safeParse([{ ...entry, seed: 'private-seed' }]).success).toBe(false);
+    expect(SaveList.safeParse([entry]).success).toBe(true);
+  });
+
   it('reject unknown keys of strict answers and requests', () => {
     for (const [name, schema] of [
       ['health.json', HealthResponse],
