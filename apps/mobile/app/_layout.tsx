@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { OfflineBanner } from '../src/connection/OfflineBanner';
 import { startGameConnection, stopGameConnection } from '../src/connection/gameConnection';
+import { startSettingsPersistence } from '../src/stores/persistSettings';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -14,6 +15,19 @@ export default function RootLayout() {
     });
     return stopGameConnection;
   }, [router]);
+
+  useEffect(() => {
+    let stop: (() => void) | undefined;
+    let cancelled = false;
+    void startSettingsPersistence().then((off) => {
+      if (cancelled) off();
+      else stop = off;
+    });
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, []);
 
   return (
     <>
