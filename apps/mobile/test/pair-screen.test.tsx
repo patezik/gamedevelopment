@@ -14,6 +14,10 @@ jest.mock('expo-camera', () => ({
     return null;
   },
 }));
+jest.mock('../src/connection/gameConnection', () => ({
+  startGameConnection: jest.fn(async () => undefined),
+  stopGameConnection: jest.fn(),
+}));
 jest.mock('../src/pairing/storage', () => ({ savePairing: jest.fn(async () => undefined) }));
 jest.mock('../src/pairing/pairClient', () => ({
   ...jest.requireActual('../src/pairing/pairClient'),

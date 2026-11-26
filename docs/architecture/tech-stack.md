@@ -57,7 +57,7 @@
 | expo-haptics | SDK 58 | Да | Вибрация уведомлений |
 | expo-audio | SDK 58 | Да | Рингтон звонков, звуки ОС |
 | react-native-reanimated | версия SDK 58 | Да | Анимации, эффекты глитча |
-| zustand | 5.0.x | Да (чистый JS) | Состояние |
+| zustand | 5.1.x, MIT | Да (чистый JS) | Состояние |
 | zod | 4.6.x | Да (чистый JS) | Валидация входящих сообщений |
 | jest-expo | 58.0.x | — (dev) | Тесты |
 | @testing-library/react-native | 14.x | — (dev) | Тесты компонентов |
