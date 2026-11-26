@@ -162,12 +162,22 @@ func test_a_random_seed_is_not_sent_and_creation_posts_once() -> void:
 	assert_eq(post.method, HTTPClient.METHOD_POST)
 	assert_eq(post.url, Format.DEFAULT_ORIGIN + "/api/v1/sessions")
 	var body: Dictionary = JSON.parse_string(str(backend.bodies[post.id]))
-	assert_eq(body, {"scenarioId": "manor"})
+	assert_eq(body, {"scenarioId": "manor", "locale": Settings.get_locale()})
 	assert_eq(screen.get_phase(), NewGame.Phase.CREATING)
 	assert_eq(_text("Status"), NewGame.CREATING_TEXT)
 	assert_true(_create_button().disabled)
 	assert_true((_node("Scenario") as OptionButton).disabled)
 	assert_true((_node("RandomSeed") as CheckButton).disabled)
+
+
+func test_the_interface_language_is_sent_to_the_server() -> void:
+	var saved: String = Settings.get_locale()
+	_open_ready()
+	Settings._apply_locale("en")
+	assert_true(screen.create_session())
+	var body: Dictionary = JSON.parse_string(str(backend.bodies[_posts()[0].id]))
+	assert_eq(body.get("locale"), "en")
+	Settings._apply_locale(saved)
 
 
 func test_an_entered_seed_is_validated_and_sent() -> void:
@@ -191,7 +201,7 @@ func test_an_entered_seed_is_validated_and_sent() -> void:
 	seed.text_submitted.emit(seed.text)
 	assert_eq(_posts().size(), 1)
 	var body: Dictionary = JSON.parse_string(str(backend.bodies[_posts()[0].id]))
-	assert_eq(body, {"scenarioId": "sanatorium_winter", "seed": "winter-42"})
+	assert_eq(body, {"scenarioId": "sanatorium_winter", "seed": "winter-42", "locale": Settings.get_locale()})
 	assert_false(seed.editable, "locked while the case is generated")
 
 

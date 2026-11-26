@@ -54,7 +54,7 @@ apps/server/src/
 | `GET /health` | — | `{ status, version, protocolVersion }` | — |
 | `GET /scenarios` | — | `[{ id, title, durationMinutes }]`: сценарии для игрока; `title` — строка (локаль `ru`) | — |
 | `GET /network` | — | `{ candidates: [{ address, interface, recommended, virtual }] }` — LAN-адреса для QR привязки, лучшие первыми; `virtual` — похож на Docker/WSL/VM/VPN (остаётся в списке, но ниже); `recommended` — не более одного; `HS_PUBLIC_HOST` идёт первым. Подробности — [setup.md §6](../development/setup.md) | — |
-| `POST /sessions` | — | `{ scenarioId, seed?, locale? }` (`locale` — `ru` по умолчанию или `en`) → 201 `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }`, `Cache-Control: no-store`. Подробности ниже | `INVALID_MESSAGE` (400; 413 — тело больше лимита, 415 — неподдерживаемый `Content-Type`), `SCENARIO_NOT_FOUND` (404), `GENERATION_UNSOLVABLE` (422), `INTERNAL` (500) |
+| `POST /sessions` | — | `{ scenarioId, seed?, locale? }` (`locale` — язык текстов, `ru` по умолчанию или `en`; клиенты передают язык интерфейса; нет шаблонов языка — `ru`) → 201 `{ sessionId, desktopToken, pairing: { code, expiresAt, qrPayload } }`, `Cache-Control: no-store`. Подробности ниже | `INVALID_MESSAGE` (400; 413 — тело больше лимита, 415 — неподдерживаемый `Content-Type`), `SCENARIO_NOT_FOUND` (404), `GENERATION_UNSOLVABLE` (422), `INTERNAL` (500) |
 | `POST /sessions/:id/pairing-code` | desktop | → новый `pairing` | `SESSION_NOT_FOUND` |
 | `GET /sessions/:id/pairing-qr` | desktop | → `{ size, modules }` текущего кода привязки (новый не выпускается) | `PAIRING_CODE_INVALID` (404, кода нет), `PAIRING_CODE_EXPIRED` (410) |
 | `GET /sessions/:id/evidence-qr/:tokenId` | desktop | → `{ size, modules }` | `QR_INVALID` (404), `QR_EXPIRED` (410), `QR_ALREADY_USED` (409) |
@@ -89,6 +89,10 @@ DEVICE_REVOKED обработчику шлюза (SRV-004).
 `generation.ts` (каталог сценариев, провайдер на генераторе, seed, сборка зависимостей для
 `server.ts`).
 
+- **Язык текстов (QA-003).** `locale` из `POST /sessions` доходит до `GeneratorInvestigationProvider.create`
+  и выбирает шаблоны `text/<lang>/` в `scenarioEnginePorts` (`scenarioTexts`): шаблоны языка поверх
+  русских, поэтому сценарий без `text/en/` или ключ без перевода отдают `ru`. Генератор остаётся
+  языконезависимым (факты, не тексты), локаль на seed и истину не влияет.
 - **Сценарии.** При старте сервер загружает каждый каталог `content/scenarios/<id>`
   (`loadScenarioFromDir`); ошибка контента останавливает запуск. Каталоги с `_` в начале имени
   (`_test_minimal`) — тестовый контент: их нет в `GET /scenarios`, и `POST /sessions` отвечает на

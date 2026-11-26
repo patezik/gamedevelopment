@@ -109,7 +109,7 @@ func create_session() -> bool:
 	_error.text = ""
 	_create_request = _backend.request_rest(
 		_origin + "/api/v1/sessions", HTTPClient.METHOD_POST,
-		Format.request_body(str(scenario["id"]), seed)
+		Format.request_body(str(scenario["id"]), seed, Settings.get_locale())
 	)
 	_refresh()
 	return true

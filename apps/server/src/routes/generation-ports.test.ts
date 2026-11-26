@@ -3,7 +3,7 @@ import { GameEngine } from '@hs/core/game';
 import { generateInvestigation, type GenerationResult } from '@hs/generator';
 import { FORBIDDEN_VIEW_KEYS } from '@hs/protocol';
 import { describe, expect, test, vi } from 'vitest';
-import { scenarioEnginePorts } from '../sessions/scenario-ports.ts';
+import { scenarioEnginePorts, scenarioTexts } from '../sessions/scenario-ports.ts';
 import {
   defaultScenariosDir,
   GenerationUnsolvableError,
@@ -200,5 +200,25 @@ describe('GameEngine on the ports of a generated case (SRV-012)', () => {
       result: 'partial',
       proven: { motive: false, means: false, opportunity: false },
     });
+  });
+});
+
+describe('text locale of the ports (QA-003)', () => {
+  const ruKeys = Object.values(content.text.ru ?? {}).flatMap((group) => Object.keys(group));
+  const withEn = {
+    ...content,
+    text: { ...content.text, en: { probe: { [ruKeys[0]!]: ['English text'] } } },
+  };
+
+  test('a scenario without EN templates serves ru', () => {
+    expect(scenarioTexts(content, 'en')).toEqual(scenarioTexts(content, 'ru'));
+    expect(scenarioTexts(content, undefined)).toEqual(scenarioTexts(content, 'ru'));
+  });
+
+  test('a translated key is served in en, a missing one falls back to ru', () => {
+    const en = scenarioTexts(withEn, 'en');
+    expect(en.get(ruKeys[0]!)).toEqual(['English text']);
+    expect(en.size).toBe(scenarioTexts(content, 'ru').size);
+    expect(scenarioTexts(withEn, 'ru').get(ruKeys[0]!)).not.toEqual(['English text']);
   });
 });
