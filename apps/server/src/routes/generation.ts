@@ -11,6 +11,7 @@ import { isPairingHost, type ServerConfig } from '../config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from '../config/network.ts';
 import { PairingService } from '../pairing/index.ts';
 import { SessionManager, type InvestigationProvider } from '../sessions/index.ts';
+import { scenarioEnginePorts } from '../sessions/scenario-ports.ts';
 import type { SessionRouteDependencies } from './sessions.ts';
 
 /**
@@ -217,10 +218,7 @@ export class GeneratorInvestigationProvider implements InvestigationProvider {
     if (!result.ok) throw new GenerationUnsolvableError();
     return {
       investigation: result.investigation,
-      // The same start as WorldGen: the preset's, otherwise the first location.
-      ports: {
-        startLocationId: content.preset.world?.startLocationId ?? content.locations[0]!.id,
-      },
+      ports: scenarioEnginePorts(content, result.investigation, result.server),
     };
   }
 }
