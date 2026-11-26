@@ -18,7 +18,14 @@ export default function OsAppScreen() {
         title={app?.title ?? 'Нет приложения'}
         onHome={() => router.replace('/os')}
       >
-        {App ? <App view={view} /> : <Text style={styles.missing}>Приложение не найдено</Text>}
+        {App ? (
+          <App
+            view={view}
+            openApp={(id) => router.replace({ pathname: '/os/[appId]', params: { appId: id } })}
+          />
+        ) : (
+          <Text style={styles.missing}>Приложение не найдено</Text>
+        )}
       </AppFrame>
     </SafeAreaView>
   );

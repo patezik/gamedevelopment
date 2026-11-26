@@ -8,6 +8,8 @@ export interface IconRef {
 
 export interface OsAppProps {
   view: PhoneView;
+  /** Opens another phone app (set by the OS shell); apps do not import each other. */
+  openApp?: (appId: string) => void;
 }
 
 export interface OsAppManifest {
