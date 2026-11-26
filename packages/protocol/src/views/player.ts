@@ -79,6 +79,10 @@ export const PersonOfInterestView = z.strictObject({
 });
 export type PersonOfInterestView = z.infer<typeof PersonOfInterestView>;
 
+/** A character the player may name as the target of a motive; derived from what they hold. */
+export const MotiveTargetView = z.strictObject({ characterId: id, name: text });
+export type MotiveTargetView = z.infer<typeof MotiveTargetView>;
+
 export const SuspicionView = z.strictObject({
   characterId: id,
   level: z.enum(['none', 'possible', 'prime']),
@@ -100,6 +104,7 @@ export const CaseBoardView = z.strictObject({
   statements: z.array(StatementView),
   contradictions: z.array(ContradictionView),
   personsOfInterest: z.array(PersonOfInterestView),
+  motiveTargets: z.array(MotiveTargetView),
   suspicions: z.array(SuspicionView),
   timeline: z.array(TimelineEntryView),
 });

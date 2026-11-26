@@ -6,7 +6,7 @@ import {
   type ActionCostTable,
   type CostModifier,
 } from '../time/index.ts';
-import { personsOfInterest } from '../investigation/index.ts';
+import { motiveTargets, personsOfInterest } from '../investigation/index.ts';
 import type { Clue, PendingCapture } from '../evidence/index.ts';
 import type { Actor } from '../world/index.ts';
 import {
@@ -337,6 +337,10 @@ function caseBoard(
       characterId: person.characterId,
       name: names.get(person.characterId) ?? person.characterId,
       linkedClueIds: [...person.linkedClueIds],
+    })),
+    motiveTargets: motiveTargets(desktop.knowledge, { clues: byId }).map((characterId) => ({
+      characterId,
+      name: names.get(characterId) ?? characterId,
     })),
     suspicions: desktop.knowledge.suspicions.map(({ characterId, level, note }) => ({
       characterId,

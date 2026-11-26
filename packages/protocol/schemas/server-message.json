@@ -1078,6 +1078,26 @@
                             "additionalProperties": false
                           }
                         },
+                        "motiveTargets": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "characterId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "characterId",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "suspicions": {
                           "type": "array",
                           "items": {
@@ -1151,6 +1171,7 @@
                         "statements",
                         "contradictions",
                         "personsOfInterest",
+                        "motiveTargets",
                         "suspicions",
                         "timeline"
                       ],

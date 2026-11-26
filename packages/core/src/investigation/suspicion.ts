@@ -183,3 +183,33 @@ export function personsOfInterest(
     links: person.links,
   }));
 }
+
+/**
+ * Characters the player may name as the target of a motive: those the clues found and the
+ * statements heard say something is aimed at (`motive(_, v)`, `about(_, v)`, a heard motive
+ * `against`). Only the second argument is read, never whose motive it is, so the list names no
+ * culprit and does not depend on the truth. In the order the player learned them, without repeats.
+ */
+export function motiveTargets(
+  knowledge: PlayerKnowledge,
+  context: Pick<ClaimContext, 'clues'>,
+): string[] {
+  const targets = new Set<string>();
+  const add = (id: unknown): void => {
+    if (typeof id === 'string' && id !== '' && !id.startsWith('$')) targets.add(id);
+  };
+  const statements = new Map(knowledge.statements.map((statement) => [statement.id, statement]));
+  for (const entry of knowledge.journal) {
+    if (entry.kind === 'clue') {
+      for (const claim of context.clues.get(entry.clueId)?.supports ?? []) {
+        const match = REFERENCE.exec(claim);
+        if (match?.[1] === 'motive' || match?.[1] === 'about') add((match[2] ?? '').split(',')[1]);
+      }
+    } else if (entry.kind === 'statement') {
+      const p = statements.get(entry.statementId)?.proposition as
+        Record<string, unknown> | undefined;
+      if (p?.kind === 'motive') add(p.against);
+    }
+  }
+  return [...targets];
+}

@@ -4,7 +4,12 @@ import { describe, expect, it } from 'vitest';
 import { canonicalJson } from '../common/index.ts';
 import type { Statement } from '../knowledge/index.ts';
 import { PlayerKnowledge, PlayerKnowledgeError, type HeardStatement } from './player-knowledge.ts';
-import { personsOfInterest, SUSPICION_LEVELS, type SuspicionLevel } from './suspicion.ts';
+import {
+  motiveTargets,
+  personsOfInterest,
+  SUSPICION_LEVELS,
+  type SuspicionLevel,
+} from './suspicion.ts';
 
 const said = (
   id: string,
@@ -35,7 +40,9 @@ const clues = new Map<string, { supports: string[] }>([
   ['cl_letter', { supports: ['motive(ch_bursar,ch_victim)'] }],
   ['cl_both', { supports: ['means(ch_nurse)', 'presence(ch_nurse,loc_ward,90..100)'] }],
   ['cl_twice', { supports: ['means(ch_nurse)', 'means(ch_nurse)'] }],
-  ['cl_vague', { supports: ['contradiction(st_1,f_1)', 'weather(snow)', 'means($actor)'] }],
+  ['cl_debt', { supports: ['knows(ch_cook,sec_debt)', 'about(sec_debt,ch_owner)'] }],
+  ['cl_debt2', { supports: ['about(sec_other,ch_owner)', 'about(sec_x,ch_maid)'] }],
+  ['cl_vague', { supports: ['contradiction(st_1,f_1)', 'weather(snow)', 'means($actor)', 'about(sec_z,$v)'] }],
 ]);
 const context = { clues };
 const ids = (pk: PlayerKnowledge) => personsOfInterest(pk, context).map((p) => p.characterId);
@@ -415,5 +422,44 @@ describe('the truth stays out', () => {
       expect(JSON.stringify(personsOfInterest(lying, context))).not.toContain(`"${key}"`);
       expect(JSON.stringify(lying.serialize())).not.toContain(`"${key}"`);
     }
+  });
+});
+
+describe('motiveTargets (ENG-013)', () => {
+  const targets = (pk: PlayerKnowledge) => motiveTargets(pk, context);
+
+  it('is empty before the player holds anything', () => {
+    expect(targets(new PlayerKnowledge())).toEqual([]);
+  });
+
+  it('names only the target of a motive or a secret, never whose it is', () => {
+    const pk = new PlayerKnowledge();
+    found(pk, 'cl_letter');
+    found(pk, 'cl_debt', 20);
+    // ch_bursar and ch_cook hold the motive; only the victim side is listed.
+    expect(targets(pk)).toEqual(['ch_victim', 'ch_owner']);
+  });
+
+  it('lists a target once, in the order learned, from clues not yet found as well as none', () => {
+    const pk = new PlayerKnowledge();
+    found(pk, 'cl_debt', 5);
+    found(pk, 'cl_debt2', 6);
+    expect(targets(pk)).toEqual(['ch_owner', 'ch_maid']);
+  });
+
+  it('ignores claims that are not aimed at anyone and unbound variables', () => {
+    const pk = new PlayerKnowledge();
+    found(pk, 'cl_vial');
+    found(pk, 'cl_vague', 11);
+    expect(targets(pk)).toEqual([]);
+  });
+
+  it('reads the target of a heard motive', () => {
+    const pk = new PlayerKnowledge();
+    pk.addStatement(
+      said('st_1', 'ch_maid', { kind: 'motive', who: 'ch_cook', against: 'ch_owner' }),
+    );
+    pk.addStatement(said('st_2', 'ch_maid', at('ch_cook')));
+    expect(targets(pk)).toEqual(['ch_owner']);
   });
 });
