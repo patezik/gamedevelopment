@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **168** · todo: 23 · in_progress: 13 · review: 3 · done: 128 · blocked: 1
+Всего задач: **168** · todo: 23 · in_progress: 13 · review: 0 · done: 131 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -135,7 +135,7 @@
 | [GDT-001](GDT-001.md) | Autoload Backend: REST и WebSocketPeer, переподключение | P0 | M | done | codex-engine-27 | [FND-007](FND-007.md), [PROTO-003](PROTO-003.md) |
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | done | claude-g1 | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
-| [GDT-013](GDT-013.md) | Backend: отказ рукопожатия не теряется, без бесконечного переподключения | P1 | S | review | claude-x3 | [GDT-001](GDT-001.md), [GDT-002](GDT-002.md) |
+| [GDT-013](GDT-013.md) | Backend: отказ рукопожатия не теряется, без бесконечного переподключения | P1 | S | done | claude-x3 | [GDT-001](GDT-001.md), [GDT-002](GDT-002.md) |
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | in_progress | claude-i1 | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
@@ -171,7 +171,7 @@
 | [ENG-009](ENG-009.md) | Проекция реплик NPC и стоимости предъявления в PlayerView | P0 | M | done | claude-qm | [ENG-003](ENG-003.md), [CNT-005](CNT-005.md) |
 | [ENG-011](ENG-011.md) | Источник рода и словарь терминов для русских текстов | P0 | M | todo | — | [CNT-005](CNT-005.md), [ENG-009](ENG-009.md) |
 | [ENG-012](ENG-012.md) | EndingView: хронология истины, seed и статистика прохождения | P1 | M | done | egor-codex-eng-012 | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
-| [ENG-013](ENG-013.md) | Цели мотива для обвинения: кого игрок может указать в motive(c, v) | P0 | S | review | claude-qq | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
+| [ENG-013](ENG-013.md) | Цели мотива для обвинения: кого игрок может указать в motive(c, v) | P0 | S | done | claude-qq | [ENG-006](ENG-006.md), [GDT-009](GDT-009.md) |
 | [GDT-004](GDT-004.md) | Сцена Exploration: локация, точки интереса, выходы, действия со стоимостью | P0 | L | done | egor-claude-gdt-004 | [GDT-002](GDT-002.md), [ENG-002](ENG-002.md) |
 | [GDT-005](GDT-005.md) | Диалог и допрос: темы, ответы, предъявление улик и противоречий | P0 | M | done | egor-codex-gdt-005 | [GDT-004](GDT-004.md), [ENG-003](ENG-003.md), [INV-004](INV-004.md) |
 | [GDT-006](GDT-006.md) | HUD: часы, календарь, остаток времени, показатели, Static, статус телефона | P0 | S | done | egor-claude-gdt-006 | [GDT-002](GDT-002.md) |
@@ -182,7 +182,7 @@
 | [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | in_progress | claude-i2 | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
 | [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | done | claude-n1 | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
 | [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
-| [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | review | claude-n2 | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
+| [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | done | claude-n2 | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | done | claude-m2 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
