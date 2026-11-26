@@ -152,7 +152,7 @@ export class PairingService {
     return session;
   }
 
-  /** Desktop or the paired phone of the session: both may unpair the phone (ADR 0023). */
+  /** Desktop or the paired phone of the session: both may unpair the phone (ADR 0024). */
   authorizeUnpair(id: string, authorization: string | undefined): Session {
     const session = this.#sessions.get(id);
     if (!session || session.status === 'disposed') {

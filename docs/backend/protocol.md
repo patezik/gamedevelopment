@@ -130,7 +130,7 @@
 | `ErrorResponse` | любой отказ: `{ error: { code, message, atAction? } }`; `atAction` — только у `SAVE_DESYNC` | `error.json`, `error.save-desync.json` |
 
 `DELETE /sessions/:id/device` отвечает 204 без тела; его принимает токен рабочего стола или токен
-привязанного телефона этой сессии ([ADR 0023](../architecture/adr/0023-phone-initiated-unpair.md)): после
+привязанного телефона этой сессии ([ADR 0024](../architecture/adr/0024-phone-initiated-unpair.md)): после
 отвязки сокет телефона закрывается, рабочий стол получает `peer.status` с `phone: "unpaired"`. Отладочные `GET /sessions/:id/debug/*` в пакет
 не входят: их ответы несут истину и работают только при `HS_DEBUG_TRUTH=1`
 ([OQ-30](../planning/open-questions.md)).
