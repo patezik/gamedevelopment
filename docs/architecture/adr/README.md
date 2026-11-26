@@ -35,5 +35,5 @@ ADR фиксирует значимое архитектурное решени�
 | [0018](0018-tls-pinning-and-relay.md) | TLS с pinning отпечатка через QR привязки и облачный ретранслятор (спайк INT-008) | Accepted |
 | [0019](0019-save-generator-compatibility.md) | Совместимость сохранений по версии генератора | Proposed |
 | [0020](0020-player-known-map.md) | Известная игроку карта в PlayerView | Proposed |
-| [0021](0021-ending-recap.md) | Хронология и seed в итоговом PlayerView | Proposed |
+| [0021](0021-ending-recap.md) | Хронология и seed в итоговом PlayerView | Accepted |
 | [0022](0022-accusation-operation-outcome.md) | Исход необратимого обвинения после переподключения | Accepted |
