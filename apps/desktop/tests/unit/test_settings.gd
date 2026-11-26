@@ -51,3 +51,20 @@ func test_a_value_of_the_wrong_type_falls_back_to_the_default() -> void:
 
 func test_the_autoload_is_registered() -> void:
 	assert_true(get_tree().root.get_node_or_null(^"Settings") is SettingsScript)
+
+
+func test_locale_defaults_to_ru_and_persists() -> void:
+	assert_eq(_settings.get_locale(), "ru")
+	assert_eq(_settings.set_locale("en"), OK)
+	assert_eq(TranslationServer.get_locale(), "en")
+	var reloaded: SettingsScript = SettingsScript.new()
+	reloaded.config_path = CONFIG_PATH
+	add_child_autofree(reloaded)
+	assert_eq(reloaded.get_locale(), "en")
+	_settings.set_locale("ru")
+
+
+func test_unsupported_locale_is_refused() -> void:
+	assert_eq(_settings.set_locale("xx"), ERR_INVALID_PARAMETER)
+	assert_push_warning("is not supported")
+	assert_eq(_settings.get_locale(), "ru")

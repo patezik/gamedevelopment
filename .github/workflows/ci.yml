@@ -19,6 +19,11 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm run tasks:check
+      - name: Task of the PR branch is claimed
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: node tools/tasks/tasks.mjs pr-check "$HEAD_REF"
 
   docs:
     name: Documentation links

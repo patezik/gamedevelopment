@@ -33,10 +33,12 @@ apps/desktop/
 │   ├── util/
 │   │   └── read_only.gd          — глубокие read-only копии данных для экранов
 │   ├── scenes/
-│   │   ├── bootstrap.tscn        — стартовая сцена каркаса, показывает версию клиента
+│   │   ├── bootstrap.tscn        — стартовая сцена: версия клиента, оверлеи, переход на NewGame
 │   │   ├── main_menu/  new_game/  pairing/  exploration/  dialogue/
 │   │   ├── case_board/  accusation/  ending/  hud/  overlays/ (evidence_capture, horror_fx, phone_status)
 │   │   ├── exploration/          — экран Exploration и загрузчик фикстур для предпросмотра (§4.1)
+│   │   ├── new_game/             — NewGame: каталог сценариев, seed, создание сессии (§4.6)
+│   │   ├── pairing/              — Pairing: QR привязки, код, адреса, статус телефона; PairingSession (§4.7)
 │   │   └── overlays/debug/       — DebugOverlay (F12, только debug-сборка) и адреса debug-маршрутов (§3.3)
 │   │   └── overlays/horror_fx/   — HorrorFx: шейдер искажения и шума по рассудку и Static (§7.2)
 │   └── ui/                       — общие компоненты: cost_format (стоимость действия), known_map + location_map (карта)
@@ -44,9 +46,11 @@ apps/desktop/
 └── tests/
     ├── manual/art_preview.tscn   — ручной предпросмотр арта в масштабе показа (art-direction.md §9)
     ├── unit/                     — GUT: reconnect_policy, envelope, GameStore, SceneRouter, DebugOverlay, qr_texture, экраны и smoke сцен
-    │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, экран-заглушка)
+    │   └── support/              — тестовые двойники (FakeBackend, FakeRestBackend, FakeSessionBackend, FakeRouter, экран-заглушка)
+    ├── live/                     — серверы живых тестов на Node: accusation_server.mjs, pairing_server.mjs (§6)
     ├── manual/
-    │   └── horror_fx_benchmark.gd — ручной замер FPS хоррор-эффектов (§7.4), не входит в GUT
+    │   ├── horror_fx_benchmark.gd — ручной замер FPS хоррор-эффектов (§7.4), не входит в GUT
+    │   └── pairing_preview.tscn  — NewGame и Pairing на фикстурах, с сохранением кадра (§4.7)
     └── contract/
         ├── contract_support.gd         — пути к packages/protocol, чтение JSON, проверка формы по JSON Schema
         ├── test_protocol_constants.gd  — ProtocolConstants против схем и фикстур
@@ -172,10 +176,10 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   экранов, скрыта до кнопки «Показать истину» и забывается при закрытии панели, ошибке запроса,
   смене сессии и `OFFLINE`. Токен хранится в памяти и уходит только заголовком debug-маршрутов.
   Предупреждения об ошибках содержат вид маршрута и HTTP-статус — без URL, тела ответа и токена.
-- **Сессия.** Клиент пока не создаёт сессию сам (GDT-003), поэтому адрес сервера, id сессии и
-  `desktopToken` из ответа `POST /sessions` передаёт тот, кто создал сессию:
-  `attach_session(base_url, session_id, desktop_token) -> Error`. Без сессии запросы не
-  отправляются (`ERR_UNCONFIGURED`). Seed приходит в ответах debug-маршрутов.
+- **Сессия.** Адрес сервера, id сессии и `desktopToken` из ответа `POST /sessions` передаёт
+  NewGame после создания сессии (§4.6): `attach_session(base_url, session_id, desktop_token) -> Error`;
+  «Назад» на Pairing вызывает `detach_session()`. Без сессии запросы не отправляются
+  (`ERR_UNCONFIGURED`). Seed приходит в ответах debug-маршрутов.
 - **Экспорт.** Репро-пакет из `debug/export` записывается в `user://debug_repro/repro-<sessionId>-v<stateVersion>.json`
   (`export_directory`); путь показывается в панели. Пакет содержит решение — это файл разработчика.
 
@@ -421,6 +425,82 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   протокола с подменённой концовкой и плейсхолдерными текстами ENG-006); при самостоятельном
   запуске — `solved`.
 
+### 4.6. NewGame (новая игра)
+
+`src/scenes/new_game/new_game.tscn` — экран `new_game` в `SceneRouter`. `bootstrap.tscn` открывает
+его, только если он сам — сцена запуска (экран, смонтированный роутером или тестом, никуда не
+переходит). Правила без сцены — `new_game_format.gd`.
+
+- **Сервер.** `params.server`, затем аргумент `--server=http://host:port` после `--` в командной
+  строке Godot, иначе `http://127.0.0.1:7420` (сервер на этом компьютере с `HS_PORT` по умолчанию).
+- **Каталог.** `GET /api/v1/scenarios`; в списке — записи формы `{ id, title, durationMinutes }`
+  (неверные и повторные id отбрасываются), подпись «<title> · N ч игрового времени». Сетевая
+  ошибка, HTTP-ошибка или пустой список — текст ошибки и «Обновить список».
+- **Seed.** По умолчанию «Случайный seed»: запрос уходит без `seed`, сервер выбирает его сам и не
+  возвращает ([backend.md §3](../backend/backend.md)), поэтому экран его не знает и не показывает.
+  Введённый seed проверяется схемой сервера `[A-Za-z0-9_-]{1,64}` (строка целиком, без
+  завершающего перевода строки); неверный блокирует «Создать дело».
+- **Создание.** `POST /api/v1/sessions` с `{ scenarioId, seed? }`. Пока запрос и генерация идут,
+  форма заблокирована, повторное нажатие запроса не шлёт; ответ на чужой ID запроса игнорируется.
+  Ошибки: `GENERATION_UNSOLVABLE` (422) — предложение другого seed; `SCENARIO_NOT_FOUND` (404) —
+  каталог перезапрашивается; прочие 4xx — «запрос отклонён»; 5xx — внутренняя ошибка; сеть и
+  таймаут — «сервер не ответил»; 201 неверной формы — «неожиданный ответ». После ошибки форма
+  снова доступна.
+- **Успех.** Ответ проверяется по контракту `CreateSessionResponse` (UUID, токен из 43 символов
+  base64url, код и `qrPayload` с тем же кодом) и становится текущим `PairingSession`. `Backend`
+  открывает `ws://<host:port>/ws` с `desktopToken`, debug-панель получает сессию (§3.3), роутер
+  открывает `pairing` **без параметров**: параметры `SceneRouter` видны любому экрану, поэтому
+  токен в них не попадает.
+
+### 4.7. Pairing (привязка телефона)
+
+`src/scenes/pairing/pairing.tscn` — экран `pairing`. Сессию берёт из `PairingSession.current()`
+(`pairing_session.gd`: адрес сервера, id сессии, текущий код и его срок, хост и порт из
+`qrPayload`, токен). Токен живёт только в памяти: его нет в параметрах роутера, текстах экрана и
+`str()` объекта. Правила без сцены — `pairing_format.gd`.
+
+| Элемент | Источник |
+|---------|----------|
+| QR | `GET /sessions/:id/pairing-qr` с `desktopToken` → `{ size, modules }` → `QrTexture` (как у оверлея улики) |
+| Код и срок | `pairing.code`, `pairing.expiresAt` (обратный отсчёт по часам компьютера) |
+| Адрес | хост и порт из `qrPayload`; список выбора — он же и кандидаты `GET /network` |
+| Подключение игры | `GameStore.connection_state_changed` |
+| Телефон | `GameStore.peer_status_changed` (`peer.status`) |
+
+- **QR.** Текстура — один пиксель на модуль, белое поле тишины в 4 модуля, без мипмапов;
+  `TextureRect` рисует её с `TEXTURE_FILTER_NEAREST` и стороной, кратной ширине текстуры (не больше
+  520 px холста 1920×1080: для кода привязки это 37 модулей по 14 px). Матрица неверной формы или
+  сетевая ошибка — «Повторить».
+- **Нет QR.** 404 без формата ошибки протокола (маршрута нет) или 501 — «Сервер не выдал QR-код»;
+  код и адрес остаются на экране для ручного ввода. `PAIRING_CODE_INVALID` (404) — код уже не
+  действует (телефон мог привязаться), предлагается «Новый код». `SESSION_NOT_FOUND`/`UNAUTHORIZED` —
+  сервер не знает сессию, остаётся «Назад».
+- **Обновление кода.** `POST /sessions/:id/pairing-code` (без тела, с `desktopToken`) — по кнопке
+  «Новый код» и автоматически: один раз, когда часы компьютера прошли `expiresAt` кода, который
+  был действителен при получении, и один раз подряд на ответ `PAIRING_CODE_EXPIRED` (410) для QR.
+  Если сервер снова отвечает 410 (часы расходятся) или замена не удалась, следующий код запрашивает
+  игрок. Пока телефон привязан (`online`/`offline`), код не обновляется, QR скрыт.
+- **Адреса.** В QR — адрес, выбранный сервером. При нескольких кандидатах `GET /network` экран
+  предлагает выбрать адрес для ручного ввода и предупреждает, что QR содержит другой адрес:
+  матрицу рисует сервер, поэтому выбранный адрес в QR не попадает. Локальный `127.*` в QR
+  помечается: телефон по нему не подключится (выберите адрес сети или задайте `HS_PUBLIC_HOST`).
+- **Начать расследование.** Кнопка активна только при `ONLINE`-соединении этой сессии
+  (`GameStore.get_session_id()` равен id сессии) и `peer.status` с `phone: "online"`. Переход —
+  `SceneRouter.goto("exploration")`. Потеря связи, другой `sessionId` или телефон не в сети снова
+  блокируют кнопку.
+- **Смена сессии.** Если `Backend` подключён к другой сессии или текущий `PairingSession` заменён,
+  экран показывает «Игра подключена к другой сессии», игнорирует запоздалые ответы и оставляет
+  только «Назад». «Назад» отменяет запросы, закрывает соединение (`disconnect_session`), забывает
+  сессию и открывает `new_game`.
+- **Отказ подключения.** На `error_received` при `OFFLINE` экран показывает код и кнопку
+  «Переподключить игру». Штатный шлюз сейчас закрывает сокет сразу после `error`, и `Backend` его
+  теряет, переподключаясь по кругу ([GDT-013](../../tasks/GDT-013.md)).
+- **Штатный сервер ([SRV-013](../../tasks/SRV-013.md)).** `npm start` отдаёт `pairing-qr`, шлюз знает
+  выданные REST токены: экран показывает QR, код и адрес, игра выходит в `ONLINE`, кнопка «Начать
+  расследование» недоступна, пока телефон не привязан.
+- **Предпросмотр.** `tests/manual/pairing_preview.tscn` показывает экраны на фикстурах;
+  `-- --screen=new_game|pairing --capture=<png>` сохраняет кадр и закрывает окно.
+
 ## 5. Стиль кода
 
 - Строгая типизация во всех скриптах; `class_name` для переиспользуемых классов.
@@ -451,6 +531,12 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
   умеет терять `action.result` (с обрывом сокета) или `view.update` и сообщает, какие `accuse`
   получили движки. Нужны Node и `npm ci` (как для самой команды); в CI задача Godot ставит
   зависимости.
+- Живые тесты NewGame и Pairing (`tests/unit/test_pairing_live.gd`): `tests/live/pairing_server.mjs`
+  собирает REST штатной фабрикой `createSessionServices` (каталог, генератор с полным шлюзом,
+  привязка). Режим `production` — маршруты `npm start` как есть (SRV-013): создание сессии, `pairing-code`,
+  `pairing-qr`, шлюз над теми же сессиями. Режим `adapter` — тестовый адаптер с теми же
+  маршрутами; сценарий привязывает «телефон» по
+  коду с экрана (`POST /pair` и `hello{phone}`) и проверяет кнопку «Начать расследование».
 
 ## 7. Хоррор-подача (GDT-010)
 
@@ -468,6 +554,13 @@ Backend ──event──▶ GameStore.event_received ──▶ HUD/оверле
 сигнал `reduce_visual_effects_changed(enabled)`. Нет файла — значения по умолчанию (выключено);
 нечитаемый файл или значение не того типа — значение по умолчанию и предупреждение. Экран настроек
 появится вместе с главным меню; до тех пор настройка меняется через API или файл.
+
+Язык интерфейса (QA-003): секция `general`, ключ `locale` (`ru` по умолчанию, `en`); `get_locale()`,
+`set_locale(locale)` (неподдерживаемый язык — `ERR_INVALID_PARAMETER`), сигнал `locale_changed(locale)`;
+значение также выставляется в `TranslationServer`. Строки — в `assets/i18n/strings.csv`
+(`key,ru,en`), их читает autoload `Localization` (`src/autoload/localization.gd`) и регистрирует как
+`Translation`; `Localization.text(key)` при отсутствии ключа в языке возвращает русский текст с
+предупреждением. Файл помечен `importer="keep"` (в `.translation` не импортируется).
 
 ### 7.2. HorrorFx
 

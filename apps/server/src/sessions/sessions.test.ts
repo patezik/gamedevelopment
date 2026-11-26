@@ -112,6 +112,16 @@ describe('SessionManager', () => {
     session.setTokenHash('desktop', 'stored-hash');
     await session.setConnected('desktop', false);
     now += 30 * 60_000;
+
+    await expect(
+      manager.adopt(session.id, session.engine, () => {
+        throw new Error('Preparation failed');
+      }),
+    ).rejects.toThrow('Preparation failed');
+    expect(manager.get(session.id)).toBe(session);
+    expect(session.status).toBe('finished');
+    expect(session.tokenHash('desktop')).toBe('stored-hash');
+
     await manager.sweep();
     expect(session.status).toBe('disposed');
     expect(session.tokenHash('desktop')).toBeUndefined();
@@ -239,4 +249,17 @@ test('create registers the session only after prepare succeeded', async () => {
   });
   expect(prepared).toEqual(['s-ok']);
   expect(manager.get('s-ok')).toBe(session);
+});
+
+test('the session locale is passed to the provider and defaults to ru', async () => {
+  const seen: string[] = [];
+  const manager = new SessionManager({
+    create(scenarioId, seed, locale) {
+      seen.push(locale ?? '');
+      return provider.create(scenarioId, seed);
+    },
+  });
+  await manager.create('tiny-manor', 'winter');
+  await manager.create('tiny-manor', 'winter', undefined, 'en');
+  expect(seen).toEqual(['ru', 'en']);
 });

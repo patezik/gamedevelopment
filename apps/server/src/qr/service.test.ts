@@ -358,3 +358,17 @@ describe('evidenceMatrix', () => {
     );
   });
 });
+
+it('publishes the exact versioned capture result once and never on a rejected or repeated scan', async () => {
+  const { service, session, raw } = await setup();
+  const published = vi.fn();
+  expect(await service.scan(session, raw, published)).toMatchObject({ ok: true });
+  expect(published).toHaveBeenCalledExactlyOnceWith({ ...ok, stateVersion: 1 });
+  expect(await service.scan(session, raw, published)).toMatchObject({ error: 'QR_ALREADY_USED' });
+  expect(published).toHaveBeenCalledTimes(1);
+  const denied = await setup(() => refused('ACTION_BLOCKED'));
+  expect(await denied.service.scan(denied.session, denied.raw, published)).toMatchObject({
+    error: 'QR_PRECONDITION_FAILED',
+  });
+  expect(published).toHaveBeenCalledTimes(1);
+});

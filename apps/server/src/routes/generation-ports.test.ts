@@ -105,7 +105,13 @@ function collect(
           ? { type: 'read', documentId: action.documentId }
           : { type: 'examineHotspot', hotspotId: action.hotspotId },
       );
-      if (result.ok) found.push(clue.id);
+      if (!result.ok) continue;
+      // A QR clue (CNT-013 physical traces) is fixed by the phone before it counts as found.
+      const pending = engine.playerView().pendingCapture;
+      if (pending) {
+        engine.dispatch('phone', { type: 'captureEvidence', tokenId: pending.tokenId });
+      }
+      if (engine.playerView().caseBoard.clues.some(({ id }) => id === clue.id)) found.push(clue.id);
     }
     for (const exit of engine.playerView().location.exits) {
       if (seen.has(exit.locationId)) continue;
@@ -127,11 +133,14 @@ describe('GameEngine on the ports of a generated case (SRV-012)', () => {
   const culprit = culpritIds[0]!;
   const required = new Set(server.requiredClueIds);
 
-  const fresh = () =>
-    GameEngine.create(
-      generated.investigation,
-      scenarioEnginePorts(content, generated.investigation, server),
-    );
+  const fresh = () => {
+    let next = 0;
+    const evidenceTokens = { issue: () => `tok_${next++}`, revoke: () => undefined };
+    return GameEngine.create(generated.investigation, {
+      ...scenarioEnginePorts(content, generated.investigation, server),
+      evidenceTokens,
+    });
+  };
 
   const accuse = (engine: GameEngine, evidence: string[]) =>
     engine.dispatch('desktop', {
