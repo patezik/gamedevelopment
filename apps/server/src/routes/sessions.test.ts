@@ -20,6 +20,7 @@ import {
   defaultScenariosDir,
   GeneratorInvestigationProvider,
   pairingHost,
+  resolveTextLocale,
   ScenarioCatalog,
   type GeneratorProviderOptions,
 } from './generation.ts';
@@ -39,7 +40,7 @@ const withTests = ScenarioCatalog.fromDirectory(undefined, { includeTest: true }
 
 /** A valid case for an isolated REST test: the provider stands in for the generator. */
 const fixtureProvider = () => ({
-  create: vi.fn((_scenarioId: string, seed: string) => ({
+  create: vi.fn((_scenarioId: string, seed: string, _locale?: string) => ({
     investigation: tinyManor(seed),
     ports: { startLocationId: 'loc_hall' },
   })),
@@ -184,7 +185,7 @@ describe('POST /api/v1/sessions', () => {
       expect(response.statusCode).toBe(201);
       expect(response.headers['cache-control']).toBe('no-store');
       const body = CreateSessionResponse.parse(response.json());
-      expect(generated).toHaveBeenCalledExactlyOnceWith('sanatorium_winter', 'winter-42');
+      expect(generated).toHaveBeenCalledExactlyOnceWith('sanatorium_winter', 'winter-42', 'ru');
       expect(body.pairing.qrPayload).toBe(`hs1:pair:game-pc.local:7420:${body.pairing.code}`);
 
       const session = sessions.get(body.sessionId)!;
@@ -240,8 +241,8 @@ describe('POST /api/v1/sessions', () => {
         (await create({ scenarioId: 'sanatorium_winter' })).json(),
       );
       expect(generated).toHaveBeenCalledTimes(2);
-      expect(generated).toHaveBeenNthCalledWith(1, 'sanatorium_winter', expect.stringMatching(READABLE_SEED));
-      expect(generated).toHaveBeenNthCalledWith(2, 'sanatorium_winter', expect.stringMatching(READABLE_SEED));
+      expect(generated).toHaveBeenNthCalledWith(1, 'sanatorium_winter', expect.stringMatching(READABLE_SEED), 'ru');
+      expect(generated).toHaveBeenNthCalledWith(2, 'sanatorium_winter', expect.stringMatching(READABLE_SEED), 'ru');
       expect(generated.mock.calls[0]![1]).not.toBe(generated.mock.calls[1]![1]);
       expect(first.sessionId).not.toBe(second.sessionId);
       expect(first.desktopToken).not.toBe(second.desktopToken);
@@ -257,7 +258,7 @@ describe('POST /api/v1/sessions', () => {
       const response = await create({ scenarioId: 'sanatorium_winter' });
 
       expect(response.statusCode).toBe(201);
-      expect(generated).toHaveBeenCalledExactlyOnceWith('sanatorium_winter', seed);
+      expect(generated).toHaveBeenCalledExactlyOnceWith('sanatorium_winter', seed, 'ru');
       expect(response.body.includes(seed)).toBe(false);
       const body: unknown = response.json();
       expect(body).not.toHaveProperty('seed');
@@ -275,13 +276,34 @@ describe('POST /api/v1/sessions', () => {
       expect((await create({ scenarioId: 'sanatorium_winter' })).statusCode).toBe(201);
       expect((await create({ scenarioId: 'sanatorium_winter', seed: '7' })).statusCode).toBe(201);
       expect(generated.mock.calls).toEqual([
-        ['sanatorium_winter', 'FIXED-SEED-0001'],
-        ['sanatorium_winter', '7'],
+        ['sanatorium_winter', 'FIXED-SEED-0001', 'ru'],
+        ['sanatorium_winter', '7', 'ru'],
       ]);
       expect(createSeed).toHaveBeenCalledTimes(1);
     } finally {
       await app.close();
     }
+  });
+
+  test('the locale of the request reaches the provider; the default is ru (QA-003)', async () => {
+    const { app, generated, create } = boot();
+    try {
+      expect((await create({ scenarioId: 'sanatorium_winter', seed: '1', locale: 'en' })).statusCode).toBe(201);
+      expect((await create({ scenarioId: 'sanatorium_winter', seed: '2' })).statusCode).toBe(201);
+      expect(generated.mock.calls.map((call) => call[2])).toEqual(['en', 'ru']);
+      expect((await create({ scenarioId: 'sanatorium_winter', locale: 'xx' })).statusCode).toBe(400);
+      expect(generated).toHaveBeenCalledTimes(2);
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('resolveTextLocale falls back to ru when the scenario has no such templates', () => {
+    const content = withTests.content('sanatorium_winter')!;
+    expect(resolveTextLocale(content, 'ru')).toBe('ru');
+    expect(resolveTextLocale(content, 'en')).toBe('ru');
+    expect(resolveTextLocale(content, undefined)).toBe('ru');
+    expect(resolveTextLocale({ ...content, text: { ...content.text, en: {} } }, 'en')).toBe('en');
   });
 
   test('SCENARIO_NOT_FOUND: no generation, no session', async () => {
