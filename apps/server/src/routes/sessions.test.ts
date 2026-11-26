@@ -40,6 +40,8 @@ const withTests = ScenarioCatalog.fromDirectory(undefined, { includeTest: true }
 
 /** A valid case for an isolated REST test: the provider stands in for the generator. */
 const fixtureProvider = () => ({
+  // `_locale` is declared so tests can read the locale the route passed through `mock.calls`.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   create: vi.fn((_scenarioId: string, seed: string, _locale?: string) => ({
     investigation: tinyManor(seed),
     ports: { startLocationId: 'loc_hall' },
