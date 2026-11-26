@@ -77,6 +77,8 @@ export type ActionEvent =
       readonly success: boolean;
       readonly at: GameMinutes;
     }
+  /** The player inspected the body point (OQ-28): Static and sanity effects, once per body. */
+  | { readonly type: 'BodyFound'; readonly locationId: string; readonly at: GameMinutes }
   | { readonly type: 'PageViewed'; readonly pageId: string; readonly at: GameMinutes }
   | { readonly type: 'FileOpened'; readonly fileId: string; readonly at: GameMinutes }
   | {

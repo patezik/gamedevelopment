@@ -27,6 +27,7 @@ import {
 } from './dialogue-text.ts';
 import { endingOf, endingView, type EndingId } from './ending.ts';
 import { blockReason } from './interaction.ts';
+import { visibleHotspots } from './body.ts';
 import type { Investigation } from './investigation.ts';
 
 export interface PlayerViewState {
@@ -122,7 +123,7 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
 
   const examined = desktop.examinedLocations.has(locationId);
   const hotspots = examined
-    ? room.hotspots.map(({ id, name }) => ({
+    ? visibleHotspots(investigation, locationId, minute).map(({ id, name }) => ({
         id,
         name,
         examined: desktop.examinedHotspots.has(`${locationId}/${id}`),

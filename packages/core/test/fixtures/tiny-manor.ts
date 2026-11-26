@@ -88,6 +88,8 @@ const at = (who: string, where: string, from: number, to: number): Fact => ({
 export function tinyManor(
   seed = 'tiny-manor-fixture',
   studyHotspots: Location['hotspots'] = [],
+  /** The owner dies in the hall at this minute, so a body lies there from then on. */
+  deathAt?: number,
 ): Investigation {
   const locations = [
     room(hall, 'Hall', 'The entrance connects the study and pantry.', [
@@ -216,6 +218,23 @@ export function tinyManor(
   });
   items.move(ledger, { kind: 'character', id: bursar }, -20, taken);
   items.move(ledger, { kind: 'container', id: trunk }, -10, hidden);
+  if (deathAt !== undefined) {
+    const interval = { from: deathAt, to: deathAt + 1440 };
+    record(deathAt, 'die', hall, {
+      actorIds: [owner],
+      visibility: 'public',
+      facts: [
+        {
+          kind: 'state',
+          entity: { kind: 'character', id: owner },
+          property: 'alive',
+          value: false,
+          interval,
+        },
+        { kind: 'at', who: owner, where: hall, interval },
+      ],
+    });
+  }
   const truth = new TruthModel(
     {
       type: 'theft',
