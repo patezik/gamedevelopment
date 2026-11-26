@@ -30,13 +30,13 @@
 | [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
-| [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 2 |
 | [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
 | [CNT-003](CNT-003.md) MVP-сценарий: шаблоны преступлений и правила мотивов | 1 |
 | [CNT-004](CNT-004.md) MVP-сценарий: правила следов и правила дедукции | 1 |
 | [CNT-007](CNT-007.md) Тюнинг MVP-пресета до порогов seed sweep | 1 |
 | [ENG-010](ENG-010.md) Проводка модулей выживания в GameEngine | 1 |
 | [ENG-014](ENG-014.md) Подключение симуляции NPC к GameEngine | 1 |
+| [GDT-003](GDT-003.md) Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -203,7 +203,7 @@
 | [ENG-014](ENG-014.md) | Подключение симуляции NPC к GameEngine | P0 | L | in_progress | claude-qw | [SIM-003](SIM-003.md), [SIM-005](SIM-005.md), [SIM-006](SIM-006.md), [SIM-007](SIM-007.md), [ENG-006](ENG-006.md) |
 | [ENG-015](ENG-015.md) | Цели NPC и реакции на игрока в цикле симуляции движка | P1 | L | todo | — | [ENG-014](ENG-014.md) |
 | [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | done | egor-claude-gdt-010 | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
-| [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [MOB-011](MOB-011.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
+| [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
 | [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | todo | — | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
 | [SRV-014](SRV-014.md) | Атомарная смена сессии при загрузке сохранения | P1 | M | in_progress | egor-codex-srv-014 | [SRV-002](SRV-002.md), [SRV-007](SRV-007.md) |
