@@ -5,7 +5,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadScenarioFromDir } from '@hs/core/content';
 import type { Investigation } from '@hs/core/game';
-import { GENERATION_CHECKS, generateInvestigation, type GenerationResult } from '@hs/generator';
+import {
+  GENERATION_CHECKS,
+  GENERATOR_VERSION,
+  generateInvestigation,
+  type GenerationResult,
+} from '@hs/generator';
 import { errorCodes } from 'fastify';
 import { describe, expect, test, vi } from 'vitest';
 import { tinyManor } from '../../../../packages/core/test/fixtures/tiny-manor.ts';
@@ -120,7 +125,7 @@ function unsolvable(seed: string): GenerationResult {
     error: 'GENERATION_UNSOLVABLE',
     report: {
       seed,
-      generatorVersion: '0.3.0',
+      generatorVersion: GENERATOR_VERSION,
       attempts: [
         { number: 1, seed: `${seed}#1`, timingsMs: { WorldGen: 1.2 }, accepted: false },
         {
@@ -240,8 +245,16 @@ describe('POST /api/v1/sessions', () => {
         (await create({ scenarioId: 'sanatorium_winter' })).json(),
       );
       expect(generated).toHaveBeenCalledTimes(2);
-      expect(generated).toHaveBeenNthCalledWith(1, 'sanatorium_winter', expect.stringMatching(READABLE_SEED));
-      expect(generated).toHaveBeenNthCalledWith(2, 'sanatorium_winter', expect.stringMatching(READABLE_SEED));
+      expect(generated).toHaveBeenNthCalledWith(
+        1,
+        'sanatorium_winter',
+        expect.stringMatching(READABLE_SEED),
+      );
+      expect(generated).toHaveBeenNthCalledWith(
+        2,
+        'sanatorium_winter',
+        expect.stringMatching(READABLE_SEED),
+      );
       expect(generated.mock.calls[0]![1]).not.toBe(generated.mock.calls[1]![1]);
       expect(first.sessionId).not.toBe(second.sessionId);
       expect(first.desktopToken).not.toBe(second.desktopToken);
@@ -324,7 +337,7 @@ describe('POST /api/v1/sessions', () => {
       expect(generation).toMatchObject({
         scenarioId: 'sanatorium_winter',
         seed: 'dead-end',
-        generatorVersion: '0.3.0',
+        generatorVersion: GENERATOR_VERSION,
         ok: false,
         attempts: 2,
         stageMs: { WorldGen: 2, IncidentSelection: 2 },
@@ -644,7 +657,11 @@ describe('late failures leave nothing behind (P1)', () => {
     ['invalid port', (code: string) => `hs1:pair:pc.local:65536:${code}`],
     ['zero port', (code: string) => `hs1:pair:pc.local:0:${code}`],
     ['extra field', (code: string) => `hs1:pair:pc.local:7420:${code}:extra`],
-    ['different code', (code: string) => `hs1:pair:pc.local:7420:${code.startsWith('0') ? '1' : '0'}${code.slice(1)}`],
+    [
+      'different code',
+      (code: string) =>
+        `hs1:pair:pc.local:7420:${code.startsWith('0') ? '1' : '0'}${code.slice(1)}`,
+    ],
   ] as const)('rolls back both indexes and the hash for %s', async (_name, payload) => {
     const { app, sessions, pairing, createCode, create } = boot();
     const actualCreate = PairingService.prototype.createCode.bind(pairing);
@@ -819,7 +836,9 @@ describe('pairing address (P3)', () => {
       try {
         origin = await app.listen({ host: config.host, port: 0 });
       } catch (error) {
-        if (['EADDRNOTAVAIL', 'EAFNOSUPPORT'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+        if (
+          ['EADDRNOTAVAIL', 'EAFNOSUPPORT'].includes((error as NodeJS.ErrnoException).code ?? '')
+        ) {
           return skip();
         }
         throw error;
@@ -937,9 +956,13 @@ describe('error classes (P5)', () => {
     ['null', null],
     ['missing rejection reason', undefined],
     ['a non-Error string', 'case-detail-marker'],
-    ['parser-shaped Error', Object.assign(new Error('case-detail-marker'), {
-      code: 'FST_ERR_CTP_INVALID_JSON_BODY', statusCode: 400,
-    })],
+    [
+      'parser-shaped Error',
+      Object.assign(new Error('case-detail-marker'), {
+        code: 'FST_ERR_CTP_INVALID_JSON_BODY',
+        statusCode: 400,
+      }),
+    ],
     ['parser error thrown by the provider', new errorCodes.FST_ERR_CTP_INVALID_JSON_BODY()],
   ] as const)('keeps an internal failure safe for %s', async (_name, reason) => {
     const logs = captureLogs();
@@ -953,7 +976,8 @@ describe('error classes (P5)', () => {
       const response = await create({ scenarioId: 'sanatorium_winter', seed: 'error' });
       expect(response.statusCode).toBe(500);
       expect(ErrorResponse.parse(response.json()).error).toEqual({
-        code: 'INTERNAL', message: 'Internal error',
+        code: 'INTERNAL',
+        message: 'Internal error',
       });
       expect(logs.entries().filter(({ msg }) => msg === 'request failed')).toEqual([
         expect.objectContaining({ errorCode: 'INTERNAL' }),
