@@ -15,6 +15,20 @@ function graph(locations: ScenarioContent['locations']): LocationGraph {
 }
 
 describe('LocationGraph', () => {
+  it('keeps repeated route answers independent from caller mutation and other graphs', () => {
+    const world = new LocationGraph(content);
+    const original = world.path(hall.id, archive.id);
+    original.length = 0;
+    expect(world.path(hall.id, archive.id)).toEqual([hall.id, archive.id]);
+    const step = world.nextTimedStep(hall.id, archive.id, {}, 0)!;
+    const expected = { ...step };
+    Object.assign(step, { destination: 'changed', arriveAt: 999 });
+    expect(world.nextTimedStep(hall.id, archive.id, {}, 0)).toEqual(expected);
+    const disconnected = graph(
+      content.locations.map((location) => ({ ...location, connections: [] })),
+    );
+    expect(disconnected.travelTime(hall.id, archive.id)).toBeNull();
+  });
   it('uses the loaded scenario for paths, travel time, public access and lighting', () => {
     const world = new LocationGraph(content);
     expect(world.path(hall.id, archive.id)).toEqual([hall.id, archive.id]);
