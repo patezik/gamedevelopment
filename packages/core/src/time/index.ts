@@ -45,4 +45,6 @@ export {
   type ScenarioEvent,
   type ScenarioEventsConfig,
   type ScenarioEventsPorts,
+  type ScenarioEventsResume,
+  type ScenarioEventsSnapshot,
 } from './scenario-events.ts';

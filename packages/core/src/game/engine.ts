@@ -1,4 +1,4 @@
-import { ACTIONS_BY_ROLE, PlayerAction, type ErrorCode } from '@hs/protocol';
+import { ACTIONS_BY_ROLE, ENDING_IDS, PlayerAction, type ErrorCode } from '@hs/protocol';
 import { stateHash } from '../common/index.ts';
 import {
   discoverable,
@@ -43,10 +43,14 @@ import {
   ActionCostError,
   Calendar,
   DEFAULT_ACTION_COSTS,
+  ScenarioEvents,
   TickPhase,
   TimeSystem,
   resolveActionCost,
   type ActionCostTable,
+  type MissedEffect,
+  type ScenarioEventsConfig,
+  type ScenarioEventsSnapshot,
 } from '../time/index.ts';
 import type { AccusationOutcome } from '../investigation/index.ts';
 import { WorldError, type Actor } from '../world/index.ts';
@@ -147,6 +151,17 @@ export interface EnginePorts {
    * Static is high; rest clears them. Needs a phone. Off by default.
    */
   readonly hallucinations?: { readonly pool: HallucinationPool };
+  /**
+   * The scenario's critical events and deadlines (TIME-006), from the preset. The engine loads
+   * them into its `TimeSystem` with the hero's current location and Static. A missed event with a
+   * `static` effect changes Static in the `WorldEvents` phase; `incident` and `closeLocation`
+   * effects go to `onMissed` (the engine itself has no such mechanics yet). A deadline reached
+   * before the end ends the game through `dispatch` with its outcome (`time_up` reports as
+   * `time_expired`). Off by default, so engines and saves made without it keep their state hash.
+   */
+  readonly scenarioEvents?: ScenarioEventsConfig & {
+    readonly onMissed?: (effect: MissedEffect, at: number) => void;
+  };
   /** The hero's phone (ENG-004): starting content and the simulation's answers to calls and messages. */
   readonly phone?: PhonePort;
   /** The phone call state for arbitration (ENG-005); no phone in the engine yet means no call. */
@@ -184,6 +199,12 @@ export interface GameSnapshot {
   readonly reactions?: ReactionsSnapshot;
   /** ENG-014 state of the characters' routines; present only for engines with `npcSimulation`. */
   readonly simulation?: SimulationSnapshot;
+  /**
+   * TIME-006 progress of the scenario's events. Present only when it differs from what the clock
+   * implies (an event moved earlier by Static, an interrupted minute); otherwise a restore derives
+   * it and the snapshot, with its hash, equals one made without `scenarioEvents`.
+   */
+  readonly scenario?: ScenarioEventsSnapshot;
 }
 
 export interface DispatchResult {
@@ -247,6 +268,8 @@ export class GameEngine {
   #savedNpcs: SimulationSnapshot | undefined;
   #reactions: PlayerReactions | undefined;
   #savedReactions: ReactionsSnapshot | undefined;
+  #scenario: ScenarioEvents | undefined;
+  #resumeScenario: { now: number; saved: ScenarioEventsSnapshot | undefined } | undefined;
   #attackEvents: GameEvent[] = [];
 
   private constructor(
@@ -267,6 +290,7 @@ export class GameEngine {
     this.ports = ports;
     this.locationId = locationId;
     this.#time = new TimeSystem(new Calendar(startDateTime), durationMinutes, minute);
+    this.#checkScenarioPort();
   }
 
   /** Hands the clock to the simulation and starts Static; called once the desktop rules begin. */
@@ -274,7 +298,37 @@ export class GameEngine {
     this.ports.attachTime?.(this.#time);
     this.#startStatic();
     this.#startReactions();
+    this.#startScenario();
     this.#startNpcs();
+  }
+
+  /** Loads the preset's critical events and deadlines; after a restore, from the saved progress. */
+  #startScenario(): void {
+    const config = this.ports.scenarioEvents;
+    if (!config || this.#scenario) return;
+    const { onMissed, ...events } = config;
+    this.#scenario = new ScenarioEvents(
+      this.#time,
+      events,
+      {
+        staticLevel: () => this.staticLevel(),
+        isPlayerPresent: (locationId) => this.locationId === locationId,
+        applyMissedEffect: (effect, at) => {
+          if (effect.kind === 'static') this.#static?.apply(effect.delta, at, 'scenarioMissed');
+          else onMissed?.(effect, at);
+        },
+      },
+      this.#resumeScenario,
+    );
+  }
+
+  /** Throws if a deadline names an ending the game does not have. */
+  #checkScenarioPort(): void {
+    for (const { id, outcome } of this.ports.scenarioEvents?.deadlines ?? []) {
+      if (!(ENDING_IDS as readonly string[]).includes(outcome)) {
+        throw new RangeError(`Deadline ${id} has an unknown outcome: ${outcome}`);
+      }
+    }
   }
 
   #startReactions(): void {
@@ -402,11 +456,11 @@ export class GameEngine {
     return this.#static?.level() ?? 0;
   }
 
+  /** An ending the clock's own rules force: Static at 100, else a reached scenario deadline. */
   #staticEnding(): EndingId | undefined {
     const state = this.#static?.state();
-    return state && isOverwhelmed(state)
-      ? (this.ports.static?.endingAt100 ?? 'madness')
-      : undefined;
+    if (state && isOverwhelmed(state)) return this.ports.static?.endingAt100 ?? 'madness';
+    return this.#scenario?.outcome() as EndingId | undefined;
   }
 
   /** Names the phone's hallucinated items so a case file citing one is refused (SURV-005). */
@@ -484,6 +538,7 @@ export class GameEngine {
     engine.#savedReactions = snapshot.reactions;
     if (snapshot.static !== undefined) engine.#savedStatic = restoreStaticState(snapshot.static);
     engine.#savedNpcs = snapshot.simulation;
+    engine.#resumeScenario = { now: snapshot.minute, saved: snapshot.scenario };
     if (snapshot.desktop !== undefined) {
       engine.#desktop = DesktopState.restore(snapshot.desktop);
       engine.#wireTime();
@@ -547,7 +602,9 @@ export class GameEngine {
       this.investigation.world.durationMinutes,
       this.#staticEnding(),
     );
-    return ending && ending !== 'time_up' ? { ...result, outcome: ending } : result;
+    if (!ending) return result;
+    // A deadline before the end gives `time_up` too: it reports as the clock running out.
+    return { ...result, outcome: ending === 'time_up' ? 'time_expired' : ending };
   }
 
   #dispatch(source: 'desktop' | 'phone', input: PlayerAction): DispatchResult {
@@ -824,6 +881,8 @@ export class GameEngine {
     events.push(...vitals.events);
     events.push(...this.#attackEvents.splice(0));
     if (this.#static) events.push(...this.#static.drain());
+    // The scenario's internal log is not shown to the player (TIME-006); its effects already acted.
+    this.#scenario?.drain();
 
     if (this.#phone) {
       const pool = this.ports.hallucinations?.pool;
@@ -961,6 +1020,8 @@ export class GameEngine {
 
   snapshot(): GameSnapshot {
     const pendingCapture = this.#pendingCapture;
+    const progress = this.#scenario?.snapshot(this.#time.now());
+    const scenario = progress && { scenario: progress };
     return {
       investigation: serializeInvestigation(this.investigation),
       initialInvestigationHash: this.initialInvestigationHash,
@@ -972,6 +1033,7 @@ export class GameEngine {
       ...(this.#static && { static: this.#static.state() }),
       ...(this.#reactions && { reactions: this.#reactions.snapshot() }),
       ...(this.#npcs && { simulation: this.#npcs.snapshot() }),
+      ...scenario,
     };
   }
 

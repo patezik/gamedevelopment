@@ -29,6 +29,11 @@ export function generatedPlannerCase(seed: string) {
     return {
       startVitals: content.preset.survival.startVitals,
       npcSimulation: true,
+      // The same events as the server's `scenarioEnginePorts`, or the planner's path would drift.
+      scenarioEvents: {
+        criticalEvents: content.preset.criticalEvents,
+        deadlines: content.preset.deadlines,
+      },
       phone: {},
       // Stateless, so a snapshot restored with fresh ports issues the same tokens.
       evidenceTokens: {
