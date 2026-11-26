@@ -462,6 +462,12 @@ simulatedEvents, encounters }` — серверная диагностика, н
 все 8 попыток дают `INCIDENT_NO_FEASIBLE_CULPRIT` (выбор инцидента, не шлюз). Доля прохождения
 на seed 1–40: 24 из 40. Полный набор следов — CNT-004.
 
+**Состояние на CNT-004** (контент CNT-003, GENERATOR_VERSION 0.4.0): на seed 1–200 приняты 196
+(72 с первой попытки), ошибок загрузки и дефектов нет; шлюз отклоняет попытки только по
+`NOT_UNIQUE` (324), стадии — по `INCIDENT_NO_FEASIBLE_CULPRIT` (6). Правила следов и дедукции
+CNT-004 эти результаты не меняют; разбор и вопрос о перемещающихся невиновных (OQ-42) — в
+[mvp-scenario-sanatorium.md](../game-design/mvp-scenario-sanatorium.md#seed-sweep).
+
 ### CLI `hs-gen`
 
 ```bash
