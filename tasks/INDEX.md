@@ -2,14 +2,16 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **166** · todo: 30 · in_progress: 12 · review: 2 · done: 121 · blocked: 1
+Всего задач: **166** · todo: 30 · in_progress: 12 · review: 1 · done: 122 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [INT-001](INT-001.md) — Интеграция привязки: Godot ↔ сервер ↔ телефон (P0, S)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [MOB-008](MOB-008.md) — Приложения Gallery и Files: снимки улик, документы, скрытые файлы (P0, M)
 - [GDT-013](GDT-013.md) — Backend: отказ рукопожатия не теряется, без бесконечного переподключения (P1, S)
 - [MOB-011](MOB-011.md) — Психологические эффекты ОС телефона: глитчи, искажения, обои (P1, M)
+- [REL-003](REL-003.md) — Политика приватности и тексты разрешений (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
 - [ENG-008](ENG-008.md) — portraitRef персонажей: вариант портрета по архетипу (P2, S)
@@ -27,7 +29,6 @@
 |---|---|
 | [INT-003](INT-003.md) MVP-плейтест: чек-лист и первое полное прохождение | 3 |
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
-| [MOB-004](MOB-004.md) Приложение Camera: сканирование QR улик и обработка ошибок | 3 |
 | [VAL-003](VAL-003.md) Планировщик по времени: V-TIME-FEASIBLE и SolutionPath | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
@@ -37,6 +38,7 @@
 | [ENG-010](ENG-010.md) Проводка модулей выживания в GameEngine | 1 |
 | [ENG-014](ENG-014.md) Подключение симуляции NPC к GameEngine | 1 |
 | [INT-001](INT-001.md) Интеграция привязки: Godot ↔ сервер ↔ телефон | 1 |
+| [INT-002](INT-002.md) E2E-бот: прохождение расследования через реальный сервер по SolutionPath | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -143,7 +145,7 @@
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
 | [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | done | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
-| [MOB-004](MOB-004.md) | Приложение Camera: сканирование QR улик и обработка ошибок | P0 | M | review | claude-m2 | [MOB-003](MOB-003.md), [SRV-006](SRV-006.md) |
+| [MOB-004](MOB-004.md) | Приложение Camera: сканирование QR улик и обработка ошибок | P0 | M | done | claude-m2 | [MOB-003](MOB-003.md), [SRV-006](SRV-006.md) |
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | done | claude-m1 | [MOB-003](MOB-003.md) |
 | [PHONE-001](PHONE-001.md) | Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | P0 | L | done | claude-w3 | [INV-001](INV-001.md), [PROTO-002](PROTO-002.md) |
 | [PROTO-003](PROTO-003.md) | Генерация GDScript-констант протокола и контрактные тесты Godot | P0 | S | done | egor-claude-proto-003 | [PROTO-002](PROTO-002.md), [FND-008](FND-008.md) |
