@@ -16,7 +16,8 @@ const sample = {
   id: 'preview-lake',
   title: 'Тестовый снимок: тропа к озеру',
   imageRef: 'loc_lake_path.dim.png',
-  takenAt: 0,
+  takenAt: 96,
+  caption: 'Тропа к озеру',
 };
 const wallpapers = [
   'pine_forest',
