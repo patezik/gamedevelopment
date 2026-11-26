@@ -258,3 +258,27 @@ test('ENG-008: every contact has a portraitRef, from the cast by id or "" otherw
   ]);
   expect(JSON.stringify(v)).not.toContain('hallucination');
 });
+
+test('ENG-008 leak test: portraitRef depends on the contact id, never on the hallucination flag', () => {
+  const portraits = new Map([['ch_1', 'nurse.f1']]);
+  const project = (hallucination: boolean) =>
+    projectPhoneView(
+      createPhoneState({
+        contacts: [
+          { id: 'ch_1', name: 'Nurse', number: '+1', hallucination },
+          { id: 'ch_2', name: 'Cook', number: '+2', hallucination },
+          { id: 'ev_5_a_c', name: 'Unknown', number: '', hallucination },
+        ],
+      }),
+      calm,
+      { ...context, portraits },
+    );
+  // The same phone with every contact real or every contact hallucinated projects identically:
+  // the flag adds no bit to the view, through portraitRef or anything else.
+  expect(project(true)).toEqual(project(false));
+  expect(project(true).contacts.map(({ portraitRef }) => portraitRef)).toEqual([
+    'nurse.f1',
+    '',
+    '',
+  ]);
+});
