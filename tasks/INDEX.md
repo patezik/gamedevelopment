@@ -2,13 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **159** · todo: 37 · in_progress: 9 · review: 1 · done: 110 · blocked: 2
+Всего задач: **159** · todo: 36 · in_progress: 9 · review: 2 · done: 110 · blocked: 2
 
 ## Готовы к взятию сейчас
 
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
 - [PROTO-005](PROTO-005.md) — Исход необратимого действия после переподключения: признак совершённого обвинения (P1, S)
-- [SRV-014](SRV-014.md) — Атомарная смена сессии при загрузке сохранения (P1, M)
 - [PROTO-006](PROTO-006.md) — REST-схемы в @hs/protocol: JSON Schema и фикстуры для Godot (P2, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
@@ -138,7 +137,7 @@
 | [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | todo | — | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
-| [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | in_progress | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
+| [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | review | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
 | [MOB-004](MOB-004.md) | Приложение Camera: сканирование QR улик и обработка ошибок | P0 | M | todo | — | [MOB-003](MOB-003.md), [SRV-006](SRV-006.md) |
 | [MOB-005](MOB-005.md) | Уведомления и входящие события в ОС (тосты, бейджи, вибрация, звук) | P0 | S | todo | — | [MOB-003](MOB-003.md) |
 | [PHONE-001](PHONE-001.md) | Домен телефона: PhoneState, редьюсер событий, проекция PhoneView | P0 | L | done | claude-w3 | [INV-001](INV-001.md), [PROTO-002](PROTO-002.md) |
@@ -201,7 +200,7 @@
 | [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [MOB-011](MOB-011.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
 | [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | todo | — | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
-| [SRV-014](SRV-014.md) | Атомарная смена сессии при загрузке сохранения | P1 | M | todo | — | [SRV-002](SRV-002.md), [SRV-007](SRV-007.md) |
+| [SRV-014](SRV-014.md) | Атомарная смена сессии при загрузке сохранения | P1 | M | in_progress | egor-codex-srv-014 | [SRV-002](SRV-002.md), [SRV-007](SRV-007.md) |
 | [SRV-015](SRV-015.md) | Подключение сохранений к штатной сессии и восстановление QR | P1 | L | todo | — | [SRV-013](SRV-013.md), [SRV-014](SRV-014.md), [TIME-006](TIME-006.md) |
 | [SURV-001](SURV-001.md) | Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | P0 | M | done | claude-surv-1 | [ENG-001](ENG-001.md), [TIME-004](TIME-004.md) |
 | [SURV-002](SURV-002.md) | Static: глобальная эскалация, пороги, влияние на события сценария | P0 | M | done | claude-qi | [SURV-001](SURV-001.md), [TIME-005](TIME-005.md) |
