@@ -2,14 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **167** · todo: 26 · in_progress: 12 · review: 1 · done: 127 · blocked: 1
+Всего задач: **167** · todo: 24 · in_progress: 13 · review: 2 · done: 127 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [VAL-005](VAL-005.md) — Проверки V-REDUNDANCY и V-CLEANUP (P0, M)
-- [VAL-007](VAL-007.md) — Seed sweep CLI hs-sweep и отчёты (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
-- [REL-003](REL-003.md) — Политика приватности и тексты разрешений (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
 - [ENG-008](ENG-008.md) — portraitRef персонажей: вариант портрета по архетипу (P2, S)
@@ -128,7 +126,7 @@
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | done | claude-qb | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | todo | — | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
 | [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | done | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
-| [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | todo | — | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
+| [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | in_progress | claude-x3 | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
 | [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
 
 ## Фаза 5 · M5 — Phone linked (24)
@@ -185,7 +183,7 @@
 | [INT-002](INT-002.md) | E2E-бот: прохождение расследования через реальный сервер по SolutionPath | P0 | M | in_progress | claude-i2 | [VAL-003](VAL-003.md), [SRV-005](SRV-005.md), [TOOL-001](TOOL-001.md), [ENG-004](ENG-004.md), [ENG-006](ENG-006.md), [SRV-013](SRV-013.md) |
 | [MOB-006](MOB-006.md) | Приложения Contacts и Calls: звонки с выбором реплик | P0 | M | done | claude-n1 | [MOB-005](MOB-005.md), [ENG-004](ENG-004.md) |
 | [MOB-007](MOB-007.md) | Приложение Messages: переписки, шаблонные ответы, неизвестные отправители | P0 | M | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
-| [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | in_progress | claude-n2 | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
+| [MOB-008](MOB-008.md) | Приложения Gallery и Files: снимки улик, документы, скрытые файлы | P0 | M | review | claude-n2 | [MOB-004](MOB-004.md), [ENG-004](ENG-004.md) |
 | [MOB-009](MOB-009.md) | Приложения Notes и Maps: журнал, заметки игрока, места и наблюдения | P1 | M | done | claude-m2 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [MOB-010](MOB-010.md) | Приложения Browser и Settings | P1 | S | done | claude-m1 | [MOB-003](MOB-003.md), [ENG-004](ENG-004.md) |
 | [PROTO-004](PROTO-004.md) | Известные игроку локации и связи в PlayerView для карты Exploration | P2 | M | done | claude-q1 | [ENG-002](ENG-002.md), [GDT-004](GDT-004.md) |
@@ -257,5 +255,5 @@
 | [MOB-012](MOB-012.md) | Поддержка companion-приложения на Android после первого прототипа | P2 | M | todo | — | [INT-003](INT-003.md), [INT-007](INT-007.md) |
 | [REL-001](REL-001.md) | Экспорт Godot (Windows, Linux, macOS) и артефакты CI | P1 | M | todo | — | [INT-005](INT-005.md) |
 | [REL-002](REL-002.md) | Сборка companion-приложения для магазинов (EAS Build/Submit) | P1 | M | todo | — | [INT-007](INT-007.md) |
-| [REL-003](REL-003.md) | Политика приватности и тексты разрешений | P1 | S | todo | — | [MOB-004](MOB-004.md) |
+| [REL-003](REL-003.md) | Политика приватности и тексты разрешений | P1 | S | in_progress | egor-claude-rel-003 | [MOB-004](MOB-004.md) |
 | [REL-004](REL-004.md) | Версионирование, CHANGELOG и релизный процесс | P2 | S | done | codex-small-1 | [FND-003](FND-003.md) |

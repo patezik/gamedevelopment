@@ -72,7 +72,11 @@ apps/server/src/
 записывается в лог предупреждением (сессия, без содержимого).
 
 Аутентификация desktop — заголовок `Authorization: Bearer <desktopToken>`. Ошибки — формат
-`{ error: { code, message } }`, HTTP 4xx/5xx.
+`{ error: { code, message } }`, HTTP 4xx/5xx; у `SAVE_DESYNC` добавлено `atAction`.
+
+Схемы запросов и ответов (кроме `debug/*`) лежат в `@hs/protocol` (`src/rest.ts`), сервер
+проверяет ими ответы, а клиенты — фикстуры `fixtures/rest/`; таблица схем —
+[protocol.md §4a](protocol.md#4a-rest-схемы).
 
 Приложение регистрирует маршруты при передаче сервиса привязки в buildApp.
 При создании сессии SRV-002 выдаёт desktop-токен и первоначальный код через сервис привязки.

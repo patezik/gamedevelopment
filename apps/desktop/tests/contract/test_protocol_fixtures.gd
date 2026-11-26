@@ -11,6 +11,20 @@ const SCHEMA_BY_FIXTURE: Dictionary = {
 	"server-messages.json": "server-message.json",
 	"client-accusation.json": "client-message.json",
 	"server-accusation.json": "server-message.json",
+	"rest/health.json": "rest-health-response.json",
+	"rest/network.json": "rest-network-response.json",
+	"rest/scenarios.json": "rest-scenario-list.json",
+	"rest/create-session.request.json": "rest-create-session-request.json",
+	"rest/create-session.response.json": "rest-session-credentials.json",
+	"rest/pairing-code.response.json": "rest-pairing-info.json",
+	"rest/pairing-qr.response.json": "rest-qr-matrix-response.json",
+	"rest/evidence-qr.response.json": "rest-qr-matrix-response.json",
+	"rest/pair.request.json": "rest-pair-request.json",
+	"rest/pair.response.json": "rest-pair-response.json",
+	"rest/saves.json": "rest-save-list.json",
+	"rest/load-save.response.json": "rest-session-credentials.json",
+	"rest/error.json": "rest-error-response.json",
+	"rest/error.save-desync.json": "rest-error-response.json",
 }
 ## Fixtures that are a non-empty JSON array of examples, each checked against the schema. Every
 ## other fixture (envelope, PlayerView, PhoneView) is a single JSON value checked as is, so an
@@ -111,8 +125,8 @@ func test_every_fixture_has_required_fields() -> void:
 		assert_true(problems.is_empty(), "%s fits its schema:\n%s" % [relative, "\n".join(problems)])
 		checked += _example_count(relative, data)
 	# 1 envelope + 5 client + 9 server messages + 8 views at the time of PROTO-003, plus the 3
-	# accusation operation messages of PROTO-005.
-	assert_gte(checked, 26, "number of checked fixture examples")
+	# accusation operation messages of PROTO-005 and 14 REST fixtures of PROTO-006.
+	assert_gte(checked, 40, "number of checked fixture examples")
 
 
 func test_collection_fixtures_exist_and_are_mapped() -> void:

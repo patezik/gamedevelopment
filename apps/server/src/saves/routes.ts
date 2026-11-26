@@ -1,12 +1,13 @@
+import { SaveList } from '@hs/protocol';
+import { CreateSessionResponse } from '../routes/sessions.ts';
 import { errorCodes, type FastifyInstance, type FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { issueToken, type PairingService } from '../pairing/index.ts';
-import { CreateSessionResponse } from '../routes/sessions.ts';
 import { SessionIdInUseError, type SessionManager } from '../sessions/index.ts';
 import { SaveError, type SaveService } from './service.ts';
 import { isSaveId } from './store.ts';
 
-const LoadResponse = CreateSessionResponse.extend({ sessionId: z.string().refine(isSaveId) });
+const LoadResponse = CreateSessionResponse.safeExtend({ sessionId: z.string().refine(isSaveId) });
 
 function sendInternal(reply: FastifyReply) {
   return reply.code(500).send({ error: { code: 'INTERNAL', message: 'Internal error' } });
@@ -42,7 +43,7 @@ export function registerSaveRoutes(
       });
       if (cleanup) routes.addHook('onReady', async () => void (await cleanup()));
 
-      routes.get('/saves', () => saves.list());
+      routes.get('/saves', async () => SaveList.parse(await saves.list()));
 
       routes.post<{ Params: { saveId: string } }>(
         '/saves/:saveId/load',

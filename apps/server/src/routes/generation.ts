@@ -12,7 +12,7 @@ import { engineView, engineEvents } from '../views/index.ts';
 import type { SessionEngine } from '../sessions/index.ts';
 import { loadScenarioFromDir, type ScenarioContent } from '@hs/core/content';
 import { generateInvestigation, type GenerationResult } from '@hs/generator';
-import { z } from 'zod';
+import { ScenarioId, ScenarioSummary, Seed } from '@hs/protocol';
 import { isPairingHost, type ServerConfig } from '../config/index.ts';
 import { listNetworkCandidates, type NetworkInterfaces } from '../config/network.ts';
 import { PairingService } from '../pairing/index.ts';
@@ -30,22 +30,7 @@ export const defaultScenariosDir = (): string =>
 /** Generation slower than this is logged as a warning (backend.md §4). */
 export const SLOW_GENERATION_MS = 2_000;
 
-/** A scenario id as `POST /sessions` accepts it; the catalog holds no other (backend.md §3). */
-export const ScenarioId = z.string().min(1).max(64);
-
-/**
- * A seed the client may choose: printable, bounded, safe in logs and file names. `#` is left out
- * on purpose: the generator names its attempts `<seed>#<n>`.
- */
-export const Seed = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
-
-/** What `GET /api/v1/scenarios` lists for one scenario. */
-export const ScenarioSummary = z.strictObject({
-  id: ScenarioId,
-  title: z.string().min(1),
-  durationMinutes: z.int().positive(),
-});
-export type ScenarioSummary = z.infer<typeof ScenarioSummary>;
+export { ScenarioId, ScenarioSummary, Seed };
 
 /** The locale of the game texts (game-design.md: Russian; other locales are QA-003). */
 const TITLE_LOCALE = 'ru';

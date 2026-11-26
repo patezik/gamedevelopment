@@ -1,17 +1,18 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { PROTOCOL_VERSION, type ErrorCode } from '@hs/protocol';
+import {
+  PairRequest,
+  PairResponse,
+  PairingCodeResponse,
+  PROTOCOL_VERSION,
+  type ErrorCode,
+} from '@hs/protocol';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { Session, SessionManager, SessionRole } from '../sessions/index.ts';
 
 const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-const codeSchema = z.string().regex(/^[0-9A-HJKMNP-TV-Z]{6}$/);
-const requestSchema = z.object({
-  code: codeSchema,
-  deviceName: z.string().trim().min(1).max(128),
-  appVersion: z.string().min(1).max(64),
-  protocolVersion: z.int().positive(),
-});
+const requestSchema = PairRequest;
+const codeSchema = PairRequest.shape.code;
 const ttlMs = 300_000;
 const attemptWindowMs = 60_000;
 
@@ -92,8 +93,9 @@ export class PairingService {
 
   createCode(session: Session) {
     const { pairing, commit } = this.prepareCode(session);
+    const response = PairingCodeResponse.parse(pairing);
     commit();
-    return pairing;
+    return response;
   }
 
   /** Stages a code without touching either index. Validate and commit it in the same turn. */
@@ -192,7 +194,7 @@ export class PairingService {
     this.revokeDevice(session);
     const deviceToken = issueToken(session, 'phone');
     await session.activate();
-    return { sessionId: session.id, deviceToken, wsPath: '/ws' };
+    return PairResponse.parse({ sessionId: session.id, deviceToken, wsPath: '/ws' });
   }
 }
 
