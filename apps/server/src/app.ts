@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION } from '@hs/protocol';
+import { HealthResponse, NetworkResponse, PROTOCOL_VERSION } from '@hs/protocol';
 import Fastify from 'fastify';
 import os from 'node:os';
 import serverPackage from '../package.json' with { type: 'json' };
@@ -69,15 +69,19 @@ export function buildApp(
     });
   }
 
-  app.get('/api/v1/health', () => ({
-    status: 'ok',
-    version: serverPackage.version,
-    protocolVersion: PROTOCOL_VERSION,
-  }));
+  app.get('/api/v1/health', () =>
+    HealthResponse.parse({
+      status: 'ok',
+      version: serverPackage.version,
+      protocolVersion: PROTOCOL_VERSION,
+    }),
+  );
 
-  app.get('/api/v1/network', () => ({
-    candidates: listNetworkCandidates(networkInterfaces(), config.publicHost),
-  }));
+  app.get('/api/v1/network', () =>
+    NetworkResponse.parse({
+      candidates: listNetworkCandidates(networkInterfaces(), config.publicHost),
+    }),
+  );
 
   if (sessions) registerSessionRoutes(app, sessions);
   if (pairing) registerPairingRoutes(app, pairing);

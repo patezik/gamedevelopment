@@ -9,6 +9,8 @@
 пример конверта — `packages/protocol/fixtures/envelope.json`.
 Примеры всех сообщений собраны в `client-messages.json` и `server-messages.json` в том же каталоге.
 
+Схемы REST (`packages/protocol/src/rest.ts`, [backend.md §3](backend.md)) лежат рядом: JSON Schema — `schemas/rest-*.json`, примеры запросов и ответов — `fixtures/rest/*.json`; сервер проверяет ими свои ответы, а Godot-тесты — фикстуры. Список — в разделе «REST-схемы» ниже.
+
 ## 1. Транспорт
 
 - `ws://<host>:7420/ws` — одно соединение на клиента. JSON, UTF-8, максимум 256 КБ на сообщение.
@@ -109,6 +111,27 @@
 | `openFile` | `fileId` |
 | `unlockFile` | `fileId, password` |
 | `addNote` | `text` |
+
+## 4a. REST-схемы
+
+Экспортируются из `@hs/protocol`; `protocol:gen` пишет `schemas/rest-<имя>.json`.
+
+| Схема | Эндпоинт | Фикстура (`fixtures/rest/`) |
+|-------|----------|-----------------------------|
+| `HealthResponse` | `GET /health` | `health.json` |
+| `NetworkResponse` | `GET /network` | `network.json` |
+| `ScenarioList` | `GET /scenarios` | `scenarios.json` |
+| `CreateSessionRequest` | тело `POST /sessions` | `create-session.request.json` |
+| `SessionCredentials` | ответ `POST /sessions` и `POST /saves/:saveId/load` | `create-session.response.json`, `load-save.response.json` |
+| `PairingCodeResponse` (= `PairingInfo`) | `POST /sessions/:id/pairing-code` | `pairing-code.response.json` |
+| `QrMatrixResponse` | `GET /sessions/:id/pairing-qr`, `GET /sessions/:id/evidence-qr/:tokenId` | `pairing-qr.response.json`, `evidence-qr.response.json` |
+| `PairRequest`, `PairResponse` | `POST /pair` | `pair.request.json`, `pair.response.json` |
+| `SaveList` | `GET /saves` | `saves.json` |
+| `ErrorResponse` | любой отказ: `{ error: { code, message, atAction? } }`; `atAction` — только у `SAVE_DESYNC` | `error.json`, `error.save-desync.json` |
+
+`DELETE /sessions/:id/device` отвечает 204 без тела. Отладочные `GET /sessions/:id/debug/*` в пакет
+не входят: их ответы несут истину и работают только при `HS_DEBUG_TRUTH=1`
+([OQ-30](../planning/open-questions.md)).
 
 ## 5. Коды ошибок (`ErrorCode`)
 

@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { PROTOCOL_VERSION } from '@hs/protocol';
+import { HealthResponse, NetworkResponse, PROTOCOL_VERSION } from '@hs/protocol';
 import { expect, test } from 'vitest';
 import serverPackage from '../package.json' with { type: 'json' };
 import { buildApp } from './app.ts';
@@ -11,6 +11,7 @@ test('reports server and protocol versions without opening a port', async () => 
     const response = await app.inject({ method: 'GET', url: '/api/v1/health' });
 
     expect(response.statusCode).toBe(200);
+    expect(HealthResponse.safeParse(response.json()).success).toBe(true);
     expect(response.json()).toEqual({
       status: 'ok',
       version: serverPackage.version,
@@ -41,6 +42,7 @@ test('GET /network lists LAN candidates from the injected interfaces', async () 
     const response = await app.inject({ method: 'GET', url: '/api/v1/network' });
 
     expect(response.statusCode).toBe(200);
+    expect(NetworkResponse.safeParse(response.json()).success).toBe(true);
     expect(response.json()).toEqual({
       candidates: [
         { address: '192.168.1.42', interface: 'wlan0', recommended: true, virtual: false },
