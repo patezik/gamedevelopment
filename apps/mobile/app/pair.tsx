@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { pairDevice, pairErrorMessage } from '../src/pairing/pairClient';
 import {
@@ -93,9 +93,24 @@ export default function PairScreen() {
           <Text style={styles.text}>
             Камера нужна только чтобы сканировать QR привязки на экране игры.
           </Text>
-          <Pressable accessibilityRole="button" style={styles.button} onPress={requestPermission}>
-            <Text style={styles.buttonText}>Разрешить камеру</Text>
-          </Pressable>
+          {permission.canAskAgain ? (
+            <Pressable accessibilityRole="button" style={styles.button} onPress={requestPermission}>
+              <Text style={styles.buttonText}>Разрешить камеру</Text>
+            </Pressable>
+          ) : (
+            <>
+              <Text style={styles.text}>
+                Доступ к камере запрещён. Включите его в настройках или введите адрес и код вручную.
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.button}
+                onPress={() => void Linking.openSettings()}
+              >
+                <Text style={styles.buttonText}>Открыть настройки</Text>
+              </Pressable>
+            </>
+          )}
         </View>
       ) : null}
       {manual ? (

@@ -1,14 +1,19 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 import PairScreen from '../app/pair';
 import { pairDevice } from '../src/pairing/pairClient';
 import { savePairing } from '../src/pairing/storage';
 
 const mockReplace = jest.fn();
 let mockOnScan: ((e: { data: string }) => void) | undefined;
+let mockPermission: { granted: boolean; canAskAgain: boolean } = {
+  granted: true,
+  canAskAgain: true,
+};
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) }));
 jest.mock('expo-camera', () => ({
-  useCameraPermissions: () => [{ granted: true }, jest.fn()],
+  useCameraPermissions: () => [mockPermission, jest.fn()],
   CameraView: (props: { onBarcodeScanned?: (e: { data: string }) => void }) => {
     mockOnScan = props.onBarcodeScanned;
     return null;
@@ -28,6 +33,7 @@ const device = { host: 'h', port: 7420, sessionId: 's', deviceToken: 't', wsPath
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPermission = { granted: true, canAskAgain: true };
 });
 
 test('scanning a valid QR pairs, saves the token and opens the phone', async () => {
@@ -74,4 +80,21 @@ test('manual entry validates input and then pairs', async () => {
   await fireEvent.press(screen.getByText('Привязать'));
   await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/os'));
   expect((pairDevice as jest.Mock).mock.calls[0][0].code).toBe('ABC123');
+});
+
+test('before the first answer the screen offers the camera prompt', async () => {
+  mockPermission = { granted: false, canAskAgain: true };
+  await render(<PairScreen />);
+  expect(screen.getByText('Разрешить камеру')).toBeTruthy();
+  expect(screen.queryByText('Открыть настройки')).toBeNull();
+});
+
+test('after a refusal iOS cannot ask again: the screen leads to Settings and manual entry', async () => {
+  mockPermission = { granted: false, canAskAgain: false };
+  const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+  await render(<PairScreen />);
+  expect(screen.queryByText('Разрешить камеру')).toBeNull();
+  fireEvent.press(screen.getByText('Открыть настройки'));
+  expect(openSettings).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('Ввести вручную')).toBeTruthy();
 });
