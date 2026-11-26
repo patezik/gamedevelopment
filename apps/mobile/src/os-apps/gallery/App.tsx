@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { GalleryItemView } from '@hs/protocol';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatCaseTime } from '../../os/caseTime';
+import { PhotoPreview } from '../../os/effects/PhotoPreview';
 import type { OsAppProps } from '../../os/types';
 import { useTextScale } from '../../stores/displayStore';
 import { EvidenceCard } from './EvidenceCard';
@@ -33,12 +34,16 @@ export function GalleryApp({ view }: OsAppProps) {
             accessibilityLabel={`Снимок: ${item.title}`}
             onPress={() => setOpenId(item.id)}
           >
-            <EvidenceCard
-              imageRef={item.imageRef}
-              title={item.title}
-              size={THUMB}
-              fontScale={scale}
-            />
+            <PhotoPreview>
+              <EvidenceCard
+                imageRef={item.imageRef}
+                title={item.title}
+                size={THUMB}
+                fontScale={scale}
+                showTitle={false}
+              />
+            </PhotoPreview>
+            <Text style={[styles.title, { fontSize: 14 * scale }]}>{item.title}</Text>
           </Pressable>
         ))}
       </ScrollView>

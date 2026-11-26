@@ -38,9 +38,16 @@ export interface EvidenceCardProps {
   /** Edge of the square card in px. */
   size: number;
   fontScale?: number;
+  showTitle?: boolean;
 }
 
-export function EvidenceCard({ imageRef, title, size, fontScale = 1 }: EvidenceCardProps) {
+export function EvidenceCard({
+  imageRef,
+  title,
+  size,
+  fontScale = 1,
+  showTitle = true,
+}: EvidenceCardProps) {
   const style = cardStyleFor(imageRef);
   return (
     <View
@@ -62,12 +69,14 @@ export function EvidenceCard({ imageRef, title, size, fontScale = 1 }: EvidenceC
           ]}
         />
       ))}
-      <Text
-        numberOfLines={3}
-        style={[styles.title, { fontSize: Math.max(11, size / 9) * fontScale }]}
-      >
-        {title}
-      </Text>
+      {showTitle && (
+        <Text
+          numberOfLines={3}
+          style={[styles.title, { fontSize: Math.max(11, size / 9) * fontScale }]}
+        >
+          {title}
+        </Text>
+      )}
     </View>
   );
 }

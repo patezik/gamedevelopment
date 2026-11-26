@@ -16,6 +16,7 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn() }),
   useLocalSearchParams: () => ({ appId: mockRoute }),
+  usePathname: () => (mockRoute === 'home' ? '/os' : `/os/${mockRoute}`),
   Slot: () => {
     const Component =
       mockRoute === 'home'
