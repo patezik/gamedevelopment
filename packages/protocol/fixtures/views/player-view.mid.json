@@ -60,7 +60,7 @@
     {
       "id": "ch_doctor",
       "name": "Доктор Белов",
-      "portraitRef": "portrait_doctor_01",
+      "portraitRef": "head_doctor.m1",
       "demeanor": "раздражён"
     }
   ],

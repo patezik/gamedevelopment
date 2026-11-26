@@ -168,7 +168,7 @@ content/scenarios/<scenarioId>/
 |------|-------------|
 | `locations.json` | `id`, `name`, `description`, `tags`, `lighting`, `access`, `hotspots`, `connections` |
 | `items.json` | `id`, `name`, `kind`, `tags` и при необходимости ссылки `locationId`, `containerId`, `ownerArchetype` |
-| `archetypes.json` | `id`, `title`, `names`, `personality`, `routine`, `access`, `biography` |
+| `archetypes.json` | `id`, `title`, `names`, `personality`, `routine`, `access`, `biography` и необязательный `portraits` |
 | `relationships.json` | `id`, `type` и необязательные `fromArchetypes`, `toArchetypes`, `constraints`, `secrets` |
 | `deduction-rules.json` | `id`, `establishes`, `requires` и необязательный `excludes`. Утверждения записываются строками |
 
@@ -188,6 +188,23 @@ content/scenarios/<scenarioId>/
 чтобы имя и фамилия встречались в составе не более одного раза. Фрагмент биографии может
 указать `excludes` со списком тегов, с которыми он несовместим. Исключения проверяются в обе
 стороны при подборе до трёх фрагментов.
+
+`portraits` (ENG-008) сопоставляет вариант портрета (`m1`, `f1`: строчная буква и цифры,
+[art-direction.md §7.2](../game-design/art-direction.md)) со списком имён из `names`, для
+которых нарисован этот вариант:
+
+```json
+"portraits": { "m1": ["Виктор Андреевич Ларионов", "Олег Петрович Суворин"] }
+```
+
+CastGen записывает персонажу `portraitRef = "<archetype_id>.<variant>"`, если его имя указано в
+`portraits`; иначе поля нет и представления передают пустую строку. Это поиск по имени без RNG
+до выбора жертвы и виновника: внешность зависит только от имени и не меняет случайные потоки
+других стадий. Проверка контента требует, чтобы каждое имя было из `names` и встречалось не более
+чем в одном варианте, а `<archetype_id>.<variant>` был допустимой ссылкой (id архетипа без `-`).
+Указывать вариант стоит только для нарисованного портрета, иначе клиент покажет силуэт.
+Вариант — ссылка на арт, а не источник грамматического рода: род для текстов не выводится из
+буквы варианта ([OQ-21](../planning/open-questions.md), ENG-011).
 
 Свойство личности задаётся диапазоном `[min, max]` от 0 до 1. Элемент `routine` содержит
 `from`, `to`, `locationId` и `activity`. Элемент `access` может ссылаться на `locationId`

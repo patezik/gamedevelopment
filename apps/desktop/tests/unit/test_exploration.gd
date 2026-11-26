@@ -418,7 +418,7 @@ func test_only_exploration_data_is_displayed() -> void:
 		"ch_doctor",
 		"clue_logbook",
 		"loc_infirmary",
-		"portrait_doctor_01",
+		"head_doctor.m1",
 	]
 	for text: String in _texts(screen):
 		for fragment: String in hidden:

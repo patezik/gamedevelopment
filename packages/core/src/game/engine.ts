@@ -1014,7 +1014,15 @@ export class GameEngine {
         vitals: (this.#desktop ?? this.#startingDesktop()).vitals.vitals,
         static: this.staticLevel(),
       },
-      { minute, calendar: new Calendar(this.investigation.world.locations.startDateTime) },
+      {
+        minute,
+        calendar: new Calendar(this.investigation.world.locations.startDateTime),
+        portraits: new Map(
+          this.investigation.characters.flatMap(({ id, portraitRef }) =>
+            portraitRef ? [[id, portraitRef] as const] : [],
+          ),
+        ),
+      },
     );
   }
 

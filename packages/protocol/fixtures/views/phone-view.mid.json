@@ -71,7 +71,7 @@
       "id": "ct_doctor",
       "name": "Доктор Белов",
       "number": "+7 495 010-03-03",
-      "portraitRef": "portrait_doctor_01"
+      "portraitRef": "head_doctor.m1"
     }
   ],
   "threads": [

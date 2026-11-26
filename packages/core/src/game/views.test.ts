@@ -134,3 +134,22 @@ test('an open interrogation holds the hero: no move, rest or pickLock offered; a
     blockedReason: 'interrogation_open',
   });
 });
+
+test('ENG-008: presentCharacters carry the portraitRef of the character, "" without one', () => {
+  const manor = tinyManor('0');
+  const investigation = {
+    ...manor,
+    characters: manor.characters.map((character) =>
+      character.id === 'ch_owner' ? { ...character, portraitRef: 'owner.m1' } : character,
+    ),
+  };
+  const view = GameEngine.create(investigation, { startLocationId }).playerView();
+  expect(view.presentCharacters.map(({ id, portraitRef }) => [id, portraitRef])).toEqual([
+    ['ch_owner', 'owner.m1'],
+    ['ch_porter', ''],
+  ]);
+  // Same investigation, same portraits: the view adds nothing of its own.
+  expect(
+    GameEngine.create(investigation, { startLocationId }).playerView().presentCharacters,
+  ).toEqual(view.presentCharacters);
+});

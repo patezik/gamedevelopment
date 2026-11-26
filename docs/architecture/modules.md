@@ -201,6 +201,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   ```ts
   interface Character {
     id: CharacterId; name: string; archetypeId: string; age: number; socialStatus: SocialStatus;
+    portraitRef?: string;                   // `<archetype_id>.<variant>` по имени (ENG-008); нет — нет варианта
     personality: Personality;               // trait-вектор 0..1: openness, conscientiousness, extraversion, agreeableness, neuroticism, honesty, courage, impulsivity
     biography: BiographyFact[];             // факты-фрагменты с тегами; текст собирается из шаблонов
     goals: GoalSeed[]; fears: string[]; habits: Habit[]; desires: string[];
@@ -429,7 +430,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   ```ts
   interface PhoneState { contacts; threads; callLog; activeCall?; gallery; files; notes; mapPins; browserPages; notifications; battery: number }
   function reducePhone(s: PhoneState, e: DomainEvent): PhoneState;
-  function projectPhoneView(s: PhoneState, survival: PhoneSurvival, ctx: { minute; calendar }): PhoneView;   // схема из @hs/protocol
+  function projectPhoneView(s: PhoneState, survival: PhoneSurvival, ctx: { minute; calendar; portraits? }): PhoneView;   // схема из @hs/protocol
   function initialPhoneState(templates: PhoneTemplate[], opts?): PhoneState;   // пресет → стартовый телефон героя
   ```
   `PhoneEvent` — события телефона (`MessageReceived`, `CallStarted`, `FileUnlocked`, `PhotoAdded` и т.д.);

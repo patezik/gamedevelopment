@@ -1,3 +1,4 @@
+import { PORTRAIT_REF } from '../characters/index.ts';
 import type { ContentIssue, ScenarioContent } from './scenario.ts';
 
 export function crossCheck(content: ScenarioContent): ContentIssue[] {
@@ -109,6 +110,31 @@ export function crossCheck(content: ScenarioContent): ContentIssue[] {
     archetype.access.forEach((grant, entry) => {
       reference(locations, grant.locationId, `archetypes[${row}].access[${entry}].locationId`);
       reference(items, grant.itemId, `archetypes[${row}].access[${entry}].itemId`);
+    });
+    // ENG-008: a portrait variant lists names of this archetype, each name at most once.
+    const names = new Set(archetype.names.map((name) => name.normalize('NFC')));
+    const drawn = new Set<string>();
+    Object.entries(archetype.portraits ?? {}).forEach(([variant, entries]) => {
+      const path = `archetypes[${row}].portraits.${variant}`;
+      if (!PORTRAIT_REF.test(`${archetype.id}.${variant}`)) {
+        issues.push({
+          code: 'CONTENT_SCHEMA_ERROR',
+          path,
+          message: `"${archetype.id}.${variant}" is not a portrait reference`,
+        });
+      }
+      entries.forEach((name, entry) => {
+        const key = name.normalize('NFC');
+        reference(names, key, `${path}[${entry}]`);
+        if (drawn.has(key)) {
+          issues.push({
+            code: 'CONTENT_SCHEMA_ERROR',
+            path: `${path}[${entry}]`,
+            message: `Name "${name}" has more than one portrait variant`,
+          });
+        }
+        drawn.add(key);
+      });
     });
   });
   content.relationships.forEach((relationship, row) => {

@@ -36,7 +36,7 @@ test('initial state comes from unconditional preset templates', () => {
   expect(PhoneView.parse(v)).toEqual(v);
   expect(v.files).toEqual([]); // hidden
   expect(v.effects.wallpaperVariant).toBe('dim');
-  expect(v.contacts).toEqual([contact]);
+  expect(v.contacts).toEqual([{ ...contact, portraitRef: '' }]);
 });
 
 test('messages: receive, unread badge, read, send, typing', () => {
@@ -152,7 +152,7 @@ test('gallery, notes, pins, pages, notifications, battery, wallpaper, contacts',
   );
   const v = view(s);
   expect(PhoneView.parse(v)).toEqual(v);
-  expect(v.contacts).toEqual([{ ...contact, name: 'Anya' }]);
+  expect(v.contacts).toEqual([{ ...contact, name: 'Anya', portraitRef: '' }]);
   expect(v.gallery).toHaveLength(1);
   expect(v.notes).toHaveLength(1);
   expect(v.mapPins).toEqual([{ id: 'pin1', locationId: 'loc', label: 'Hall', seenAt: 60 }]);
@@ -228,4 +228,33 @@ test('leak test: hallucination flags and server-only keys never reach the view',
     expect(json).not.toContain('SECRET');
     expect(json).not.toContain('password"');
   }
+});
+
+test('ENG-008: every contact has a portraitRef, from the cast by id or "" otherwise', () => {
+  const s = apply(
+    createPhoneState({
+      contacts: [
+        contact,
+        { id: 'ch_2', name: 'Nurse', number: '+200' },
+        { id: 'ch_3', name: 'Set', number: '+300', portraitRef: 'cook.m1' },
+      ],
+    }),
+    {
+      type: 'ContactAdded',
+      contact: { id: 'ev_1_c', name: 'Unknown', number: '', hallucination: true },
+    },
+  );
+  const portraits = new Map([
+    ['ch_2', 'nurse.f1'],
+    ['ch_3', 'head_doctor.m1'],
+  ]);
+  const v = projectPhoneView(s, calm, { ...context, portraits });
+  expect(PhoneView.parse(v)).toEqual(v);
+  expect(v.contacts.map(({ id, portraitRef }) => [id, portraitRef])).toEqual([
+    ['c1', ''],
+    ['ch_2', 'nurse.f1'],
+    ['ch_3', 'cook.m1'],
+    ['ev_1_c', ''],
+  ]);
+  expect(JSON.stringify(v)).not.toContain('hallucination');
 });

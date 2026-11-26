@@ -238,7 +238,12 @@ export function projectPlayerView(state: PlayerViewState): PlayerView {
       exits,
     },
     knownMap: knownMapOf(investigation, locationId),
-    presentCharacters: people.map(({ id, name }) => ({ id, name, portraitRef: '', demeanor: '' })),
+    presentCharacters: people.map(({ id, name, portraitRef = '' }) => ({
+      id,
+      name,
+      portraitRef,
+      demeanor: '',
+    })),
     availableActions,
     vitals: { ...desktop.vitals.vitals },
     static: state.staticLevel ?? 0,

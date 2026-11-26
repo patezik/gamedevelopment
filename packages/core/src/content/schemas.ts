@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PORTRAIT_REF } from '../characters/index.ts';
 import { PERSONALITY_TRAITS, verbSchema } from '../common/index.ts';
 import { isCalendarStartIso } from '../time/index.ts';
 
@@ -11,6 +12,8 @@ const positiveMinutes = z.int().positive();
 const share = z.number().min(0).max(1);
 const dayMinute = minutes.max(1440);
 const condition = z.record(z.string(), z.json());
+/** Portrait variant: a letter and a number (art-direction.md §7.2). */
+const PORTRAIT_VARIANT = /^[a-z][0-9]+$/;
 
 export const presetSchema = z.strictObject({
   id: scenarioIdSchema,
@@ -172,9 +175,30 @@ export const archetypesSchema = z
       ),
       access: z.array(z.strictObject({ locationId: id.optional(), itemId: id.optional() })),
       biography: z.array(z.strictObject({ text, tags: ids, excludes: ids.optional() })),
+      /** ENG-008: portrait variant (`m1`, `f1`) to the names from `names` drawn that way. */
+      portraits: z.record(z.string().regex(PORTRAIT_VARIANT), z.array(text).min(1)).optional(),
     }),
   )
   .min(1);
+
+/**
+ * `portraitRef` of a cast member (art-direction.md §7.2): `<archetype_id>.<variant>` when the
+ * archetype lists the name under a variant, otherwise `undefined`. A pure lookup by name: no RNG
+ * and no truth, so the portrait follows the name and nothing else.
+ */
+export function portraitRefOf(
+  archetype: Pick<z.infer<typeof archetypesSchema>[number], 'id' | 'portraits'>,
+  name: string,
+): string | undefined {
+  const target = name.normalize('NFC');
+  for (const [variant, names] of Object.entries(archetype.portraits ?? {})) {
+    if (names.some((entry) => entry.normalize('NFC') === target)) {
+      const ref = `${archetype.id}.${variant}`;
+      return PORTRAIT_REF.test(ref) ? ref : undefined;
+    }
+  }
+  return undefined;
+}
 
 export const relationshipsSchema = z.array(
   z.strictObject({

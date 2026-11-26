@@ -13,6 +13,11 @@ export interface PhoneSurvival {
 export interface PhoneViewContext {
   readonly minute: GameMinutes;
   readonly calendar: Calendar;
+  /**
+   * ENG-008: `portraitRef` of characters by id, for contacts that are cast members. Every contact
+   * gets a `portraitRef` (`""` without one), so its presence says nothing about the contact.
+   */
+  readonly portraits?: ReadonlyMap<string, string>;
 }
 
 /** Static at or above this switches the browser off (mobile-app.md section 3). */
@@ -91,7 +96,7 @@ export function projectPhoneView(
       id,
       name,
       number,
-      ...(portraitRef !== undefined && { portraitRef }),
+      portraitRef: portraitRef ?? context.portraits?.get(id) ?? '',
     })),
     threads,
     callLog: s.callLog.map(({ id, contactId, direction, at, durationMinutes }) => ({
