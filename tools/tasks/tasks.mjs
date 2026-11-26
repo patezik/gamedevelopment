@@ -363,7 +363,13 @@ function main() {
     case 'validate': {
       for (const w of warnings) console.warn(`warning: ${w}`);
       for (const e of errors) console.error(`error: ${e}`);
-      if (existsSync(join(TASKS_DIR, 'INDEX.md')) && errors.length === 0) {
+      // INDEX.md is rebuilt by CI on main (.github/workflows/tasks-index.yml); PRs do not touch it.
+      // The freshness check is opt-in: `validate --strict-index`.
+      if (
+        args.includes('--strict-index') &&
+        existsSync(join(TASKS_DIR, 'INDEX.md')) &&
+        errors.length === 0
+      ) {
         const current = readFileSync(join(TASKS_DIR, 'INDEX.md'), 'utf8').replace(/\r\n/g, '\n');
         if (current !== buildIndex(byId)) {
           console.error('error: tasks/INDEX.md is outdated — run npm run tasks:index');
