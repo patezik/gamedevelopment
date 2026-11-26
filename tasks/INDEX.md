@@ -238,7 +238,7 @@
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [INT-005](INT-005.md) | Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | P0 | L | in_progress | claude-w5 | [SRV-008](SRV-008.md), [GDT-001](GDT-001.md) |
+| [INT-005](INT-005.md) | Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | P0 | L | in_progress | egor-claude-int-005 | [SRV-008](SRV-008.md), [GDT-001](GDT-001.md) |
 | [INT-006](INT-006.md) | Мастер сетевого подключения в Godot (брандмауэр, выбор сети, диагностика) | P1 | M | todo | — | [INT-005](INT-005.md), [SRV-008](SRV-008.md) |
 | [INT-007](INT-007.md) | Профиль Expo Development Build (EAS) как резерв к Expo Go | P1 | M | blocked | claude-ql | [FND-006](FND-006.md) |
 | [INT-008](INT-008.md) | Спайк: TLS с pinning через QR и облачный ретранслятор → ADR | P2 | M | done | claude-w6 | [SRV-004](SRV-004.md) |
