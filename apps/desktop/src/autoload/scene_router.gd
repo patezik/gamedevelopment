@@ -19,6 +19,8 @@ signal transition_failed(screen: StringName, reason: String)
 ## Screen id -> scene path. Screen tasks add their entries here; tests use register_screen().
 const SCREENS: Dictionary = {
 	&"bootstrap": "res://src/scenes/bootstrap.tscn",
+	&"new_game": "res://src/scenes/new_game/new_game.tscn",
+	&"pairing": "res://src/scenes/pairing/pairing.tscn",
 	&"exploration": "res://src/scenes/exploration/exploration.tscn",
 	&"dialogue": "res://src/scenes/dialogue/dialogue.tscn",
 	&"case_board": "res://src/scenes/case_board/case_board.tscn",
