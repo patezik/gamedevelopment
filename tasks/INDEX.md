@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **154** · todo: 41 · in_progress: 9 · review: 0 · done: 104 · blocked: 0
+Всего задач: **154** · todo: 41 · in_progress: 8 · review: 0 · done: 105 · blocked: 0
 
 ## Готовы к взятию сейчас
 
@@ -221,7 +221,7 @@
 | [INT-005](INT-005.md) | Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | P0 | L | in_progress | claude-w5 | [SRV-008](SRV-008.md), [GDT-001](GDT-001.md) |
 | [INT-006](INT-006.md) | Мастер сетевого подключения в Godot (брандмауэр, выбор сети, диагностика) | P1 | M | todo | — | [INT-005](INT-005.md), [SRV-008](SRV-008.md) |
 | [INT-007](INT-007.md) | Профиль Expo Development Build (EAS) как резерв к Expo Go | P1 | M | in_progress | claude-ql | [FND-006](FND-006.md) |
-| [INT-008](INT-008.md) | Спайк: TLS с pinning через QR и облачный ретранслятор → ADR | P2 | M | in_progress | claude-w6 | [SRV-004](SRV-004.md) |
+| [INT-008](INT-008.md) | Спайк: TLS с pinning через QR и облачный ретранслятор → ADR | P2 | M | done | claude-w6 | [SRV-004](SRV-004.md) |
 
 ## Фаза 10 · M10 — Quality (5)
 
