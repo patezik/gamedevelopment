@@ -14,6 +14,7 @@ import {
   type AccusationOutcome,
   type CaseFile,
 } from '../investigation/index.ts';
+import { createPhoneState } from '../phone/index.ts';
 import { GameEngine, type EnginePorts } from './engine.ts';
 import type { Investigation } from './investigation.ts';
 
@@ -105,6 +106,32 @@ describe('accuse', () => {
     expect(result.outcome).toBeUndefined();
     expect(engine.stateHash()).toBe(hash);
     expect(engine.playerView().ending).toBeUndefined();
+  });
+
+  test('a case file citing a hallucinated phone item is refused (ENG-010)', () => {
+    const photo = { id: clueIds[0]!, title: 'x', imageRef: 'x', takenAt: 0, hallucination: true };
+    const phone = { initial: createPhoneState({ gallery: [photo] }) };
+    const engine = found({ phone });
+    expect(accuseWith(engine, fullCase)).toMatchObject({ ok: false, error: 'ACTION_INVALID' });
+    expect(accuseWith(found(), fullCase)).toMatchObject({ ok: true, outcome: 'solved' });
+  });
+
+  test('a false accusation raises Static by 15 once judged (ENG-010)', () => {
+    const engine = found({ static: { start: 5 } });
+    const result = accuseWith(engine, wrongCase);
+    expect(result.events).toContainEqual(
+      expect.objectContaining({
+        type: 'StaticChanged',
+        before: 5,
+        after: 20,
+        cause: 'falseAccusation',
+      }),
+    );
+    expect(engine.staticLevel()).toBe(20);
+    expect(engine.playerView().static).toBe(20);
+    const unconfirmed = found({ static: { start: 5 } });
+    accuseWith(unconfirmed, wrongCase, false);
+    expect(unconfirmed.staticLevel()).toBe(5);
   });
 
   test('a proven case solves; every later action is GAME_OVER', () => {
