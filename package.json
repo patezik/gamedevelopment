@@ -37,6 +37,7 @@
     "docs:check": "node tools/docs/check-links.mjs",
     "protocol:gen": "npm run protocol:gen -w @hs/protocol",
     "protocol:check": "npm run protocol:check -w @hs/protocol",
+    "e2e:bot": "node tools/e2e/bot/cli.ts",
     "bench": "node packages/core/test/performance/scheduler.ts && node packages/core/test/performance/simulation.ts && node --experimental-transform-types packages/generator/test/performance/history-sim.ts && node --experimental-transform-types packages/generator/bench/generation.ts",
     "content:check": "node tools/check-content.mjs",
     "art:check": "node tools/art/check-art.mjs",

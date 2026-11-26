@@ -10,7 +10,7 @@
 | Seed sweep | массовая генерация + валидация | `hs-sweep` | `packages/validator` | PR: 1000 seed; nightly: 20 000 |
 | Contract | соответствие сообщений схемам у всех клиентов | zod + фикстуры; GUT | `packages/protocol/fixtures` | каждый PR |
 | Integration (server) | REST + WS сценарии | Vitest + Fastify inject + ws | `apps/server/test` | каждый PR |
-| E2E (bot) | прохождение расследования через реальный сервер фейковыми клиентами по `SolutionPath` | `tools/fake-client` | `tools/e2e` | каждый PR (10 seed), nightly (200 seed) |
+| E2E (bot) | прохождение расследования через реальный сервер фейковыми клиентами по `SolutionPath` | `tools/fake-client` | `tools/e2e` | каждый PR (2 seed в `npm test`), `npm run e2e:bot` (10 seed), nightly (200 seed, OQ-32) |
 | Godot | разбор протокола, политики переподключения, загрузка сцен | GUT headless | `apps/desktop/tests` | PR с изменениями `apps/desktop/**` или протокола |
 | Mobile E2E | привязка, скан, приложения | Maestro | `apps/mobile/e2e` | после MVP (QA-001) |
 | Ручное | реальные телефоны, читаемость QR, ощущения | чек-лист | `docs/testing/playtest-checklist.md` (INT-003) | перед вехой |
@@ -41,6 +41,16 @@
 - Клиенты: mock-сервер (mobile — mock WebSocket; Godot — тест политик без сети).
 - Хаос-тест (INT-002): случайные разрывы соединения во время бот-прохождения; итоговое
   состояние должно совпасть с прохождением без разрывов.
+- E2E-бот (INT-002, `tools/e2e/bot`): настоящая сборка сервера (`createSessionServices` + `buildApp`,
+  SRV-013) на случайном порту. Бот создаёт сессию по REST, привязывает FakePhone, строит
+  `SolutionPath` планировщиком VAL-003 (дело генерируется тем же seed, истина остаётся в тесте),
+  выполняет шаги desktop через WebSocket, для `captureEvidence` берёт QR из `pendingCapture`
+  (матрица REST сверяется с текстом токена) и сканирует его на телефоне (`qr.scan`), затем
+  обвиняет виновника с утверждениями, доказанными планировщиком. Бот видит игру только через
+  `PlayerView`/`PhoneView`; в сообщениях нет запрещённых ключей. Хаос: случайные обрывы desktop и
+  phone между шагами и во время запроса, итоговый `stateHash` равен хешу чистого прогона.
+  Порт `npcSimulation` включается только в тестовой сборке (OQ-27). В CI (`npm test`) два seed;
+  `npm run e2e:bot` — десять seed с `--chaos`, `-- --count 200` — широкий прогон (OQ-32).
 
 ## 5. Тестирование мобильного приложения
 
