@@ -95,10 +95,29 @@ test('unpairing needs a confirmation, then calls onUnpair once', async () => {
   expect(onUnpair).toHaveBeenCalledTimes(1);
 });
 
-test('unpairDevice deletes the stored token', async () => {
-  await savePairing({ host: 'h', port: 1, sessionId: 's', deviceToken: 'secret', wsPath: '/ws' });
+const saved = { host: 'h', port: 1, sessionId: 's', deviceToken: 'secret', wsPath: '/ws' };
+const okFetch = () => jest.fn(async () => ({ ok: true, status: 204, json: async () => ({}) }));
+
+test('unpairDevice tells the server with the device token, then deletes the stored token', async () => {
+  await savePairing(saved);
   expect(await loadPairing()).toBeDefined();
-  await unpairDevice();
+  const fetchMock = okFetch();
+  await unpairDevice(fetchMock);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  const [url, init] = fetchMock.mock.calls[0] as unknown as [string, { method: string; headers: Record<string, string> }];
+  expect(url).toBe('http://h:1/api/v1/sessions/s/device');
+  expect(init.method).toBe('DELETE');
+  expect(init.headers.authorization).toBe('Bearer secret');
   expect(await loadPairing()).toBeUndefined();
   expect(SecureStore.deleteItemAsync).toHaveBeenCalled();
+});
+
+test('unpairDevice still unpairs locally when the server is unreachable', async () => {
+  await savePairing(saved);
+  const failing = jest.fn(async () => {
+    throw new Error('network down');
+  });
+  await expect(unpairDevice(failing)).resolves.toBeUndefined();
+  expect(failing).toHaveBeenCalledTimes(1);
+  expect(await loadPairing()).toBeUndefined();
 });

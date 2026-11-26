@@ -147,3 +147,27 @@ test('createCode changes nothing when the host lookup throws; discardCode forget
   expect(service.activeCode(session)).toBeUndefined();
   expect((await pair(first.code)).json()).toMatchObject({ error: { code: 'PAIRING_CODE_INVALID' } });
 });
+
+test('the paired phone may unpair itself; foreign, revoked and malformed tokens are refused', async () => {
+  const { app, session, revoked, pair, createCode, url, headers } = setup();
+  const { deviceToken } = (await pair((await createCode()).json<{ code: string }>().code)).json<{ deviceToken: string }>();
+  const delet = (authorization?: string, target = url) =>
+    app.inject({ method: 'DELETE', url: target + '/device', headers: authorization ? { authorization } : {} });
+
+  const foreign = 'Bearer ' + 'A'.repeat(43);
+  for (const bad of [foreign, 'Bearer short', undefined]) {
+    const reply = await delet(bad);
+    expect(reply.statusCode).toBe(401);
+    expect(reply.body).not.toContain(deviceToken);
+  }
+  expect((await delet('Bearer ' + deviceToken, '/api/v1/sessions/other')).statusCode).toBe(404);
+  expect(verifyToken(session, 'phone', deviceToken)).toBe(true);
+
+  const before = revoked.mock.calls.length;
+  expect((await delet('Bearer ' + deviceToken)).statusCode).toBe(204);
+  expect(revoked.mock.calls.length).toBe(before + 1);
+  expect(verifyToken(session, 'phone', deviceToken)).toBe(false);
+  expect((await delet('Bearer ' + deviceToken)).statusCode).toBe(401);
+  // the desktop path keeps working
+  expect((await app.inject({ method: 'DELETE', url: url + '/device', headers })).statusCode).toBe(204);
+});

@@ -62,7 +62,7 @@ apps/server/src/
 Ответы обоих эндпоинтов QR несут `Cache-Control: no-store`: пока QR на экране, он как пароль. Токен
 телефона для них не подходит (`UNAUTHORIZED`).
 | `POST /pair` | код привязки | `{ code, deviceName, appVersion, protocolVersion }` → `{ sessionId, deviceToken, wsPath }` | `PAIRING_CODE_INVALID`, `PAIRING_CODE_EXPIRED`, `PAIRING_RATE_LIMITED`, `PROTOCOL_MISMATCH` |
-| `DELETE /sessions/:id/device` | desktop | отвязать телефон | |
+| `DELETE /sessions/:id/device` | desktop или привязанный телефон ([ADR 0023](../architecture/adr/0023-phone-initiated-unpair.md)) | отвязать телефон; 204; сокет телефона закрывается, desktop получает `peer.status` с `phone: "unpaired"` | `UNAUTHORIZED`, `SESSION_NOT_FOUND` |
 | `GET /saves` | — (локальный сервер) | `[{ saveId, scenarioId, seed, updatedAt, gameTime }]`, новые первыми; `updatedAt` — ISO-время последней записи, `gameTime` — прошедшие игровые минуты (`null`, если файл метаданных потерян). Повреждённые и посторонние файлы в список не попадают | |
 | `POST /saves/:saveId/load` | — | → `{ sessionId, desktopToken, pairing }`; `sessionId` равен `saveId`. Ответ с `Cache-Control: no-store` | `SAVE_NOT_FOUND` (404, в том числе неверный формат id), `SAVE_DESYNC` (422, с `error.atAction`), `ACTION_NOT_AVAILABLE` (409, сессия с этим id ещё идёт или уже загружается), `INTERNAL` (500) |
 | `GET /sessions/:id/debug/truth` | desktop + `HS_DEBUG_TRUTH=1` | `{ sessionId, scenarioId, seed, generatorVersion, minute, truth }`: журнал истины целиком | 404 если флаг выключен (маршрута нет); `UNAUTHORIZED`, `SESSION_NOT_FOUND`, 501 если движок сессии нельзя осмотреть |

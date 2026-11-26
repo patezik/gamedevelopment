@@ -73,7 +73,7 @@ export const fetchEvidenceQr = (
     { token: desktopToken },
   );
 
-/** `DELETE /sessions/:id/device` (desktop token): unpair the phone. */
+/** `DELETE /sessions/:id/device` (desktop or the paired phone's own token): unpair the phone. */
 export const revokePhone = (baseUrl: string, sessionId: string, desktopToken: string) =>
   request<undefined>(baseUrl, 'DELETE', `${sessionPath(sessionId)}/device`, {
     token: desktopToken,

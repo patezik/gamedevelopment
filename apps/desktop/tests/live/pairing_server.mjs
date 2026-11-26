@@ -17,6 +17,8 @@
 //        pairs like the phone app (POST /pair) and opens the phone WebSocket (hello{phone});
 //        answers {"status": <HTTP status>, "welcome": bool}
 //     {"cmd": "phone-close"}  closes the phone socket; answers {"ok": true}
+//     {"cmd": "phone-unpair"}  the phone unpairs itself (DELETE /sessions/:id/device with its token);
+//        answers {"status": <HTTP status>}
 //     {"cmd": "quit"}
 //
 // Manual check with a physical phone (docs/mobile/qr-mechanics.md, «QR привязки в Godot»):
@@ -102,6 +104,7 @@ const origin = `http://127.0.0.1:${port}`;
 process.stdout.write(JSON.stringify({ origin, seed }) + '\n');
 
 let phone;
+let phoneAuth;
 
 async function pair(code) {
   const response = await fetch(`${origin}/api/v1/pair`, {
@@ -111,6 +114,7 @@ async function pair(code) {
   });
   const body = await response.json();
   if (response.status !== 200) return { status: response.status, welcome: false };
+  phoneAuth = { sessionId: body.sessionId, token: body.deviceToken };
   phone = new WebSocket(`${origin.replace(/^http:/, 'ws:')}${body.wsPath}`);
   const welcome = await new Promise((resolve) => {
     const timer = setTimeout(() => resolve(false), 5000);
@@ -139,6 +143,13 @@ for await (const line of createInterface({ input: process.stdin })) {
   } else if (command.cmd === 'phone-close') {
     phone?.close();
     process.stdout.write(JSON.stringify({ ok: true }) + '\n');
+  } else if (command.cmd === 'phone-unpair') {
+    // like the phone app's «Отвязать устройство»: DELETE .../device with the device token
+    const response = await fetch(`${origin}/api/v1/sessions/${phoneAuth.sessionId}/device`, {
+      method: 'DELETE',
+      headers: { authorization: `Bearer ${phoneAuth.token}` },
+    });
+    process.stdout.write(JSON.stringify({ status: response.status }) + '\n');
   } else if (command.cmd === 'quit') {
     break;
   }
