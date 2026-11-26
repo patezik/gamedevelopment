@@ -2,7 +2,7 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **170** · todo: 19 · in_progress: 10 · review: 2 · done: 138 · blocked: 1
+Всего задач: **171** · todo: 20 · in_progress: 9 · review: 3 · done: 138 · blocked: 1
 
 ## Готовы к взятию сейчас
 
@@ -32,7 +32,7 @@
 | [PLAN-001](PLAN-001.md) Декомпозиция бэклога фаз 8–11 по итогам MVP | 1 |
 | [REL-003](REL-003.md) Политика приватности и тексты разрешений | 1 |
 | [TIME-006](TIME-006.md) Подключение событий сценария к GameEngine и серверной сессии | 1 |
-| [CNT-008](CNT-008.md) Второй сценарий-пресет только данными (проверка расширяемости) | 0 |
+| [VAL-009](VAL-009.md) Расширить покрытие планировщика на контенте санатория 0.4.0 | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -95,7 +95,7 @@
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | done | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
-## Фаза 4 · M4 — Solvable investigations (28)
+## Фаза 4 · M4 — Solvable investigations (29)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -126,7 +126,8 @@
 | [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | done | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
 | [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | done | claude-x3 | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
 | [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
-| [VAL-009](VAL-009.md) | Расширить покрытие планировщика на контенте санатория 0.4.0 | P1 | L | in_progress | egor-claude-val-009 | [VAL-003](VAL-003.md), [CNT-003](CNT-003.md) |
+| [VAL-009](VAL-009.md) | Расширить покрытие планировщика на контенте санатория 0.4.0 | P1 | L | review | egor-claude-val-009 | [VAL-003](VAL-003.md), [CNT-003](CNT-003.md) |
+| [VAL-010](VAL-010.md) | Планировщик: QR-улики loc_room_2 на seed 8, 16, 19, 21 и лимит на seed 22 | P2 | M | todo | — | [VAL-009](VAL-009.md) |
 
 ## Фаза 5 · M5 — Phone linked (24)
 
