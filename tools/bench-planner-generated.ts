@@ -7,9 +7,9 @@ import { KnowledgeStore } from '@hs/core/knowledge';
 import { generateInvestigation } from '@hs/generator';
 import { solutionSource, solve, timeFeasibleCheck, type PlannerOptions } from '@hs/validator';
 
-// Version 0.4.0 changes the generated cases: seed 1 is now rejected by the static gate.
-// These fixtures replay current cases; broader beam-search coverage is tracked in VAL-009.
-export const seeds = ['3', '4', '7', '9'] as const;
+// Content 0.4.0 cases accepted by the static gate (seed 1 is rejected as ambiguous). Seeds 2 and 6
+// need a return to a witness with a new topic (VAL-009); validation.md lists the bounds of the search.
+export const seeds = ['2', '3', '4', '6', '7', '9'] as const;
 type Witness = NonNullable<ReturnType<NonNullable<EnginePorts['testimony']>['witness']>>;
 const content = loadScenarioFromDir(
   fileURLToPath(new URL('../content/scenarios/sanatorium_winter/', import.meta.url)),

@@ -31,6 +31,9 @@ const MAX_DISPATCHES = 2500;
 // The same action after new knowledge may still yield a new clue or reply, but usually repeats
 // one. It ranks with a return to a visited location, so it cannot crowd useful moves out of the beam.
 const REPEATED = 4;
+// A move on the shortest known route to a witness who can still be asked about a person in focus.
+// It ranks above exploring an unvisited location, below finding evidence and asking.
+const TOWARDS_WITNESS = 1;
 /** Events after which the player's knowledge may prove more. */
 const PROGRESS: ReadonlySet<string> = new Set([
   'ClueDiscovered',
@@ -43,10 +46,16 @@ interface Branch {
   path: SolutionPath;
   view: PlayerView;
   coverage: number;
+  /** People with the most guilt links in this branch's knowledge; every person counts. */
+  focus: readonly string[];
   /** Last minute this branch tried an action with the same evidence. */
   attempts: ReadonlyMap<string, number>;
-  /** Serialized actions already on the path. */
+  /** Actions already on the path, by `actionId`. */
   done: ReadonlySet<string>;
+  /** Locations where the player saw each character in `presentCharacters`. */
+  seen: ReadonlyMap<string, ReadonlySet<string>>;
+  /** Open exits of the locations this branch has visited, as the view showed them. */
+  exits: ReadonlyMap<string, readonly string[]>;
 }
 
 interface Candidate {
@@ -128,16 +137,84 @@ function priority(action: PlayerAction, view: PlayerView): number {
   }
 }
 
+const ROLLING_TOPIC = /^(where|saw):-?\d+:-?\d+$/;
+
+/**
+ * Identity of an action for repeat detection. Topics about the recent hours are renamed every
+ * minute (`where:<from>:<now>`), so asking the same speaker again is one topic, not a new one.
+ */
+function actionId(action: PlayerAction): string {
+  const rolling = action.type === 'talk' && ROLLING_TOPIC.exec(action.topicId);
+  return action.type === 'talk' && rolling
+    ? JSON.stringify({ type: 'talk', characterId: action.characterId, topicId: rolling[1] })
+    : JSON.stringify(action);
+}
+
+/** First moves of the shortest known routes from `from` to any of `targets`. */
+function firstSteps(
+  exits: ReadonlyMap<string, readonly string[]>,
+  from: string,
+  targets: ReadonlySet<string>,
+): Set<string> {
+  // Each reached location keeps the first moves that lead to it in the fewest moves.
+  const via = new Map<string, Set<string>>([[from, new Set()]]);
+  let frontier = [from];
+  while (frontier.length > 0) {
+    const layer = new Map<string, Set<string>>();
+    for (const at of frontier) {
+      for (const to of exits.get(at) ?? []) {
+        if (via.has(to)) continue;
+        const steps = layer.get(to) ?? new Set<string>();
+        for (const step of at === from ? [to] : via.get(at)!) steps.add(step);
+        layer.set(to, steps);
+      }
+    }
+    const result = new Set<string>();
+    for (const [at, steps] of layer) {
+      via.set(at, steps);
+      if (targets.has(at)) for (const step of steps) result.add(step);
+    }
+    if (result.size > 0) return result;
+    frontier = [...layer.keys()];
+  }
+  return new Set();
+}
+
 function candidates(branch: Branch, budget: number): Candidate[] {
   const { view } = branch;
   const result: Candidate[] = [];
+  // People the dialogue may offer as `person:` topics: those heard from and those present.
+  const present = new Set(view.presentCharacters.map(({ id }) => id));
+  const known = new Set([...view.caseBoard.statements.map((s) => s.characterId), ...present]);
+  const unasked = (speaker: string, about: Iterable<string>) => {
+    for (const person of about) {
+      if (person === speaker || !known.has(person)) continue;
+      if (
+        !branch.done.has(
+          actionId({ type: 'talk', characterId: speaker, topicId: `person:${person}` }),
+        )
+      )
+        return true;
+    }
+    return false;
+  };
+  // Go back to where the player saw someone who has not yet been asked about a person in focus.
+  const haunts = new Set<string>();
+  for (const [characterId, places] of branch.seen) {
+    if (present.has(characterId) || !unasked(characterId, branch.focus)) continue;
+    for (const place of places) if (place !== view.location.id) haunts.add(place);
+  }
+  const towards = haunts.size > 0 ? firstSteps(branch.exits, view.location.id, haunts) : undefined;
   for (const { action, min } of offers(view)) {
     const earliest = view.clock.t + min;
     if (earliest > budget) continue;
-    const id = JSON.stringify(action);
+    const id = actionId(action);
     const key = `${view.location.id}|${view.caseBoard.clues.length}|${view.caseBoard.statements.length}|${id}`;
     const previous = branch.attempts.get(key);
     if (previous === view.clock.t) continue;
+    // Reopening a conversation is new while the speaker can be asked about someone new.
+    const reopens =
+      action.type === 'talk' && action.topicId === 'self' && unasked(action.characterId, known);
     result.push({
       parent: branch,
       action,
@@ -147,9 +224,11 @@ function candidates(branch: Branch, budget: number): Candidate[] {
       priority:
         previous !== undefined
           ? 7
-          : action.type !== 'move' && branch.done.has(id)
-            ? REPEATED
-            : priority(action, view),
+          : action.type === 'move' && towards?.has(action.locationId)
+            ? TOWARDS_WITNESS
+            : action.type !== 'move' && branch.done.has(id) && !reopens
+              ? REPEATED
+              : priority(action, view),
       sibling: 0,
     });
   }
@@ -161,13 +240,18 @@ function candidates(branch: Branch, budget: number): Candidate[] {
   return result;
 }
 
+interface Score {
+  readonly coverage: number;
+  readonly focus: readonly string[];
+}
+
 /** Culprit IDs are used only to certify a completed proof. Every person's links count in ranking. */
 function proofScore(
   engine: GameEngine,
   rules: DeductionRules,
   context: ClaimContext,
   culprits: readonly string[],
-): number | 'solved' {
+): Score | 'solved' {
   const knowledge = PlayerKnowledge.restore(engine.knowledgeSnapshot());
   const byPerson = new Map<string, Set<string>>();
   for (const { subject, kind } of evaluateClaims(knowledge, rules, context)) {
@@ -177,13 +261,39 @@ function proofScore(
     byPerson.set(subject, kinds);
   }
   if (culprits.every((id) => byPerson.get(id)?.size === GUILT_KINDS.length)) return 'solved';
-  return Math.max(0, ...Array.from(byPerson.values(), (kinds) => kinds.size));
+  const coverage = Math.max(0, ...Array.from(byPerson.values(), (kinds) => kinds.size));
+  const focus = [...byPerson]
+    .filter(([, kinds]) => coverage > 0 && kinds.size === coverage)
+    .map(([id]) => id)
+    .sort();
+  return { coverage, focus };
 }
 
 function readsIncident(term: RuleTerm): boolean {
   return term.k === 'path'
     ? term.name.startsWith('incident.')
     : term.k === 'call' && term.args.some(readsIncident);
+}
+
+/** Adds what the player sees here: the characters present and the open exits. */
+function observe(
+  seen: Branch['seen'],
+  exits: Branch['exits'],
+  view: PlayerView,
+): Pick<Branch, 'seen' | 'exits'> {
+  const here = view.location.id;
+  const met = view.presentCharacters.filter(({ id }) => !seen.get(id)?.has(here));
+  let updated = seen;
+  if (met.length > 0) {
+    const copy = new Map(seen);
+    for (const { id } of met) copy.set(id, new Set([...(seen.get(id) ?? []), here]));
+    updated = copy;
+  }
+  const open = view.location.exits.filter((exit) => !exit.blockedReason).map((e) => e.locationId);
+  return {
+    seen: updated,
+    exits: exits.has(here) ? exits : new Map(exits).set(here, open),
+  };
 }
 
 /** Forward beam search. Every retained edge is accepted and priced by a real GameEngine. */
@@ -213,18 +323,22 @@ function search(investigation: Investigation, options: PlannerOptions): SearchRe
     return startEngine(ports);
   };
   const root = create();
-  // With no testimony, INV-002 reads only the ordered IDs of actually discovered clues.
+  // INV-002 reads the discovered clues and heard statements in order. A statement ID hashes its
+  // speaker, topic, minute, proposition and veracity, so the ordered IDs determine the claims.
   // Memoize the score, never a mutable engine or its knowledge. A solved branch returns at once.
-  const clueScores = new Map<string, number>();
+  const scores = new Map<string, Score>();
   let dispatches = 0;
+  const start = root.playerView();
   let beam: Branch[] = [
     {
       engine: root,
       path: [],
-      view: root.playerView(),
+      view: start,
       coverage: 0,
+      focus: [],
       attempts: new Map(),
       done: new Set(),
+      ...observe(new Map(), new Map(), start),
     },
   ];
   while (beam.length > 0) {
@@ -262,24 +376,27 @@ function search(investigation: Investigation, options: PlannerOptions): SearchRe
       const view = engine.playerView();
       if (view.clock.t > timeBudget) continue;
       const path = [...parent.path, action];
-      let coverage = parent.coverage;
+      let { coverage, focus } = parent;
       if (result.events.some((e) => PROGRESS.has(e.type))) {
-        const clueKey =
-          view.caseBoard.statements.length === 0
-            ? JSON.stringify(view.caseBoard.clues.map((c) => c.id))
-            : undefined;
-        const cached = clueKey === undefined ? undefined : clueScores.get(clueKey);
-        if (cached !== undefined) coverage = cached;
-        else {
-          const score = proofScore(engine, deductionRules, context, culprits);
-          if (score === 'solved') return path;
-          coverage = score;
-          if (clueKey !== undefined) clueScores.set(clueKey, coverage);
-        }
+        const { clues: found, statements } = view.caseBoard;
+        const known = JSON.stringify([found.map((c) => c.id), statements.map((s) => s.id)]);
+        const score = scores.get(known) ?? proofScore(engine, deductionRules, context, culprits);
+        if (score === 'solved') return path;
+        ({ coverage, focus } = score);
+        scores.set(known, score);
       }
       const attempts = new Map(parent.attempts).set(key, parent.view.clock.t);
       const done = new Set(parent.done).add(id);
-      next.push({ engine, path, view, coverage, attempts, done });
+      next.push({
+        engine,
+        path,
+        view,
+        coverage,
+        focus,
+        attempts,
+        done,
+        ...observe(parent.seen, parent.exits, view),
+      });
       if (next.length === WIDTH) break;
     }
     beam = next;
