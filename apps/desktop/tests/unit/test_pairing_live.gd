@@ -294,3 +294,14 @@ func test_production_new_code_over_a_paired_phone_replaces_the_phone() -> void:
 	assert_eq(_store.get_phone_status(), "online", "the second phone replaced the first")
 	assert_eq(_text("QrStatus"), Pairing.PAIRED_TEXT)
 	assert_false((_node("Code") as Control).is_visible_in_tree())
+
+	# The phone unpairs itself: the server tells the desktop, the code and QR come back.
+	var left: Dictionary = _command({"cmd": "phone-unpair"})
+	var left_status: float = left.get("status", 0.0)
+	assert_eq(left_status, 204.0)
+	await wait_until(func() -> bool: return _store.get_phone_status() == "unpaired", WAIT_SECONDS)
+	assert_eq(_store.get_phone_status(), "unpaired")
+	assert_eq(_text("Phone"), "Телефон не привязан")
+	assert_true((_node("Code") as Control).is_visible_in_tree(), "the code is visible again")
+	assert_true((_node("Qr") as TextureRect).visible)
+	assert_false(pairing.is_repairing())

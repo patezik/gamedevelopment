@@ -15,10 +15,12 @@ export type PairResult = { ok: true; device: PairedDevice } | { ok: false; code:
 
 export type FetchLike = (
   url: string,
-  init: { method: 'POST'; headers: Record<string, string>; body: string; signal?: AbortSignal },
+  init: { method: 'POST' | 'DELETE'; headers: Record<string, string>; body: string; signal?: AbortSignal },
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
 export const PAIR_TIMEOUT_MS = 8000;
+
+export const UNPAIR_TIMEOUT_MS = 3000;
 
 export const DEVICE_NAME = 'Hollow Signal phone';
 

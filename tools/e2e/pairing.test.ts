@@ -98,3 +98,37 @@ test('desktop and phone pair by code and exchange views; a drop resumes', async 
   expect(desktop.violations).toEqual([]);
   expect(phone.violations).toEqual([]);
 });
+
+test('the phone unpairs itself: the desktop sees unpaired, the old token is dead, a new code re-pairs', async () => {
+  const config = readConfig({ HS_LOG_LEVEL: 'silent', HS_HOST: '127.0.0.1' });
+  const app = buildApp(config, createSessionServices(config));
+  apps.push(app);
+  const baseUrl = await app.listen({ host: '127.0.0.1', port: 0 });
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/v1/sessions',
+    payload: { scenarioId: 'sanatorium_winter', seed: 'winter-42' },
+  });
+  const { sessionId, desktopToken, pairing } = CreateSessionResponse.parse(created.json());
+
+  const desktop = new FakeDesktop({ baseUrl, token: desktopToken, sessionId });
+  clients.push(desktop);
+  await desktop.connect();
+  const phone = await FakePhone.pair({ baseUrl, code: pairing.code });
+  clients.push(phone);
+  await phone.connect();
+  await desktop.waitForPeers(({ phone: status }) => status === 'online');
+
+  // «Отвязать устройство» in the app: DELETE with the device token.
+  const unpaired = desktop.waitForPeers(({ phone: status }) => status === 'unpaired');
+  await phone.unpair();
+  await unpaired;
+  await expect(phone.unpair()).rejects.toThrow();
+
+  // The desktop shows a new code and the same session pairs again.
+  const again = await FakePhone.pairWith(desktop);
+  clients.push(again);
+  await again.connect();
+  await desktop.waitForPeers(({ phone: status }) => status === 'online');
+  expect(desktop.violations).toEqual([]);
+});

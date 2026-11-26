@@ -152,6 +152,19 @@ export class PairingService {
     return session;
   }
 
+  /** Desktop or the paired phone of the session: both may unpair the phone (ADR 0023). */
+  authorizeUnpair(id: string, authorization: string | undefined): Session {
+    const session = this.#sessions.get(id);
+    if (!session || session.status === 'disposed') {
+      throw new PairingError('SESSION_NOT_FOUND', 404, 'Session not found');
+    }
+    const token = /^Bearer ([A-Za-z0-9_-]{43})$/i.exec(authorization ?? '')?.[1];
+    if (!token || !(verifyToken(session, 'desktop', token) || verifyToken(session, 'phone', token))) {
+      throw new PairingError('UNAUTHORIZED', 401, 'A valid desktop or device token is required');
+    }
+    return session;
+  }
+
   revokeDevice(session: Session): void {
     if (!session.clearTokenHash('phone')) return;
     this.#options.onDeviceRevoked?.(session, 'DEVICE_REVOKED');
@@ -210,7 +223,7 @@ export function registerPairingRoutes(app: FastifyInstance, service: PairingServ
       service.createCode(service.authorizeDesktop(request.params.id, request.headers.authorization)),
     );
     routes.delete<{ Params: { id: string } }>('/sessions/:id/device', (request, reply) => {
-      service.revokeDevice(service.authorizeDesktop(request.params.id, request.headers.authorization));
+      service.revokeDevice(service.authorizeUnpair(request.params.id, request.headers.authorization));
       return reply.code(204).send();
     });
     done();
