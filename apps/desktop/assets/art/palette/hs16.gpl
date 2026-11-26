@@ -1,0 +1,21 @@
+GIMP Palette
+Name: Hollow Signal HS-16
+Columns: 8
+# Preliminary palette, art-direction.md §3 (CNT-010). Order is the index order of every asset.
+# C0-C7 cold ramp "frost", W0-W5 warm ramp "lamp", A0 rust accent, A1 paper white.
+ 10  12  15	C0 ink
+ 21  26  32	C1 night
+ 34  42  50	C2 shadow
+ 51  62  71	C3 slate
+ 74  88  96	C4 concrete
+106 122 127	C5 fog
+147 161 159	C6 fluorescent
+201 208 200	C7 snow
+ 30  20  14	W0 soot
+ 59  40  25	W1 walnut
+ 96  69  50	W2 parquet
+140 107  80	W3 brass
+184 151 122	W4 lamp
+226 204 162	W5 filament
+111  33  29	A0 rust
+236 231 218	A1 paper

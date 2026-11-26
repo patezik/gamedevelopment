@@ -59,6 +59,7 @@ npm run docs:check
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
 | `npm run protocol:gen` / `npm run protocol:check` | регенерация и проверка схем и GDScript-констант | сейчас |
 | `npm run content:check` | валидация данных сценариев и ссылок между файлами | сейчас |
+| `npm run art:check` / `art:reference` | правила арт-ассетов; перегенерация эталонов CNT-010 ([art-direction.md §7](../game-design/art-direction.md)) | сейчас |
 
 Из корня запустите `npm run dev:server` (`npm.cmd run dev:server` в PowerShell) и проверьте
 `http://localhost:7420/api/v1/health` в браузере или во втором терминале. Остановите процесс
