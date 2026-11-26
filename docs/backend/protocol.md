@@ -126,7 +126,7 @@
 | `PairingCodeResponse` (= `PairingInfo`) | `POST /sessions/:id/pairing-code` | `pairing-code.response.json` |
 | `QrMatrixResponse` | `GET /sessions/:id/pairing-qr`, `GET /sessions/:id/evidence-qr/:tokenId` | `pairing-qr.response.json`, `evidence-qr.response.json` |
 | `PairRequest`, `PairResponse` | `POST /pair` | `pair.request.json`, `pair.response.json` |
-| `SaveList` | `GET /saves` | `saves.json` |
+| `SaveList` | `GET /saves`: список `{ saveId, scenarioId, updatedAt, gameTime }` | `saves.json` |
 | `ErrorResponse` | любой отказ: `{ error: { code, message, atAction? } }`; `atAction` — только у `SAVE_DESYNC` | `error.json`, `error.save-desync.json` |
 
 `DELETE /sessions/:id/device` отвечает 204 без тела; его принимает токен рабочего стола или токен

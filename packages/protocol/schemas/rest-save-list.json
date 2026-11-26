@@ -13,10 +13,6 @@
         "minLength": 1,
         "maxLength": 64
       },
-      "seed": {
-        "type": "string",
-        "minLength": 1
-      },
       "updatedAt": {
         "type": "string",
         "format": "date-time",
@@ -38,7 +34,6 @@
     "required": [
       "saveId",
       "scenarioId",
-      "seed",
       "updatedAt",
       "gameTime"
     ],
