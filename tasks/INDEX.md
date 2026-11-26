@@ -2,10 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **157** · todo: 42 · in_progress: 8 · review: 0 · done: 107 · blocked: 0
+Всего задач: **158** · todo: 43 · in_progress: 8 · review: 0 · done: 107 · blocked: 0
 
 ## Готовы к взятию сейчас
 
+- [GEN-014](GEN-014.md) — Генерация проходит шлюз: мотив, возможность, оправдание по средству и доступу (P0, L)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
 - [ENG-013](ENG-013.md) — Цели мотива для обвинения: кого игрок может указать в motive(c, v) (P0, S)
 - [ENG-012](ENG-012.md) — EndingView: хронология истины, seed и статистика прохождения (P1, M)
@@ -98,7 +99,7 @@
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | done | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
-## Фаза 4 · M4 — Solvable investigations (25)
+## Фаза 4 · M4 — Solvable investigations (26)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -111,6 +112,7 @@
 | [GEN-010](GEN-010.md) | Стадии TestimonyGen и RedHerrings | P0 | M | done | claude-qf | [GEN-009](GEN-009.md), [KNOW-002](KNOW-002.md) |
 | [GEN-011](GEN-011.md) | generateInvestigation: шлюз валидации, ремонт, CLI hs-gen | P0 | M | done | claude-qg | [GEN-010](GEN-010.md), [VAL-002](VAL-002.md) |
 | [GEN-013](GEN-013.md) | Серверный результат генерации: улики, показания и правила дедукции | P0 | M | done | egor-claude-gen-013 | [GEN-011](GEN-011.md) |
+| [GEN-014](GEN-014.md) | Генерация проходит шлюз: мотив, возможность, оправдание по средству и доступу | P0 | L | todo | — | [GEN-011](GEN-011.md), [VAL-002](VAL-002.md), [VAL-004](VAL-004.md), [INV-002](INV-002.md) |
 | [INV-001](INV-001.md) | PlayerKnowledge: найденные улики, услышанные показания, контакты, журнал | P0 | S | done | claude-inv-1 | [EVD-002](EVD-002.md), [KNOW-002](KNOW-002.md) |
 | [INV-002](INV-002.md) | Утверждения (Claims) и правила дедукции | P0 | L | done | claude-w1 | [INV-001](INV-001.md) |
 | [INV-003](INV-003.md) | Персоны интереса и отметки подозрений игрока | P1 | S | done | egor-claude-inv-003 | [INV-002](INV-002.md) |
