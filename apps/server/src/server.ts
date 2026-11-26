@@ -1,9 +1,10 @@
 import { buildApp } from './app.ts';
 import { readConfig } from './config/index.ts';
+import { createSessionServices } from './routes/generation.ts';
 
 try {
   const config = readConfig(process.env);
-  const app = buildApp(config);
+  const app = buildApp(config, createSessionServices(config));
   await app.listen({ host: config.host, port: config.port });
   if (config.debugTruth) {
     app.log.warn(
