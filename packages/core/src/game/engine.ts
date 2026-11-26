@@ -380,7 +380,7 @@ export class GameEngine {
       if (judged.outcome) this.ports.simulation?.onAccusation?.(judged.outcome, now);
       const events: GameEvent[] = [...judged.events];
       if (this.#static && judged.outcome?.endingId === 'wrong_accusation') {
-        void (STATIC_DELTAS.falseAccusation, now, 'falseAccusation');
+        this.#static.apply(STATIC_DELTAS.falseAccusation, now, 'falseAccusation');
         events.push(...this.#static.drain());
       }
       return { ok: true, minutesSpent: 0, events };
