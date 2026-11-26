@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { timeFeasibleCheck } from '@hs/validator';
+import { solve, timeFeasibleCheck } from '@hs/validator';
 import { examineGeneratedCase, generatedPlannerCase, seeds } from './bench-planner-generated.ts';
 
 // examineGeneratedCase replays the found path through GameEngine (phone role for QR captures),
@@ -12,6 +12,17 @@ test.each(seeds)(
     expect(result).toMatchObject({ seed, budget: 3024, requiredWithoutHotspot: 0 });
     expect(result.captures).toBeGreaterThan(0);
     expect(result.minutes).toBeLessThanOrEqual(3024);
+  },
+  60_000,
+);
+
+test.each(['2', '6'])(
+  'sanatorium_winter seed %s: a second search with its own ports returns the same path',
+  (seed) => {
+    const { investigation, options } = generatedPlannerCase(seed);
+    const first = solve(investigation, options);
+    expect(first).not.toBeNull();
+    expect(solve(investigation, options)).toEqual(first);
   },
   60_000,
 );
