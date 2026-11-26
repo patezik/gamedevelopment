@@ -189,6 +189,23 @@ describe('accuse', () => {
     }
   });
 
+  test('an incident given as a function reads the knowledge at the moment of the accusation', () => {
+    const seen: number[] = [];
+    const incident = (known: { clues: ReadonlyMap<string, unknown> }) => {
+      seen.push(known.clues.size);
+      return known.clues.size > 0 ? { location: 'loc_study', window } : undefined;
+    };
+    const blind = GameEngine.create(investigation, ports({ accusation: { rules, incident } }));
+    expect(accuseWith(blind, { ...fullCase, evidence: [] }).events[0]).toMatchObject({
+      proven: { opportunity: false },
+    });
+    const informed = found({ accusation: { rules, incident } });
+    expect(accuseWith(informed, fullCase).events[0]).toMatchObject({
+      proven: { opportunity: true },
+    });
+    expect(seen).toEqual([0, 3]);
+  });
+
   test('the right person without proof is a partial ending', () => {
     const engine = found();
     const result = accuseWith(engine, { accusedIds: [culprit], evidence: [] });

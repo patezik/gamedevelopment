@@ -110,8 +110,12 @@ DEVICE_REVOKED обработчику шлюза (SRV-004).
   `generateInvestigation` (GEN-011) с полным шлюзом валидации. Отклонённое шлюзом дело — ошибка
   `GENERATION_UNSOLVABLE` (422): провайдер бросает её до того, как `SessionManager` выдаёт id, так
   что ни сессии, ни токена, ни кода привязки не появляется. Текст находок шлюза в ответ не попадает
-  (он называет персонажей). Порты движка — пока только `startLocationId` (стартовая локация пресета,
-  иначе первая); улики, показания и обвинение генератор в `GenerationResult` не отдаёт.
+  (он называет персонажей). Порты движка (`sessions/scenario-ports.ts`, SRV-012) собираются из одного принятого
+  результата и пресета: `startLocationId`, `clues`, `testimony.witness` (память и политика лжи
+  из `knowledge`/`liePolicies`), `accusation.rules`, `startVitals` пресета и `phone.initial`
+  (`initialPhoneState` из шаблонов). `actionCosts`, `player`, `inventory` и арбитраж звонка —
+  значения движка. `$incident` берётся из сведений игрока: `AccusationPort.incident` может быть
+  функцией от `PlayerKnowledge` (OQ-25). Порты не покидают процесс сервера.
   Генерация синхронная (сотни миллисекунд на `sanatorium_winter`) и на это время занимает поток
   сервера.
 - **Атомарность подготовки.** `SessionManager.create` регистрирует сессию после синхронного
