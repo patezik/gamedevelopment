@@ -22,7 +22,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.08, 0.08, 0.09, 1)
+color = Color(0.0823529, 0.101961, 0.12549, 1)
 
 [node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -57,65 +57,116 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 32
 
-[node name="LocationScroll" type="ScrollContainer" parent="Margin/Layout/Content"]
+[node name="Main" type="VBoxContainer" parent="Margin/Layout/Content"]
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 3.0
+theme_override_constants/separation = 10
+
+[node name="Plate" type="Control" parent="Margin/Layout/Content/Main"]
+unique_name_in_owner = true
+clip_contents = true
+custom_minimum_size = Vector2(1152, 648)
+texture_filter = 1
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PlatePlaceholder" type="ColorRect" parent="Margin/Layout/Content/Main/Plate"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.08, 0.09, 1)
+
+[node name="PlateImage" type="TextureRect" parent="Margin/Layout/Content/Main/Plate"]
+unique_name_in_owner = true
+visible = false
+texture_filter = 1
+layout_mode = 0
+offset_right = 384.0
+offset_bottom = 216.0
+scale = Vector2(3, 3)
+mouse_filter = 2
+stretch_mode = 2
+
+[node name="PlateFade" type="ColorRect" parent="Margin/Layout/Content/Main/Plate"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="LocationScroll" type="ScrollContainer" parent="Margin/Layout/Content/Main"]
+layout_mode = 2
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="Location" type="VBoxContainer" parent="Margin/Layout/Content/LocationScroll"]
+[node name="Location" type="VBoxContainer" parent="Margin/Layout/Content/Main/LocationScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="LocationName" type="Label" parent="Margin/Layout/Content/LocationScroll/Location"]
+[node name="LocationName" type="Label" parent="Margin/Layout/Content/Main/LocationScroll/Location"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 autowrap_mode = 3
 
-[node name="Lighting" type="Label" parent="Margin/Layout/Content/LocationScroll/Location"]
+[node name="Lighting" type="Label" parent="Margin/Layout/Content/Main/LocationScroll/Location"]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0.7)
 layout_mode = 2
 
-[node name="LocationDescription" type="Label" parent="Margin/Layout/Content/LocationScroll/Location"]
+[node name="LocationDescription" type="Label" parent="Margin/Layout/Content/Main/LocationScroll/Location"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="HotspotsTitle" type="Label" parent="Margin/Layout/Content/LocationScroll/Location"]
+[node name="HotspotsTitle" type="Label" parent="Margin/Layout/Content/Main/LocationScroll/Location"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Точки интереса"
 
-[node name="Hotspots" type="VBoxContainer" parent="Margin/Layout/Content/LocationScroll/Location"]
+[node name="Hotspots" type="VBoxContainer" parent="Margin/Layout/Content/Main/LocationScroll/Location"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="CharactersTitle" type="Label" parent="Margin/Layout/Content/LocationScroll/Location"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Здесь находятся"
-
-[node name="Characters" type="VBoxContainer" parent="Margin/Layout/Content/LocationScroll/Location"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="ActionsTitle" type="Label" parent="Margin/Layout/Content/LocationScroll/Location"]
+[node name="ActionsTitle" type="Label" parent="Margin/Layout/Content/Main/LocationScroll/Location"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Действия"
 
-[node name="Actions" type="VBoxContainer" parent="Margin/Layout/Content/LocationScroll/Location"]
+[node name="Actions" type="VBoxContainer" parent="Margin/Layout/Content/Main/LocationScroll/Location"]
 unique_name_in_owner = true
 layout_mode = 2
 
 [node name="Side" type="VBoxContainer" parent="Margin/Layout/Content"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 2.0
 theme_override_constants/separation = 10
+
+[node name="CharactersTitle" type="Label" parent="Margin/Layout/Content/Side"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Здесь находятся"
+
+[node name="CharactersScroll" type="ScrollContainer" parent="Margin/Layout/Content/Side"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+horizontal_scroll_mode = 0
+
+[node name="Characters" type="VBoxContainer" parent="Margin/Layout/Content/Side/CharactersScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
 
 [node name="ExitsTitle" type="Label" parent="Margin/Layout/Content/Side"]
 layout_mode = 2
@@ -139,6 +190,7 @@ layout_mode = 2
 [node name="MapScroll" type="ScrollContainer" parent="Margin/Layout/Content/Side"]
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_stretch_ratio = 2.0
 
 [node name="Map" type="Control" parent="Margin/Layout/Content/Side/MapScroll"]
 unique_name_in_owner = true
