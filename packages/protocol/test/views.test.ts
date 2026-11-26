@@ -189,9 +189,58 @@ describe('no truth in views (AGENTS.md rule 1)', () => {
     }
   });
 
-  it('the ending reveals the solution only under `recap`, and only in an ending', () => {
-    expect(player('end').ending?.recap?.responsible.length).toBeGreaterThan(0);
-    expect(JSON.stringify(player('mid'))).not.toContain('responsible');
+  it('the final desktop fixture carries the seed and chronological recap', () => {
+    const ending = player('end').ending;
+    expect(ending).toMatchObject({
+      seed: 'sanatorium-42',
+      scenarioId: 'sanatorium_winter',
+      recap: { responsible: [{ id: 'ch_doctor', name: 'Доктор Белов' }] },
+    });
+    expect(ending?.recap?.timeline?.map(({ at }) => at)).toEqual([-20, 0]);
+  });
+
+  it('older endings without the recap additions are still accepted', () => {
+    let view = edit(load('player-view.end.json'), ['ending', 'seed'], REMOVE);
+    view = edit(view, ['ending', 'scenarioId'], REMOVE);
+    view = edit(view, ['ending', 'recap', 'timeline'], REMOVE);
+    expect(PlayerView.safeParse(view).success).toBe(true);
+  });
+
+  it('rejects final-only fields in active desktop and all phone views', () => {
+    const ending = JSON.stringify(player('end').ending);
+    for (const [file, schema] of cases.filter(([file]) => file !== 'player-view.end.json')) {
+      const view = load(file);
+      const keys = keysOf(view);
+      for (const key of ['seed', 'scenarioId', 'recap', 'responsible', 'ending']) {
+        expect(keys, file).not.toContain(key);
+      }
+      for (const path of objects(view)) {
+        for (const key of ['seed', 'scenarioId', 'recap', 'responsible']) {
+          expect(schema.safeParse(withKey(view, path, key)).success, `${file}: ${key}`).toBe(false);
+        }
+      }
+      if (schema === PhoneView) {
+        expect(schema.safeParse(edit(view, ['ending'], JSON.parse(ending))).success, file).toBe(
+          false,
+        );
+      }
+    }
+  });
+
+  it('rejects malformed recap entries and seed', () => {
+    const view = load('player-view.end.json');
+    for (const [path, value] of [
+      [['ending', 'seed'], 42],
+      [['ending', 'recap', 'timeline', 0, 'at'], -0.5],
+      [['ending', 'recap', 'timeline', 0, 'location'], REMOVE],
+      [
+        ['ending', 'recap', 'timeline', 0, 'participants'],
+        ['valid', {}],
+      ],
+      [['ending', 'recap', 'timeline', 0, 'text'], REMOVE],
+    ] satisfies [Path, unknown][]) {
+      expect(PlayerView.safeParse(edit(view, path, value)).success, path.join('.')).toBe(false);
+    }
   });
 });
 

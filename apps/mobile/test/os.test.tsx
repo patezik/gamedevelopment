@@ -48,7 +48,7 @@ test('AppFrame home button calls onHome and shows the app', async () => {
       <App view={view} />
     </AppFrame>,
   );
-  expect(screen.getByText('В разработке')).toBeTruthy();
+  expect(screen.getByText('📄 График дежурств.pdf')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Домой' }));
   expect(onHome).toHaveBeenCalledTimes(1);
 });

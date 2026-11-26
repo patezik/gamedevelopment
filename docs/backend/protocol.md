@@ -9,6 +9,8 @@
 пример конверта — `packages/protocol/fixtures/envelope.json`.
 Примеры всех сообщений собраны в `client-messages.json` и `server-messages.json` в том же каталоге.
 
+Схемы REST (`packages/protocol/src/rest.ts`, [backend.md §3](backend.md)) лежат рядом: JSON Schema — `schemas/rest-*.json`, примеры запросов и ответов — `fixtures/rest/*.json`; сервер проверяет ими свои ответы, а Godot-тесты — фикстуры. Список — в разделе «REST-схемы» ниже.
+
 ## 1. Транспорт
 
 - `ws://<host>:7420/ws` — одно соединение на клиента. JSON, UTF-8, максимум 256 КБ на сообщение.
@@ -62,7 +64,7 @@
 | `pong` | `{}` |
 | `view.update` | `{ stateVersion, view: PlayerView \| PhoneView }` |
 | `event` | `{ event: ClientEvent }` (уведомление, входящий звонок, результат скана, конец игры) |
-| `action.result` | `{ requestId, ok, error?, minutesSpent, interrupted? }` |
+| `action.result` | `{ requestId, ok, error?, minutesSpent, interrupted?, operationId?, stateVersion? }`; `operationId` и `stateVersion` — только для `accuse` с `confirm: true` (§7) |
 | `qr.result` | `{ ok, error?, clueRef? }` |
 | `resync` | `{ reason }` → за ним следует `view.update` |
 | `error` | `{ code: ErrorCode, message, requestId? }` |
@@ -99,7 +101,7 @@
 | `useItem` | `itemId, targetId?` |
 | `pickLock` | `targetId` |
 | `rest`, `wait` | `minutes` — положительное целое |
-| `accuse` | `caseFile: { accusedIds, motive?, means?, opportunity?, evidence }, confirm`; `confirm` — логическое значение |
+| `accuse` | `caseFile: { accusedIds, motive?, means?, opportunity?, evidence }, confirm, operationId?`; `confirm` — логическое значение; `operationId` — непустая строка, обязательна при `confirm: true` (шлюз иначе отвечает `ACTION_INVALID`) |
 | `markSuspicion` | `characterId, level, note?`; `level` — неотрицательное целое: индекс в `SUSPICION_LEVELS` (`0` = `none`, `1` = `possible`, `2` = `prime`); другое число или неизвестный `characterId` — `ACTION_INVALID`; время не тратится |
 | `call` | `contactId` |
 | `answerCall` | `callId` |
@@ -109,6 +111,27 @@
 | `openFile` | `fileId` |
 | `unlockFile` | `fileId, password` |
 | `addNote` | `text` |
+
+## 4a. REST-схемы
+
+Экспортируются из `@hs/protocol`; `protocol:gen` пишет `schemas/rest-<имя>.json`.
+
+| Схема | Эндпоинт | Фикстура (`fixtures/rest/`) |
+|-------|----------|-----------------------------|
+| `HealthResponse` | `GET /health` | `health.json` |
+| `NetworkResponse` | `GET /network` | `network.json` |
+| `ScenarioList` | `GET /scenarios` | `scenarios.json` |
+| `CreateSessionRequest` | тело `POST /sessions` | `create-session.request.json` |
+| `SessionCredentials` | ответ `POST /sessions` и `POST /saves/:saveId/load` | `create-session.response.json`, `load-save.response.json` |
+| `PairingCodeResponse` (= `PairingInfo`) | `POST /sessions/:id/pairing-code` | `pairing-code.response.json` |
+| `QrMatrixResponse` | `GET /sessions/:id/pairing-qr`, `GET /sessions/:id/evidence-qr/:tokenId` | `pairing-qr.response.json`, `evidence-qr.response.json` |
+| `PairRequest`, `PairResponse` | `POST /pair` | `pair.request.json`, `pair.response.json` |
+| `SaveList` | `GET /saves` | `saves.json` |
+| `ErrorResponse` | любой отказ: `{ error: { code, message, atAction? } }`; `atAction` — только у `SAVE_DESYNC` | `error.json`, `error.save-desync.json` |
+
+`DELETE /sessions/:id/device` отвечает 204 без тела. Отладочные `GET /sessions/:id/debug/*` в пакет
+не входят: их ответы несут истину и работают только при `HS_DEBUG_TRUTH=1`
+([OQ-30](../planning/open-questions.md)).
 
 ## 5. Коды ошибок (`ErrorCode`)
 
@@ -175,8 +198,10 @@ interface PlayerView {
   // Цена предъявления — costPreview действия interrogate в availableActions.
   phone: { paired; online; battery };
   ending?: { endingId: "solved"|"partial"|"wrong_accusation"|"time_up"|"death"|"madness";
-             title; text; proven?: { motive; means; opportunity };
-             recap?: { summary; responsible: { id; name }[] } };        // разбор истины, только в концовке
+             title; text; seed?: string; scenarioId?: string;
+             proven?: { motive; means; opportunity };
+             recap?: { summary; responsible: { id; name }[];
+                       timeline?: { at: number; location: string; participants: string[]; text: string }[] } };
 }
 interface PhoneView {
   status: { time; battery; signal };
@@ -209,8 +234,13 @@ interface PhoneView {
 - **Галлюцинации неотличимы по структуре.** Элементы телефона (например, снимок в `gallery`) имеют
   одинаковые поля независимо от происхождения; признак «галлюцинация» существует только на сервере
   (survival-horror.md §5). Игрок распознаёт их опытным путём, а не по форме данных.
-- **Единственное легальное раскрытие истины** — `ending.recap`, и только в концовке (ENG-006). Поле
-  названо нейтрально (`responsible`), чтобы запрещённые ключи не появлялись ни в одном представлении.
+- **Разбор истины** передаётся только в `PlayerView.ending.recap` закончившейся игры.
+  `recap.timeline` содержит ключевые события в хронологическом порядке. `at` — целые игровые
+  минуты от начала сценария, отрицательные для предыстории. `location` и `participants` содержат
+  название места и имена участников, `text` — краткое описание события.
+- **Seed и сценарий** сервер отправляет только в итоговом `PlayerView.ending`. Расширенные поля
+  опциональны в схеме для совместимости со старыми снимками. `PhoneView` не получает их даже
+  после конца игры. См. [ADR 0021](../architecture/adr/0021-ending-recap.md).
 - Запертый файл не несёт `content` (проверяется схемой): содержимое приходит только после `unlockFile`.
 
 ## 7. Последовательности
@@ -239,6 +269,16 @@ interface PhoneView {
 проекция роли кэшируется по `stateVersion` и используется при `resync` и входе клиента. Версия в `view.update` берётся из результата
 `dispatch`; если состояние уже ушло вперёд, устаревшая проекция не публикуется, её заменит
 рассылка следующего `dispatch`.
+
+**Исход обвинения после переподключения** ([ADR 0022](../architecture/adr/0022-accusation-operation-outcome.md)).
+`action.result` не входит в буфер возобновления, поэтому `accuse` с `confirm: true` несёт
+`operationId`, который клиент создаёт один раз и сохраняет при повторе. Шлюз хранит операции
+в памяти сессии (до 64, без вытеснения; сверх лимита `RATE_LIMITED`) и исполняет каждый ID не
+более одного раза: повтор с тем же `caseFile` получает сохранённый результат (или дожидается
+идущего) в новом `action.result` с тем же `operationId` и `stateVersion` исполнения; повтор с другим
+`caseFile` — `ACTION_INVALID`. Повтор не рассылает `view.update` и события. Исходы не
+сохраняются на диск и не зависят от `resume` и `resync`. Примеры — `fixtures/client-accusation.json`
+и `fixtures/server-accusation.json`.
 
 SRV-010 подключает `GameEngine.playerView()` для desktop и `GameEngine.phoneView()` (внутри —
 `projectPhoneView`) для phone, в том числе через `RecordingEngine` загруженной игры.

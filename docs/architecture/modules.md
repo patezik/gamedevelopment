@@ -474,6 +474,7 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
     | RestAction | WaitAction | CallAction | MessageAction | BrowseAction | OpenFileAction | CaptureEvidenceAction | AccuseAction;
   class GameEngine {
     static create(inv: Investigation, ports: EnginePorts): GameEngine;
+    static prepareStart(inv: Investigation): (ports: EnginePorts) => GameEngine;
     dispatch(source: "desktop" | "phone", a: PlayerAction): DispatchResult;
     playerView(): PlayerView; phoneView(): PhoneView;   // проекции без истины
     snapshot(): GameSnapshot; static restore(s: GameSnapshot, inv: Investigation, ports): GameEngine;
@@ -543,8 +544,9 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   (в них есть `characterId` виновных) уходит только в серверный порт
   `simulation.onAccusation`, не в `events` и не в `PlayerView`. `endingOf` определяет концовку:
   вердикт, затем `death`/`madness` по показателям, затем `time_up` по часам; после неё любое
-  действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` с `recap` (`TruthRecap`:
-  `responsible` — единственная проекция истины клиенту) появляется только когда игра окончена.
+  действие — `GAME_OVER`, `availableActions` пуст. `PlayerView.ending` появляется только после
+  окончания игры. ENG-012 добавляет в него `seed` и `scenarioId`. `recap` содержит ответственных
+  и хронологию ключевых событий ([ADR 0021](adr/0021-ending-recap.md)).
 - **SRV-012**: `AccusationPort.incident` — значение или функция `(PlayerKnowledge) => incident | undefined`, вызываемая в момент обвинения; сервер собирает порты в `apps/server/src/sessions/scenario-ports.ts` ([backend.md](../backend/backend.md)).
 - **Блокировка взаимодействия (ENG-005, `game/interaction.ts`):** `blockReason(action, context)` —
   чистая матрица открытого диалога (`talk` или `interrogation`) и состояния звонка
@@ -610,7 +612,11 @@ golden-снимки для 5 seed; распределение виновнико
 ```ts
 interface Check { id: string; severity: "error" | "warning"; run(inv: Investigation): CheckResult }
 function validateInvestigation(inv: Investigation, opts?): ValidationReport;
-function solve(inv: Investigation, opts: { timeBudget: GameMinutes }): SolutionPath | null;   // планировщик по времени, VAL-003
+type SolutionPath = readonly PlayerAction[];
+function solve(inv: Investigation, opts: PlannerOptions): SolutionPath | null;
+function solutionSource(action: PlayerAction): 'desktop' | 'phone'; // роль для воспроизведения шага
+// PlannerOptions: timeBudget, clues, deductionRules; необязательные startLocationId, knownIncident и createSimulationPorts.
+// timeFeasibleCheck — отдельная проверка планировщика.
 // Солвер решаемости (VAL-002, validator/solver): без учёта времени, возвращает Solution (клеймы, достижимость)
 function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionRules; statements?; startLocationId? }): Solution;
 // Check.run(inv, ctx: ValidationContext): FindingInput[]; SOLVER_CHECKS = V-REACHABLE, V-CULPRIT-PROVABLE, V-UNIQUE

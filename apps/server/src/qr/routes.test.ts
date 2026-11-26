@@ -1,3 +1,4 @@
+import { QrMatrixResponse } from '@hs/protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.ts';
 import { readConfig } from '../config/index.ts';
@@ -72,7 +73,7 @@ describe('GET evidence-qr/:tokenId', () => {
     const reply = await get(`/evidence-qr/${tokenId}`);
     expect(reply.statusCode).toBe(200);
     expect(reply.headers['cache-control']).toBe('no-store');
-    expect(reply.json()).toEqual(renderMatrix(store.payload(tokenId)));
+    expect(QrMatrixResponse.parse(reply.json())).toEqual(renderMatrix(store.payload(tokenId)));
     expect(Object.keys(reply.json<object>()).sort()).toEqual(['modules', 'size']);
   });
 

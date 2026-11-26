@@ -139,6 +139,9 @@ export const EndingView = z.strictObject({
   endingId: z.enum(ENDING_IDS),
   title: text,
   text,
+  /** Run identity, sent only in a terminal desktop view. Older servers can omit it. */
+  seed: text.optional(),
+  scenarioId: id.optional(),
   /** Which parts of the case the attached evidence proved. */
   proven: z
     .strictObject({ motive: z.boolean(), means: z.boolean(), opportunity: z.boolean() })
@@ -147,6 +150,16 @@ export const EndingView = z.strictObject({
     .strictObject({
       summary: text,
       responsible: z.array(z.strictObject({ id, name: text })),
+      timeline: z
+        .array(
+          z.strictObject({
+            at: minutes,
+            location: text,
+            participants: z.array(text),
+            text,
+          }),
+        )
+        .optional(),
     })
     .optional(),
 });

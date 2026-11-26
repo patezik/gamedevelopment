@@ -1,3 +1,4 @@
+import { ErrorResponse, SaveList, SessionCredentials } from '@hs/protocol';
 import { createPhoneState } from '@hs/core/phone';
 import { PROTOCOL_VERSION } from '@hs/protocol';
 import { randomUUID } from 'node:crypto';
@@ -234,6 +235,7 @@ describe('restart and load', () => {
     const { app, sessions, store } = boot();
     const response = await app.inject({ method: 'POST', url: `/api/v1/saves/${session.id}/load` });
     expect(response.statusCode).toBe(200);
+    expect(SessionCredentials.safeParse(response.json()).success).toBe(true);
     expect(hashOf(sessions.get(session.id)!)).toBe(expectedHash);
     expect(await store.read(session.id)).toBe(before);
   });
@@ -307,6 +309,7 @@ describe('restart and load', () => {
     const { app, sessions } = boot();
     const response = await app.inject({ method: 'POST', url: `/api/v1/saves/${session.id}/load` });
     expect(response.statusCode).toBe(422);
+    expect(ErrorResponse.parse(response.json()).error.atAction).toBe(3);
     expect(response.json()).toEqual({
       error: { code: 'SAVE_DESYNC', message: expect.any(String) as string, atAction: 3 },
     });
@@ -699,6 +702,7 @@ describe('GET /saves', () => {
     await utimes(join(saveDir(), `${newer.id}.json`), 2000, 2000);
 
     const list = (await app.inject({ method: 'GET', url: '/api/v1/saves' })).json<SummaryBody[]>();
+    expect(SaveList.safeParse(list).success).toBe(true);
     expect(list.map((entry) => entry.saveId)).toEqual([newer.id, older.id]);
     expect(list[0]).toMatchObject({ seed: 'autumn', gameTime: 30 });
     expect(list[1]).toMatchObject({ seed: 'spring', gameTime: 15 });

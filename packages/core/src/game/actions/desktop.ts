@@ -40,7 +40,7 @@ export const PICK_LOCK_SUCCESS = 0.5;
 /** Window of the "where were you" and "did you see anything" topics offered in a dialogue. */
 export const TOPIC_WINDOW_MINUTES = 240;
 /** Item kinds that can be read where they lie. */
-const DOCUMENT_KINDS: readonly string[] = ['book', 'document', 'letter', 'note'];
+const DOCUMENT_KINDS: ReadonlySet<string> = new Set(['book', 'document', 'letter', 'note']);
 
 /** A witness's memory and lie policy (KNOW-001/002), supplied by the simulation or generator. */
 export interface TestimonyPort {
@@ -168,10 +168,9 @@ export function readableDocuments(
     }
   }
   const { items } = investigation.world;
-  for (const { item } of items.snapshot().initial) {
-    if (!DOCUMENT_KINDS.includes(item.kind)) continue;
-    const placement = items.locate(item.id, minute);
-    if (placement.kind === 'location' && placement.id === locationId) ids.add(item.id);
+  for (const id of items.idsOfKinds(DOCUMENT_KINDS)) {
+    const placement = items.locate(id, minute);
+    if (placement.kind === 'location' && placement.id === locationId) ids.add(id);
   }
   return [...ids].sort();
 }

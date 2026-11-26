@@ -10,18 +10,28 @@ extends Control
 ## Preview mode: run the scene on its own (no SceneRouter params) or route to it with
 ## `{"preview": "<fixture>"}` to render a PlayerView fixture without a session server. A live view
 ## from GameStore replaces the preview as soon as it arrives.
+##
+## Art (art-direction.md §5–§7, GDT-012): the plate of `location.id` in its `location.lighting`
+## at ×3 and the portraits of `presentCharacters[].portraitRef` at ×2 in the photo frame, both
+## with nearest filtering. Paths come only from those PlayerView fields; without a file the plate
+## keeps the colour placeholder and a portrait the shared silhouette. A change of lighting in the
+## same location dips the plate to black and back.
 
 const GameStoreScript = preload("res://src/autoload/game_store.gd")
 const BackendScript = preload("res://src/autoload/backend.gd")
 const SceneRouterScript = preload("res://src/autoload/scene_router.gd")
+const ArtLibrary = preload("res://src/ui/art_library.gd")
 const CostFormat = preload("res://src/ui/cost_format.gd")
 const KnownMap = preload("res://src/ui/known_map.gd")
 const LocationMap = preload("res://src/ui/location_map.gd")
+const PortraitFrame = preload("res://src/ui/portrait_frame.gd")
 const PreviewFixtures = preload("res://src/scenes/exploration/preview_fixtures.gd")
 const ReadOnly = preload("res://src/util/read_only.gd")
 
 ## Route param naming the PlayerView fixture to preview.
 const PARAM_PREVIEW: String = "preview"
+## Route param with the scenario id of the session, whose art is shown (default: the MVP one).
+const PARAM_SCENARIO: String = "scenario"
 ## Metadata of action buttons: the PlayerAction they send and whether the view blocked them.
 const META_ACTION: StringName = &"action"
 const META_BLOCKED: StringName = &"blocked"
@@ -75,8 +85,19 @@ var _opening_dialogue: bool = false
 var _dialogue_error: bool = false
 var _confirm_action: Dictionary = {}
 var _action_buttons: Array[Button] = []
+var _art: ArtLibrary = null
+var _plate_location: String = ""
+var _plate_lighting: String = ""
+var _plate_path: String = ""
+var _plate_tween: Tween = null
+var _plate_swap_pending: bool = false
+var _portrait_frames: Dictionary = {}
+## Half of the dip to black when the lighting of the location changes (tests shorten it).
+var plate_fade_seconds: float = 0.25
 
-@onready var _background: ColorRect = %Background
+@onready var _plate_placeholder: ColorRect = %PlatePlaceholder
+@onready var _plate_image: TextureRect = %PlateImage
+@onready var _plate_fade: ColorRect = %PlateFade
 @onready var _status: Label = %Status
 @onready var _error: Label = %Error
 @onready var _content: Control = %Content
@@ -90,6 +111,13 @@ var _action_buttons: Array[Button] = []
 @onready var _map: LocationMap = %Map
 @onready var _map_empty: Label = %MapEmpty
 @onready var _confirm: ConfirmationDialog = %Confirm
+
+
+func _init() -> void:
+	_art = ArtLibrary.new()
+	_art.name = "ArtLibrary"
+	_art.art_changed.connect(_on_art_changed)
+	add_child(_art)
 
 
 ## Called by SceneRouter before _ready. A screen that never gets params was run on its own.
@@ -116,6 +144,7 @@ func bind_store(store: GameStoreScript) -> void:
 
 
 func _ready() -> void:
+	_art.set_scenario(_text(_params.get(PARAM_SCENARIO)))
 	_confirm.confirmed.connect(_on_confirmed)
 	_confirm.canceled.connect(_on_confirm_canceled)
 	if _store == null:
@@ -142,6 +171,19 @@ func is_awaiting_result() -> bool:
 
 func get_known_map() -> KnownMap:
 	return _known_map
+
+
+func get_art_library() -> ArtLibrary:
+	return _art
+
+
+## Path of the plate the screen shows or waits for; "" without a location or a valid id.
+func get_plate_path() -> String:
+	return _plate_path
+
+
+func is_plate_fading() -> bool:
+	return _plate_tween != null and _plate_tween.is_valid() and _plate_tween.is_running()
 
 
 ## Picks what to show: an explicit preview, the store's view, the standalone preview or nothing.
@@ -182,7 +224,9 @@ func _render() -> void:
 	if location.is_empty():
 		_content.visible = false
 		_status.text = (PREVIEW_FAILED_TEXT % _preview_name) if _preview_failed else NO_VIEW_TEXT
-		_background.color = _placeholder_color("", "")
+		_plate_placeholder.color = _placeholder_color("", "")
+		var none: Array[String] = []
+		_show_art("", "", none, none)
 		return
 	_content.visible = true
 	_status.text = (PREVIEW_TEXT % _preview_name) if is_preview() else ""
@@ -192,7 +236,7 @@ func _render() -> void:
 	_location_name.text = title if not title.is_empty() else UNTITLED_TEXT
 	_description.text = _text(location.get("description"))
 	_lighting.text = str(LIGHTING_TEXT.get(lighting, ""))
-	_background.color = _placeholder_color(location_id, lighting)
+	_plate_placeholder.color = _placeholder_color(location_id, lighting)
 
 	var hotspots: Array[Dictionary] = _dicts(location.get("hotspots"))
 	var characters: Array[Dictionary] = _dicts(_view.get("presentCharacters"))
@@ -201,6 +245,10 @@ func _render() -> void:
 	var hotspot_ids: Array[String] = _ids(hotspots, "id")
 	var character_ids: Array[String] = _ids(characters, "id")
 	var exit_ids: Array[String] = _ids(exits, "locationId")
+	var portraits: Array[String] = []
+	for character: Dictionary in characters:
+		portraits.append(_art.portrait(_text(character.get("portraitRef"))))
+	_show_art(location_id, lighting, exit_ids, portraits)
 
 	# Each available action is shown once: next to the thing it targets, or in the general list.
 	var by_hotspot: Dictionary = {}
@@ -233,14 +281,15 @@ func _render() -> void:
 		if examined is bool and examined:
 			caption += EXAMINED_SUFFIX
 		_add_row(_hotspots, caption, _grouped(by_hotspot, _text(hotspot.get("id"))))
-	for character: Dictionary in characters:
+	for index: int in characters.size():
+		var character: Dictionary = characters[index]
 		var character_id: String = _text(character.get("id"))
 		var caption: String = _text(character.get("name"))
 		var demeanor: String = _text(character.get("demeanor"))
 		if not demeanor.is_empty():
 			caption += " — " + demeanor
-		var row: HBoxContainer = _add_row(
-			_characters, caption, _grouped(by_character, character_id)
+		var row: VBoxContainer = _add_character_row(
+			caption, portraits[index], _grouped(by_character, character_id)
 		)
 		if not partner.is_empty() and character_id == partner:
 			var resume: Button = Button.new()
@@ -271,6 +320,93 @@ func _add_row(container: Container, caption: String, entries: Array[Dictionary])
 		row.add_child(_make_action_button(entry, ""))
 	container.add_child(row)
 	return row
+
+
+## A present character: the framed portrait (or the silhouette) with the name and demeanor,
+## then the actions aimed at this character, one per line.
+func _add_character_row(
+	caption: String, portrait_path: String, entries: Array[Dictionary]
+) -> VBoxContainer:
+	var row: VBoxContainer = VBoxContainer.new()
+	var header: HBoxContainer = HBoxContainer.new()
+	header.add_theme_constant_override("separation", 16)
+	var frame: PortraitFrame = PortraitFrame.new()
+	frame.show_portrait(_art.request(portrait_path))
+	if not portrait_path.is_empty():
+		if not _portrait_frames.has(portrait_path):
+			_portrait_frames[portrait_path] = []
+		(_portrait_frames[portrait_path] as Array).append(frame)
+	header.add_child(frame)
+	var label: Label = Label.new()
+	label.text = caption
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	header.add_child(label)
+	row.add_child(header)
+	for entry: Dictionary in entries:
+		row.add_child(_make_action_button(entry, ""))
+	_characters.add_child(row)
+	return row
+
+
+## Shows the plate of [param location_id] in [param lighting] and keeps in the art cache only that
+## location (every lighting level, so a change of light is ready), its neighbours and the
+## portraits on screen (art-direction.md §7.4).
+func _show_art(
+	location_id: String, lighting: String, neighbours: Array[String], portraits: Array[String]
+) -> void:
+	_portrait_frames.clear()
+	var path: String = _art.plate(location_id, lighting)
+	var keep: Array[String] = [path]
+	keep.append_array(_art.existing_plates(location_id))
+	for neighbour: String in neighbours:
+		keep.append_array(_art.existing_plates(neighbour))
+	keep.append_array(portraits)
+	_art.retain(keep)
+	for wanted: String in keep:
+		_art.request(wanted)
+	var relit: bool = (
+		not location_id.is_empty()
+		and location_id == _plate_location
+		and not _plate_lighting.is_empty()
+		and lighting != _plate_lighting
+	)
+	_plate_location = location_id
+	_plate_lighting = lighting
+	_plate_path = path
+	if relit and is_inside_tree() and plate_fade_seconds > 0.0:
+		_fade_plate()
+	elif not _plate_swap_pending:
+		_apply_plate()
+
+
+## Dips the plate to black, swaps it at full black and fades back.
+func _fade_plate() -> void:
+	if _plate_tween != null and _plate_tween.is_valid():
+		_plate_tween.kill()
+	_plate_swap_pending = true
+	_plate_tween = create_tween()
+	var remaining: float = (1.0 - _plate_fade.color.a) * plate_fade_seconds
+	_plate_tween.tween_property(_plate_fade, "color:a", 1.0, remaining)
+	_plate_tween.tween_callback(_apply_plate)
+	_plate_tween.tween_property(_plate_fade, "color:a", 0.0, plate_fade_seconds)
+
+
+func _apply_plate() -> void:
+	_plate_swap_pending = false
+	var texture: Texture2D = _art.get_texture(_plate_path)
+	_plate_image.texture = texture
+	_plate_image.visible = texture != null
+
+
+func _on_art_changed(path: String) -> void:
+	if path == _plate_path and not _plate_swap_pending:
+		_apply_plate()
+	var frames: Variant = _portrait_frames.get(path)
+	if frames is Array:
+		for frame: Variant in frames as Array:
+			if frame is PortraitFrame and is_instance_valid(frame):
+				(frame as PortraitFrame).show_portrait(_art.get_texture(path))
 
 
 func _add_exit_row(exit: Dictionary, moves: Array[Dictionary]) -> void:
@@ -449,8 +585,8 @@ func _update_buttons() -> void:
 			button.disabled = _pending or _opening_dialogue or blocked
 
 
-## Background placeholder until location art exists (CNT-010): a hue from the location id,
-## darker in dim or dark lighting.
+## Plate placeholder for a location without art: a hue from the location id, darker in dim or
+## dark lighting.
 static func _placeholder_color(location_id: String, lighting: String) -> Color:
 	if location_id.is_empty():
 		return Color(0.08, 0.08, 0.09)

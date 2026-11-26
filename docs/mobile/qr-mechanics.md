@@ -178,6 +178,10 @@ REST привязки, маршруты QR и шлюз над выданными
 Запишите монитор (диагональ, разрешение, масштаб Windows), модель iPhone, расстояние, время
 распознавания и результат.
 
+Пошаговая проверка на штатной сборке сервера (Linux, без `.ps1`), включая разрыв Wi-Fi, камеру,
+QR улики и перезапуск приложения, — [pairing-checklist.md](../testing/pairing-checklist.md);
+автоматическая часть — `tools/e2e/pairing.test.ts` ([INT-001](../../tasks/INT-001.md)).
+
 ### Экран привязки (`apps/mobile/app/pair.tsx`, `src/pairing`)
 
 - `parsePairingQr` принимает только `hs1:pair:<host>:<port>:<code>`: хост из букв, цифр, `.` и `-`,

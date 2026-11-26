@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@hs/protocol';
+import { QrMatrixResponse, type ErrorCode } from '@hs/protocol';
 import type { FastifyInstance } from 'fastify';
 import type { Session } from '../sessions/index.ts';
 import { renderMatrix } from './matrix.ts';
@@ -58,15 +58,17 @@ export function registerQrRoutes(
         if (code.expiresAt <= now()) {
           throw new QrError('PAIRING_CODE_EXPIRED', 410, 'The pairing code has expired');
         }
-        return renderMatrix(code.qrPayload);
+        return QrMatrixResponse.parse(renderMatrix(code.qrPayload));
       });
 
       routes.get<{ Params: { id: string; tokenId: string } }>(
         '/sessions/:id/evidence-qr/:tokenId',
         (request) =>
-          qr.evidenceMatrix(
-            authorizeDesktop(request.params.id, request.headers.authorization),
-            request.params.tokenId,
+          QrMatrixResponse.parse(
+            qr.evidenceMatrix(
+              authorizeDesktop(request.params.id, request.headers.authorization),
+              request.params.tokenId,
+            ),
           ),
       );
       done();

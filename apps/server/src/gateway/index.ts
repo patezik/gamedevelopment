@@ -42,7 +42,16 @@ interface Peer {
   ack: number;
 }
 
+type ActionResult = Message<'action.result'>['payload'];
+
+/** An irreversible accusation bound to its operation ID (ADR 0022). */
+interface Operation {
+  readonly caseKey: string;
+  readonly result: Promise<SessionDispatchResult>;
+}
+
 interface Stream {
+  operations: Map<string, Operation>;
   seq: number;
   peers: Map<SessionRole, Peer>;
   history: { role: SessionRole; message: Replayable }[];
@@ -63,6 +72,26 @@ export interface GatewayOptions {
 }
 
 const limit = 256 * 1024;
+/** Operations kept per session; they are never evicted, so a stored ID cannot run twice. */
+const operationLimit = 64;
+
+const refused = (error: ErrorCode): SessionDispatchResult => ({
+  ok: false,
+  error,
+  minutesSpent: 0,
+  events: [],
+});
+
+/** Key-order independent form of a value, to compare two case files. */
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value).filter(([, item]) => item !== undefined);
+    entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
+}
 
 export class SessionGateway {
   readonly #streams = new WeakMap<Session, Stream>();
@@ -83,6 +112,7 @@ export class SessionGateway {
     const existing = this.#streams.get(session);
     if (existing) return existing;
     const stream: Stream = {
+      operations: new Map(),
       seq: 0,
       peers: new Map(),
       history: [],
@@ -250,22 +280,45 @@ export class SessionGateway {
       case 'action.request': {
         const { action } = message.payload;
         const allowed: readonly string[] = ACTIONS_BY_ROLE[role];
-        const result = allowed.includes(action.type)
-          ? await session.dispatch(role, action)
-          : { ok: false, error: 'ACTION_INVALID' as const, minutesSpent: 0 };
-        if (this.#authorized(peer)) {
-          this.#send(socket, {
-            v: PROTOCOL_VERSION,
-            type: 'action.result',
-            payload: {
-              requestId: message.id,
-              ok: result.ok,
-              minutesSpent: result.minutesSpent,
-              ...(result.error && { error: result.error }),
-            },
-          });
+        const operationId =
+          action.type === 'accuse' && action.confirm ? action.operationId : undefined;
+        const operations = this.#stream(session).operations;
+        const known = operationId === undefined ? undefined : operations.get(operationId);
+        const fresh = !known;
+        let pending: Operation['result'];
+        const unbound = action.type === 'accuse' && action.confirm && !action.operationId;
+        if (!allowed.includes(action.type) || unbound) {
+          pending = Promise.resolve(refused('ACTION_INVALID'));
+        } else if (known) {
+          // A retry of an operation seen before: never executed again (ADR 0022).
+          const key = action.type === 'accuse' ? canonical(action.caseFile) : '';
+          pending =
+            known.caseKey === key ? known.result : Promise.resolve(refused('ACTION_INVALID'));
+        } else if (operationId !== undefined && operations.size >= operationLimit) {
+          pending = Promise.resolve(refused('RATE_LIMITED'));
+        } else {
+          pending = session.dispatch(role, action);
+          if (operationId !== undefined && action.type === 'accuse') {
+            // Registered before the first await: a retry on a new socket finds it in flight.
+            operations.set(operationId, { caseKey: canonical(action.caseFile), result: pending });
+          }
         }
-        if (result.ok) {
+        const result = await pending;
+        if (this.#authorized(peer)) {
+          const payload: ActionResult = {
+            requestId: message.id,
+            ok: result.ok,
+            minutesSpent: result.minutesSpent,
+            ...(result.error && { error: result.error }),
+            ...(operationId !== undefined && { operationId }),
+            ...(operationId !== undefined &&
+              result.ok &&
+              'stateVersion' in result &&
+              result.stateVersion !== undefined && { stateVersion: result.stateVersion }),
+          };
+          this.#send(socket, { v: PROTOCOL_VERSION, type: 'action.result', payload });
+        }
+        if (result.ok && fresh && allowed.includes(action.type)) {
           this.#afterDispatch(
             session,
             'events' in result ? result : {},

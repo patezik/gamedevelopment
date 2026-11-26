@@ -181,6 +181,28 @@ func test_production_rest_creates_a_session_and_pairing_shows_the_qr_and_comes_o
 	assert_eq(_text("Code"), session.code)
 
 
+func test_production_rejected_handshake_shows_the_refusal_instead_of_reconnecting() -> void:
+	if not _start_server("production"):
+		return
+	assert_true(await _create_session(str(_info.get("seed"))))
+	var session: PairingSession = PairingSession.current()
+	if session == null:
+		return
+	var pairing: Pairing = _open_pairing()
+	await wait_until(
+		func() -> bool: return _store.get_connection_state() == BackendScript.ConnectionState.ONLINE,
+		WAIT_SECONDS
+	)
+	# The server forgot the token (as after a restart): the next hello is refused.
+	_backend.connect_session(session.ws_url(), "token-the-server-never-issued")
+	await wait_until(func() -> bool: return _text("Error").contains("UNAUTHORIZED"), WAIT_SECONDS)
+	assert_eq(_text("Error"), Pairing.REJECTED_TEXT % "UNAUTHORIZED")
+	await wait_seconds(3.0)
+	assert_eq(_store.get_connection_state(), BackendScript.ConnectionState.OFFLINE, "no reconnect loop")
+	assert_eq(_text("Error"), Pairing.REJECTED_TEXT % "UNAUTHORIZED")
+	assert_not_null(pairing)
+
+
 func test_production_rest_with_a_random_seed() -> void:
 	if not _start_server("production"):
 		return
