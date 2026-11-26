@@ -42,7 +42,11 @@ describe('E2E bot on the production server assembly', () => {
   test('a path without the QR captures ends partial, not solved', async () => {
     const result = await runBot(await server(), {
       seed: CHAOS_SEED,
-      path: ({ path }) => path.filter(({ type }) => type !== 'captureEvidence'),
+      // Stops before the first capture: later steps of the planner path rely on captured evidence.
+      path: ({ path }) => {
+        const first = path.findIndex(({ type }) => type === 'captureEvidence');
+        return first < 0 ? path : path.slice(0, first);
+      },
     });
     expect(result.endingId).toBe('partial');
   }, 60_000);
@@ -54,6 +58,15 @@ describe('E2E bot on the production server assembly', () => {
   }, 60_000);
 
   test('a seed the generator refuses has no game to play', () => {
-    expect(() => buildOracle('4')).toThrow(SeedUnavailableError);
-  });
+    // Which seeds the gate refuses changes with the scenario content: look one up, do not pin it.
+    for (let seed = 0; seed < 60; seed++) {
+      try {
+        buildOracle(String(seed));
+      } catch (error) {
+        expect(error).toBeInstanceOf(SeedUnavailableError);
+        return;
+      }
+    }
+    throw new Error('no refused seed among 0..59: the generator accepts everything now');
+  }, 60_000);
 });
