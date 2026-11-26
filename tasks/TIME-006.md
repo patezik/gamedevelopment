@@ -8,7 +8,7 @@ phase: 7
 milestone: M7
 area: time
 depends_on: [TIME-005, ENG-010, SRV-012]
-modules: ["packages/core/src/game/engine.ts", "packages/core/src/game/save.ts", "packages/core/src/game/engine.test.ts", "packages/core/src/game/save.test.ts", "packages/core/src/time/scenario-events.ts", "packages/core/src/time/time-system.ts", "apps/server/src/routes/generation.ts", "apps/server/src/sessions/scenario-time.ts", "apps/server/src/sessions/scenario-time.test.ts"]
+modules: ["packages/core/src/game/engine.ts", "packages/core/src/game/save.ts", "packages/core/src/game/engine.test.ts", "packages/core/src/game/save.test.ts", "packages/core/src/time/scenario-events.ts", "packages/core/src/time/time-system.ts", "apps/server/src/routes/generation.ts", "apps/server/src/sessions/scenario-time.ts", "apps/server/src/sessions/scenario-time.test.ts", "apps/server/src/sessions/scenario-ports.ts", "packages/core/src/game/engine-scenario.test.ts", "tools/bench-planner-generated.ts"]
 assignee: claude-t6
 claimed_at: "2026-11-26T19:41:58Z"
 ---
@@ -54,9 +54,9 @@ claimed_at: "2026-11-26T19:41:58Z"
 
 ## Критерии приёмки
 
-- [ ] Пропущенное событие применяет эффект ровно один раз, а последующая проверка `earlierIf` видит изменение Static.
-- [ ] Дедлайн из пресета завершает игру через штатный `GameEngine.dispatch`, в том числе до общей длительности сценария.
-- [ ] Повтор журнала из сохранения перед критическим событием даёт тот же итоговый хеш.
+- [x] Пропущенное событие применяет эффект ровно один раз, а последующая проверка `earlierIf` видит изменение Static.
+- [x] Дедлайн из пресета завершает игру через штатный `GameEngine.dispatch`, в том числе до общей длительности сценария.
+- [x] Повтор журнала из сохранения перед критическим событием даёт тот же итоговый хеш.
 - [ ] `npm run tasks:check` и проверки CI зелёные.
 
 ## Требования к тестированию

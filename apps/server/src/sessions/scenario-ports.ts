@@ -15,7 +15,8 @@ const toPhoneTemplate = (row: unknown): PhoneTemplate =>
  *
  * Deliberately left to the engine defaults: `actionCosts`, `player`, `inventory`, the call
  * arbitration (`callState`) and the phone answers (`callGreeting`, `callReply`, `messageReply`).
- * Tokens (SRV-013) and simulation hooks (ENG-010, TIME-006) are other tasks.
+ * Tokens (SRV-013) and the simulation hooks of ENG-010 are other tasks. The preset's critical
+ * events and deadlines (TIME-006) are on: the engine runs them on its own clock.
  */
 /** The locale of the source texts: the fallback of every missing template (QA-003). */
 export const SOURCE_TEXT_LOCALE = 'ru';
@@ -51,6 +52,10 @@ export function scenarioEnginePorts(
     texts: scenarioTexts(content, locale),
     clues: server.clues,
     startVitals: { ...content.preset.survival.startVitals },
+    scenarioEvents: {
+      criticalEvents: content.preset.criticalEvents,
+      deadlines: content.preset.deadlines,
+    },
     phone: {
       initial: initialPhoneState(Object.values(content.phone).flat().map(toPhoneTemplate)),
     },
