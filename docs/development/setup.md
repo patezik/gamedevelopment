@@ -46,7 +46,7 @@ npm run docs:check
 | Команда | Что делает | Доступна |
 |---------|-----------|----------|
 | `npm run tasks:ready` | готовые к взятию задачи | сейчас |
-| `npm run tasks:index` | обновить `tasks/INDEX.md` | сейчас |
+| `npm run tasks:index` | пересобрать `tasks/INDEX.md` локально (не коммитить, его обновляет CI на main) | сейчас |
 | `npm run tasks:check` | валидация задач | сейчас |
 | `npm run docs:check` | проверка относительных ссылок в Markdown | сейчас |
 | `npm run lint` / `npm run typecheck` / `npm test` | ESLint, TypeScript и Vitest (включая сервер) | сейчас |

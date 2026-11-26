@@ -15,7 +15,12 @@ import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import type { RawData, WebSocket } from 'ws';
 import { hashSessionToken } from '../pairing/index.ts';
-import type { Session, SessionManager, SessionRole } from '../sessions/index.ts';
+import type {
+  Session,
+  SessionManager,
+  SessionRole,
+  SessionDispatchResult,
+} from '../sessions/index.ts';
 import { ROLES, ViewCache, engineView, engineEvents, type EventSource } from '../views/index.ts';
 
 type Message<T extends ServerMessage['type']> = Extract<ServerMessage, { type: T }>;
@@ -273,6 +278,11 @@ export class SessionGateway {
       case 'phone.ui':
         await this.#phoneMessage(peer, message, qrScan);
     }
+  }
+
+  /** Publish the exact successful result returned by the session, including QR captures. */
+  publishDispatch(session: Session, result: SessionDispatchResult): void {
+    if (result.ok) this.#afterDispatch(session, result, result.stateVersion);
   }
 
   /**

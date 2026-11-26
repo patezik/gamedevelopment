@@ -630,6 +630,13 @@ function solveDeduction(input: { investigation; clues: Clue[]; rules: DeductionR
 См. [backend.md](../backend/backend.md). Модули: `sessions`, `pairing`, `gateway`, `views`, `qr`,
 `saves`, `diagnostics`, `config`.
 
+SRV-013: `createSessionServices(config, { scenariosDir?, networkInterfaces? })` собирает
+`SessionManager`, `PairingService`, `SessionGateway` и `QrService` для `buildApp` и нативного запуска.
+`SessionRouteDependencies.prepare?(session)` связывает ресурсы движка с новой сессией до публикации.
+`QrService.scan(session, raw, onCaptured?)` передаёт callback точный успешный `SessionDispatchResult`
+один раз; `SessionGateway.publishDispatch(session, result)` рассылает его проекции и события
+по ролям с исходной версией. Подробности — [backend.md](../backend/backend.md).
+
 ## 17. `apps/mobile` — Companion App
 
 См. [mobile-app.md](../mobile/mobile-app.md). Модули: `os` (оболочка), `os-apps/*` (приложения
