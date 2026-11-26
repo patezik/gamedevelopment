@@ -405,6 +405,6 @@ describe('defect 8: the search for a window is not cut short', () => {
 
 describe('defect 7: generator version', () => {
   test('new results for existing seeds raise the minor version (ADR 0004)', () => {
-    expect(GENERATOR_VERSION).toBe('0.4.0');
+    expect(GENERATOR_VERSION).toBe('0.5.0');
   });
 });

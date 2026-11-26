@@ -59,7 +59,8 @@ test('sanatorium_winter: every hotspot clue of seeds 2, 3, 6, 7 can be examined 
 }, 30_000);
 
 test('ENG-008: portraitRef of the generated cast depends on the name only, never on the truth', () => {
-  for (const seed of ['1', '2']) {
+  // Use an accepted poisoning and staged fall from the CNT-003 seed corpus.
+  for (const seed of ['2', '3']) {
     const result = generateInvestigation({ scenarioId: 'sanatorium_winter', seed }, sanatorium);
     expect(result.ok, seed).toBe(true);
     if (!result.ok) continue;

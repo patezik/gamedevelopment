@@ -34,7 +34,7 @@ test('golden IncidentSelection results for five seeds of _test_minimal', () => {
       stateHash({ incident, incidentReport }),
     ];
   });
-  expect(GENERATOR_VERSION).toBe('0.4.0');
+  expect(GENERATOR_VERSION).toBe('0.5.0');
   expect(results).toEqual([
     ['0', 'ch_1>ch_2', '47111ff09b8fedaf51304956ad2fdd4896343dbcd040e7139e7f73f7ffd5e095'],
     ['1', 'ch_1>ch_3', '98917b6fb14f947338f14daa26bf7aec351255aeebfc12a629bcdb4d2a29546f'],
