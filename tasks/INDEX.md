@@ -2,12 +2,11 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **167** · todo: 25 · in_progress: 13 · review: 1 · done: 127 · blocked: 1
+Всего задач: **167** · todo: 24 · in_progress: 14 · review: 1 · done: 127 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [VAL-005](VAL-005.md) — Проверки V-REDUNDANCY и V-CLEANUP (P0, M)
-- [VAL-007](VAL-007.md) — Seed sweep CLI hs-sweep и отчёты (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
@@ -127,7 +126,7 @@
 | [VAL-004](VAL-004.md) | Проверки V-LIES-BREAKABLE и V-TESTIMONY | P0 | M | done | claude-qb | [VAL-002](VAL-002.md), [KNOW-002](KNOW-002.md) |
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | todo | — | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
 | [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | done | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
-| [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | todo | — | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
+| [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | in_progress | claude-x3 | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
 | [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
 
 ## Фаза 5 · M5 — Phone linked (24)
