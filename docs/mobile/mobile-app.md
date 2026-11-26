@@ -8,7 +8,9 @@
 - Приложение — «телефон героя»: виртуальная ОС с собственными приложениями. Все данные — игровые,
   приходят с сервера в `PhoneView`.
 - **Никакого доступа к реальным личным данным** (контакты, SMS, фото, звонки, геолокация).
-  Единственное разрешение — камера, и только для сканирования игровых QR.
+  Приложение само запрашивает только камеру и только для сканирования игровых QR; на iOS система
+  дополнительно показывает запрос доступа к локальной сети при первом подключении к игре.
+  Политика и сверка с кодом — [privacy-policy.md](../legal/privacy-policy.md).
 - Сервер — авторитет; приложение не хранит игровое состояние, кроме кэша последнего
   `PhoneView` для мгновенного отображения при переподключении.
 
@@ -33,7 +35,9 @@ apps/mobile/
 │   ├── stores/                  — Zustand: connectionStore, phoneStore (PhoneView), uiStore
 │   ├── pairing/                 — разбор QR привязки, POST /pair, SecureStore
 │   └── lib/                     — общие утилиты
-└── app.json                     — разрешения: только камера (iOS NSCameraUsageDescription, Android CAMERA)
+└── app.json                     — разрешения: камера (iOS NSCameraUsageDescription, Android CAMERA),
+                                   iOS NSLocalNetworkUsageDescription; микрофон, хранилище и
+                                   SYSTEM_ALERT_WINDOW отключены (плагин expo-camera, blockedPermissions)
 ```
 
 ## 3. Реестр приложений виртуальной ОС
