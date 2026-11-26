@@ -80,3 +80,12 @@ test('time expiration during travel does not record a completed transition', () 
     minutesSpent: 0,
   });
 });
+
+test('knowledgeSnapshot equals the snapshot knowledge without serializing the world', () => {
+  const engine = GameEngine.create(tinyManor(), ports);
+  expect(engine.knowledgeSnapshot()).toEqual(engine.snapshot().desktop?.knowledge);
+  engine.dispatch('desktop', { type: 'move', locationId: 'loc_study' });
+  engine.dispatch('desktop', { type: 'examineLocation' });
+  expect(engine.knowledgeSnapshot()).toEqual(engine.snapshot().desktop?.knowledge);
+  expect(engine.knowledgeSnapshot()).toBeDefined();
+});
