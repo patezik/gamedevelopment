@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "SCENARIO_NOT_FOUND",
+    "message": "Scenario not found"
+  }
+}

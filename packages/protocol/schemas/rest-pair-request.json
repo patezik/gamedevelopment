@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{6}$"
+    },
+    "deviceName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "appVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "protocolVersion": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "code",
+    "deviceName",
+    "appVersion",
+    "protocolVersion"
+  ],
+  "additionalProperties": false
+}

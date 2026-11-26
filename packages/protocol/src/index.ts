@@ -11,3 +11,21 @@ export {
   parseServerMessage,
 } from './messages/index.ts';
 export * from './views/index.ts';
+export {
+  CreateSessionRequest,
+  ErrorResponse,
+  HealthResponse,
+  NetworkResponse,
+  PairRequest,
+  PairResponse,
+  PairingCodeResponse,
+  PairingInfo,
+  QrMatrixResponse,
+  SaveList,
+  SaveSummary,
+  ScenarioId,
+  ScenarioList,
+  ScenarioSummary,
+  Seed,
+  SessionCredentials,
+} from './rest.ts';
