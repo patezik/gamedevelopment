@@ -2,13 +2,12 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **169** · todo: 21 · in_progress: 11 · review: 0 · done: 136 · blocked: 1
+Всего задач: **169** · todo: 20 · in_progress: 12 · review: 0 · done: 136 · blocked: 1
 
 ## Готовы к взятию сейчас
 
 - [VAL-008](VAL-008.md) — Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус (P0, S)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
-- [TIME-006](TIME-006.md) — Подключение событий сценария к GameEngine и серверной сессии (P0, M)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
@@ -214,7 +213,7 @@
 | [SURV-003](SURV-003.md) | Угрозы: нападение виновника, опасные локации, исход столкновения | P1 | M | done | claude-qc | [SURV-001](SURV-001.md), [SIM-006](SIM-006.md) |
 | [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | done | claude-w3 | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |
 | [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | done | claude-qj | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
-| [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | todo | — | [TIME-005](TIME-005.md), [ENG-010](ENG-010.md), [SRV-012](SRV-012.md) |
+| [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | in_progress | claude-t6 | [TIME-005](TIME-005.md), [ENG-010](ENG-010.md), [SRV-012](SRV-012.md) |
 
 ## Фаза 8 · M8 — Content expansion (10)
 
