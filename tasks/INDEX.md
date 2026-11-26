@@ -2,11 +2,13 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **168** · todo: 23 · in_progress: 13 · review: 0 · done: 131 · blocked: 1
+Всего задач: **169** · todo: 24 · in_progress: 12 · review: 0 · done: 132 · blocked: 1
 
 ## Готовы к взятию сейчас
 
+- [CNT-004](CNT-004.md) — MVP-сценарий: правила следов и правила дедукции (P0, M)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [VAL-009](VAL-009.md) — Расширить покрытие планировщика на контенте санатория 0.4.0 (P1, L)
 - [SRV-016](SRV-016.md) — Seed незавершённой игры в списке сохранений (P1, S)
 - [CNT-011](CNT-011.md) — Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
@@ -26,7 +28,6 @@
 | [INT-007](INT-007.md) Профиль Expo Development Build (EAS) как резерв к Expo Go | 3 |
 | [INT-005](INT-005.md) Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | 2 |
 | [VAL-007](VAL-007.md) Seed sweep CLI hs-sweep и отчёты | 2 |
-| [CNT-003](CNT-003.md) MVP-сценарий: шаблоны преступлений и правила мотивов | 1 |
 | [CNT-004](CNT-004.md) MVP-сценарий: правила следов и правила дедукции | 1 |
 | [CNT-007](CNT-007.md) Тюнинг MVP-пресета до порогов seed sweep | 1 |
 | [ENG-010](ENG-010.md) Проводка модулей выживания в GameEngine | 1 |
@@ -34,6 +35,7 @@
 | [INT-001](INT-001.md) Интеграция привязки: Godot ↔ сервер ↔ телефон | 1 |
 | [INT-002](INT-002.md) E2E-бот: прохождение расследования через реальный сервер по SolutionPath | 1 |
 | [INT-004](INT-004.md) Баланс MVP: стоимости действий, длительность, кривые Static и показателей | 1 |
+| [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 1 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -84,7 +86,7 @@
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [CNT-002](CNT-002.md) | MVP-сценарий: локации, предметы, архетипы, отношения (данные) | P0 | L | done | egor-claude-cnt-002 | [CNT-001](CNT-001.md) |
-| [CNT-003](CNT-003.md) | MVP-сценарий: шаблоны преступлений и правила мотивов | P0 | M | in_progress | egor-claude-cnt-003 | [CNT-002](CNT-002.md) |
+| [CNT-003](CNT-003.md) | MVP-сценарий: шаблоны преступлений и правила мотивов | P0 | M | done | egor-claude-cnt-003 | [CNT-002](CNT-002.md) |
 | [GEN-001](GEN-001.md) | Каркас конвейера генерации: стадии, подпотоки, отчёт, GENERATOR_VERSION | P0 | M | done | codex-engine-27 | [CORE-001](CORE-001.md), [CNT-001](CNT-001.md), [CORE-003](CORE-003.md) |
 | [GEN-002](GEN-002.md) | Стадия WorldGen: локации, предметы, варианты из пресета | P0 | S | done | codex-prototype-27 | [GEN-001](GEN-001.md), [WORLD-002](WORLD-002.md) |
 | [GEN-003](GEN-003.md) | Стадия CastGen: персонажи из архетипов, личность, биография, имена | P0 | M | done | codex-prototype-27 | [GEN-001](GEN-001.md), [CHAR-001](CHAR-001.md), [CHAR-003](CHAR-003.md) |
@@ -96,7 +98,7 @@
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | done | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
-## Фаза 4 · M4 — Solvable investigations (27)
+## Фаза 4 · M4 — Solvable investigations (28)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -127,6 +129,7 @@
 | [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | done | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
 | [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | in_progress | claude-x3 | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
 | [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
+| [VAL-009](VAL-009.md) | Расширить покрытие планировщика на контенте санатория 0.4.0 | P1 | L | todo | — | [VAL-003](VAL-003.md), [CNT-003](CNT-003.md) |
 
 ## Фаза 5 · M5 — Phone linked (24)
 
