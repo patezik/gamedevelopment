@@ -727,19 +727,17 @@ describe('GET /saves', () => {
   });
 
   test('omits the seed of a finished game after restart without replaying it', async () => {
-    const shortGameProvider: InvestigationProvider = {
-      create: (_scenarioId, seed) => {
-        const investigation = tinyManor(seed);
-        return {
-          investigation: {
-            ...investigation,
-            world: { ...investigation.world, durationMinutes: 15 },
-          },
-          ports: { startLocationId: 'loc_hall' },
-        };
-      },
+    const createShortGame: InvestigationProvider['create'] = (scenarioId, seed) => {
+      const { investigation, ports } = provider.create(scenarioId, seed);
+      return {
+        investigation: {
+          ...investigation,
+          world: { ...investigation.world, durationMinutes: 15 },
+        },
+        ports,
+      };
     };
-    const first = boot({}, { provider: shortGameProvider });
+    const first = boot({}, { provider: { create: createShortGame } });
     const seed = 'finished-case';
     const session = await first.sessions.create('tiny-manor', seed);
     await play(session, 1);
@@ -748,7 +746,7 @@ describe('GET /saves', () => {
     expect(await readSave(join(saveDir(), `${session.id}.json`))).toMatchObject({ seed });
     await first.app.close();
 
-    const create = vi.fn(shortGameProvider.create);
+    const create = vi.fn(createShortGame);
     const { app } = boot({}, { provider: { create } });
     const response = await app.inject({ method: 'GET', url: '/api/v1/saves' });
     expect(response.statusCode).toBe(200);
