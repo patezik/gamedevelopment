@@ -154,7 +154,7 @@ describe('GameEngine on the ports of a generated case (SRV-012)', () => {
     expect(view.vitals).toEqual(content.preset.survival.startVitals);
 
     const phone = engine.phoneView();
-    expect(phone.files.length).toBeGreaterThan(0);
+    expect(phone?.files.length).toBeGreaterThan(0);
     const templates = Object.values(content.phone).flat();
     const json = JSON.stringify([view, phone]);
     for (const hidden of templates.filter((t) => t.hidden || t.password !== undefined)) {
