@@ -50,7 +50,6 @@ export function MessagesApp({
 
   useEffect(() => {
     actions.ui('appOpened', 'messages');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const thread = view.threads.find((t) => t.id === openId);
