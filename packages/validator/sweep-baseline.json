@@ -1,0 +1,7 @@
+{
+  "scenarioId": "sanatorium_winter",
+  "from": 0,
+  "count": 1000,
+  "failureRate": 0.023,
+  "entropyRatio": 0.999
+}

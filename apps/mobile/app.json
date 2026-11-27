@@ -6,13 +6,22 @@
     "orientation": "portrait",
     "ios": {
       "infoPlist": {
-        "NSCameraUsageDescription": "Камера нужна, чтобы сканировать игровые QR-коды."
+        "NSCameraUsageDescription": "Камера нужна только для сканирования QR-кодов с экрана игры: кода привязки и улик. Изображение с камеры не сохраняется и не передаётся.",
+        "NSLocalNetworkUsageDescription": "Локальная сеть нужна, чтобы подключиться к игре, запущенной на вашем компьютере."
       }
     },
     "android": {
       "permissions": ["android.permission.CAMERA"],
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router",
+      ["expo-camera", { "microphonePermission": false, "recordAudioAndroid": false }]
+    ]
   }
 }

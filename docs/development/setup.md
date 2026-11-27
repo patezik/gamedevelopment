@@ -57,6 +57,7 @@ npm run docs:check
 | `npm run test:all` | Vitest, Jest в `@hs/mobile` и GUT последовательно, с остановкой при ошибке (`GODOT_BIN`) | сейчас |
 | `npm run test:godot` | GUT-тесты Godot headless (`GODOT_BIN`) | сейчас |
 | `npm run sweep -- --scenario <id> --count N` | seed sweep | после VAL-007 |
+| `npm run sweep:check -- --report <sweep.json>` | сравнение отчёта sweep с базовой линией и корпусом (`--add-failed`, `--update-baseline`) | после VAL-008 |
 | `npm run protocol:gen` / `npm run protocol:check` | регенерация и проверка схем и GDScript-констант | сейчас |
 | `npm run content:check` | валидация данных сценариев и ссылок между файлами | сейчас |
 | `npm run art:check` / `art:reference` | правила арт-ассетов; перегенерация эталонов CNT-010 ([art-direction.md §7](../game-design/art-direction.md)) | сейчас |

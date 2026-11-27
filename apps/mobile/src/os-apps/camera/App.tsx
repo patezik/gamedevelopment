@@ -1,7 +1,8 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { sendQrScan } from '../../connection/gameConnection';
+import { playSound } from '../../os/feedback';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { useQrStore } from '../../stores/qrStore';
 import { MESSAGE_CHECKING, MESSAGE_OFFLINE, qrResultMessage } from './errors';
@@ -15,6 +16,12 @@ export function CameraApp() {
   const status = useConnectionStore((s) => s.status);
   const result = useQrStore((s) => s.result);
   const pending = useQrStore((s) => s.pending);
+
+  useEffect(() => {
+    if (result) {
+      playSound(result.ok ? 'scanOk' : 'error');
+    }
+  }, [result]);
 
   function onScanned(raw: string) {
     const scan = handleScan(raw, {
@@ -30,6 +37,7 @@ export function CameraApp() {
       case 'rejected':
         useQrStore.getState().reset();
         setRejection(scan.outcome.message);
+        playSound('error');
         return;
       case 'sent':
         setRejection(null);

@@ -2,20 +2,22 @@
 
 > Файл сгенерирован `npm run tasks:index`. Не редактируйте вручную — источник истины в `tasks/<ID>.md`.
 
-Всего задач: **169** · todo: 19 · in_progress: 12 · review: 0 · done: 137 · blocked: 1
+Всего задач: **171** · todo: 18 · in_progress: 8 · review: 0 · done: 144 · blocked: 1
 
 ## Готовы к взятию сейчас
 
-- [VAL-008](VAL-008.md) — Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус (P0, S)
 - [ENG-011](ENG-011.md) — Источник рода и словарь терминов для русских текстов (P0, M)
+- [VAL-010](VAL-010.md) — Планировщик: QR-улики loc_room_2 на seed 8, 16, 19, 21 и лимит на seed 22 (P2, M)
 - [CNT-012](CNT-012.md) — Полный набор арта sanatorium_winter: пластины локаций и портреты (P2, L)
 - [GEN-012](GEN-012.md) — Соучастники: инциденты с несколькими виновниками (P2, L)
+- [QA-005](QA-005.md) — Доступность: снижение эффектов, размер текста, цветовая слепота, субтитры (P2, M)
+- [REL-005](REL-005.md) — HTTP/WS в LAN в release-сборке Android (cleartext traffic) (P2, S)
 
 ## Критический путь
 
 Самая длинная цепочка незавершённых зависимостей — задержка любой из этих задач сдвигает MVP и последующие фазы:
 
-[INT-001](INT-001.md) → [INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
+[INT-003](INT-003.md) → [INT-004](INT-004.md) → [CNT-008](CNT-008.md)
 
 ## Самые блокирующие задачи
 
@@ -27,12 +29,12 @@
 | [CNT-004](CNT-004.md) MVP-сценарий: правила следов и правила дедукции | 1 |
 | [CNT-007](CNT-007.md) Тюнинг MVP-пресета до порогов seed sweep | 1 |
 | [ENG-014](ENG-014.md) Подключение симуляции NPC к GameEngine | 1 |
-| [INT-001](INT-001.md) Интеграция привязки: Godot ↔ сервер ↔ телефон | 1 |
 | [INT-004](INT-004.md) Баланс MVP: стоимости действий, длительность, кривые Static и показателей | 1 |
-| [MOB-011](MOB-011.md) Психологические эффекты ОС телефона: глитчи, искажения, обои | 1 |
 | [PLAN-001](PLAN-001.md) Декомпозиция бэклога фаз 8–11 по итогам MVP | 1 |
-| [TIME-006](TIME-006.md) Подключение событий сценария к GameEngine и серверной сессии | 1 |
 | [CNT-008](CNT-008.md) Второй сценарий-пресет только данными (проверка расширяемости) | 0 |
+| [CNT-009](CNT-009.md) Расширение библиотеки архетипов, мотивов и шаблонов преступлений | 0 |
+| [CNT-012](CNT-012.md) Полный набор арта sanatorium_winter: пластины локаций и портреты | 0 |
+| [ENG-008](ENG-008.md) portraitRef персонажей: вариант портрета по архетипу | 0 |
 
 ## Фаза 1 · M1 — Foundation ready (10)
 
@@ -95,7 +97,7 @@
 | [SIM-003](SIM-003.md) | Встречи NPC и обмен знаниями, дрейф отношений | P0 | M | done | claude-w1 | [SIM-002](SIM-002.md), [CHAR-002](CHAR-002.md) |
 | [SIM-004](SIM-004.md) | Утилитарный планировщик целей и цели FollowRoutine, ExecutePlot | P0 | M | done | codex-prototype-27 | [SIM-001](SIM-001.md) |
 
-## Фаза 4 · M4 — Solvable investigations (28)
+## Фаза 4 · M4 — Solvable investigations (29)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
@@ -125,8 +127,9 @@
 | [VAL-005](VAL-005.md) | Проверки V-REDUNDANCY и V-CLEANUP | P0 | M | done | claude-x3 | [VAL-003](VAL-003.md), [SIM-005](SIM-005.md) |
 | [VAL-006](VAL-006.md) | Проверки V-PHONE-REQUIRED и V-DETERMINISM | P0 | S | done | claude-w3 | [VAL-001](VAL-001.md), [EVD-003](EVD-003.md), [CORE-002](CORE-002.md) |
 | [VAL-007](VAL-007.md) | Seed sweep CLI hs-sweep и отчёты | P0 | M | done | claude-x3 | [GEN-011](GEN-011.md), [VAL-003](VAL-003.md) |
-| [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | todo | — | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
-| [VAL-009](VAL-009.md) | Расширить покрытие планировщика на контенте санатория 0.4.0 | P1 | L | in_progress | egor-claude-val-009 | [VAL-003](VAL-003.md), [CNT-003](CNT-003.md) |
+| [VAL-008](VAL-008.md) | Seed sweep в CI: PR 1000 seed, ночной 20 000, регрессионный корпус | P0 | S | in_progress | claude-v8 | [VAL-007](VAL-007.md), [FND-003](FND-003.md) |
+| [VAL-009](VAL-009.md) | Расширить покрытие планировщика на контенте санатория 0.4.0 | P1 | L | done | egor-claude-val-009 | [VAL-003](VAL-003.md), [CNT-003](CNT-003.md) |
+| [VAL-010](VAL-010.md) | Планировщик: QR-улики loc_room_2 на seed 8, 16, 19, 21 и лимит на seed 22 | P2 | M | todo | — | [VAL-009](VAL-009.md) |
 
 ## Фаза 5 · M5 — Phone linked (24)
 
@@ -136,7 +139,7 @@
 | [GDT-002](GDT-002.md) | Autoload GameStore и SceneRouter | P0 | S | done | egor-claude-gdt-002 | [GDT-001](GDT-001.md) |
 | [GDT-003](GDT-003.md) | Экраны NewGame и Pairing: сессия, QR привязки, статус телефона | P0 | M | done | claude-g1 | [GDT-002](GDT-002.md), [SRV-006](SRV-006.md), [SRV-002](SRV-002.md), [SRV-008](SRV-008.md) |
 | [GDT-013](GDT-013.md) | Backend: отказ рукопожатия не теряется, без бесконечного переподключения | P1 | S | done | claude-x3 | [GDT-001](GDT-001.md), [GDT-002](GDT-002.md) |
-| [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | in_progress | claude-i1 | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
+| [INT-001](INT-001.md) | Интеграция привязки: Godot ↔ сервер ↔ телефон | P0 | S | done | claude-i1 | [GDT-003](GDT-003.md), [MOB-003](MOB-003.md), [TOOL-001](TOOL-001.md), [SRV-013](SRV-013.md) |
 | [MOB-001](MOB-001.md) | Оболочка виртуальной ОС: домашний экран, реестр приложений, статус-бар | P0 | M | done | claude-qk | [FND-006](FND-006.md), [PROTO-002](PROTO-002.md) |
 | [MOB-002](MOB-002.md) | Экран привязки: скан QR привязки, ручной ввод, SecureStore | P0 | M | done | claude-qn | [MOB-001](MOB-001.md), [SRV-003](SRV-003.md) |
 | [MOB-003](MOB-003.md) | WebSocket-клиент и сторы Zustand: hello/resume, backoff, offline | P0 | M | done | claude-qu | [MOB-002](MOB-002.md), [PROTO-002](PROTO-002.md) |
@@ -201,18 +204,18 @@
 | [ENG-014](ENG-014.md) | Подключение симуляции NPC к GameEngine | P0 | L | in_progress | claude-qw | [SIM-003](SIM-003.md), [SIM-005](SIM-005.md), [SIM-006](SIM-006.md), [SIM-007](SIM-007.md), [ENG-006](ENG-006.md) |
 | [ENG-015](ENG-015.md) | Цели NPC и реакции на игрока в цикле симуляции движка | P1 | L | todo | — | [ENG-014](ENG-014.md) |
 | [GDT-010](GDT-010.md) | Хоррор-подача в Godot: эффекты рассудка, AudioDirector, стингеры | P1 | M | done | egor-claude-gdt-010 | [GDT-004](GDT-004.md), [SURV-001](SURV-001.md) |
-| [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | todo | — | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
+| [INT-003](INT-003.md) | MVP-плейтест: чек-лист и первое полное прохождение | P0 | M | in_progress | claude-pt | [INT-001](INT-001.md), [INT-002](INT-002.md), [GDT-005](GDT-005.md), [GDT-006](GDT-006.md), [GDT-007](GDT-007.md), [GDT-009](GDT-009.md), [GDT-010](GDT-010.md), [MOB-006](MOB-006.md), [MOB-007](MOB-007.md), [MOB-008](MOB-008.md), [MOB-009](MOB-009.md), [MOB-010](MOB-010.md), [SURV-003](SURV-003.md), [SURV-004](SURV-004.md), [CNT-005](CNT-005.md), [CNT-006](CNT-006.md) |
 | [INT-004](INT-004.md) | Баланс MVP: стоимости действий, длительность, кривые Static и показателей | P1 | M | todo | — | [INT-003](INT-003.md) |
-| [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | in_progress | egor-codex-mob-011 | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
+| [MOB-011](MOB-011.md) | Психологические эффекты ОС телефона: глитчи, искажения, обои | P1 | M | done | egor-codex-mob-011 | [MOB-005](MOB-005.md), [SURV-005](SURV-005.md) |
 | [SRV-014](SRV-014.md) | Атомарная смена сессии при загрузке сохранения | P1 | M | done | egor-codex-srv-014 | [SRV-002](SRV-002.md), [SRV-007](SRV-007.md) |
-| [SRV-015](SRV-015.md) | Подключение сохранений к штатной сессии и восстановление QR | P1 | L | todo | — | [SRV-013](SRV-013.md), [SRV-014](SRV-014.md), [TIME-006](TIME-006.md) |
-| [SRV-016](SRV-016.md) | Seed незавершённой игры в списке сохранений | P1 | S | in_progress | egor-codex-srv-016 | [SRV-007](SRV-007.md) |
+| [SRV-015](SRV-015.md) | Подключение сохранений к штатной сессии и восстановление QR | P1 | L | in_progress | claude-s15 | [SRV-013](SRV-013.md), [SRV-014](SRV-014.md), [TIME-006](TIME-006.md) |
+| [SRV-016](SRV-016.md) | Удаление seed из публичного списка сохранений | P1 | S | done | egor-codex-srv-016 | [SRV-007](SRV-007.md) |
 | [SURV-001](SURV-001.md) | Показатели героя: здоровье, рассудок, усталость и модификаторы стоимости | P0 | M | done | claude-surv-1 | [ENG-001](ENG-001.md), [TIME-004](TIME-004.md) |
 | [SURV-002](SURV-002.md) | Static: глобальная эскалация, пороги, влияние на события сценария | P0 | M | done | claude-qi | [SURV-001](SURV-001.md), [TIME-005](TIME-005.md) |
 | [SURV-003](SURV-003.md) | Угрозы: нападение виновника, опасные локации, исход столкновения | P1 | M | done | claude-qc | [SURV-001](SURV-001.md), [SIM-006](SIM-006.md) |
 | [SURV-004](SURV-004.md) | Инвентарь и ресурсы: слоты, фонарь, аптечки, заряд телефона | P1 | S | done | claude-w3 | [SURV-001](SURV-001.md), [WORLD-002](WORLD-002.md), [PHONE-001](PHONE-001.md) |
 | [SURV-005](SURV-005.md) | Галлюцинации на телефоне и проверка V-HALLUCINATION | P1 | M | done | claude-qj | [SURV-002](SURV-002.md), [PHONE-001](PHONE-001.md), [VAL-001](VAL-001.md) |
-| [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | in_progress | claude-t6 | [TIME-005](TIME-005.md), [ENG-010](ENG-010.md), [SRV-012](SRV-012.md) |
+| [TIME-006](TIME-006.md) | Подключение событий сценария к GameEngine и серверной сессии | P0 | M | done | claude-t6 | [TIME-005](TIME-005.md), [ENG-010](ENG-010.md), [SRV-012](SRV-012.md) |
 
 ## Фаза 8 · M8 — Content expansion (10)
 
@@ -221,7 +224,7 @@
 | [CNT-008](CNT-008.md) | Второй сценарий-пресет только данными (проверка расширяемости) | P1 | L | todo | — | [INT-004](INT-004.md), [PLAN-001](PLAN-001.md) |
 | [CNT-009](CNT-009.md) | Расширение библиотеки архетипов, мотивов и шаблонов преступлений | P2 | M | todo | — | [CNT-007](CNT-007.md) |
 | [CNT-010](CNT-010.md) | Арт-направление и пайплайн ассетов локаций и портретов | P1 | M | done | egor-claude-cnt-010 | [GDT-004](GDT-004.md) |
-| [CNT-011](CNT-011.md) | Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона | P2 | M | in_progress | claude-a1 | [GDT-010](GDT-010.md) |
+| [CNT-011](CNT-011.md) | Аудио-библиотека: эмбиенты, стингеры, звуки ОС телефона | P2 | M | done | claude-a1 | [GDT-010](GDT-010.md) |
 | [CNT-012](CNT-012.md) | Полный набор арта sanatorium_winter: пластины локаций и портреты | P2 | L | todo | — | [CNT-010](CNT-010.md) |
 | [ENG-008](ENG-008.md) | portraitRef персонажей: вариант портрета по архетипу | P2 | S | in_progress | egor-claude-eng-008 | [CNT-010](CNT-010.md) |
 | [GDT-012](GDT-012.md) | Иллюстрации локаций и портреты на экранах desktop | P1 | M | done | egor-claude-gdt-012 | [CNT-010](CNT-010.md) |
@@ -233,7 +236,7 @@
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
-| [INT-005](INT-005.md) | Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | P0 | L | in_progress | claude-w5 | [SRV-008](SRV-008.md), [GDT-001](GDT-001.md) |
+| [INT-005](INT-005.md) | Упаковка сервера в исполняемый файл (Node SEA) и запуск из Godot | P0 | L | in_progress | egor-claude-int-005 | [SRV-008](SRV-008.md), [GDT-001](GDT-001.md) |
 | [INT-006](INT-006.md) | Мастер сетевого подключения в Godot (брандмауэр, выбор сети, диагностика) | P1 | M | todo | — | [INT-005](INT-005.md), [SRV-008](SRV-008.md) |
 | [INT-007](INT-007.md) | Профиль Expo Development Build (EAS) как резерв к Expo Go | P1 | M | blocked | claude-ql | [FND-006](FND-006.md) |
 | [INT-008](INT-008.md) | Спайк: TLS с pinning через QR и облачный ретранслятор → ADR | P2 | M | done | claude-w6 | [SRV-004](SRV-004.md) |
@@ -248,12 +251,13 @@
 | [QA-004](QA-004.md) | Совместимость сохранений между версиями генератора и политика миграций | P1 | M | done | egor-codex-qa-004 | [SAVE-001](SAVE-001.md), [SRV-007](SRV-007.md) |
 | [QA-005](QA-005.md) | Доступность: снижение эффектов, размер текста, цветовая слепота, субтитры | P2 | M | todo | — | [GDT-010](GDT-010.md), [MOB-011](MOB-011.md) |
 
-## Фаза 11 · M11 — Release candidate (5)
+## Фаза 11 · M11 — Release candidate (6)
 
 | ID | Задача | P | C | Статус | Исполнитель | Зависит от |
 |---|---|---|---|---|---|---|
 | [MOB-012](MOB-012.md) | Поддержка companion-приложения на Android после первого прототипа | P2 | M | todo | — | [INT-003](INT-003.md), [INT-007](INT-007.md) |
 | [REL-001](REL-001.md) | Экспорт Godot (Windows, Linux, macOS) и артефакты CI | P1 | M | todo | — | [INT-005](INT-005.md) |
 | [REL-002](REL-002.md) | Сборка companion-приложения для магазинов (EAS Build/Submit) | P1 | M | todo | — | [INT-007](INT-007.md) |
-| [REL-003](REL-003.md) | Политика приватности и тексты разрешений | P1 | S | in_progress | egor-claude-rel-003 | [MOB-004](MOB-004.md) |
+| [REL-003](REL-003.md) | Политика приватности и тексты разрешений | P1 | S | done | egor-claude-rel-003 | [MOB-004](MOB-004.md) |
 | [REL-004](REL-004.md) | Версионирование, CHANGELOG и релизный процесс | P2 | S | done | codex-small-1 | [FND-003](FND-003.md) |
+| [REL-005](REL-005.md) | HTTP/WS в LAN в release-сборке Android (cleartext traffic) | P2 | S | todo | — | [REL-003](REL-003.md) |

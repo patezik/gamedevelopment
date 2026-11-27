@@ -157,6 +157,30 @@ test('real pairing notifies both clients and authenticates action roles', async 
   expect((await desktop.receive('peer.status')).payload.phone).toBe('unpaired');
 });
 
+test('the phone unpairs itself over REST: socket closed, desktop sees unpaired, token dead', async () => {
+  const { app, address, session, desktopToken } = await setup();
+  await session.activate();
+  const token = issueToken(session, 'phone');
+  const desktop = await client(address);
+  desktop.send({ type: 'hello', payload: { role: 'desktop', token: desktopToken, appVersion: '1' } });
+  await desktop.until('welcome');
+  const phone = await client(address);
+  phone.send({ type: 'hello', payload: { role: 'phone', token, appVersion: '1' } });
+  await phone.receive('welcome');
+  await vi.waitFor(async () => {
+    expect((await desktop.until('peer.status')).payload.phone).toBe('online');
+  });
+
+  const phoneClosed = once(phone.socket, 'close');
+  const url = '/api/v1/sessions/' + session.id + '/device';
+  const reply = await app.inject({ method: 'DELETE', url, headers: { authorization: 'Bearer ' + token } });
+  expect(reply.statusCode).toBe(204);
+  await phoneClosed;
+  expect((await desktop.until('peer.status')).payload.phone).toBe('unpaired');
+  const again = await app.inject({ method: 'DELETE', url, headers: { authorization: 'Bearer ' + token } });
+  expect(again.statusCode).toBe(401);
+});
+
 test('routes a phone scan through the configured QR service', async () => {
   const { address, session, store, dispatch } = await setup();
   await session.activate();

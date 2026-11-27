@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeGrid } from '../../src/os/HomeGrid';
 import { StatusBar } from '../../src/os/StatusBar';
+import { Wallpaper } from '../../src/os/effects/Wallpaper';
 import { usePhoneView } from '../../src/os/usePhoneView';
 import { OS_APPS } from '../../src/os-apps/registry';
 
@@ -11,6 +12,7 @@ export default function OsHome() {
   const view = usePhoneView();
   return (
     <SafeAreaView style={styles.screen}>
+      <Wallpaper variant={view.effects.wallpaperVariant} />
       <StatusBar status={view.status} />
       <View style={styles.grid}>
         <HomeGrid

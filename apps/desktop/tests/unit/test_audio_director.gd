@@ -149,15 +149,15 @@ func test_a_view_with_server_truth_is_ignored() -> void:
 	assert_eq(_audio.get_ambient_key(), "")
 
 
-func test_placeholder_sounds_are_deterministic_and_loop() -> void:
+func test_library_sounds_loop_and_pitch() -> void:
 	var key: String = "loc_hall|dim|night"
 	var first: AudioStreamWAV = _audio.ambient_stream(key)
 	assert_eq(first.loop_mode, AudioStreamWAV.LOOP_FORWARD)
-	assert_eq(first.loop_end, AudioDirectorScript.AMBIENT_MIX_RATE * AudioDirectorScript.AMBIENT_LOOP_SECONDS)
+	assert_eq(first.loop_end, first.data.size() / 2)
 	var other: AudioDirectorScript = AudioDirectorScript.new()
 	add_child_autofree(other)
 	assert_eq(other.ambient_stream(key).data, first.data, "same key, same sound")
-	assert_ne(other.ambient_stream("loc_cellar|dark|night").data, first.data)
+	assert_ne(other.ambient_stream("loc_cellar|bright|day").data, first.data)
 	assert_true(
 		AudioDirectorScript.ambient_pitch("loc_hall|dim|night")
 		< AudioDirectorScript.ambient_pitch("loc_hall|dim|day"),
@@ -184,3 +184,39 @@ func test_a_store_bound_before_ready_starts_the_ambience_on_ready() -> void:
 	add_child_autofree(early)
 	assert_eq(early.get_ambient_key(), "loc_hall|dark|day")
 	assert_true(early.is_ambient_playing())
+
+
+func test_ambient_variant_follows_place_night_and_light() -> void:
+	assert_eq(AudioDirectorScript.ambient_variant("loc_hall|bright|day"), "bright")
+	assert_eq(AudioDirectorScript.ambient_variant("loc_hall|dark|evening"), "dark")
+	assert_eq(AudioDirectorScript.ambient_variant("loc_hall|dark|night"), "night")
+	assert_eq(AudioDirectorScript.ambient_variant("loc_boiler_room|dim|night"), "boiler")
+	assert_eq(AudioDirectorScript.ambient_variant("||day"), "dim")
+
+
+func test_library_files_exist_and_load_as_mono_16_bit() -> void:
+	var paths: Array[String] = []
+	for variant: String in AudioDirectorScript.AMBIENT_VARIANTS:
+		paths.append(AudioDirectorScript.ambient_path(variant))
+	for kind: StringName in AudioDirectorScript.STINGERS:
+		paths.append(AudioDirectorScript.stinger_path(kind))
+	for path: String in paths:
+		assert_true(ResourceLoader.exists(path), "missing library file " + path)
+		var wav: AudioStreamWAV = load(path) as AudioStreamWAV
+		assert_not_null(wav, "not an AudioStreamWAV: " + path)
+		if wav == null:
+			continue
+		assert_eq(int(wav.format), int(AudioStreamWAV.FORMAT_16_BITS), path)
+		assert_false(wav.stereo, path)
+		assert_gt(wav.get_length(), 0.2, path)
+
+
+func test_ambient_beds_are_the_library_loops_and_stingers_are_one_shots() -> void:
+	for variant: String in AudioDirectorScript.AMBIENT_VARIANTS:
+		var bed: AudioStreamWAV = _audio.ambient_stream("x|%s|day" % variant)
+		assert_gt(bed.get_length(), 10.0, "%s is a long bed, not the 4 s placeholder" % variant)
+		assert_eq(int(bed.loop_mode), int(AudioStreamWAV.LOOP_FORWARD), variant)
+	for kind: StringName in AudioDirectorScript.STINGERS:
+		var stinger: AudioStreamWAV = _audio.stinger_stream(kind)
+		assert_eq(int(stinger.loop_mode), int(AudioStreamWAV.LOOP_DISABLED), String(kind))
+		assert_gt(stinger.get_length(), 0.5, String(kind))

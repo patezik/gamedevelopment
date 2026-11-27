@@ -217,6 +217,8 @@ const gameSnapshot = z.strictObject({
   phone: z.json().optional(),
   /** Validated by `restoreStaticState`. */
   static: z.json().optional(),
+  /** Validated by `ScenarioEvents` (TIME-006); present only when it differs from the clock's story. */
+  scenario: z.json().optional(),
 });
 
 export function gameReplayRuntime(
@@ -237,6 +239,7 @@ export function gameReplayRuntime(
         desktop,
         phone,
         static: staticState,
+        scenario,
         ...state
       } = gameSnapshot.parse(snapshot);
       return GameEngine.restore(
@@ -247,6 +250,9 @@ export function gameReplayRuntime(
             desktop: desktop as NonNullable<GameSnapshot['desktop']>,
           }),
           ...(phone !== undefined && { phone }),
+          ...(scenario !== undefined && {
+            scenario: scenario as unknown as NonNullable<GameSnapshot['scenario']>,
+          }),
           ...(staticState !== undefined && {
             static: staticState as unknown as NonNullable<GameSnapshot['static']>,
           }),

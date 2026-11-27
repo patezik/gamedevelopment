@@ -510,7 +510,15 @@ survival (time, world) · phone (investigation, characters) · game (всё вы
   `runner.observe`. `GameSnapshot.simulation` (`SimulationRunner.snapshot()`: локация, блок, шаг, RNG
   и знания каждого агента) восстанавливается так, что дальнейшее состояние и хеш совпадают.
   Снимок без `simulation` стартует с текущей минуты по истине. Без порта снимок и хеш не меняются.
-  Порт на сервере для новых дел не включён (OQ-27). Не подключены: цели NPC (SIM-004/005, ENG-015), LOD по фокусу игрока, переопределения расписаний сценария (TIME-006).
+  Порт на сервере для новых дел не включён (OQ-27). Не подключены: цели NPC (SIM-004/005, ENG-015), LOD по фокусу игрока, переопределения расписаний сценария.
+- **TIME-006** (события сценария в движке): `EnginePorts.scenarioEvents?: ScenarioEventsConfig & { onMissed? }`
+  (`criticalEvents`, `deadlines` пресета; сервер включает его в `scenarioEnginePorts`). Движок создаёт
+  `ScenarioEvents` на своём `TimeSystem` с актуальными `staticLevel()` и локацией героя, применяет пропуск
+  `static` в фазе `WorldEvents`, дедлайн фазы `Outcome` даёт принудительную концовку через `dispatch`
+  (`time_up` → `time_expired`). `GameSnapshot.scenario?: ScenarioEventsSnapshot` (`fired`, `checked`, `pending`,
+  `reached`) хранится только если отличается от выводимого из часов; `save.ts` пропускает его в контрольной
+  точке. Без порта или при выводимом состоянии снимок и хеш прежние, сохранения без поля загружаются.
+  Подробности — [time-system.md](../simulation/time-system.md).
 - **ENG-010** (Static в движке): при `EnginePorts.static` движок вешает `StaticTimer` на свои
   `TimeSystem` (рост +1 / 60 мин по часам, ровно по сетке часа и после `restore`), применяет
   `STATIC_DELTAS`: раскрытое противоречие −3, подтверждённое ложное обвинение +15, и отдаёт

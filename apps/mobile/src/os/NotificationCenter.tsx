@@ -54,7 +54,7 @@ export function NotificationCenter({
     fresh.forEach((n) => seen.current?.add(n.id));
     setToast(fresh[fresh.length - 1] ?? null);
     vibrate('notification');
-    playSound();
+    playSound(fresh[fresh.length - 1]?.appId === 'messages' ? 'message' : 'notify');
   }, [view.notifications]);
 
   useEffect(() => {
@@ -68,10 +68,19 @@ export function NotificationCenter({
   useEffect(() => {
     if (ringingId !== null && ringingId !== rungId.current) {
       vibrate('call');
-      playSound();
+      playSound('ring');
     }
     rungId.current = ringingId;
   }, [ringingId]);
+
+  const hasCall = view.activeCall !== undefined;
+  const hadCall = useRef(hasCall);
+  useEffect(() => {
+    if (hadCall.current && !hasCall) {
+      playSound('callEnd');
+    }
+    hadCall.current = hasCall;
+  }, [hasCall]);
 
   const unread = view.notifications.filter((n) => !n.read).length;
   const call = view.activeCall;

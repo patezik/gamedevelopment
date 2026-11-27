@@ -14,6 +14,7 @@ import {
   validateInvestigation,
   type SolutionPath,
 } from '../index.ts';
+import { presenceTestimonyProves } from './planner.ts';
 
 const rules = compileDeductionRules([
   { id: 'motive_debt', establishes: 'motive($c)', requires: ['debt($c)'] },
@@ -360,4 +361,156 @@ it('reports a simulation replay mismatch when a sibling receives a different QR 
   expect(
     validateInvestigation(inv, { checks: [timeFeasibleCheck], context }).findings,
   ).toMatchObject([{ code: 'TIME_REPLAY_MISMATCH', severity: 'error' }]);
+});
+
+it('goes back to a witness to ask about a person met later, without leaving the player view', () => {
+  // The cook in the hall knows the bursar's motive. The bursar becomes a topic only once heard
+  // in the study, so the proof needs a return to the cook and a reopened conversation.
+  const inv = manor(200);
+  const stay = (who: string, where: string) =>
+    inv.truth.append({
+      t: 0,
+      duration: 0,
+      actorIds: [who],
+      location: where,
+      verb: 'work',
+      facts: [{ kind: 'at', who, where, interval: { from: 0, to: 190 } }],
+      targets: [],
+      causes: [],
+      traceIds: [],
+      visibility: 'covert',
+    });
+  stay('ch_cook', 'loc_hall');
+  stay('ch_bursar', 'loc_study');
+  const people = new Map(inv.characters.map((c) => [c.id, c]));
+  const belief = (proposition: Parameters<KnowledgeStore['add']>[0]['proposition']) => ({
+    proposition,
+    source: 'observed' as const,
+    confidence: 1,
+    acquiredAt: -10,
+    fuzzMinutes: 0,
+  });
+  const createSimulationPorts = () => {
+    const memories = new Map([
+      [
+        'ch_cook',
+        [
+          belief({
+            kind: 'motive',
+            who: 'ch_bursar',
+            against: 'ch_owner',
+            motiveType: 'debt',
+            basis: [],
+          }),
+        ],
+      ],
+      [
+        'ch_bursar',
+        [
+          belief({
+            kind: 'at',
+            who: 'ch_bursar',
+            where: 'loc_study',
+            interval: { from: -40, to: -35 },
+          }),
+        ],
+      ],
+    ]);
+    const witnesses = new Map(
+      [...memories].map(([id, beliefs]) => {
+        const memory = new KnowledgeStore();
+        for (const b of beliefs) memory.add(b);
+        return [id, { knowledge: memory, policy: buildLiePolicy(people.get(id)!, memory, []) }];
+      }),
+    );
+    return { testimony: { witness: (id: string) => witnesses.get(id) } };
+  };
+  const deductionRules = compileDeductionRules([
+    {
+      id: 'motive_from_testimony',
+      establishes: 'motive($c,$v)',
+      requires: ['testimony($w,motive($c,$v))'],
+    },
+    { id: 'means_key', establishes: 'means($c)', requires: ['has_key($c)'] },
+    {
+      id: 'opportunity_seen',
+      establishes: 'opportunity($c)',
+      requires: ['presence($c,$incident.location,$incident.window)'],
+    },
+  ]);
+  const caseClues = [
+    document('ledger', ['has_key(ch_bursar)', 'presence(ch_bursar,loc_study,-15)'], 'loc_hall'),
+  ];
+  const settings = {
+    clues: caseClues,
+    deductionRules,
+    startLocationId,
+    knownIncident: incident,
+    createSimulationPorts,
+    timeBudget: 140,
+  };
+  const path = solve(inv, settings);
+  expect(path).not.toBeNull();
+  expect(solve(inv, settings)).toEqual(path);
+  const talks = path!.filter((a) => a.type === 'talk').map((a) => `${a.characterId}:${a.topicId}`);
+  const ask = talks.indexOf('ch_cook:person:ch_bursar');
+  expect(ask).toBeGreaterThan(talks.indexOf('ch_bursar:self'));
+  expect(talks.slice(0, ask)).toContain('ch_cook:self');
+  const engine = GameEngine.create(inv, {
+    ...createSimulationPorts(),
+    clues: caseClues,
+    startLocationId,
+  });
+  for (const action of path!) expect(engine.dispatch('desktop', action).ok).toBe(true);
+  const knowledge = PlayerKnowledge.restore(engine.snapshot().desktop?.knowledge);
+  const kinds = evaluateClaims(knowledge, deductionRules, {
+    clues: new Map(caseClues.map((c) => [c.id, c])),
+    incident,
+  })
+    .filter((c) => c.subject === 'ch_bursar')
+    .map((c) => c.kind);
+  expect(new Set(kinds)).toEqual(new Set(['motive', 'means', 'opportunity']));
+});
+
+it('treats presence statements as proof material only when a guilt rule can use them', () => {
+  const guilt = [
+    { id: 'motive_debt', establishes: 'motive($c)', requires: ['debt($c)'] },
+    { id: 'means_key', establishes: 'means($c)', requires: ['has_key($c)'] },
+  ];
+  const opportunity = (requires: string[]) =>
+    compileDeductionRules([
+      ...guilt,
+      { id: 'opportunity', establishes: 'opportunity($c)', requires },
+      // Alibis only exclude claims; a contradiction is not a guilt link.
+      {
+        id: 'alibi_from_witness',
+        establishes: 'alibi($c,$i)',
+        requires: ['presence($c,$l,$i)', 'testimony($w,presence($c,$l,$i))'],
+      },
+      {
+        id: 'contradiction',
+        establishes: 'contradiction($c)',
+        requires: ['statement($c,presence($c,$l,$i))', 'presence($c,$l2,$i)'],
+      },
+    ]);
+  expect(presenceTestimonyProves(opportunity(['presence($c,loc_study,-15)']))).toBe(false);
+  expect(
+    presenceTestimonyProves(
+      opportunity(['testimony($w,presence($c,$incident.location,$incident.window))']),
+    ),
+  ).toBe(true);
+  const derived = compileDeductionRules([
+    ...guilt,
+    {
+      id: 'presence_from_witness',
+      establishes: 'presence($c,$l,$i)',
+      requires: ['testimony($w,presence($c,$l,$i))'],
+    },
+    {
+      id: 'opportunity',
+      establishes: 'opportunity($c)',
+      requires: ['presence($c,$incident.location,$incident.window)'],
+    },
+  ]);
+  expect(presenceTestimonyProves(derived)).toBe(true);
 });

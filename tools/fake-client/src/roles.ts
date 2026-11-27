@@ -80,6 +80,11 @@ export class FakePhone extends FakeClient {
     return FakePhone.pair({ baseUrl: desktop.baseUrl, code, ...options });
   }
 
+  /** `DELETE /sessions/:id/device` with the device token: the phone leaves on its own (ADR 0024). */
+  unpair(): Promise<undefined> {
+    return revokePhone(this.baseUrl, requireSession(this), this.token);
+  }
+
   /** Sends the text of an evidence QR as the camera would and waits for `qr.result`. */
   async scanQr(raw: string): Promise<ServerMessageOf<'qr.result'>['payload']> {
     const result = this.waitFor('qr.result');

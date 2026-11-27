@@ -24,6 +24,39 @@ function setup(
 
 const blackout = { id: 'blackout', at: 2280, earlierIf: { staticAtLeast: 50, at: 1920 } };
 
+test('a resumed module continues like an uninterrupted one and never replans what happened', () => {
+  const config = {
+    criticalEvents: [blackout],
+    deadlines: [{ id: 'end', at: 4320, outcome: 'time_up' }],
+  };
+  for (const resumeAt of [100, 1920, 2000, 2280, 3000, 4320]) {
+    const whole = setup(config, 4320, { static: () => 60 });
+    whole.time.advance(resumeAt);
+    const saved = whole.events.snapshot(resumeAt);
+    const after = new TimeSystem(new Calendar('2026-01-14T08:00'), 4320, resumeAt);
+    const resumed = new ScenarioEvents(
+      after,
+      config,
+      { staticLevel: () => 60, isPlayerPresent: () => false, applyMissedEffect: () => {} },
+      { now: resumeAt, saved },
+    );
+    whole.events.drain();
+    whole.time.advance(4320 - resumeAt);
+    after.advance(4320 - resumeAt);
+    expect(resumed.drain()).toEqual(whole.events.drain());
+    expect(resumed.outcome()).toBe(whole.events.outcome());
+  }
+});
+
+test('the snapshot is absent while the state is what the clock implies', () => {
+  const { time, events } = setup({ criticalEvents: [blackout], deadlines: [] });
+  time.advance(2000);
+  expect(events.snapshot(2000)).toBeUndefined();
+  const early = setup({ criticalEvents: [blackout], deadlines: [] }, 4320, { static: () => 60 });
+  early.time.advance(2000);
+  expect(early.events.snapshot(2000)).toMatchObject({ fired: ['blackout'], pending: [] });
+});
+
 test('a critical event fires exactly at its minute, not one minute earlier', () => {
   const { time, events } = setup({ criticalEvents: [{ id: 'blackout', at: 100 }], deadlines: [] });
   time.advance(99);
