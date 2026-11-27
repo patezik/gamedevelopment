@@ -31,6 +31,8 @@
 | @vitest/coverage-v8 | 5.0.x | MIT | все TS-пакеты кроме mobile | Покрытие и пороги в CI |
 | fast-check | 4.10.x (4.10.3 в lockfile) | MIT | core, generator, validator | Property-based тесты инвариантов |
 | tsx | 4.23.x (4.23.15 в lockfile) | MIT | server, tools | Запуск TS в разработке |
+| esbuild | 0.28.x (dev) | MIT | server (сборка) | Бандл сервера в один CJS-файл для Node SEA (уже был транзитивной зависимостью tsx и Vite) |
+| postject | 1.0.0-alpha.6 (dev, точная версия) | MIT | server (сборка) | Внедрение SEA-блоба в бинарник Node.js; инструмент из официальной документации Node SEA. Последний релиз 2023 г.: исключение из правила 12 месяцев, альтернативы без зависимости (`node --build-sea`) нет в Node 24.18 |
 | eslint | 10.x | MIT | все | Линтинг, правила детерминизма |
 | typescript-eslint | 8.72.x | MIT | все | TS-правила |
 | prettier | 3.9.x | MIT | все | Форматирование |

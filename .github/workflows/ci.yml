@@ -207,3 +207,23 @@ jobs:
           chmod +x "godot/${archive%.zip}"
       - name: Run headless tests
         run: GODOT_BIN="$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}_linux.x86_64" npm run test:godot
+
+  server-bundle:
+    name: Server executable (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w @hs/server
+      - run: node apps/server/build/smoke.mjs

@@ -8,6 +8,7 @@ const Scene = preload("res://src/scenes/new_game/new_game.tscn")
 const Format = preload("res://src/scenes/new_game/new_game_format.gd")
 const FakeSessionBackend = preload("res://tests/unit/support/fake_session_backend.gd")
 const FakeRouter = preload("res://tests/unit/support/fake_router.gd")
+const Launcher = preload("res://src/autoload/server_launcher.gd")
 
 const SETTINGS_SCRATCH: String = "user://test_new_game_settings.cfg"
 const SESSION_ID: String = "49a4ae5c-4174-416f-94c5-b8a7380636e5"
@@ -320,6 +321,59 @@ func test_a_created_session_goes_to_pairing_without_its_secrets() -> void:
 	assert_false(screen.create_session(), "no second session from the same screen")
 	for text: String in _visible_texts(screen):
 		assert_false(text.contains(TOKEN), "the token is never shown")
+
+
+## The bundled server (INT-005) as the real ServerLauncher script, without a process behind it.
+func _launcher(state: int, port: int) -> Launcher:
+	var launcher: Launcher = Launcher.new()
+	add_child_autofree(launcher)
+	launcher.state = state as Launcher.State
+	launcher.port = port
+	return launcher
+
+
+func _open_with(launcher: Launcher, params: Dictionary = {}) -> NewGame:
+	screen = Scene.instantiate() as NewGame
+	screen.user_args = PackedStringArray()
+	screen.set_params(params)
+	screen.bind_sources(backend, router)
+	screen.bind_launcher(launcher)
+	add_child_autofree(screen)
+	return screen
+
+
+func test_the_bundled_server_port_is_used_when_7420_was_taken() -> void:
+	_open_with(_launcher(Launcher.State.READY, 7421))
+	assert_eq(screen.get_origin(), "http://127.0.0.1:7421")
+	assert_eq(backend.last_call().url, "http://127.0.0.1:7421/api/v1/scenarios")
+
+
+func test_the_catalog_waits_for_the_bundled_server() -> void:
+	var launcher: Launcher = _launcher(Launcher.State.STARTING, 7422)
+	_open_with(launcher)
+	assert_eq(backend.calls.size(), 0, "no request before /health answered")
+	assert_eq(_text("Status"), NewGame.STARTING_TEXT)
+	assert_true(_create_button().disabled)
+	launcher.state = Launcher.State.READY
+	launcher.server_ready.emit(7422)
+	assert_eq(backend.calls.size(), 1)
+	assert_eq(backend.last_call().url, "http://127.0.0.1:7422/api/v1/scenarios")
+
+
+func test_a_failed_bundled_server_is_reported_and_can_be_retried() -> void:
+	var launcher: Launcher = _launcher(Launcher.State.STARTING, 7420)
+	_open_with(launcher)
+	launcher.state = Launcher.State.FAILED
+	launcher.server_failed.emit("The server process exited during startup")
+	assert_eq(screen.get_phase(), NewGame.Phase.CATALOG_FAILED)
+	assert_eq(_text("Error"), Format.LAUNCH_FAILED)
+	assert_eq(backend.calls.size(), 0)
+	assert_true((_node("Reload") as Button).visible)
+
+
+func test_an_explicit_server_wins_over_the_bundled_one() -> void:
+	_open_with(_launcher(Launcher.State.STARTING, 7421), {"server": "http://10.0.0.5:7499"})
+	assert_eq(backend.last_call().url, "http://10.0.0.5:7499/api/v1/scenarios", "no wait either")
 
 
 func test_leaving_the_screen_drops_queued_requests() -> void:
