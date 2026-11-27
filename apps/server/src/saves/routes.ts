@@ -3,8 +3,8 @@ import { CreateSessionResponse } from '../routes/sessions.ts';
 import { errorCodes, type FastifyInstance, type FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { issueToken, type PairingService } from '../pairing/index.ts';
-import { SessionIdInUseError, type SessionManager } from '../sessions/index.ts';
-import { SaveError, type SaveService } from './service.ts';
+import { SessionIdInUseError, type Session, type SessionManager } from '../sessions/index.ts';
+import { SaveError, type RecordingEngine, type SaveService } from './service.ts';
 import { isSaveId } from './store.ts';
 
 const LoadResponse = CreateSessionResponse.safeExtend({ sessionId: z.string().refine(isSaveId) });
@@ -25,6 +25,8 @@ export interface SaveRouteDependencies {
   readonly saves: SaveService;
   readonly sessions: Pick<SessionManager, 'adopt'>;
   readonly pairing: Pick<PairingService, 'prepareCode'>;
+  /** Connects the restored engine's resources (QR tokens) to the replacement session. */
+  readonly prepare?: (session: Session, engine: RecordingEngine) => void;
   /** Removes temporary files a crash left behind; run once when the server is ready. */
   readonly cleanup?: () => Promise<unknown>;
 }
@@ -32,7 +34,7 @@ export interface SaveRouteDependencies {
 /** `GET /saves` and `POST /saves/:saveId/load`. The server is local: no authentication (backend.md §3). */
 export function registerSaveRoutes(
   app: FastifyInstance,
-  { saves, sessions, pairing, cleanup }: SaveRouteDependencies,
+  { saves, sessions, pairing, prepare, cleanup }: SaveRouteDependencies,
 ): void {
   app.register(
     (routes, _options, done) => {
@@ -69,6 +71,7 @@ export function registerSaveRoutes(
               () => saves.restore(saveId),
               (session, engine) => {
                 try {
+                  prepare?.(session, engine);
                   const desktopToken = issueToken(session, 'desktop');
                   const staged = pairing.prepareCode(session);
                   response = LoadResponse.parse({

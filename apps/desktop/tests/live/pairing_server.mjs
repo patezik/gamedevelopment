@@ -27,6 +27,7 @@
 // /network from this computer and prints each POST /pair answer. Close it with Ctrl+C.
 
 import { createServer } from 'node:net';
+import { mkdtempSync } from 'node:fs';
 import os from 'node:os';
 import { createInterface } from 'node:readline';
 import { join } from 'node:path';
@@ -59,6 +60,7 @@ const port = requestedPort || await new Promise((resolve) => {
   });
 });
 const config = readConfig({
+  HS_DATA_DIR: mkdtempSync(join(os.tmpdir(), 'hs-data-')),
   HS_LOG_LEVEL: 'silent',
   HS_HOST: manual ? '0.0.0.0' : '127.0.0.1',
   HS_PORT: String(port),

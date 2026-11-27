@@ -1,4 +1,7 @@
 import { PhoneView, PlayerView, PROTOCOL_VERSION } from '@hs/protocol';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { FakeDesktop, FakePhone } from '@hs/fake-client';
 import { afterEach, expect, test } from 'vitest';
 import { buildApp } from '../../apps/server/src/app.ts';
@@ -19,7 +22,7 @@ afterEach(async () => {
 });
 
 test('desktop and phone pair by code and exchange views; a drop resumes', async () => {
-  const config = readConfig({ HS_LOG_LEVEL: 'silent', HS_HOST: '127.0.0.1' });
+  const config = readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: 'silent', HS_HOST: '127.0.0.1' });
   const app = buildApp(config, createSessionServices(config));
   apps.push(app);
   const baseUrl = await app.listen({ host: '127.0.0.1', port: 0 });
@@ -100,7 +103,7 @@ test('desktop and phone pair by code and exchange views; a drop resumes', async 
 });
 
 test('the phone unpairs itself: the desktop sees unpaired, the old token is dead, a new code re-pairs', async () => {
-  const config = readConfig({ HS_LOG_LEVEL: 'silent', HS_HOST: '127.0.0.1' });
+  const config = readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: 'silent', HS_HOST: '127.0.0.1' });
   const app = buildApp(config, createSessionServices(config));
   apps.push(app);
   const baseUrl = await app.listen({ host: '127.0.0.1', port: 0 });

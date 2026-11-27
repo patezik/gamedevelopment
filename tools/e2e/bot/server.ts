@@ -1,4 +1,7 @@
 import { buildApp } from '../../../apps/server/src/app.ts';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { readConfig } from '../../../apps/server/src/config/index.ts';
 import { asDebugSource } from '../../../apps/server/src/diagnostics/debug.ts';
 import { createSessionServices } from '../../../apps/server/src/routes/generation.ts';
@@ -21,7 +24,11 @@ export interface BotServerOptions {
  * phone camera (the raw text of a QR) and read the state hash; everything else goes over HTTP/WS.
  */
 export async function startBotServer({ npcSimulation = true }: BotServerOptions = {}) {
-  const config = readConfig({ HS_LOG_LEVEL: 'silent', HS_HOST: '127.0.0.1' });
+  const config = readConfig({
+    HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')),
+    HS_LOG_LEVEL: 'silent',
+    HS_HOST: '127.0.0.1',
+  });
   const services = createSessionServices(config);
   if (npcSimulation) {
     // `generation` is the real provider; the route typing only shows its `onGenerated`.
