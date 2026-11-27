@@ -44,6 +44,13 @@ export interface SaveServiceOptions {
   readonly provider: InvestigationProvider;
   /** Wall clock in milliseconds; only for the `createdAt` metadata. */
   readonly now?: () => number;
+  /**
+   * Ports owned by one running game (the QR token store). Called for every new game and every
+   * restore so both build the same engine: the replay must see what the live game saw.
+   */
+  readonly withPorts?: (investigation: Investigation, ports: EnginePorts) => EnginePorts;
+  /** The engine is built (new, or restored and verified): bind per-game resources to it. */
+  readonly onEngine?: (engine: RecordingEngine, ports: EnginePorts) => void;
 }
 
 /** The engine of a session whose every action is journaled to disk before it is acknowledged. */
@@ -98,31 +105,37 @@ export class SaveService {
   readonly #provider: InvestigationProvider;
   readonly #now: () => number;
   readonly #owners = new Map<string, RecordingEngine>();
+  readonly #withPorts: NonNullable<SaveServiceOptions['withPorts']>;
+  readonly #onEngine: NonNullable<SaveServiceOptions['onEngine']>;
 
-  constructor({ store, provider, now = Date.now }: SaveServiceOptions) {
+  constructor({ store, provider, now = Date.now, withPorts, onEngine }: SaveServiceOptions) {
     this.#store = store;
     this.#provider = provider;
     this.#now = now;
+    this.#withPorts = withPorts ?? ((_investigation, ports) => ports);
+    this.#onEngine = onEngine ?? (() => undefined);
   }
 
   /**
    * For `SessionManager`'s `createEngine`: the new session's engine journals itself under the
    * session's ID. Nothing is written until the first action; a game with no actions is not worth
-   * continuing.
+   * continuing. The engine does not own the save yet: `claim()` it when the session is published,
+   * so a session that never gets published cannot displace the writer of an existing save.
    */
   createEngine = (
     investigation: Investigation,
     ports: EnginePorts,
     sessionId: string,
   ): RecordingEngine => {
-    const engine = GameEngine.create(investigation, ports);
+    const gamePorts = this.#withPorts(investigation, ports);
+    const engine = GameEngine.create(investigation, gamePorts);
     const { scenarioId, seed, generatorVersion } = investigation;
     const save = createSave(
       { scenarioId, seed, generatorVersion, createdAt: new Date(this.#now()).toISOString() },
       engine,
     );
     const recording = new RecordingEngine(this, sessionId, engine, save);
-    recording.claim();
+    this.#onEngine(recording, gamePorts);
     return recording;
   };
 
@@ -183,10 +196,9 @@ export class SaveService {
     const head = identity.safeParse(raw);
     if (!head.success) throw new SaveError('SAVE_DESYNC', 422, 'The save file is damaged', 0);
 
-    const { investigation, ports } = await this.#provider.create(
-      head.data.scenarioId,
-      head.data.seed,
-    );
+    const created = await this.#provider.create(head.data.scenarioId, head.data.seed);
+    const { investigation } = created;
+    const ports = this.#withPorts(investigation, created.ports);
     let engine: GameEngine;
     try {
       engine = loadSave(raw, () => gameReplayRuntime(investigation, ports));
@@ -198,6 +210,8 @@ export class SaveService {
     }
     // `loadSave` accepted it, so this parse cannot fail.
     const save = SaveFile.parse(raw);
-    return new RecordingEngine(this, saveId, engine, save);
+    const recording = new RecordingEngine(this, saveId, engine, save);
+    this.#onEngine(recording, ports);
+    return recording;
   }
 }

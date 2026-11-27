@@ -11,7 +11,7 @@ import { buildApp } from '../app.ts';
 import { readConfig } from '../config/index.ts';
 import { hashSessionToken, issueToken, PairingService, verifyToken } from '../pairing/index.ts';
 import { type InvestigationProvider, Session, SessionManager } from '../sessions/index.ts';
-import { SaveService, SaveStore, isSaveId, type StoreIo } from './index.ts';
+import { RecordingEngine, SaveService, SaveStore, isSaveId, type StoreIo } from './index.ts';
 
 const wait = { type: 'wait', minutes: 15 } as const;
 const provider = {
@@ -29,6 +29,11 @@ afterEach(async () => {
   vi.restoreAllMocks();
   await rm(dir, { recursive: true, force: true });
 });
+
+/** What the production wiring does when a new session is published. */
+const claimOnPublish = (session: Session) => {
+  if (session.engine instanceof RecordingEngine) session.engine.claim();
+};
 
 /** One "server process": a store, a service, a manager and an app on the same data directory. */
 function boot(
@@ -50,6 +55,7 @@ function boot(
   });
   const sessions = new SessionManager(options.provider ?? provider, {
     createEngine: saves.createEngine,
+    published: claimOnPublish,
     createId: options.createId ?? randomUUID,
     ...(options.now && { now: options.now }),
   });
@@ -371,6 +377,7 @@ describe('restart and load', () => {
     const saves = new SaveService({ store, provider });
     const sessions = new SessionManager(provider, {
       createEngine: saves.createEngine,
+      published: claimOnPublish,
       now: () => now,
     });
     const pairing = new PairingService(sessions, { host: () => 'pc.local', port: 7420 });

@@ -1,4 +1,7 @@
 import { spawn } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { once } from 'node:events';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
@@ -69,7 +72,7 @@ async function client(base: string, role: 'desktop' | 'phone', token: string) {
 }
 
 test('production factory: create, pair, inspect and scan a real generated clue updates both roles once', async () => {
-  const config = readConfig({ HS_LOG_LEVEL: 'silent', HS_HOST: '127.0.0.1' });
+  const config = readConfig({ HS_DATA_DIR: mkdtempSync(join(tmpdir(), 'hs-data-')), HS_LOG_LEVEL: 'silent', HS_HOST: '127.0.0.1' });
   const services = createSessionServices(config);
   const app = buildApp(config, services);
   apps.push(app);
